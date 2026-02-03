@@ -1,0 +1,76 @@
+# =========================
+# OS / Editor Artifacts
+# =========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editor swap / backup files
+*~
+*.swp
+*.swo
+*.bak
+
+# =========================
+# IDE / Editor Settings
+# =========================
+.vscode/
+.idea/
+*.iml
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# Environment & Secrets
+# =========================
+.env
+.env.*
+*.key
+*.pem
+*.crt
+*.p12
+
+# =========================
+# Build / Output Artifacts
+# =========================
+dist/
+build/
+out/
+target/
+
+# =========================
+# Dependency Directories
+# (language-agnostic defaults)
+# =========================
+node_modules/
+vendor/
+
+# =========================
+# Temporary / Cache Files
+# =========================
+tmp/
+temp/
+.cache/
+
+# =========================
+# Coverage Reports
+# =========================
+coverage/
+
+# =========================
+# Local Databases
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+
+# =========================
+# OS Trash
+# =========================
+.Trash-*
+
