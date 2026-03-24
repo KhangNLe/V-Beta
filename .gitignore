@@ -18,12 +18,24 @@ Desktop.ini
 .vscode/
 .idea/
 *.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.factorypath
+.apt_generated/
+.springBeans
+.sts4-cache/
+bin/
 
 # =========================
 # Logs
 # =========================
 *.log
 logs/
+hs_err_pid*
+replay_pid*
 
 # =========================
 # Environment & Secrets
@@ -34,6 +46,8 @@ logs/
 *.pem
 *.crt
 *.p12
+application-local.properties
+application-local.yml
 
 # =========================
 # Build / Output Artifacts
@@ -42,6 +56,11 @@ dist/
 build/
 out/
 target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
 
 # =========================
 # Dependency Directories
@@ -56,6 +75,7 @@ vendor/
 tmp/
 temp/
 .cache/
+*.tmp
 
 # =========================
 # Coverage Reports
@@ -68,6 +88,16 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
+
+# =========================
+# Maven Files
+# =========================
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+.flattened-pom.xml
 
 # =========================
 # OS Trash
