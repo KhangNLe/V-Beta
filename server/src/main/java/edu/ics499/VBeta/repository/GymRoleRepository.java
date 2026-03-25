@@ -6,6 +6,5 @@ import edu.ics499.VBeta.domain.model.GymRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface GymRoleRepository extends JpaRepository<GymRole, Long> {
-
-    Optional<GymRole> findByRoleName(String roleName);
+    Optional<GymRole> findByRoleType(String roleType);
 }

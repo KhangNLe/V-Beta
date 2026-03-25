@@ -24,31 +24,18 @@ public class UserAccountManager {
         this.gymRoleRepository = gymRoleRepository;
     }
 
-    /**
-     * Register a new account; assigns default {@link Role#CLIMBER}. Fails if username already exists.
-     */
-    public AccountResponse register(AccountRequest request) {
-        UserAccount saved = createUserAccount(request.username(), request.email(), request.firebaseUid());
-        return toResponse(saved);
+    public AccountResponse loginAccount(AccountRequest request) {
+        UserAccount account = getUserInfo(request.username(), request.email(), request.firebaseUid());
+        return reponseInfo(account);
     }
 
-    /**
-     * Return existing account by Firebase UID, or create one with default role (signup-on-first-login).
-     */
-    public AccountResponse loginOrRegister(AccountRequest request) {
-        UserAccount account = loginUser(request.username(), request.email(), request.firebaseUid());
-        return toResponse(account);
-    }
-
-    public UserAccount createUserAccount(String username, String email, String firebaseUid) {
-        var climberRole =
-                gymRoleRepository
-                        .findByRoleName(Role.CLIMBER.name())
-                        .orElseThrow(
-                                () -> new IllegalStateException(
-                                        "Gym_Role row missing for "
-                                                + Role.CLIMBER.name()
-                                                + "; seed the database before registering users."));
+    private UserAccount createUserAccount(String username, String email, String firebaseUid) {
+        Optional<GymRole> climber = gymRoleRepository.findByRoleType(Role.CLIMBER.name());
+        if (climber.isEmpty()) {
+            throw new IllegalStateException(
+                "Gym_Role missing data for " + Role.CLIMBER.name() + "; please connact the developer."
+            );
+        }
 
         Optional<UserAccount> existingUser = userAccountRepository.findByUsername(username);
         if (existingUser.isPresent()) {
@@ -63,7 +50,7 @@ public class UserAccountManager {
         return userAccountRepository.save(newAccount);
     }
 
-    public UserAccount loginUser(String username, String email, String firebaseUid) {
+    private UserAccount getUserInfo(String username, String email, String firebaseUid) {
         Optional<UserAccount> existingUser = userAccountRepository.findByFirebaseUid(firebaseUid);
         if (existingUser.isPresent()) {
             return existingUser.get();
@@ -71,7 +58,7 @@ public class UserAccountManager {
         return createUserAccount(username, email, firebaseUid);
     }
 
-    private AccountResponse toResponse(UserAccount u) {
+    private AccountResponse reponseInfo(UserAccount u) {
         String roleName = u.getGymRole() != null ? u.getGymRole().getRoleName() : null;
         return new AccountResponse(u.getId(), u.getUsername(), u.getEmail(), u.getFirebaseUid(), roleName);
     }

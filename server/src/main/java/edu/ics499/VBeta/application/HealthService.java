@@ -1,4 +1,4 @@
-package edu.ics499.teamsatisfaction.service;
+package edu.ics499.VBeta.application;
 
 import java.util.Map;
 

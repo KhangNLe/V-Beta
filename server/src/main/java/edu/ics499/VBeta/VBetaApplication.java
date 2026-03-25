@@ -1,4 +1,4 @@
-package edu.ics499.teamsatisfaction;
+package edu.ics499.VBeta;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
