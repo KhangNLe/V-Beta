@@ -8,3 +8,6 @@ export const MESSAGING_SENDER_ID =
   process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
 export const APP_ID = process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
 export const MEASUREMENT_ID = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
+
+//  Export API base URL for use in other parts of the application
+export const API_BASE_URL = process.env.Next_PUBLIC_API_BASE_URL;

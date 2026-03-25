@@ -33,11 +33,38 @@ export default function Authentication() {
     return () => unsubscribe(); // Clean up the subscription on unmount
   }, []);
 
+  // Function to synchronize the Firebase Authentication session with the backend session.
+  const syncSessionWithBackend = async () => {
+    const currentUser = auth.currentUser; // Get the current user from Firebase Authentication
+    if (!currentUser) return; // If there is no user, exit the function
+
+    const idToken = await currentUser.getIdToken(); // Get the ID token for the current user
+
+    const apiBaseURL = process.env.Next_PUBLIC_API_BASE_URL; // Get the API base URL from environment variables (port 8080 for local development)
+
+    const response = await fetch(`${apiBaseURL}/api/accounts/session`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        Authorization: `Bearer ${idToken}`, // Include the ID token in the Authorization header
+      },
+      body: JSON.stringify({}),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to create backend session", response.statusText); // debug log the error response from the backend
+      throw new Error("Failed to create backend session"); // Throw an error if the response is not successful
+    }
+
+    return response.json(); // Return the response as JSON, from the backend session creation endpoint
+  };
+
   // Handle user sign-up using email and password using Firebase Authentication
   const handleSignup = async () => {
     try {
       setError("");
       await createUserWithEmailAndPassword(auth, email, password);
+      await syncSessionWithBackend(); // Sync the session with the backend after successful sign-up
     } catch (err) {
       setError(err.message);
     }
@@ -47,6 +74,7 @@ export default function Authentication() {
   const handleSignIn = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      await syncSessionWithBackend(); // Sync the session with the backend after successful sign-in
     } catch (error) {
       setError(error.message);
     }
@@ -56,6 +84,7 @@ export default function Authentication() {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
+      await syncSessionWithBackend(); // Sync the session with the backend after successful Google sign-in
     } catch (error) {
       setError(error.message);
     }
