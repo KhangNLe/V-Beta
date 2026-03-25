@@ -20,6 +20,7 @@ import lombok.Setter;
 public class GymAction {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "action_id")
     private Long actionId;
 
     @Column(name = "action_definition", length = 50)

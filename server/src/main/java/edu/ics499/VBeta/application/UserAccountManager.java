@@ -2,6 +2,7 @@ package edu.ics499.VBeta.application;
 
 import edu.ics499.VBeta.api.dto.AccountRequest;
 import edu.ics499.VBeta.api.dto.AccountResponse;
+import edu.ics499.VBeta.domain.model.GymRole;
 import edu.ics499.VBeta.domain.model.Role;
 import edu.ics499.VBeta.domain.model.UserAccount;
 import edu.ics499.VBeta.repository.GymRoleRepository;
@@ -46,7 +47,7 @@ public class UserAccountManager {
         newAccount.setUsername(username);
         newAccount.setEmail(email);
         newAccount.setFirebaseUid(firebaseUid);
-        newAccount.setGymRole(climberRole);
+        newAccount.setGymRole(climber.get());
         return userAccountRepository.save(newAccount);
     }
 
@@ -59,7 +60,7 @@ public class UserAccountManager {
     }
 
     private AccountResponse reponseInfo(UserAccount u) {
-        String roleName = u.getGymRole() != null ? u.getGymRole().getRoleName() : null;
+        String roleName = u.getGymRole() != null ? u.getGymRole().getRoleType() : null;
         return new AccountResponse(u.getId(), u.getUsername(), u.getEmail(), u.getFirebaseUid(), roleName);
     }
 }

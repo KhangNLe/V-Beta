@@ -1,12 +1,12 @@
 package edu.ics499.VBeta.domain.model;
 
-import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,13 +15,19 @@ import lombok.Setter;
 @Table(name = "Role_Permission")
 @Getter
 @Setter
-@AllArgsConstructor
+@NoArgsConstructor
 public class RolePermission {
+
+    @EmbeddedId
+    private RolePermissionId id;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id", referencedColumnName = "Gym_Role.role_id")
+    @MapsId("roleId")
+    @JoinColumn(name = "role_id", referencedColumnName = "role_id")
     private GymRole gymRole;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "action_id", referencedColumnName = "Gym_Action.action_id")
+    @MapsId("actionId")
+    @JoinColumn(name = "action_id", referencedColumnName = "action_id")
     private GymAction gymAction;
 }

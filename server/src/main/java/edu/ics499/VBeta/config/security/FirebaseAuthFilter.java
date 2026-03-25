@@ -7,11 +7,12 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
 import java.util.List;
@@ -20,13 +21,13 @@ import java.util.List;
 public class FirebaseAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        FilterChain filterChain
-    ) throws ServeltException, IOException{
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
+            throws ServletException, IOException {
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")){
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -37,19 +38,16 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
             String uid = decodedToken.getUid();
 
             var auth = new UsernamePasswordAuthenticationToken(
-                uid, 
-                null,
-                List.of(new SimpleGrantedAuthority("ROLE_USER"))
-            );
-            auth.setDetails(decodedToken.getClaims())
+                    uid,
+                    null,
+                    List.of(new SimpleGrantedAuthority("ROLE_USER")));
+            auth.setDetails(decodedToken.getClaims());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
         } catch (FirebaseAuthException e) {
-            response.setStatus(HttpServletReponse.SC_UNAUTHORIZED);
-            reponse.setContentType("application/json");
-            reponse.getWriter().write("{
-                \"error"\: \"Invalid or expired Firebase token\
-            }");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Invalid or expired Firebase token\"}");
             return;
         }
 

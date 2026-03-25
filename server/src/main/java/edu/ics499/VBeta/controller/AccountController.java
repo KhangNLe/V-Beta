@@ -1,10 +1,17 @@
 package edu.ics499.VBeta.controller;
 
+import edu.ics499.VBeta.api.dto.AccountRequest;
+import edu.ics499.VBeta.api.dto.AccountResponse;
+import edu.ics499.VBeta.application.UserAccountManager;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/accounts")
 public class AccountController {
@@ -30,6 +37,6 @@ public class AccountController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Firebase UID mismatch");
         }
 
-        return userAccountManager.loginAccount(body.username(), body.email(), verifiedUid);
+        return userAccountManager.loginAccount(body);
     }
 }

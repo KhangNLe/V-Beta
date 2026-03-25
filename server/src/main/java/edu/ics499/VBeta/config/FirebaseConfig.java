@@ -1,16 +1,18 @@
 package edu.ics499.VBeta.config;
 
-import com.google.firebase.auth.FirebaseApp;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
-import com.googlle.auth.oauth2.GoogleCredentials;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 
 @Configuration
+@Profile("!test")
 public class FirebaseConfig {
 
     @Value("${firebase.credentials.path}")
