@@ -14,6 +14,7 @@ import {
   createUserWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "../app/firebase";
+import { API_BASE_URL } from "../app/envExports"; // Import the API base URL from environment variables
 
 export default function Authentication() {
   const [user, setUser] = useState(null);
@@ -40,7 +41,7 @@ export default function Authentication() {
 
     const idToken = await currentUser.getIdToken(); // Get the ID token for the current user
 
-    const apiBaseURL = process.env.Next_PUBLIC_API_BASE_URL; // Get the API base URL from environment variables (port 8080 for local development)
+    const apiBaseURL = API_BASE_URL; // Get the API base URL from environment variables (port 8080 for local development)
 
     const response = await fetch(`${apiBaseURL}/api/accounts/session`, {
       method: "POST",
