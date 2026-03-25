@@ -15,12 +15,12 @@ import {
 } from "firebase/auth";
 import { auth } from "../app/firebase";
 import { API_BASE_URL } from "../app/envExports"; // Import the API base URL from environment variables
+import { toast } from "react-toastify";
 
 export default function Authentication() {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
 
   const googleProvider = new GoogleAuthProvider();
 
@@ -63,11 +63,10 @@ export default function Authentication() {
   // Handle user sign-up using email and password using Firebase Authentication
   const handleSignup = async () => {
     try {
-      setError("");
       await createUserWithEmailAndPassword(auth, email, password);
       await syncSessionWithBackend(); // Sync the session with the backend after successful sign-up
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -77,7 +76,7 @@ export default function Authentication() {
       await signInWithEmailAndPassword(auth, email, password);
       await syncSessionWithBackend(); // Sync the session with the backend after successful sign-in
     } catch (error) {
-      setError(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -87,7 +86,7 @@ export default function Authentication() {
       await signInWithPopup(auth, googleProvider);
       await syncSessionWithBackend(); // Sync the session with the backend after successful Google sign-in
     } catch (error) {
-      setError(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -96,7 +95,7 @@ export default function Authentication() {
     try {
       await signOut(auth);
     } catch (error) {
-      setError(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -126,7 +125,6 @@ export default function Authentication() {
           <button onClick={handleSignIn}>Log in</button>
           <button onClick={handleSignup}>Sign up</button>
           <button onClick={handleGoogleSignIn}>Sign in with Google</button>
-          {error && <p>{error}</p>}
         </div>
       )}
     </div>
