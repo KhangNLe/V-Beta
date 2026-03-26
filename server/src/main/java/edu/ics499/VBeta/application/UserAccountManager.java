@@ -27,14 +27,14 @@ public class UserAccountManager {
 
     public AccountResponse loginAccount(AccountRequest request) {
         UserAccount account = getUserInfo(request.username(), request.email(), request.firebaseUid());
-        return reponseInfo(account);
+        return responseInfo(account);
     }
 
     private UserAccount createUserAccount(String username, String email, String firebaseUid) {
         Optional<GymRole> climber = gymRoleRepository.findByRoleType(Role.CLIMBER.name());
         if (climber.isEmpty()) {
             throw new IllegalStateException(
-                "Gym_Role missing data for " + Role.CLIMBER.name() + "; please connact the developer."
+                "Gym_Role missing data for " + Role.CLIMBER.name() + "; please contact the developer."
             );
         }
 
@@ -53,13 +53,10 @@ public class UserAccountManager {
 
     private UserAccount getUserInfo(String username, String email, String firebaseUid) {
         Optional<UserAccount> existingUser = userAccountRepository.findByFirebaseUid(firebaseUid);
-        if (existingUser.isPresent()) {
-            return existingUser.get();
-        }
-        return createUserAccount(username, email, firebaseUid);
+        return existingUser.orElseGet(() -> createUserAccount(username, email, firebaseUid));
     }
 
-    private AccountResponse reponseInfo(UserAccount u) {
+    private AccountResponse responseInfo(UserAccount u) {
         String roleName = u.getGymRole() != null ? u.getGymRole().getRoleType() : null;
         return new AccountResponse(u.getId(), u.getUsername(), u.getEmail(), u.getFirebaseUid(), roleName);
     }
