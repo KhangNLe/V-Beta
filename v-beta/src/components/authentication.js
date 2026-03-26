@@ -5,6 +5,7 @@
 // The component listens for authentication state changes and updates the UI accordingly.
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
@@ -18,6 +19,7 @@ import { API_BASE_URL } from "../app/envExports"; // Import the API base URL fro
 import { toast } from "react-toastify";
 
 export default function Authentication() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,6 +67,7 @@ export default function Authentication() {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       await syncSessionWithBackend(); // Sync the session with the backend after successful sign-up
+      router.push("/main-page");
     } catch (err) {
       toast.error(err.message);
     }
@@ -75,6 +78,7 @@ export default function Authentication() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       await syncSessionWithBackend(); // Sync the session with the backend after successful sign-in
+      router.push("/main-page");
     } catch (error) {
       toast.error(error.message);
     }
@@ -85,6 +89,7 @@ export default function Authentication() {
     try {
       await signInWithPopup(auth, googleProvider);
       await syncSessionWithBackend(); // Sync the session with the backend after successful Google sign-in
+      router.push("/main-page");
     } catch (error) {
       toast.error(error.message);
     }
