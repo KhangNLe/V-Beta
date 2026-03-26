@@ -1,0 +1,52 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+.flattened-pom.xml
+
+# Compiled / packaged
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.factorypath
+.apt_generated/
+.springBeans
+.sts4-cache/
+bin/
+
+# VS Code (optional local share)
+# .vscode/
+
+# Logs & temp
+*.log
+logs/
+tmp/
+*.tmp
+*.swp
+*.bak
+
+# Env / local overrides (secrets, machine-specific DB URLs)
+.env
+.env.*
+application-local.properties
+application-local.yml
+
+# OS
+.DS_Store
+Thumbs.db
