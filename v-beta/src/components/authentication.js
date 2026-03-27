@@ -31,6 +31,11 @@ export default function Authentication() {
     // Subscribe to authentication state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+
+      // Redirect to the main page if the user is authenticated
+      if (currentUser) {
+        router.push("/main-page");
+      }
     });
 
     return () => unsubscribe(); // Clean up the subscription on unmount
@@ -67,7 +72,6 @@ export default function Authentication() {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       await syncSessionWithBackend(); // Sync the session with the backend after successful sign-up
-      router.push("/main-page");
     } catch (err) {
       toast.error(err.message);
     }
@@ -78,7 +82,6 @@ export default function Authentication() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       await syncSessionWithBackend(); // Sync the session with the backend after successful sign-in
-      router.push("/main-page");
     } catch (error) {
       toast.error(error.message);
     }
@@ -89,7 +92,6 @@ export default function Authentication() {
     try {
       await signInWithPopup(auth, googleProvider);
       await syncSessionWithBackend(); // Sync the session with the backend after successful Google sign-in
-      router.push("/main-page");
     } catch (error) {
       toast.error(error.message);
     }
@@ -99,6 +101,7 @@ export default function Authentication() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      router.push("/login");
     } catch (error) {
       toast.error(error.message);
     }
