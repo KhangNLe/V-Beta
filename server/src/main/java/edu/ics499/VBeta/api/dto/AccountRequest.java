@@ -6,5 +6,5 @@ import jakarta.validation.constraints.Size;
 
 public record AccountRequest(
         @NotBlank @Size(max = 25) String username,
-        @NotBlank @Email @Size(max = 225) String email,
-        @NotBlank @Size(max = 128) String firebaseUid) {}
+        @NotBlank @Email @Size(max = 225) String email
+) {}

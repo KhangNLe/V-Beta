@@ -52,7 +52,6 @@ export default function Authentication() {
       body: JSON.stringify({
         username: currentUser.displayName || currentUser.email?.split("@")[0] || "user",
         email: currentUser.email || "",
-        firebaseUid: currentUser.uid || "",
       }),
     });
 
