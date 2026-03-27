@@ -7,7 +7,6 @@ import edu.ics499.VBeta.domain.model.GymRole;
 import edu.ics499.VBeta.domain.model.Role;
 import edu.ics499.VBeta.repository.GymRoleRepository;
 import edu.ics499.VBeta.repository.UserAccountRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -50,15 +49,15 @@ public class AccountControllerTest {
 
         AccountRequest req = new AccountRequest(
             "testUser",
-            "testUser@gmail.com",
-            "testFirebaseUid"
+            "testUser@gmail.com"
         );
+        String testFirebaseUid = "testFirebaseUid";
 
-        AccountResponse resp = userAccountManager.loginAccount(req);
-        assertTrue(accountRepository.findByFirebaseUid(req.firebaseUid()).isPresent());
+        AccountResponse resp = userAccountManager.loginAccount(req.username(), req.email(), testFirebaseUid);
+        assertTrue(accountRepository.findByFirebaseUid(testFirebaseUid).isPresent());
         assertNotNull(resp);
         assertNotNull(resp.id());
-        assertEquals(req.firebaseUid(), resp.firebaseUid());
+        assertEquals(testFirebaseUid, resp.firebaseUid());
         assertEquals("testUser", resp.username());
         assertEquals("testUser@gmail.com", resp.email());
     }

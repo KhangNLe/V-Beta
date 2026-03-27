@@ -25,8 +25,8 @@ public class UserAccountManager {
         this.gymRoleRepository = gymRoleRepository;
     }
 
-    public AccountResponse loginAccount(AccountRequest request) {
-        UserAccount account = getUserInfo(request.username(), request.email(), request.firebaseUid());
+    public AccountResponse loginAccount(String username, String email, String firebaseUid) {
+        UserAccount account = getUserInfo(username, email, firebaseUid);
         return responseInfo(account);
     }
 

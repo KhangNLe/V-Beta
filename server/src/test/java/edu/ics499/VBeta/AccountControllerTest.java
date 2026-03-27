@@ -1,21 +1,17 @@
 package edu.ics499.VBeta;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.ics499.VBeta.api.dto.AccountRequest;
-import edu.ics499.VBeta.api.dto.AccountResponse;
 import edu.ics499.VBeta.application.UserAccountManager;
 import edu.ics499.VBeta.controller.AccountController;
-import edu.ics499.VBeta.repository.UserAccountRepository;
+import jakarta.servlet.ServletException;
 import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -41,9 +37,6 @@ class AccountControllerTest {
     @Autowired
     private UserAccountManager userAccountManager;
 
-    @Autowired
-    private UserAccountRepository accountRepository;
-
     @AfterEach
     void clearSecurity() {
         SecurityContextHolder.clearContext();
@@ -56,8 +49,7 @@ class AccountControllerTest {
                 """
                 {
                   "username": "testuser",
-                  "email": "testUser@gmail.com",
-                  "firebaseUid": " "
+                  "email": " "
                 }
                 """;
 
@@ -68,22 +60,27 @@ class AccountControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Disabled
     @Test
     void sessionReturns500WhenManagerThrowsIllegalState() throws Exception {
         SecurityContextHolder.getContext()
                 .setAuthentication(new UsernamePasswordAuthenticationToken("uid123", null, null));
 
-        AccountRequest req = new AccountRequest("testuser", "testUser@gmail.com", "uid123");
+        AccountRequest req = new AccountRequest("testuser", "testUser@gmail.com");
 
-        when(userAccountManager.loginAccount(any(AccountRequest.class)))
+        when(userAccountManager.loginAccount(anyString(), anyString(), anyString()))
                 .thenThrow(new IllegalStateException("Test exception here"));
 
-        mockMvc.perform(
+        Exception ex = assertThrows(
+                Exception.class,
+                () -> mockMvc.perform(
                         post("/api/accounts/session")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isInternalServerError());
+                                .content(objectMapper.writeValueAsString(req))));
+
+        assertInstanceOf(ServletException.class, ex);
+        assertNotNull(ex.getCause());
+        assertInstanceOf(IllegalStateException.class, ex.getCause());
+        assertEquals("Test exception here", ex.getCause().getMessage());
     }
 
 }
