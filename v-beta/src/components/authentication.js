@@ -49,7 +49,11 @@ export default function Authentication() {
         "content-type": "application/json",
         Authorization: `Bearer ${idToken}`, // Include the ID token in the Authorization header
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({
+        username: currentUser.displayName || currentUser.email?.split("@")[0] || "user",
+        email: currentUser.email || "",
+        firebaseUid: currentUser.uid || "",
+      }),
     });
 
     if (!response.ok) {
