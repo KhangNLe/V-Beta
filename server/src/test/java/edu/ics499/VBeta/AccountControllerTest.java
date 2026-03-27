@@ -24,18 +24,12 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = AccountController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(TestConfig.class)
 @ActiveProfiles("test")
-@TestPropertySource(
-        properties = {
-            "spring.cloud.gcp.sql.enabled=true",
-            "spring.cloud.gcp.storage.enabled=false"
-        })
 class AccountControllerTest {
 
     @Autowired
@@ -91,4 +85,5 @@ class AccountControllerTest {
                                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isInternalServerError());
     }
+
 }

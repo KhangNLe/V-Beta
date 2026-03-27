@@ -19,7 +19,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class GymAction {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "action_id")
     private Long actionId;
 

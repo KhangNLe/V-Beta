@@ -18,16 +18,7 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(
-                        auth -> auth.requestMatchers(
-                                        "/api/accounts/session",
-                                        "/api/health",
-                                        "/api/v1/meta")
-                                .permitAll()
-                                .anyRequest()
-                                .authenticated())
-                .addFilterBefore(
-                        firebaseAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
         return http.build();
     }
 }
