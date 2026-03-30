@@ -1,70 +1,54 @@
 "use client";
 
-import { signOut, onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase"; // adjust path to firebase.js
+import { fetchWallSectionsForUser } from "@/api/wallSections";
+import PageLoader from "@/components/ui/PageLoader";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { wallSectionPath } from "@/lib/wallSectionUrl";
+import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
+import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { API_BASE_URL } from "../envExports"; // points to 8080
 
-/** Set to false when the backend GET /api/wall-sections is live. */
-const USE_MOCK_WALL_SECTIONS = true;
-
-const MOCK_WALL_SECTIONS = [
-  { wall_section_id: 1, wall_section_name: "Overhang" },
-  { wall_section_id: 2, wall_section_name: "Slab Balance" },
-];
+import { auth } from "../firebase";
 
 export default function MainPage() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [wallSections, setWallSections] = useState([]);
+  const { user, ready } = useRequireAuth({ redirectMode: "push" });
+  const [sections, setSections] = useState([]);
   const [fetchError, setFetchError] = useState(null);
 
-  // Firebase auth check
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) router.push("/"); // redirect if not logged in
-      else setUser(currentUser);
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Fetch wall sections from real backend
   useEffect(() => {
     if (!user) return;
 
-    const fetchWallSections = async () => {
-      if (USE_MOCK_WALL_SECTIONS) {
-        // TEMP MOCK — flip USE_MOCK_WALL_SECTIONS to false for real API
-        setWallSections(MOCK_WALL_SECTIONS);
-        setFetchError(null);
-        return;
-      }
-
+    let cancelled = false;
+    (async () => {
       try {
-        const idToken = await user.getIdToken();
-        const response = await fetch(`${API_BASE_URL}/api/wall-sections`, {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
-        if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
-        const data = await response.json();
-        setWallSections(data);
-        setFetchError(null);
+        const data = await fetchWallSectionsForUser(user);
+        if (!cancelled) {
+          setSections(data);
+          setFetchError(null);
+        }
       } catch (err) {
         console.error("Fetch wall sections failed:", err);
-        setFetchError(err.message);
+        if (!cancelled) {
+          setFetchError(err instanceof Error ? err.message : "Unknown error");
+        }
       }
-    };
+    })();
 
-    fetchWallSections();
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
-  if (isLoading) return <div>Loading...</div>;
+  if (!ready) {
+    return <PageLoader message="Loading…" />;
+  }
+
+  if (!user) {
+    return <PageLoader message="Redirecting…" />;
+  }
 
   const handleLogout = async () => {
     try {
@@ -76,48 +60,170 @@ export default function MainPage() {
     }
   };
 
-  const handleWallSectionClick = (section) => {
-    const nameSlug = encodeURIComponent(section.wall_section_name.replace(/\s+/g, "-"));
-    router.push(`/wall/${nameSlug}/${section.wall_section_id}`);
+  const handleSelectSection = (section) => {
+    router.push(wallSectionPath(section));
   };
 
   return (
-    <main style={{ padding: "24px", fontFamily: "sans-serif" }}>
-      <h1>Main Page</h1>
+    <main style={layout.main}>
+      <div style={layout.maxWidth960}>
+        <header
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "16px",
+            marginBottom: "24px",
+          }}
+        >
+          <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 8px", fontSize: "1.75rem", fontWeight: 700, fontFamily }}>
+              Bouldering Project - Minneapolis
+            </h1>
+          </div>
+          <button type="button" onClick={handleLogout} style={{ ...buttons.secondary, flex: "0 0 auto" }}>
+            Log out
+          </button>
+        </header>
 
-      <button
-        onClick={handleLogout}
-        style={{ marginBottom: "24px", padding: "8px 16px", cursor: "pointer" }}
-      >
-        Log out
-      </button>
+        <section
+          style={{
+            position: "relative",
+            marginBottom: "28px",
+            padding: "22px 22px 22px 20px",
+            borderRadius: "12px",
+            border: `1px solid ${colors.border}`,
+            background: "#fff",
+            boxShadow: card.surface.boxShadow,
+            overflow: "hidden",
+            fontFamily,
+          }}
+          aria-labelledby="gym-info-heading"
+        >
+          <div style={card.accentBar} aria-hidden />
+          <p
+            style={{
+              margin: "0 0 6px",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: colors.subtle,
+            }}
+          >
+            Gym info
+          </p>
+          <p
+            id="gym-info-heading"
+            style={{
+              margin: "0 0 12px",
+              fontSize: "0.9375rem",
+              lineHeight: 1.55,
+              color: colors.muted,
+              maxWidth: "65ch",
+            }}
+          >
+            Bouldering Project - Minneapolis is the ultimate playground for climbers of all levels! With
+            walls that challenge your strength, agility, and creativity, plus cozy spaces to train, relax,
+            and connect, it's more than a gym - it's a climbing community where every problem is an
+            adventure.
+          </p>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: "8px 14px",
+            }}
+          >
+            <span style={{ fontSize: "0.875rem", color: colors.zinc600, fontWeight: 500 }}>
+              <span style={{ color: colors.subtle, fontWeight: 500 }}>Location · </span>
+              1433 West River Rd N, Minneapolis, MN 55411, USA
+            </span>
+            <span style={{ color: colors.borderHairline }} aria-hidden>
+              ·
+            </span>
+            <span style={{ fontSize: "0.8125rem", color: colors.subtle }}>
+              Indoor bouldering &amp; rope walls
+            </span>
+          </div>
+        </section>
 
-      <h2>Wall Sections:</h2>
+        <h2
+          style={{
+            margin: "0 0 16px",
+            fontSize: "1.125rem",
+            fontWeight: 600,
+            color: colors.muted,
+          }}
+        >
+          Wall sections
+        </h2>
 
-      {fetchError && (
-        <div style={{ color: "red", marginBottom: "12px" }}>Error: {fetchError}</div>
-      )}
+        {fetchError && (
+          <div
+            style={{
+              color: colors.danger,
+              background: colors.dangerBg,
+              border: `1px solid ${colors.dangerBorder}`,
+              borderRadius: "8px",
+              padding: "12px 14px",
+              marginBottom: "20px",
+              fontSize: "0.875rem",
+            }}
+          >
+            {fetchError}
+          </div>
+        )}
 
-      {wallSections.length === 0 ? (
-        <p>No wall sections found.</p>
-      ) : (
-        <ul>
-          {wallSections.map((section) => (
-            <li
-              key={section.wall_section_id}
-              style={{
-                marginBottom: "12px",
-                cursor: "pointer",
-                color: "blue",
-                textDecoration: "underline",
-              }}
-              onClick={() => handleWallSectionClick(section)}
-            >
-              {section.wall_section_name}
-            </li>
-          ))}
-        </ul>
-      )}
+        {sections.length === 0 ? (
+          <p style={{ margin: 0, color: colors.subtle }}>No wall sections found.</p>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: "20px",
+            }}
+          >
+            {sections.map((section) => (
+              <article
+                key={section.wall_section_id}
+                style={{
+                  ...card.surface,
+                  padding: "20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: "1.125rem",
+                    fontWeight: 600,
+                    lineHeight: 1.35,
+                    color: colors.text,
+                  }}
+                >
+                  {section.wall_section_name}
+                </h3>
+                <p style={{ margin: 0, fontSize: "0.875rem", color: colors.subtle }}>
+                  Section number: <strong style={{ color: colors.zinc600 }}>{section.wall_section_id}</strong>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleSelectSection(section)}
+                  style={{ ...buttons.primary, marginTop: "4px", alignSelf: "flex-start" }}
+                >
+                  View section
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
     </main>
   );
 }
