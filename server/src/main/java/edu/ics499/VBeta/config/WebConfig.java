@@ -1,5 +1,5 @@
-package edu.ics499.teamsatisfaction.config;
-
+package edu.ics499.VBeta.config;
+    
 import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Value;
