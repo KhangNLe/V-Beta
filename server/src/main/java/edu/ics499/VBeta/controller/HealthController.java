@@ -1,8 +1,8 @@
-package edu.ics499.teamsatisfaction.controller;
+package edu.ics499.VBeta.controller;
 
 import java.util.Map;
 
-import edu.ics499.teamsatisfaction.service.HealthService;
+import edu.ics499.VBeta.application.HealthService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
