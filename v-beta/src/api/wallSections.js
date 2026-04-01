@@ -6,9 +6,10 @@ import { API_BASE_URL } from "@/app/envExports";
  */
 export async function fetchWallSectionsForUser(user) {
   const idToken = await user.getIdToken();
-  const response = await fetch(`${API_BASE_URL}/api/wall-sections`, {
-    headers: { Authorization: `Bearer ${idToken}` },
-  });
+  const response = await fetch(`${API_BASE_URL}/home/wall-sections`, {
+      headers: { Authorization: `Bearer ${idToken}` },
+    }
+  );
   if (!response.ok) {
     throw new Error(`Failed to fetch: ${response.status}`);
   }
@@ -24,5 +25,13 @@ export async function fetchWallSectionsForUser(user) {
  * @returns {Promise<import("@/types/climbProblem").ClimbProblem[]>}
  */
 export async function fetchWallSectionProblemsForUser(_user, _sectionId) {
-  return [];
+  const idToken = await _user.getIdToken();
+  const response = await fetch(`${API_BASE_URL}/home/wall-sections/${_sectionId}/problems`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch wall section problems: ${response.status}`);
+  }
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 }

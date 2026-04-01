@@ -3,7 +3,6 @@
 import { fetchWallSectionsForUser } from "@/api/wallSections";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { wallSectionPath } from "@/lib/wallSectionUrl";
 import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -61,7 +60,7 @@ export default function MainPage() {
   };
 
   const handleSelectSection = (section) => {
-    router.push(wallSectionPath(section));
+    router.push(`/wall/${section.wallSectionID}`);
   };
 
   return (
@@ -99,7 +98,6 @@ export default function MainPage() {
             overflow: "hidden",
             fontFamily,
           }}
-          aria-labelledby="gym-info-heading"
         >
           <div style={card.accentBar} aria-hidden />
           <p
@@ -115,7 +113,6 @@ export default function MainPage() {
             Gym info
           </p>
           <p
-            id="gym-info-heading"
             style={{
               margin: "0 0 12px",
               fontSize: "0.9375rem",
@@ -189,7 +186,7 @@ export default function MainPage() {
           >
             {sections.map((section) => (
               <article
-                key={section.wall_section_id}
+                key={section.wallSectionID}
                 style={{
                   ...card.surface,
                   padding: "20px",
@@ -207,11 +204,13 @@ export default function MainPage() {
                     color: colors.text,
                   }}
                 >
-                  {section.wall_section_name}
+                  {section.wallSectionName}
                 </h3>
+
                 <p style={{ margin: 0, fontSize: "0.875rem", color: colors.subtle }}>
-                  Section number: <strong style={{ color: colors.zinc600 }}>{section.wall_section_id}</strong>
+                  Section number: {section.wallSectionID}
                 </p>
+
                 <button
                   type="button"
                   onClick={() => handleSelectSection(section)}
