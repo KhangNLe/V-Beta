@@ -4,10 +4,12 @@ import edu.ics499.VBeta.api.dto.ClimbingProblemResponse;
 import edu.ics499.VBeta.api.dto.WallSectionRequest;
 import edu.ics499.VBeta.api.dto.WallSectionResponse;
 import edu.ics499.VBeta.domain.model.ClimbingProblem;
+import edu.ics499.VBeta.domain.model.LifecycleStatus;
 import edu.ics499.VBeta.domain.model.WallSection;
 import edu.ics499.VBeta.repository.WallSectionRepository;
 import edu.ics499.VBeta.repository.ClimbingGradeRepository;
 import edu.ics499.VBeta.repository.ClimbingProblemRepository;
+import org.apache.catalina.Lifecycle;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,13 +66,15 @@ public class WallSectionManager {
     private List<ClimbingProblemResponse> mapProblemsForWall(WallSection wallSection) {
         List<ClimbingProblemResponse> problemsInfo = new ArrayList<>();
         List<ClimbingProblem> problems = climbingProblemRepository.findByWallSection(wallSection);
-        problems.forEach(problem -> {
-            problemsInfo.add(new ClimbingProblemResponse(
-                    problem.getId(),
-                    problem.getHoldColor(),
-                    problem.getProblemInfo(),
-                    problem.getClimbingGrade().getGrade()
-            ));
+        problems.stream()
+            .filter(problem -> problem.getProblemStatus().equals(LifecycleStatus.ACTIVE))
+            .forEach(problem -> {
+                problemsInfo.add(new ClimbingProblemResponse(
+                        problem.getId(),
+                        problem.getHoldColor(),
+                        problem.getCreatedDate().toString().split("T")[0],
+                        problem.getClimbingGrade().getGrade()
+                ));
         });
         return problemsInfo;
     }

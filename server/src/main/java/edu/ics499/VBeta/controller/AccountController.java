@@ -27,7 +27,6 @@ public class AccountController {
     }
 
     @PostMapping("/session")
-    @Transactional(readOnly = true)
     public AccountResponse session(@Valid @RequestBody AccountRequest body) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 

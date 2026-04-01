@@ -2,6 +2,7 @@ package edu.ics499.VBeta.controller;
 
 import edu.ics499.VBeta.api.dto.ClimbingProblemResponse;
 import edu.ics499.VBeta.api.dto.WallSectionResponse;
+import edu.ics499.VBeta.api.dto.ProblemDetailResponse;
 import edu.ics499.VBeta.application.WallSectionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,4 +32,11 @@ public class WallSectionController {
     public List<ClimbingProblemResponse> problemsForWallSection(@PathVariable Long wallSectionId) {
         return wallSectionManager.getClimbingProblemsByWallSectionId(wallSectionId);
     }
-}   
+
+    @GetMapping("wall-sections/{wallSectionId}/problems/{problemID}")
+    @Transactional(readOnly = true)
+    public ProblemDetailResponse getProblemDetail(@PathVariable Long wallSectionId, @PathVariable Long problemID){
+        return null;
+    }
+
+}
