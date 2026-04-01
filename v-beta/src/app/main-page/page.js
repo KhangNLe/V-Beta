@@ -4,12 +4,8 @@ import { fetchWallSectionsForUser } from "@/api/wallSections";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
-import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
-
-import { auth } from "../firebase";
 
 export default function MainPage() {
   const router = useRouter();
@@ -49,16 +45,6 @@ export default function MainPage() {
     return <PageLoader message="Redirecting…" />;
   }
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push("/");
-    } catch (err) {
-      console.error("Logout failed", err);
-      toast.error("Logout failed");
-    }
-  };
-
   const handleSelectSection = (section) => {
     router.push(`/wall/${section.wallSectionID}`);
   };
@@ -66,24 +52,12 @@ export default function MainPage() {
   return (
     <main style={layout.main}>
       <div style={layout.maxWidth960}>
-        <header
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "16px",
-            marginBottom: "24px",
-          }}
-        >
+        <header style={{ marginBottom: "24px" }}>
           <div style={{ flex: "1 1 280px", minWidth: 0 }}>
             <h1 style={{ margin: "0 0 8px", fontSize: "1.75rem", fontWeight: 700, fontFamily }}>
               Bouldering Project - Minneapolis
             </h1>
           </div>
-          <button type="button" onClick={handleLogout} style={{ ...buttons.secondary, flex: "0 0 auto" }}>
-            Log out
-          </button>
         </header>
 
         <section
