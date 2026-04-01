@@ -61,6 +61,10 @@ export default function WallSectionPage() {
     router.push(`/wall/${wallSectionID}/problem/${problemId}`);
   };
 
+  const handleBackToSections = () => {
+    router.push("/main-page");
+  };
+
   if (!ready) return <PageLoader message="Loading…" />;
   if (!user) return <PageLoader message="Redirecting…" />;
   if (loading) return <PageLoader message="Loading wall section…" />;
@@ -68,7 +72,15 @@ export default function WallSectionPage() {
   return (
     <main style={layout.main}>
       <div style={layout.maxWidth960}>
-        {/* Section Header Card - Now the first element */}
+        <button
+          type="button"
+          onClick={handleBackToSections}
+          style={{ ...buttons.secondary, marginBottom: "16px" }}
+        >
+          Back
+        </button>
+
+        {/* Section Header Card */}
         <section
           style={{
             ...card.surface,
@@ -80,18 +92,8 @@ export default function WallSectionPage() {
           }}
         >
           <div style={card.accentBar} aria-hidden />
-          <p style={{ 
-            margin: "0 0 6px", 
-            fontSize: "0.75rem", 
-            fontWeight: 600, 
-            color: colors.subtle, 
-            textTransform: "uppercase", 
-            letterSpacing: "0.04em" 
-          }}>
-            Wall Section Detail
-          </p>
           <h1 style={{ margin: "0 0 8px", fontSize: "1.75rem", fontWeight: 700, color: colors.text }}>
-            {section?.wallSectionName || `Section ${wallSectionID}`}
+            Wall Section: {section?.wallSectionName || `Section ${wallSectionID}`}
           </h1>
           <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
             {section?.wallSectionInfo || "No section description available."}

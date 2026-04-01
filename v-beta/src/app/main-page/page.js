@@ -37,13 +37,8 @@ export default function MainPage() {
     };
   }, [user]);
 
-  if (!ready) {
-    return <PageLoader message="Loading…" />;
-  }
-
-  if (!user) {
-    return <PageLoader message="Redirecting…" />;
-  }
+  if (!ready) return <PageLoader message="Loading…" />;
+  if (!user) return <PageLoader message="Redirecting…" />;
 
   const handleSelectSection = (section) => {
     router.push(`/wall/${section.wallSectionID}`);
@@ -53,97 +48,43 @@ export default function MainPage() {
     <main style={layout.main}>
       <div style={layout.maxWidth960}>
         <header style={{ marginBottom: "24px" }}>
-          <div style={{ flex: "1 1 280px", minWidth: 0 }}>
-            <h1 style={{ margin: "0 0 8px", fontSize: "1.75rem", fontWeight: 700, fontFamily }}>
-              Bouldering Project - Minneapolis
-            </h1>
-          </div>
+          <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, fontFamily }}>
+            GYM
+          </h1>
         </header>
 
+        {/* Gym Info Card */}
         <section
           style={{
+            ...card.surface,
             position: "relative",
             marginBottom: "28px",
             padding: "22px 22px 22px 20px",
-            borderRadius: "12px",
-            border: `1px solid ${colors.border}`,
-            background: "#fff",
-            boxShadow: card.surface.boxShadow,
             overflow: "hidden",
             fontFamily,
           }}
         >
           <div style={card.accentBar} aria-hidden />
-          <p
-            style={{
-              margin: "0 0 6px",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              color: colors.subtle,
-            }}
-          >
+          <p style={{ margin: "0 0 6px", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: colors.subtle }}>
             Gym info
           </p>
-          <p
-            style={{
-              margin: "0 0 12px",
-              fontSize: "0.9375rem",
-              lineHeight: 1.55,
-              color: colors.muted,
-              maxWidth: "65ch",
-            }}
-          >
-            Bouldering Project - Minneapolis is the ultimate playground for climbers of all levels! With
-            walls that challenge your strength, agility, and creativity, plus cozy spaces to train, relax,
-            and connect, it's more than a gym - it's a climbing community where every problem is an
-            adventure.
+          <p style={{ margin: "0 0 12px", fontSize: "0.9375rem", lineHeight: 1.55, color: colors.muted, maxWidth: "65ch" }}>
+            A fantastic gym with a variety of climbing walls for all skill levels. Come in and climb!
           </p>
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: "8px 14px",
-            }}
-          >
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 14px" }}>
             <span style={{ fontSize: "0.875rem", color: colors.zinc600, fontWeight: 500 }}>
-              <span style={{ color: colors.subtle, fontWeight: 500 }}>Location · </span>
-              1433 West River Rd N, Minneapolis, MN 55411, USA
-            </span>
-            <span style={{ color: colors.borderHairline }} aria-hidden>
-              ·
-            </span>
-            <span style={{ fontSize: "0.8125rem", color: colors.subtle }}>
-              Indoor bouldering &amp; rope walls
+              <span style={{ color: colors.subtle }}>Location · </span>
+              123 Climbing St, Boulder City
             </span>
           </div>
         </section>
 
-        <h2
-          style={{
-            margin: "0 0 16px",
-            fontSize: "1.125rem",
-            fontWeight: 600,
-            color: colors.muted,
-          }}
-        >
+        <h2 style={{ margin: "0 0 16px", fontSize: "1.125rem", fontWeight: 600, color: colors.muted }}>
           Wall sections
         </h2>
 
         {fetchError && (
-          <div
-            style={{
-              color: colors.danger,
-              background: colors.dangerBg,
-              border: `1px solid ${colors.dangerBorder}`,
-              borderRadius: "8px",
-              padding: "12px 14px",
-              marginBottom: "20px",
-              fontSize: "0.875rem",
-            }}
-          >
+          <div style={{ color: colors.danger, background: colors.dangerBg, border: `1px solid ${colors.dangerBorder}`, borderRadius: "8px", padding: "12px 14px", marginBottom: "20px" }}>
             {fetchError}
           </div>
         )}
@@ -154,7 +95,7 @@ export default function MainPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
               gap: "20px",
             }}
           >
@@ -166,29 +107,31 @@ export default function MainPage() {
                   padding: "20px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "12px",
+                  gap: "10px",
                 }}
               >
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: "1.125rem",
-                    fontWeight: 600,
-                    lineHeight: 1.35,
-                    color: colors.text,
-                  }}
-                >
-                  {section.wallSectionName}
-                </h3>
+                {/* Header with Name */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 600, lineHeight: 1.3, color: colors.text, flex: 1 }}>
+                    {section.wallSectionName}
+                  </h3>
+                </div>
 
-                <p style={{ margin: 0, fontSize: "0.875rem", color: colors.subtle }}>
-                  Section number: {section.wallSectionID}
+                {/* Description under the name */}
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: "0.875rem", 
+                  color: colors.muted, 
+                  lineHeight: 1.5, 
+                  flexGrow: 1 
+                }}>
+                  {section.wallSectionInfo || "No description available for this section."}
                 </p>
 
                 <button
                   type="button"
                   onClick={() => handleSelectSection(section)}
-                  style={{ ...buttons.primary, marginTop: "4px", alignSelf: "flex-start" }}
+                  style={{ ...buttons.primary, marginTop: "6px", alignSelf: "flex-start" }}
                 >
                   View section
                 </button>
