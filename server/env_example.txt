@@ -6,3 +6,6 @@ MYSQL_PORT=3307 or 3306, i use 3307
 MYSQL_DB=V_Beta
 MYSQL_USERNAME=
 MYSQL_PASSWORD=
+GCP_PROJECT_ID= get this from google cloud console project
+GOOGLE_SERVICE_CREDENTIALS_PATH= get this from IAM/Service Account/ create new service account, then download json key.
+STORAGE_PUBLIC_BUCKET_NAME= check in google cloud storage bucket name.
