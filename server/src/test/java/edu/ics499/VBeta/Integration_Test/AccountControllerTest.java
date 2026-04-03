@@ -4,7 +4,7 @@ import edu.ics499.VBeta.api.dto.AccountRequest;
 import edu.ics499.VBeta.api.dto.AccountResponse;
 import edu.ics499.VBeta.application.UserAccountManager;
 import edu.ics499.VBeta.domain.model.GymRole;
-import edu.ics499.VBeta.domain.model.Role;
+import edu.ics499.VBeta.domain.model.RoleType;
 import edu.ics499.VBeta.repository.GymRoleRepository;
 import edu.ics499.VBeta.repository.UserAccountRepository;
 import org.junit.jupiter.api.Test;
@@ -41,9 +41,9 @@ public class AccountControllerTest {
     @Test
     void testAccountConnection() throws Exception {
         // Ensure prerequisite role exists for account creation path.
-        if (gymRoleRepository.findByRoleType(Role.CLIMBER.name()).isEmpty()) {
+        if (gymRoleRepository.findByRoleType(RoleType.CLIMBER).isEmpty()) {
             GymRole gymRole = new GymRole();
-            gymRole.setRoleType(Role.CLIMBER.name());
+            gymRole.setRoleType(RoleType.CLIMBER);
             gymRoleRepository.save(gymRole);
         }
 
