@@ -16,8 +16,8 @@ You do **not** need a global Maven install if you use the wrapper scripts `mvnw`
 
 Database defaults assume:
 
-- Host: `localhost`, port: `3306`, database: `team_satisfaction`
-- User: `root`, password: empty
+- Host: `localhost`, port: `3306`, database: `V_Beta`
+- User: `root`, password: set via `MYSQL_PASSWORD` (example: `devpassword` in `application.properties`)
 
 Override with environment variables if needed: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`.
 
@@ -76,7 +76,7 @@ If you want a local database without a full MySQL install:
 ```bash
 docker run -d --name team-satisfaction-mysql \
   -e MYSQL_ROOT_PASSWORD=devpassword \
-  -e MYSQL_DATABASE=team_satisfaction \
+  -e MYSQL_DATABASE=V_Beta \
   -p 3306:3306 \
   mysql:8
 ```
