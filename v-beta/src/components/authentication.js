@@ -5,6 +5,7 @@
 // The component listens for authentication state changes and updates the UI accordingly.
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
@@ -18,6 +19,7 @@ import { API_BASE_URL } from "../app/envExports"; // Import the API base URL fro
 import { toast } from "react-toastify";
 
 export default function Authentication() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +31,11 @@ export default function Authentication() {
     // Subscribe to authentication state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+
+      // Redirect to the main page if the user is authenticated
+      if (currentUser) {
+        router.push("/main-page");
+      }
     });
 
     return () => unsubscribe(); // Clean up the subscription on unmount
@@ -97,6 +104,7 @@ export default function Authentication() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      router.push("/login");
     } catch (error) {
       toast.error(error.message);
     }
