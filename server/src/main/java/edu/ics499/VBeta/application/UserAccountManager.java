@@ -1,9 +1,8 @@
 package edu.ics499.VBeta.application;
 
-import edu.ics499.VBeta.api.dto.AccountRequest;
 import edu.ics499.VBeta.api.dto.AccountResponse;
 import edu.ics499.VBeta.domain.model.GymRole;
-import edu.ics499.VBeta.domain.model.Role;
+import edu.ics499.VBeta.domain.model.RoleType;
 import edu.ics499.VBeta.domain.model.UserAccount;
 import edu.ics499.VBeta.repository.GymRoleRepository;
 import edu.ics499.VBeta.repository.UserAccountRepository;
@@ -31,10 +30,10 @@ public class UserAccountManager {
     }
 
     private UserAccount createUserAccount(String username, String email, String firebaseUid) {
-        Optional<GymRole> climber = gymRoleRepository.findByRoleType(Role.CLIMBER.name());
+        Optional<GymRole> climber = gymRoleRepository.findByRoleType(RoleType.CLIMBER);
         if (climber.isEmpty()) {
             throw new IllegalStateException(
-                "Gym_Role missing data for " + Role.CLIMBER.name() + "; please contact the developer."
+                "Gym_Role missing data for " + RoleType.CLIMBER.name() + "; please contact the developer."
             );
         }
 
@@ -57,7 +56,7 @@ public class UserAccountManager {
     }
 
     private AccountResponse responseInfo(UserAccount u) {
-        String roleName = u.getGymRole() != null ? u.getGymRole().getRoleType() : null;
+        String roleName = u.getGymRole() != null ? u.getGymRole().getRoleType().name() : null;
         return new AccountResponse(u.getId(), u.getUsername(), u.getEmail(), u.getFirebaseUid(), roleName);
     }
 }

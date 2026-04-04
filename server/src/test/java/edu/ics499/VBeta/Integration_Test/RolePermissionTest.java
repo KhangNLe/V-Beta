@@ -1,0 +1,117 @@
+package edu.ics499.VBeta.Integration_Test;
+
+import edu.ics499.VBeta.api.dto.AccountRequest;
+import edu.ics499.VBeta.api.dto.AccountResponse;
+import edu.ics499.VBeta.application.RoleBasedAuthenticationManager;
+import edu.ics499.VBeta.application.UserAccountManager;
+import edu.ics499.VBeta.domain.model.ActionDefinition;
+import edu.ics499.VBeta.domain.model.GymRole;
+import edu.ics499.VBeta.domain.model.RoleType;
+import edu.ics499.VBeta.repository.GymRoleRepository;
+import edu.ics499.VBeta.repository.RolePermissionRepository;
+import edu.ics499.VBeta.repository.UserAccountRepository;
+import org.assertj.core.error.ActualIsNotEmpty;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+
+import javax.swing.*;
+import java.util.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/${MYSQL_DB:V_Beta}",
+        "spring.datasource.username=${MYSQL_USERNAME:${SQL_USERNAME:khang}}",
+        "spring.datasource.password=${MYSQL_PASSWORD:${SQL_PASSWORD:}}",
+        "spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver",
+        "spring.jpa.hibernate.ddl-auto=validate",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect"
+})
+public class RolePermissionTest {
+    @Autowired
+    private RolePermissionRepository rolePermissionRepository;
+
+    @Autowired
+    private RoleBasedAuthenticationManager roleBasedAuthenticationManager;
+
+    private final List<ActionDefinition> climberActions = List.of(
+            ActionDefinition.CREATE_BETA,
+            ActionDefinition.DELETE_BETA,
+            ActionDefinition.CREATE_COMMENT,
+            ActionDefinition.DELETE_COMMENT,
+            ActionDefinition.GRADE_PROBLEM
+    );
+
+    private final List<ActionDefinition> setterActions = List.of(
+            ActionDefinition.CREATE_PROBLEM,
+            ActionDefinition.RESET_WALL,
+            ActionDefinition.DELETE_PROBLEM
+    );
+
+    private final List<ActionDefinition> adminActions = List.of(
+            ActionDefinition.CREATE_WALL,
+            ActionDefinition.DELETE_WALL,
+            ActionDefinition.CHANGE_ROLE
+    );
+
+    @Test
+    @DisplayName("Test Climber allowable action permission")
+    void testClimberActionPermission(){
+        RoleType climber = RoleType.CLIMBER;
+
+        climberActions.forEach(a -> {
+            assertTrue(roleBasedAuthenticationManager.isPermit(climber, a));
+        });
+
+        setterActions.forEach(a -> {
+            assertFalse(roleBasedAuthenticationManager.isPermit(climber, a));
+        });
+
+        adminActions.forEach(a -> {
+            assertFalse(roleBasedAuthenticationManager.isPermit(climber, a));
+        });
+    }
+
+    @Test
+    @DisplayName("Test Setter allowable action")
+    void testSetterActionPermission(){
+        RoleType setter = RoleType.SETTER;
+
+        climberActions.forEach(a ->{
+            assertTrue(roleBasedAuthenticationManager.isPermit(setter, a));
+        });
+
+        setterActions.forEach(a ->{
+            assertTrue(roleBasedAuthenticationManager.isPermit(setter, a));
+        });
+
+        adminActions.forEach(a ->{
+            assertFalse(roleBasedAuthenticationManager.isPermit(setter, a));
+        });
+    }
+
+    @Test
+    @DisplayName("Test Admin allowable action permissions")
+    void testAdminActionPermission(){
+        RoleType admin = RoleType.ADMIN;
+
+        climberActions.forEach(a ->{
+            assertTrue(roleBasedAuthenticationManager.isPermit(admin, a));
+        });
+
+        setterActions.forEach(a ->{
+            assertFalse(roleBasedAuthenticationManager.isPermit(admin, a));
+        });
+
+        adminActions.forEach(a ->{
+            assertTrue(roleBasedAuthenticationManager.isPermit(admin, a));
+        });
+    }
+}

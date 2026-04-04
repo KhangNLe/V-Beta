@@ -1,6 +1,6 @@
 package edu.ics499.VBeta.domain.model;
 
-public enum Action {
+public enum ActionDefinition {
     CREATE_BETA,
     DELETE_BETA,
     CREATE_COMMENT,
