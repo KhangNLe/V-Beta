@@ -35,3 +35,28 @@ export async function fetchWallSectionProblemsForUser(_user, _sectionId) {
   const data = await response.json();
   return Array.isArray(data) ? data : [];
 }
+
+/**
+ * Fetch a single problem by ID within a wall section.
+ *
+ * @param {import("firebase/auth").User} user
+ * @param {number} sectionId
+ * @param {number} problemId
+ * @returns {Promise<import("@/types/climbProblem").ClimbProblem>}
+ */
+export async function fetchProblemForUser(user, sectionId, problemId) {
+  const idToken = await user.getIdToken();
+  const response = await fetch(`${API_BASE_URL}/home/wall-sections/${sectionId}/problems/${problemId}`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch problem: ${response.status}`);
+  }
+  const data = await response.json();
+  // Extract the problem object from the first field
+  const problemKeys = Object.keys(data);
+  if (problemKeys.length > 0) {
+    return data[problemKeys[0]];
+  }
+  return data; // Fallback if no nested object
+}
