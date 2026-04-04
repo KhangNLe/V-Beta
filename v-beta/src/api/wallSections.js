@@ -52,11 +52,13 @@ export async function fetchProblemForUser(user, sectionId, problemId) {
   if (!response.ok) {
     throw new Error(`Failed to fetch problem: ${response.status}`);
   }
+
   const data = await response.json();
-  // Extract the problem object from the first field
-  const problemKeys = Object.keys(data);
-  if (problemKeys.length > 0) {
-    return data[problemKeys[0]];
-  }
-  return data; // Fallback if no nested object
+  const problemObject = data.climbingProblem || Object.values(data).find((value) => value && typeof value === "object" && "problemId" in value) || {};
+
+  return {
+    ...problemObject,
+    perceiveGrade: typeof data.perceiveGrade === "string" ? data.perceiveGrade : "",
+    discussion: Array.isArray(data.discussion) ? data.discussion : [],
+  };
 }
