@@ -2,7 +2,9 @@ package edu.ics499.VBeta.application;
 
 import edu.ics499.VBeta.api.dto.*;
 import edu.ics499.VBeta.application.support.ClimbingProblemDiscussionManager;
+import edu.ics499.VBeta.application.support.ClimbingProblemManager;
 import edu.ics499.VBeta.application.support.PerceiveGradeCalculator;
+import edu.ics499.VBeta.application.support.WallSectionManager;
 import edu.ics499.VBeta.domain.model.ClimbingProblem;
 import edu.ics499.VBeta.domain.model.LifecycleStatus;
 import edu.ics499.VBeta.domain.model.WallSection;
@@ -11,31 +13,30 @@ import edu.ics499.VBeta.repository.ClimbingProblemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.*;
 import java.util.*;
 
 @Service
 @Transactional
-public class WallSectionManager {
-    private final ClimbingProblemRepository climbingProblemRepository;
-    private final WallSectionRepository wallSectionRepository;
+public class ClimbingWallService {
     private final PerceiveGradeCalculator perceiveGradeCalculator;
     private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
+    private final ClimbingProblemManager climbingProblemManager;
+    private final WallSectionManager wallSectionManager;
 
-    public WallSectionManager(
-            ClimbingProblemRepository climbingProblemRepository,
-            WallSectionRepository wallSectionRepository,
+    public ClimbingWallService(
             PerceiveGradeCalculator perceiveGradeCalculator,
-            ClimbingProblemDiscussionManager climbingProblemDiscussionManager
+            ClimbingProblemDiscussionManager climbingProblemDiscussionManager,
+            ClimbingProblemManager climbingProblemManager,
+            WallSectionManager wallSectionManager
     ){
-        this.climbingProblemRepository = climbingProblemRepository;
-        this.wallSectionRepository = wallSectionRepository;
         this.perceiveGradeCalculator = perceiveGradeCalculator;
         this.climbingProblemDiscussionManager = climbingProblemDiscussionManager;
+        this.climbingProblemManager = climbingProblemManager;
+        this.wallSectionManager = wallSectionManager;
     }
 
     public List<WallSectionResponse> getWallSections(){
-        List<WallSection> wallSections = wallSectionRepository.findAll();
+        List<WallSection> wallSections = wallSectionManager.getWallSections();
         List<WallSectionResponse> wallSectionInfo = new ArrayList<>();
 
         wallSections.forEach(section -> {
@@ -49,7 +50,7 @@ public class WallSectionManager {
     }
 
     public ClimbingProblemDetailResponse getClimbingProblem(Long problemId){
-        ClimbingProblem problem = findClimbingProblem(problemId);
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
         String perceiveGrade = perceiveGradeCalculator.findPerceiveGrade(problem);
         List<UserCommentData> comments = climbingProblemDiscussionManager.getCommentsForProblem(problem);
         return new ClimbingProblemDetailResponse(
@@ -64,41 +65,14 @@ public class WallSectionManager {
     }
 
     public List<ClimbingProblemResponse> getClimbingProblemsByWallSectionId(Long wallSectionId) {
-        WallSection wallSection = findWallSection(wallSectionId);
+        WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
         return mapProblemsForWall(wallSection);
-    }
-
-    private WallSection findWallSection(Long wallSectionId){
-        return wallSectionRepository
-                .findById(wallSectionId)
-                .orElseThrow(() -> new IllegalStateException(
-                        String.format("Wall section with id %d is not found.\n", wallSectionId)
-                ));
-    }
-
-    private ClimbingProblem findClimbingProblem(Long problemId){
-        ClimbingProblem problem = climbingProblemRepository
-                .findById(problemId)
-                .orElseThrow(() -> new IllegalStateException(
-                        String.format("Problem with id %d is not longer exist.\n", problemId)
-                ));
-
-        if (problem.getProblemStatus().equals(LifecycleStatus.ARCHIVE)){
-            throw new IllegalStateException(
-                    String.format("Problem %s on %s is no longer active.\n",
-                            problem.getProblemInfo(), problem.getWallSection().getWallSectionName())
-            );
-        }
-
-        return problem;
     }
 
     private List<ClimbingProblemResponse> mapProblemsForWall(WallSection wallSection) {
         List<ClimbingProblemResponse> problemsInfo = new ArrayList<>();
-        List<ClimbingProblem> problems = climbingProblemRepository.findByWallSection(wallSection);
-        problems.stream()
-            .filter(problem -> problem.getProblemStatus().equals(LifecycleStatus.ACTIVE))
-            .forEach(problem -> {
+        List<ClimbingProblem> problems = climbingProblemManager.getAllActiveProblemFromWallSection(wallSection);
+        problems.forEach(problem -> {
                 problemsInfo.add(new ClimbingProblemResponse(
                         problem.getId(),
                         problem.getHoldColor(),
