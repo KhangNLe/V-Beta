@@ -2,12 +2,11 @@ package edu.ics499.VBeta.controller;
 
 import edu.ics499.VBeta.api.dto.AccountRequest;
 import edu.ics499.VBeta.api.dto.AccountResponse;
-import edu.ics499.VBeta.application.UserAccountManager;
+import edu.ics499.VBeta.application.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,11 +18,11 @@ import java.util.Map;
 @RequestMapping("/api/accounts")
 public class AccountController {
 
-    private final UserAccountManager userAccountManager;
+    private final AccountService accountService;
 
 
-    public AccountController(UserAccountManager userAccountManager) {
-        this.userAccountManager = userAccountManager;
+    public AccountController(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @PostMapping("/session")
@@ -45,6 +44,6 @@ public class AccountController {
             }
         }
 
-        return userAccountManager.loginAccount(body.username(), resolvedEmail, verifiedUid);
+        return accountService.loginAccount(body.username(), resolvedEmail, verifiedUid);
     }
 }
