@@ -105,12 +105,17 @@ export default function ProblemPage() {
           >
             <div style={card.accentBar} aria-hidden />
             <h1 style={{ margin: "0 0 8px", fontSize: "1.75rem", fontWeight: 700, color: colors.text }}>
-              Problem #{problem.problemId}: {problem.holdColor} {problem.assignedGrade || "V?"}
+              Problem #{problem.problemId}
             </h1>
             <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
-              {problem.problemInfo || "No problem description available."}
+              Hold Color: {problem.holdColor || "N/A"}
             </p>
-            {/* Add more fields if available, e.g., date created, setter, etc. */}
+            <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
+              Assigned Grade: {problem.assignedGrade || "V?"}
+            </p>
+            <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
+              Perceived difficulty: {problem.perceiveGrade || "V?"}
+            </p>
           </section>
         )}
       </div>
