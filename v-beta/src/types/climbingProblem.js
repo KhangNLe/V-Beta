@@ -1,5 +1,5 @@
 /**
- * @typedef {Object} ClimbProblem
+ * @typedef {Object} ClimbingProblem
  * @property {number} problemId
  * @property {string} holdColor
  * @property {string} [info]

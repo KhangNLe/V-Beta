@@ -42,7 +42,7 @@ export async function fetchWallSectionProblemsForUser(_user, _sectionId) {
  * @param {import("firebase/auth").User} user
  * @param {number} sectionId
  * @param {number} problemId
- * @returns {Promise<import("@/types/climbProblem").ClimbProblem>}
+ * @returns {Promise<import("@/types/climbingProblem").ClimbProblem>}
  */
 export async function fetchProblemForUser(user, sectionId, problemId) {
   const idToken = await user.getIdToken();

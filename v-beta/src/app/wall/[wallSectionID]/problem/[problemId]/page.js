@@ -114,7 +114,7 @@ export default function ProblemPage() {
               Assigned Grade: {problem.assignedGrade || "V?"}
             </p>
             <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
-              Perceived difficulty: {problem.perceiveGrade || "V?"}
+              Perceived difficulty: {problem.perceiveGrade.trim() || "N/A"}
             </p>
           </section>
         )}
