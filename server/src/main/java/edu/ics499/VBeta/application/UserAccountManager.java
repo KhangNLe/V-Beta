@@ -59,4 +59,9 @@ public class UserAccountManager {
         String roleName = u.getGymRole() != null ? u.getGymRole().getRoleType().name() : null;
         return new AccountResponse(u.getId(), u.getUsername(), u.getEmail(), u.getFirebaseUid(), roleName);
     }
+
+    // Additional method to retrieve user account by Firebase UID for use in other parts of the application
+    public UserAccount getFirebaseUid(String firebaseUid) {
+        return userAccountRepository.findByFirebaseUid(firebaseUid).orElseThrow(() -> new IllegalStateException("User not found for UID: " + firebaseUid));
+    }
 }

@@ -17,8 +17,11 @@ public class SecurityConfig {
             throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // We want to be stateless since we're using Firebase token auth, so we don't need HTTP sessions at all
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/health").permitAll() // Allow unauthenticated access to the health endpoint for monitoring tools like Heroku and uptime robots to check if the server is running
+                        .anyRequest().authenticated())
+                .addFilterBefore(firebaseAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }
