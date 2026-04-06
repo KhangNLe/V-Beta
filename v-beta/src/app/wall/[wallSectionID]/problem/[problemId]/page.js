@@ -165,7 +165,7 @@ export default function ProblemPage() {
                             {comment.username || "Anonymous"}
                           </p>
                           <p style={{ margin: "0 0 8px", fontSize: "0.875rem", color: colors.subtle }}>
-                            {comment.timestamp || "Recently"}
+                            {comment.createdDate || "Recently"}
                           </p>
                         </div>
                         <button
@@ -183,7 +183,7 @@ export default function ProblemPage() {
                         </button>
                       </div>
                       <p style={{ margin: 0, color: colors.text, lineHeight: 1.5 }}>
-                        {comment.text || comment.content || ""}
+                        {comment.comment || ""}
                       </p>
                     </article>
                   ))}
