@@ -1,6 +1,7 @@
 package edu.ics499.VBeta.application.support;
 
 import edu.ics499.VBeta.api.dto.ClimbingProblemResponse;
+import edu.ics499.VBeta.api.dto.WallSectionCreationRequest;
 import edu.ics499.VBeta.domain.model.ClimbingProblem;
 import edu.ics499.VBeta.domain.model.LifecycleStatus;
 import edu.ics499.VBeta.domain.model.WallSection;
@@ -41,5 +42,22 @@ public class ClimbingProblemManager {
         return problems.stream()
                 .filter(problem -> problem.getProblemStatus().equals(LifecycleStatus.ACTIVE))
                 .toList();
+    }
+
+    public List<ClimbingProblem> getAllProblemsFromWallSection(WallSection section){
+        return climbingProblemRepository.findByWallSection(section);
+    }
+
+    public void archiveActiveProblems(List<ClimbingProblem> problems){
+        problems.forEach(p -> p.setProblemStatus(LifecycleStatus.ARCHIVE));
+        climbingProblemRepository.saveAll(problems);
+    }
+
+    public void disconnectFromWallSection(List<ClimbingProblem> problems){
+        problems.forEach(p -> {
+            p.setWallSection(null);
+            p.setProblemStatus(LifecycleStatus.ARCHIVE);
+        });
+        climbingProblemRepository.saveAll(problems);
     }
 }
