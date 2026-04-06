@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.ics499.VBeta.api.dto.AccountRequest;
-import edu.ics499.VBeta.application.UserAccountManager;
+import edu.ics499.VBeta.application.AccountService;
 import edu.ics499.VBeta.controller.AccountController;
 import jakarta.servlet.ServletException;
 import org.springframework.context.annotation.Import;
@@ -35,7 +35,7 @@ class AccountControllerTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private UserAccountManager userAccountManager;
+    private AccountService accountService;
 
     @AfterEach
     void clearSecurity() {
@@ -67,7 +67,7 @@ class AccountControllerTest {
 
         AccountRequest req = new AccountRequest("testuser", "testUser@gmail.com");
 
-        when(userAccountManager.loginAccount(anyString(), anyString(), anyString()))
+        when(accountService.loginAccount(anyString(), anyString(), anyString()))
                 .thenThrow(new IllegalStateException("Test exception here"));
 
         Exception ex = assertThrows(

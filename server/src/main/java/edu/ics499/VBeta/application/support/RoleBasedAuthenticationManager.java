@@ -1,4 +1,4 @@
-package edu.ics499.VBeta.application;
+package edu.ics499.VBeta.application.support;
 
 import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.repository.RolePermissionRepository;

@@ -1,16 +1,9 @@
 package edu.ics499.VBeta.Integration_Test;
 
-import edu.ics499.VBeta.api.dto.AccountRequest;
-import edu.ics499.VBeta.api.dto.AccountResponse;
-import edu.ics499.VBeta.application.RoleBasedAuthenticationManager;
-import edu.ics499.VBeta.application.UserAccountManager;
+import edu.ics499.VBeta.application.support.RoleBasedAuthenticationManager;
 import edu.ics499.VBeta.domain.model.ActionDefinition;
-import edu.ics499.VBeta.domain.model.GymRole;
 import edu.ics499.VBeta.domain.model.RoleType;
-import edu.ics499.VBeta.repository.GymRoleRepository;
 import edu.ics499.VBeta.repository.RolePermissionRepository;
-import edu.ics499.VBeta.repository.UserAccountRepository;
-import org.assertj.core.error.ActualIsNotEmpty;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-import javax.swing.*;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
