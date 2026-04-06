@@ -30,6 +30,7 @@ public class ProblemDiscussionService {
     public void addComment(String firebaseUid, DiscussionCommentRequest request){
         UserAccount account = getUserAccount(firebaseUid);
         ClimbingProblem problem = getClimbingProblem(request.problemId());
+        climbingProblemDiscussionManager.storeDiscussionComment(account, problem, request.commentInfo());
     }
 
     private UserAccount getUserAccount(String firebaseUid){

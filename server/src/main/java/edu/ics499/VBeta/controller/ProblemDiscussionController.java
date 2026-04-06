@@ -19,17 +19,13 @@ public class ProblemDiscussionController {
     }
 
     @PostMapping("/add-comments")
+    @ResponseStatus(HttpStatus.CREATED)
     public void addUserComment(@Valid @RequestBody DiscussionCommentRequest request){
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()){
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                     "Missing or invalid authentication");
         }
-        try {
-            problemDiscussionService.addComment(String.valueOf(auth.getPrincipal()), request);
-
-        } catch (IllegalStateException e){
-            throw new ResponseStatusException(HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS, e.getMessage());
-        }
+        problemDiscussionService.addComment(String.valueOf(auth.getPrincipal()), request);
     }
 }
