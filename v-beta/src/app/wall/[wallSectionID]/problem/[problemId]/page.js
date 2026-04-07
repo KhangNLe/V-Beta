@@ -35,7 +35,7 @@ export default function ProblemPage() {
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [dropdownIndex, setDropdownIndex] = useState(null);
-  const [perceivedGrade, setPerceivedGrade] = useState("");
+  const [perceivedGrade, setPerceivedGrade] = useState("VB");
   const [entryMode, setEntryMode] = useState("comment"); // "comment" | "file"
   const [solutionFile, setSolutionFile] = useState(null);
 
@@ -166,7 +166,7 @@ export default function ProblemPage() {
             >
               <div style={card.accentBar} aria-hidden />
               <h1 style={{ margin: "0 0 8px", fontSize: "1.75rem", fontWeight: 700, color: colors.text }}>
-                Problem #{problem.problemId}
+                {problem.holdColor}
               </h1>
               <div
                 style={{
@@ -184,8 +184,8 @@ export default function ProblemPage() {
                   Perceived Difficulty: {problem.perceiveGrade.trim() || "N/A"}
                 </p>
               </div>
-              <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
-                Hold Color: {problem.holdColor || "N/A"}
+              <p style={{ margin: 0, color: colors.text, lineHeight: 1.55, maxWidth: "65ch" }}>
+                Info: {problem.info || "No problem notes available."}
               </p>
             </section>
 
@@ -347,7 +347,7 @@ export default function ProblemPage() {
                           : {}),
                       }}
                     >
-                      Submit File
+                      Submit Beta
                     </button>
                   </div>
 
@@ -438,7 +438,7 @@ export default function ProblemPage() {
                     Suggest Difficulty
                   </p>
                   <p style={{ margin: "0 0 10px", fontSize: "1.625rem", fontWeight: 700, color: colors.text }}>
-                    {problem.aggregatePerceivedGrade ?? "N/A"}
+                    {perceivedGrade || "N/A"}
                   </p>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginBottom: "10px" }}>
                     <select
