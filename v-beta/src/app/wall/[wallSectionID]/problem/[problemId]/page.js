@@ -17,6 +17,20 @@ export default function ProblemPage() {
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [dropdownIndex, setDropdownIndex] = useState(null);
+  const [perceivedGrade, setPerceivedGrade] = useState("");
+
+  const handleDeleteComment = async (commentIndex) => {
+    // TODO: Implement backend API call to delete comment
+    setDropdownIndex(null);
+  };
+
+  const handleSuggestPerceivedGrade = async () => {
+    if (!perceivedGrade) return;
+    // TODO: Implement backend API call to suggest perceived grade
+    console.log("Suggesting perceived grade:", perceivedGrade);
+    setPerceivedGrade("");
+  };
 
   const rawWallSectionID = params?.wallSectionID;
   const rawProblemId = params?.problemId;
@@ -71,7 +85,6 @@ export default function ProblemPage() {
     setSubmittingComment(true);
     try {
       // TODO: Implement backend API call to post comment
-      // For now, this is a placeholder
       setCommentText("");
     } catch (err) {
       console.error("Failed to post comment:", err);
@@ -136,7 +149,7 @@ export default function ProblemPage() {
                 Assigned Grade: {problem.assignedGrade || "V?"}
               </p>
               <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
-                Perceived difficulty: {problem.perceiveGrade.trim() || "N/A"}
+                Perceived Difficulty: {problem.perceiveGrade.trim() || "N/A"}
               </p>
             </section>
 
@@ -159,7 +172,7 @@ export default function ProblemPage() {
                         borderRadius: "8px",
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative" }}>
                         <div style={{ flex: 1 }}>
                           <p style={{ margin: "0 0 4px", fontWeight: 600, color: colors.text }}>
                             {comment.username || "Anonymous"}
@@ -170,6 +183,7 @@ export default function ProblemPage() {
                         </div>
                         <button
                           type="button"
+                          onClick={() => setDropdownIndex(dropdownIndex === index ? null : index)}
                           style={{
                             background: "none",
                             border: "none",
@@ -181,6 +195,37 @@ export default function ProblemPage() {
                         >
                           ⋮
                         </button>
+                        {dropdownIndex === index && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "100%",
+                              right: 0,
+                              background: colors.surface,
+                              border: `1px solid ${colors.muted}`,
+                              borderRadius: "4px",
+                              zIndex: 10,
+                              minWidth: "120px",
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteComment(index)}
+                              style={{
+                                width: "100%",
+                                padding: "8px 12px",
+                                background: "none",
+                                border: "none",
+                                color: colors.danger,
+                                cursor: "pointer",
+                                textAlign: "left",
+                                fontSize: "0.875rem",
+                              }}
+                            >
+                              Delete Comment
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <p style={{ margin: 0, color: colors.text, lineHeight: 1.5 }}>
                         {comment.comment || ""}
@@ -195,54 +240,103 @@ export default function ProblemPage() {
               )}
 
               {/* Add Comment Form */}
-              <div
-                style={{
-                  ...card.surface,
-                  padding: "20px",
-                  borderRadius: "8px",
-                  marginBottom: "16px",
-                }}
-              >
-                <p style={{ margin: "0 0 12px", fontWeight: 600, color: colors.text }}>
-                  Add a Comment or Solution Beta
-                </p>
-                <textarea
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Write a comment here!"
+              <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+                <div
                   style={{
-                    width: "100%",
-                    minHeight: "100px",
-                    padding: "12px",
-                    border: `1px solid ${colors.muted}`,
-                    borderRadius: "6px",
-                    fontFamily,
-                    fontSize: "0.875rem",
-                    resize: "vertical",
-                    marginBottom: "12px",
+                    ...card.surface,
+                    padding: "20px",
+                    borderRadius: "8px",
+                    marginBottom: "16px",
+                    flex: 1,
                   }}
-                />
-                <div style={{ display: "flex", gap: "12px" }}>
+                >
+                  <p style={{ margin: "0 0 12px", fontWeight: 600, color: colors.text }}>
+                    Add a Comment or Solution Beta
+                  </p>
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Write a comment here!"
+                    style={{
+                      width: "100%",
+                      minHeight: "100px",
+                      padding: "12px",
+                      border: `1px solid ${colors.muted}`,
+                      borderRadius: "6px",
+                      fontFamily,
+                      fontSize: "0.875rem",
+                      resize: "vertical",
+                      marginBottom: "12px",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <button
+                      type="button"
+                      onClick={handlePostComment}
+                      disabled={submittingComment || !commentText.trim()}
+                      style={{
+                        ...buttons.primary,
+                        opacity: submittingComment || !commentText.trim() ? 0.6 : 1,
+                        cursor: submittingComment || !commentText.trim() ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {submittingComment ? "Posting..." : "Post Comment"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUploadSolutionBeta}
+                      style={{
+                        ...buttons.secondary,
+                      }}
+                    >
+                      Upload Solution Beta
+                    </button>
+                  </div>
+                </div>
+                {/* Aggregate Perceived Grade Card */}
+                <div
+                  style={{
+                    ...card.surface,
+                    padding: "16px",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    minWidth: "160px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <p style={{ margin: "0 0 12px", fontWeight: 600, color: colors.text }}>
+                    Aggregate Perceived Difficulty
+                  </p>
+                  <p style={{ margin: "0 0 10px", fontSize: "1.625rem", fontWeight: 700, color: colors.text }}>
+                    {problem.aggregatePerceivedGrade ?? "N/A"}
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginBottom: "10px" }}>
+                    <select
+                      value={perceivedGrade}
+                      onChange={(e) => setPerceivedGrade(e.target.value)}
+                      style={{
+                        fontSize: "0.75rem",
+                        padding: "4px 6px",
+                        border: `1px solid ${colors.muted}`,
+                        borderRadius: "6px",
+                        fontFamily,
+                        background: "white",
+                        color: colors.text,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {["VB","V0","V1","V2","V3","V4","V5","V6","V7","V8",
+                        "V9","V10","V11","V12","V13","V14","V15","V16","V17"].map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
                   <button
                     type="button"
-                    onClick={handlePostComment}
-                    disabled={submittingComment || !commentText.trim()}
-                    style={{
-                      ...buttons.primary,
-                      opacity: submittingComment || !commentText.trim() ? 0.6 : 1,
-                      cursor: submittingComment || !commentText.trim() ? "not-allowed" : "pointer",
-                    }}
+                    onClick={handleSuggestPerceivedGrade}
+                    style={{ ...buttons.primary, width: "100%", fontSize: "0.75rem" }}
                   >
-                    {submittingComment ? "Posting..." : "Post Comment"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleUploadSolutionBeta}
-                    style={{
-                      ...buttons.secondary,
-                    }}
-                  >
-                    Upload Solution Beta
+                    Suggest Grade
                   </button>
                 </div>
               </div>
