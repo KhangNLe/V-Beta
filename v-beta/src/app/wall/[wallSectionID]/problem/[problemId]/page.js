@@ -7,6 +7,23 @@ import { buttons, card, colors, layout, fontFamily } from "@/ui/appTheme";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+/** @param {string | null | undefined} raw */
+function formatCommentDate(raw) {
+  if (!raw) return "Recently";
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return String(raw);
+  return parsed.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+/** @param {string | null | undefined} url */
+function inferVideoMimeType(url) {
+  const value = (url || "").toLowerCase();
+  return value.endsWith(".webm") ? "video/webm" : "video/mp4";
+}
+
 export default function ProblemPage() {
   const router = useRouter();
   const params = useParams();
@@ -19,6 +36,8 @@ export default function ProblemPage() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [dropdownIndex, setDropdownIndex] = useState(null);
   const [perceivedGrade, setPerceivedGrade] = useState("");
+  const [entryMode, setEntryMode] = useState("comment"); // "comment" | "file"
+  const [solutionFile, setSolutionFile] = useState(null);
 
   const handleDeleteComment = async (commentIndex) => {
     // TODO: Implement backend API call to delete comment
@@ -81,7 +100,8 @@ export default function ProblemPage() {
   };
 
   const handlePostComment = async () => {
-    if (!commentText.trim()) return;
+    const charCount = commentText.length;
+    if (!commentText.trim() || charCount > 250) return;
     setSubmittingComment(true);
     try {
       // TODO: Implement backend API call to post comment
@@ -95,11 +115,17 @@ export default function ProblemPage() {
 
   const handleUploadSolutionBeta = () => {
     // TODO: Implement backend API call to upload solution beta
+    if (!solutionFile) return;
+    console.log("Selected beta file:", solutionFile.name, solutionFile.type);
   };
 
   if (!ready) return <PageLoader message="Loading…" />;
   if (!user) return <PageLoader message="Redirecting…" />;
   if (loading) return <PageLoader message="Loading problem…" />;
+
+  const commentCharCount = commentText.length;
+  const commentOverLimit = commentCharCount > 250;
+  const canPostComment = !!commentText.trim() && !commentOverLimit && !submittingComment;
 
   return (
     <main style={layout.main}>
@@ -142,14 +168,24 @@ export default function ProblemPage() {
               <h1 style={{ margin: "0 0 8px", fontSize: "1.75rem", fontWeight: 700, color: colors.text }}>
                 Problem #{problem.problemId}
               </h1>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55 }}>
+                  Assigned Grade: {problem.assignedGrade || "V?"}
+                </p>
+                <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55 }}>
+                  Perceived Difficulty: {problem.perceiveGrade.trim() || "N/A"}
+                </p>
+              </div>
               <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
                 Hold Color: {problem.holdColor || "N/A"}
-              </p>
-              <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
-                Assigned Grade: {problem.assignedGrade || "V?"}
-              </p>
-              <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
-                Perceived Difficulty: {problem.perceiveGrade.trim() || "N/A"}
               </p>
             </section>
 
@@ -161,26 +197,30 @@ export default function ProblemPage() {
 
               {/* Comments List */}
               {problem.discussion && problem.discussion.length > 0 ? (
-                <div style={{ marginBottom: "24px" }}>
+                <div
+                  style={{
+                    ...card.surface,
+                    marginBottom: "24px",
+                    overflow: "hidden",
+                  }}
+                >
                   {problem.discussion.map((comment, index) => (
                     <article
                       key={index}
                       style={{
-                        ...card.surface,
                         padding: "16px",
-                        marginBottom: "12px",
-                        borderRadius: "8px",
+                        borderTop: index > 0 ? `1px solid ${colors.border}` : "none",
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", gap: "12px" }}>
                         <div style={{ flex: 1 }}>
                           <p style={{ margin: "0 0 4px", fontWeight: 600, color: colors.text }}>
                             {comment.username || "Anonymous"}
                           </p>
-                          <p style={{ margin: "0 0 8px", fontSize: "0.875rem", color: colors.subtle }}>
-                            {comment.createdDate || "Recently"}
-                          </p>
                         </div>
+                        <p style={{ margin: "0 0 8px", fontSize: "0.8rem", color: colors.subtle, whiteSpace: "nowrap" }}>
+                          {formatCommentDate(comment.createdDate)}
+                        </p>
                         <button
                           type="button"
                           onClick={() => setDropdownIndex(dropdownIndex === index ? null : index)}
@@ -227,9 +267,40 @@ export default function ProblemPage() {
                           </div>
                         )}
                       </div>
-                      <p style={{ margin: 0, color: colors.text, lineHeight: 1.5 }}>
-                        {comment.comment || ""}
-                      </p>
+                      {comment.comment == null && comment.videoURL ? (
+                        <details>
+                          <summary
+                            style={{
+                              color: colors.primary,
+                              fontSize: "0.9rem",
+                              textDecoration: "underline",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Play video
+                          </summary>
+                          <div style={{ marginTop: "10px" }}>
+                            <video
+                              controls
+                              preload="metadata"
+                              style={{
+                                width: "100%",
+                                maxWidth: "360px",
+                                borderRadius: "8px",
+                                border: `1px solid ${colors.border}`,
+                                background: "#000",
+                              }}
+                            >
+                              <source src={comment.videoURL} type={inferVideoMimeType(comment.videoURL)} />
+                              Your browser does not support the video tag.
+                            </video>
+                          </div>
+                        </details>
+                      ) : (
+                        <p style={{ margin: 0, color: colors.text, lineHeight: 1.5 }}>
+                          {comment.comment || ""}
+                        </p>
+                      )}
                     </article>
                   ))}
                 </div>
@@ -253,44 +324,103 @@ export default function ProblemPage() {
                   <p style={{ margin: "0 0 12px", fontWeight: 600, color: colors.text }}>
                     Add a Comment or Solution Beta
                   </p>
-                  <textarea
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Write a comment here!"
-                    style={{
-                      width: "100%",
-                      minHeight: "100px",
-                      padding: "12px",
-                      border: `1px solid ${colors.muted}`,
-                      borderRadius: "6px",
-                      fontFamily,
-                      fontSize: "0.875rem",
-                      resize: "vertical",
-                      marginBottom: "12px",
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: "12px" }}>
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
                     <button
                       type="button"
-                      onClick={handlePostComment}
-                      disabled={submittingComment || !commentText.trim()}
-                      style={{
-                        ...buttons.primary,
-                        opacity: submittingComment || !commentText.trim() ? 0.6 : 1,
-                        cursor: submittingComment || !commentText.trim() ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      {submittingComment ? "Posting..." : "Post Comment"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleUploadSolutionBeta}
+                      onClick={() => setEntryMode("comment")}
                       style={{
                         ...buttons.secondary,
+                        ...(entryMode === "comment"
+                          ? { border: `1px solid ${colors.primary}`, color: colors.primary, background: "#eff6ff" }
+                          : {}),
                       }}
                     >
-                      Upload Solution Beta
+                      Add Comment
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setEntryMode("file")}
+                      style={{
+                        ...buttons.secondary,
+                        ...(entryMode === "file"
+                          ? { border: `1px solid ${colors.primary}`, color: colors.primary, background: "#eff6ff" }
+                          : {}),
+                      }}
+                    >
+                      Submit File
+                    </button>
+                  </div>
+
+                  {entryMode === "comment" ? (
+                    <>
+                      <textarea
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Write a comment here!"
+                        style={{
+                          width: "100%",
+                          minHeight: "100px",
+                          padding: "12px",
+                          border: `1px solid ${commentOverLimit ? colors.danger : colors.muted}`,
+                          borderRadius: "6px",
+                          fontFamily,
+                          fontSize: "0.875rem",
+                          resize: "vertical",
+                          marginBottom: "8px",
+                        }}
+                      />
+                      <p
+                        style={{
+                          margin: "0 0 12px",
+                          fontSize: "0.8rem",
+                          color: commentOverLimit ? colors.danger : colors.subtle,
+                          textAlign: "right",
+                        }}
+                      >
+                        {commentCharCount}/250
+                      </p>
+                    </>
+                  ) : (
+                    <div style={{ marginBottom: "12px" }}>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm"
+                        onChange={(e) => setSolutionFile(e.target.files?.[0] || null)}
+                        style={{ fontFamily, fontSize: "0.875rem" }}
+                      />
+                      <p style={{ margin: "8px 0 0", fontSize: "0.8rem", color: colors.subtle }}>
+                        Allowed file types: .mp4, .webm
+                      </p>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    {entryMode === "comment" ? (
+                      <button
+                        type="button"
+                        onClick={handlePostComment}
+                        disabled={!canPostComment}
+                        style={{
+                          ...buttons.primary,
+                          opacity: !canPostComment ? 0.6 : 1,
+                          cursor: !canPostComment ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {submittingComment ? "Posting..." : "Post Comment"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleUploadSolutionBeta}
+                        disabled={!solutionFile}
+                        style={{
+                          ...buttons.primary,
+                          opacity: !solutionFile ? 0.6 : 1,
+                          cursor: !solutionFile ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        Upload Solution Beta
+                      </button>
+                    )}
                   </div>
                 </div>
                 {/* Aggregate Perceived Grade Card */}
@@ -305,7 +435,7 @@ export default function ProblemPage() {
                   }}
                 >
                   <p style={{ margin: "0 0 12px", fontWeight: 600, color: colors.text }}>
-                    Aggregate Perceived Difficulty
+                    Suggest Difficulty
                   </p>
                   <p style={{ margin: "0 0 10px", fontSize: "1.625rem", fontWeight: 700, color: colors.text }}>
                     {problem.aggregatePerceivedGrade ?? "N/A"}
