@@ -2,9 +2,9 @@ package edu.ics499.VBeta.Integration_Test;
 
 import edu.ics499.VBeta.api.dto.AccountRequest;
 import edu.ics499.VBeta.api.dto.AccountResponse;
-import edu.ics499.VBeta.application.UserAccountManager;
+import edu.ics499.VBeta.application.AccountService;
 import edu.ics499.VBeta.domain.model.GymRole;
-import edu.ics499.VBeta.domain.model.Role;
+import edu.ics499.VBeta.domain.model.RoleType;
 import edu.ics499.VBeta.repository.GymRoleRepository;
 import edu.ics499.VBeta.repository.UserAccountRepository;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ public class AccountControllerTest {
     private UserAccountRepository accountRepository;
 
     @Autowired
-    private UserAccountManager userAccountManager;
+    private AccountService accountService;
 
     @Autowired
     private GymRoleRepository gymRoleRepository;
@@ -41,9 +41,9 @@ public class AccountControllerTest {
     @Test
     void testAccountConnection() throws Exception {
         // Ensure prerequisite role exists for account creation path.
-        if (gymRoleRepository.findByRoleType(Role.CLIMBER.name()).isEmpty()) {
+        if (gymRoleRepository.findByRoleType(RoleType.CLIMBER).isEmpty()) {
             GymRole gymRole = new GymRole();
-            gymRole.setRoleType(Role.CLIMBER.name());
+            gymRole.setRoleType(RoleType.CLIMBER);
             gymRoleRepository.save(gymRole);
         }
 
@@ -53,7 +53,7 @@ public class AccountControllerTest {
         );
         String testFirebaseUid = "testFirebaseUid";
 
-        AccountResponse resp = userAccountManager.loginAccount(req.username(), req.email(), testFirebaseUid);
+        AccountResponse resp = accountService.loginAccount(req.username(), req.email(), testFirebaseUid);
         assertTrue(accountRepository.findByFirebaseUid(testFirebaseUid).isPresent());
         assertNotNull(resp);
         assertNotNull(resp.id());

@@ -8,22 +8,21 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "User_Beta")
-@Setter
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserBeta {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_beta_id")
-    private Long userBetaId;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "user_id")
-    private UserAccount userAccount;
+    private UserAccount user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "problem_id", referencedColumnName = "problem_id")
     private ClimbingProblem problem;
-
 }

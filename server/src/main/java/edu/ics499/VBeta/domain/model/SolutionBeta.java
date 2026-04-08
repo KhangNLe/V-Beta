@@ -18,7 +18,7 @@ public class SolutionBeta {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "beta_id")
-    private Long betaId;
+    private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_beta_id", referencedColumnName = "user_beta_id")
@@ -28,7 +28,7 @@ public class SolutionBeta {
     private String betaName;
 
     @Column(name = "video_url", length = 150)
-    private String videoUrl;
+    private String videoURL;
 
     @Column(name = "create_date")
     private LocalDateTime createDate;
