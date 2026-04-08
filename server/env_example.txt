@@ -7,3 +7,6 @@ MYSQL_DB=V_Beta
 MYSQL_TEST_DB=I create a mirror db to run test on in case of data corruption or accident on the production db
 MYSQL_USERNAME=
 MYSQL_PASSWORD=
+GCP_PROJECT_ID= get this from google cloud console project
+GOOGLE_SERVICE_CREDENTIALS_PATH= get this from IAM/Service Account/ create new service account, then download json key.
+STORAGE_PUBLIC_BUCKET_NAME= check in google cloud storage bucket name.
