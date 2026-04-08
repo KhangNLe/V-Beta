@@ -51,7 +51,11 @@ public class AuthorizationService {
     }
 
     public void authorize(String firebaseUid, ActionDefinition action) {
-        UserAccount user = userAccountManager.getUserAccount(firebaseUid);
+        UserAccount user = userAccountManager.findUserAccount(firebaseUid);
+
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated user account does not exist");
+        }
 
         if (user.getGymRole() == null || user.getGymRole().getRoleType() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have a valid role assigned");

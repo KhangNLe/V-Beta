@@ -29,13 +29,6 @@ public class UserAccountManager {
         return result.orElse(null);
     }
 
-    public UserAccount getUserAccount(String firebaseUid){
-        return userAccountRepository.findByFirebaseUid(firebaseUid)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        String.format("User account with Firebase UID %s does not exist.", firebaseUid)));
-    }
-
     public UserAccount findUserAccountById(Long userId){
         Optional<UserAccount> result = userAccountRepository.findById(userId);
         return result.orElse(null);
