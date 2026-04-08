@@ -1,74 +1,78 @@
 package edu.ics499.VBeta.application.support;
 
-import edu.ics499.VBeta.api.dto.DiscussionCommentRequest;
 import edu.ics499.VBeta.api.dto.UserCommentData;
-import edu.ics499.VBeta.domain.model.ClimbingProblem;
-import edu.ics499.VBeta.domain.model.UserAccount;
-import edu.ics499.VBeta.domain.model.UserComment;
-import edu.ics499.VBeta.domain.model.DiscussionComment;
+import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.repository.DiscussionCommentRepository;
 import edu.ics499.VBeta.repository.UserCommentRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class ClimbingProblemDiscussionManager {
-    private final DiscussionCommentRepository discussionCommentRepository;
-    private final UserCommentRepository userCommentRepository;
+    private final DiscussionCommentManager discussionCommentManager;
+    private final SolutionBetaManager solutionBetaManager;
 
 
     public ClimbingProblemDiscussionManager(
-            DiscussionCommentRepository discussionCommentRepository,
-            UserCommentRepository userCommentRepository){
-        this.discussionCommentRepository = discussionCommentRepository;
-        this.userCommentRepository = userCommentRepository;
+            DiscussionCommentManager discussionCommentManager,
+            SolutionBetaManager solutionBetaManager){
+        this.discussionCommentManager = discussionCommentManager;
+        this.solutionBetaManager = solutionBetaManager;
     }
 
     public List<UserCommentData> getCommentsForProblem(ClimbingProblem problem){
         List<UserCommentData> comments = new ArrayList<>();
-        List<UserComment> commentsSrc = userCommentRepository.findByClimbingProblem(problem);
+        List<UserComment> commentsSrc = discussionCommentManager.getUserCommentFromClimbingProblem(problem);
+        List<UserBeta> userBetas = solutionBetaManager.getUserBetasForClimbingProblem(problem);
 
-        if (commentsSrc.isEmpty()){
+        if (commentsSrc.isEmpty() && userBetas.isEmpty()){
             return comments;
         }
 
-        commentsSrc.forEach(src -> {
-            Optional<DiscussionComment> commentInfo = discussionCommentRepository.findByUserComment(src);
-            commentInfo.ifPresent(comment -> comments.add(new UserCommentData(
-                    src.getUserAccount().getId(),
-                    src.getUserAccount().getUsername(),
-                    comment.getCommentInfo(),
-                    null,
-                    comment.getCreateDate()
-            )));
-        });
+        getDiscussionComment(comments, commentsSrc);
+        getSolutionBeta(comments, userBetas);
 
-        return comments;
+        return comments.stream().sorted(
+                Comparator.comparing(UserCommentData::createdDate)
+        ).toList();
+    }
+
+    private void getDiscussionComment(List<UserCommentData> comments, List<UserComment> commentsSrc){
+        commentsSrc.forEach(src -> {
+            DiscussionComment comment = discussionCommentManager.getDiscussionCommentByUserComment(src);
+            if (comment != null){
+                comments.add(new UserCommentData(
+                        src.getUserAccount().getId(),
+                        src.getUserAccount().getUsername(),
+                        comment.getCommentInfo(),
+                        null,
+                        comment.getCreateDate()
+                ));
+            }
+        });
+    }
+
+    private void getSolutionBeta(List<UserCommentData> comments, List<UserBeta> userBetas){
+        userBetas.forEach(src -> {
+            SolutionBeta beta = solutionBetaManager.getSolutionBetaFromUserBeta(src);
+            if (beta != null){
+                comments.add(new UserCommentData(
+                        src.getUser().getId(),
+                        src.getUser().getUsername(),
+                        null,
+                        beta.getVideoURL(),
+                        beta.getCreateDate()
+                ));
+            }
+        });
     }
 
     public void storeDiscussionComment(UserAccount user, ClimbingProblem problem, String commentInfo){
-        UserComment userComment = createNewUserComment(user, problem);
-        createNewDiscussionComment(userComment, commentInfo);
-    }
-
-    private UserComment createNewUserComment(UserAccount user, ClimbingProblem problem){
-        UserComment userComment = new UserComment();
-        userComment.setUserAccount(user);
-        userComment.setClimbingProblem(problem);
-        return userCommentRepository.save(userComment);
-    }
-
-    private void createNewDiscussionComment(UserComment userComment, String commentInfo){
-        DiscussionComment comment = new DiscussionComment();
-        comment.setUserComment(userComment);
-        comment.setCommentInfo(commentInfo);
-        comment.setCreateDate(LocalDateTime.now());
-        discussionCommentRepository.save(comment);
+        discussionCommentManager.storeDiscussionComment(user, problem,commentInfo);
     }
 }
