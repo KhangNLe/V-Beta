@@ -1,6 +1,5 @@
 package edu.ics499.VBeta.domain.model;
 
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,8 +10,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "Solution_Beta")
-@Getter
 @Setter
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class SolutionBeta {
@@ -21,7 +20,7 @@ public class SolutionBeta {
     @Column(name = "beta_id")
     private Long id;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_beta_id", referencedColumnName = "user_beta_id")
     private UserBeta userBeta;
 
