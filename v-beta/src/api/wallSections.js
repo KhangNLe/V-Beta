@@ -35,3 +35,30 @@ export async function fetchWallSectionProblemsForUser(_user, _sectionId) {
   const data = await response.json();
   return Array.isArray(data) ? data : [];
 }
+
+/**
+ * Fetch a single problem by ID within a wall section.
+ *
+ * @param {import("firebase/auth").User} user
+ * @param {number} sectionId
+ * @param {number} problemId
+ * @returns {Promise<import("@/types/climbingProblem").ClimbProblem>}
+ */
+export async function fetchProblemForUser(user, sectionId, problemId) {
+  const idToken = await user.getIdToken();
+  const response = await fetch(`${API_BASE_URL}/home/wall-sections/${sectionId}/problems/${problemId}`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch problem: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const problemObject = data.climbingProblem || Object.values(data).find((value) => value && typeof value === "object" && "problemId" in value) || {};
+
+  return {
+    ...problemObject,
+    perceiveGrade: typeof data.perceiveGrade === "string" ? data.perceiveGrade : "",
+    discussion: Array.isArray(data.discussion) ? data.discussion : [],
+  };
+}
