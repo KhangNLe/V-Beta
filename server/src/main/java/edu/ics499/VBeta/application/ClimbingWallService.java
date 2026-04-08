@@ -66,8 +66,6 @@ public class ClimbingWallService {
     }
 
     public WallSectionResponse createNewWallSection(WallSectionCreationRequest request){
-        // Will need Jay Authentication stuffs over here to determine if an account can perform the action.
-        // As of now, assuming that the auth check is valid
         WallSection newWall = wallSectionManager.createNewWallSection(request);
         return new WallSectionResponse(
                 newWall.getId(),
@@ -84,6 +82,7 @@ public class ClimbingWallService {
         }
 
         List<ClimbingProblem> problems = climbingProblemManager.getAllProblemsFromWallSection(wallSection);
+        // dereference all climbing problem with a wall and archive their status
         climbingProblemManager.disconnectFromWallSection(problems);
         wallSectionManager.removeWallSection(wallSectionId);
     }

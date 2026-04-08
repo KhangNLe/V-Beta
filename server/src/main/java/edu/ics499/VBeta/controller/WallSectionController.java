@@ -4,7 +4,9 @@ import edu.ics499.VBeta.api.dto.ClimbingProblemResponse;
 import edu.ics499.VBeta.api.dto.WallSectionCreationRequest;
 import edu.ics499.VBeta.api.dto.WallSectionResponse;
 import edu.ics499.VBeta.api.dto.ClimbingProblemDetailResponse;
+import edu.ics499.VBeta.application.AuthorizationService;
 import edu.ics499.VBeta.application.ClimbingWallService;
+import edu.ics499.VBeta.domain.model.ActionDefinition;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -19,9 +21,12 @@ import java.util.List;
 @RequestMapping("/home")
 public class WallSectionController {
     private final ClimbingWallService climbingWallService;
+    private final AuthorizationService authorizationService;
 
-    public WallSectionController(ClimbingWallService climbingWallService){
+    public WallSectionController(ClimbingWallService climbingWallService,
+                                 AuthorizationService authorizationService){
         this.climbingWallService = climbingWallService;
+        this.authorizationService = authorizationService;
     }
 
     @GetMapping("/wall-sections")
@@ -45,29 +50,17 @@ public class WallSectionController {
     @GetMapping("/wall-section/creation")
     @ResponseStatus(HttpStatus.CREATED)
     public WallSectionResponse createWallSection(@Valid @RequestBody WallSectionCreationRequest body){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+        authorizationService.authorize(firebaseUid, ActionDefinition.CREATE_WALL);
 
-        if (auth == null || !auth.isAuthenticated()){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Missing or invalid authentication");
-        }
-
-        String firebaseUid = String.valueOf(auth.getPrincipal());
-        // We can use Jay implememtation of the Authentication Service here to check and make sure the action is permitted
-        // by the user account with the firebaseUid and ActionDefinition.CREATE_WALL
          return climbingWallService.createNewWallSection(body);
     }
 
     @GetMapping("wall-section/{wallSectionId}/delete")
     @ResponseStatus(HttpStatus.OK)
     public void deleteWallSection(@PathVariable Long wallSectionId){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        if (auth == null || !auth.isAuthenticated()){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Missing or invalid authentication");
-        }
-        // Same authentication server for this method
+        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+        authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_WALL);
 
         climbingWallService.deleteWallSection(wallSectionId);
     }
@@ -75,7 +68,8 @@ public class WallSectionController {
     @GetMapping("/wall-section/{wallSectionId}/reset")
     @ResponseStatus(HttpStatus.OK)
     public void resetWallSection(@PathVariable Long wallSectionId){
-        //Same authentication and user action permission here
+        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+        authorizationService.authorize(firebaseUid, ActionDefinition.RESET_WALL);
 
         climbingWallService.resetWallSection(wallSectionId);
     }

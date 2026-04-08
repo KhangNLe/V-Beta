@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/${MYSQL_DB:V_Beta}",
+        "spring.datasource.url=jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/${MYSQL_TEST_DB:V_Beta_Test}",
         "spring.datasource.username=${MYSQL_USERNAME:${SQL_USERNAME:khang}}",
         "spring.datasource.password=${MYSQL_PASSWORD:${SQL_PASSWORD:}}",
         "spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver",
