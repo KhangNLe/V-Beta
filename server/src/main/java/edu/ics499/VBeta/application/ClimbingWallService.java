@@ -3,10 +3,10 @@ package edu.ics499.VBeta.application;
 import edu.ics499.VBeta.api.dto.*;
 import edu.ics499.VBeta.application.support.*;
 import edu.ics499.VBeta.domain.model.ClimbingProblem;
-import edu.ics499.VBeta.domain.model.LifecycleStatus;
 import edu.ics499.VBeta.domain.model.WallSection;
 import edu.ics499.VBeta.repository.WallSectionRepository;
 import edu.ics499.VBeta.repository.ClimbingProblemRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,6 +71,39 @@ public class ClimbingWallService {
         WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
         return mapProblemsForWall(wallSection);
     }
+
+    public WallSectionResponse createNewWallSection(WallSectionCreationRequest request){
+        WallSection newWall = wallSectionManager.createNewWallSection(request);
+        return new WallSectionResponse(
+                newWall.getId(),
+                newWall.getWallSectionName(),
+                newWall.getWallInfo()
+        );
+    }
+
+    public void deleteWallSection(Long wallSectionId){
+        WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
+        if (wallSection == null){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Incorrect wall section ID or the wall section does not exist.");
+        }
+
+        List<ClimbingProblem> problems = climbingProblemManager.getAllProblemsFromWallSection(wallSection);
+        // dereference all climbing problem with a wall and archive their status
+        climbingProblemManager.disconnectFromWallSection(problems);
+        wallSectionManager.removeWallSection(wallSectionId);
+    }
+
+    public void resetWallSection(Long wallSectionId){
+        WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
+        if (wallSection == null){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Incorrect wall section ID or the wall section does not exist.");
+        }
+        List<ClimbingProblem> problems = climbingProblemManager.getAllActiveProblemFromWallSection(wallSection);
+        climbingProblemManager.archiveActiveProblems(problems);
+    }
+
 
     private List<ClimbingProblemResponse> mapProblemsForWall(WallSection wallSection) {
         List<ClimbingProblemResponse> problemsInfo = new ArrayList<>();

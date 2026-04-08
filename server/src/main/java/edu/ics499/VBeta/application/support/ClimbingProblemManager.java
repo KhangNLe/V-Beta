@@ -4,6 +4,10 @@ import edu.ics499.VBeta.api.dto.ClimbingProblemCreationRequest;
 import edu.ics499.VBeta.api.dto.ClimbingProblemResponse;
 import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.repository.ClimbingGradeRepository;
+import edu.ics499.VBeta.api.dto.WallSectionCreationRequest;
+import edu.ics499.VBeta.domain.model.ClimbingProblem;
+import edu.ics499.VBeta.domain.model.LifecycleStatus;
+import edu.ics499.VBeta.domain.model.WallSection;
 import edu.ics499.VBeta.repository.ClimbingProblemRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -70,5 +74,22 @@ public class ClimbingProblemManager {
                         )
                 )
         );
+    }
+
+    public List<ClimbingProblem> getAllProblemsFromWallSection(WallSection section){
+        return climbingProblemRepository.findByWallSection(section);
+    }
+
+    public void archiveActiveProblems(List<ClimbingProblem> problems){
+        problems.forEach(p -> p.setProblemStatus(LifecycleStatus.ARCHIVE));
+        climbingProblemRepository.saveAll(problems);
+    }
+
+    public void disconnectFromWallSection(List<ClimbingProblem> problems){
+        problems.forEach(p -> {
+            p.setWallSection(null);
+            p.setProblemStatus(LifecycleStatus.ARCHIVE);
+        });
+        climbingProblemRepository.saveAll(problems);
     }
 }

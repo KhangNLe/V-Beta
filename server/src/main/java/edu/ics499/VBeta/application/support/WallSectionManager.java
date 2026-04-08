@@ -1,5 +1,6 @@
 package edu.ics499.VBeta.application.support;
 
+import edu.ics499.VBeta.api.dto.WallSectionCreationRequest;
 import edu.ics499.VBeta.domain.model.WallSection;
 import edu.ics499.VBeta.repository.WallSectionRepository;
 import org.springframework.http.HttpStatus;
@@ -30,5 +31,16 @@ public class WallSectionManager {
 
     public List<WallSection> getWallSections(){
         return wallSectionRepository.findAll();
+    }
+
+    public WallSection createNewWallSection(WallSectionCreationRequest request){
+        WallSection section = new WallSection();
+        section.setWallInfo(request.wallSectionInfo());
+        section.setWallSectionName(request.wallSectionName());
+        return wallSectionRepository.save(section);
+    }
+
+    public void removeWallSection(Long wallSectionId){
+        wallSectionRepository.deleteById(wallSectionId);
     }
 }
