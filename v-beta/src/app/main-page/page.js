@@ -1,16 +1,37 @@
 "use client";
 
 import { fetchWallSectionsForUser } from "@/api/wallSections";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { colors } from "@/ui/appTheme";
+import { MoreVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 export default function MainPage() {
   const router = useRouter();
   const { user, ready } = useRequireAuth({ redirectMode: "push" });
   const [sections, setSections] = useState([]);
   const [fetchError, setFetchError] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -36,12 +57,40 @@ export default function MainPage() {
     };
   }, [user]);
 
-  if (!ready) return <PageLoader message="Loading…" />;
-  if (!user) return <PageLoader message="Redirecting…" />;
-
   const handleSelectSection = (section) => {
     router.push(`/wall/${section.wallSectionID}`);
   };
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    const snapshot = { ...deleteTarget };
+    const id = snapshot.wallSectionID;
+
+    setSections((prev) => prev.filter((s) => s.wallSectionID !== id));
+    setDeleteTarget(null);
+
+    toast(({ closeToast }) => (
+      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm">
+        <span>Wall section deleted.</span>
+        <button
+          type="button"
+          className="font-semibold underline-offset-2 hover:underline"
+          style={{ color: colors.primary }}
+          onClick={() => {
+            setSections((prev) => [...prev, snapshot]);
+            closeToast?.();
+          }}
+        >
+          Undo
+        </button>
+      </span>
+    ));
+  }, [deleteTarget]);
+
+  if (!ready) return <PageLoader message="Loading…" />;
+  if (!user) return <PageLoader message="Redirecting…" />;
+
+  const deleteName = deleteTarget?.wallSectionName || "this wall section";
 
   return (
     <main className="min-h-screen bg-zinc-100 px-6 py-7 pb-12 font-sans text-zinc-900">
@@ -70,7 +119,21 @@ export default function MainPage() {
           </div>
         </section>
 
-        <h2 className="mb-4 text-lg font-semibold text-zinc-600">Wall sections</h2>
+        <div
+          className="mb-4 flex flex-wrap items-center justify-between gap-3"
+          style={{
+            "--section-btn-primary": colors.primary,
+            "--section-btn-primary-hover": colors.primaryDark,
+          }}
+        >
+          <h2 className="m-0 text-lg font-bold text-zinc-900">Wall Sections</h2>
+          <Button
+            type="button"
+            className="shrink-0 border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
+          >
+            Add Wall Section
+          </Button>
+        </div>
 
         {fetchError && (
           <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-red-700">
@@ -86,31 +149,83 @@ export default function MainPage() {
               <article
                 key={section.wallSectionID}
                 className="flex flex-col gap-2.5 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
+                style={{
+                  "--section-btn-primary": colors.primary,
+                  "--section-btn-primary-hover": colors.primaryDark,
+                }}
               >
-                {/* Header with Name */}
-                <div className="flex items-start justify-between">
-                  <h3 className="m-0 flex-1 text-lg font-semibold leading-[1.3] text-zinc-900">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="m-0 min-w-0 flex-1 text-lg font-semibold leading-[1.3] text-zinc-900">
                     {section.wallSectionName}
                   </h3>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          className="shrink-0 text-zinc-600"
+                          aria-label="Section actions"
+                        />
+                      }
+                    >
+                      <MoreVertical className="size-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>Edit</DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => setDeleteTarget(section)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
-                {/* Description under the name */}
                 <p className="m-0 flex-grow text-sm leading-normal text-zinc-600">
                   {section.wallSectionInfo || "No description available for this section."}
                 </p>
 
-                <button
+                <Button
                   type="button"
+                  className="mt-1.5 self-start border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
                   onClick={() => handleSelectSection(section)}
-                  className="mt-1.5 cursor-pointer self-start rounded-lg border-0 bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
                   View section
-                </button>
+                </Button>
               </article>
             ))}
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={deleteTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent className="data-[size=default]:sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete wall section?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {deleteName}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
