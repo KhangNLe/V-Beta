@@ -1,6 +1,7 @@
 "use client";
 
 import { fetchProblemForUser } from "@/api/wallSections";
+import { postCommentForUser } from "@/api/comments";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { buttons, card, colors, layout, fontFamily } from "@/ui/appTheme";
@@ -104,10 +105,13 @@ export default function ProblemPage() {
     if (!commentText.trim() || charCount > 250) return;
     setSubmittingComment(true);
     try {
-      // TODO: Implement backend API call to post comment
+      await postCommentForUser(user, problemId, commentText.trim());
       setCommentText("");
+      const refreshedProblem = await fetchProblemForUser(user, wallSectionID, problemId);
+      setProblem(refreshedProblem);
     } catch (err) {
       console.error("Failed to post comment:", err);
+      setFetchError(err instanceof Error ? err.message : "Failed to post comment");
     } finally {
       setSubmittingComment(false);
     }
