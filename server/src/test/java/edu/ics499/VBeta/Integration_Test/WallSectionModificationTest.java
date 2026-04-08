@@ -1,0 +1,215 @@
+package edu.ics499.VBeta.Integration_Test;
+
+import edu.ics499.VBeta.api.dto.WallSectionCreationRequest;
+import edu.ics499.VBeta.application.AuthorizationService;
+import edu.ics499.VBeta.application.ClimbingWallService;
+import edu.ics499.VBeta.application.support.ClimbingProblemManager;
+import edu.ics499.VBeta.application.support.WallSectionManager;
+import edu.ics499.VBeta.domain.model.*;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest
+@Transactional
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/${MYSQL_TEST_DB:V_Beta_Test}",
+        "spring.datasource.username=${MYSQL_USERNAME:${SQL_USERNAME:khang}}",
+        "spring.datasource.password=${MYSQL_PASSWORD:${SQL_PASSWORD:}}",
+        "spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver",
+        "spring.jpa.hibernate.ddl-auto=validate",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect"
+})
+public class WallSectionModificationTest {
+    @Autowired
+    private ClimbingWallService climbingWallService;
+
+    @Autowired
+    private AuthorizationService authorizationService;
+
+    @Autowired
+    private WallSectionManager wallSectionManager;
+
+    @Autowired
+    private ClimbingProblemManager climbingProblemManager;
+
+    void clearWallSection(){
+        List<WallSection> walls = wallSectionManager.getWallSections();
+        walls.forEach(w -> climbingWallService.deleteWallSection(w.getId()));
+    }
+
+    void testForClearWallSection(){
+        List<WallSection> walls = wallSectionManager.getWallSections();
+        assertTrue(walls.isEmpty(), "Wall Section supposed to be clear before each test");
+    }
+
+    @Test
+    @Order(1)
+    @DisplayName("Test for Wall Section Reset Success")
+    void testWallSectionResetSuccessCase(){
+
+        String setterFirebaseUid = "testFirebaseUid2";
+        authorizationService.authorize(setterFirebaseUid, ActionDefinition.RESET_WALL);
+
+        List<WallSection> walls = wallSectionManager.getWallSections();
+
+        assertFalse(walls.isEmpty());
+
+        WallSection wall = walls.get(0);
+        List<ClimbingProblem> activeProblems = climbingProblemManager.getAllActiveProblemFromWallSection(wall);
+        assertFalse(activeProblems.isEmpty());
+
+        climbingWallService.resetWallSection(wall.getId());
+
+        activeProblems = climbingProblemManager.getAllActiveProblemFromWallSection(wall);
+        assertTrue(activeProblems.isEmpty());
+
+        activeProblems = climbingProblemManager.getAllProblemsFromWallSection(wall);
+        assertFalse(activeProblems.isEmpty());
+    }
+
+    @Test
+    @Order(2)
+    @DisplayName("Test Wall Reset Failures")
+    void testWallResetFailureCase(){
+        String climberFirebaseUid = "testFirebaseUid";
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+                authorizationService.authorize(climberFirebaseUid, ActionDefinition.RESET_WALL)
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+
+        String adminFirebaseUid = "testFirebaseUid3";
+
+        ex = assertThrows(ResponseStatusException.class, () ->
+                authorizationService.authorize(adminFirebaseUid, ActionDefinition.RESET_WALL)
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+
+        ex = assertThrows(ResponseStatusException.class, () ->
+                climbingWallService.resetWallSection(123435L)
+        );
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("Test for Wall Creation with correct permission")
+    void testForWallCreationSuccess(){
+        clearWallSection();
+        testForClearWallSection();
+        //test admin firebaseUid
+        String firebaseUid = "testFirebaseUid3";
+
+        authorizationService.authorize(firebaseUid, ActionDefinition.CREATE_WALL);
+        WallSectionCreationRequest req = new WallSectionCreationRequest(
+            "Test Wall Section Info",
+                "Wall Section Test Name"
+        );
+
+        wallSectionManager.createNewWallSection(req);
+
+        List<WallSection> walls = wallSectionManager.getWallSections();
+        assertEquals(1, walls.size(), "There should only be 1 wall section exist.");
+
+        WallSection wall = walls.get(0);
+        assertEquals(wall.getWallInfo(), req.wallSectionInfo(), "Mismatching info");
+        assertEquals(wall.getWallSectionName(), req.wallSectionName(), "Mismatching name");
+    }
+
+
+    @Test
+    @Order(4)
+    @DisplayName("Test for Wall Creation Failure due to permission")
+    void testFailureWallCreationFromPermission(){
+        clearWallSection();
+        testForClearWallSection();
+
+        //test climber firebaseUid
+        String climberFirebaseUid = "testFirebaseUid";
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+                authorizationService.authorize(climberFirebaseUid, ActionDefinition.CREATE_WALL)
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+
+        String setterFirebaseUid = "testFirebaseUid2";
+
+        ex = assertThrows(ResponseStatusException.class, () ->
+                authorizationService.authorize(setterFirebaseUid, ActionDefinition.CREATE_WALL)
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("Test for Wall Deletion Success")
+    void testWallDeletionSuccessCase(){
+        clearWallSection();
+        testForClearWallSection();
+        String adminFirebaseUid = "testFirebaseUid3";
+
+        authorizationService.authorize(adminFirebaseUid, ActionDefinition.DELETE_WALL);
+
+        WallSectionCreationRequest req = new WallSectionCreationRequest(
+                "Test Wall Section Info",
+                "Wall Section Test Name"
+        );
+
+        wallSectionManager.createNewWallSection(req);
+
+        List<WallSection> walls = wallSectionManager.getWallSections();
+        assertEquals(1, walls.size());
+
+        WallSection wall = walls.get(0);
+        climbingWallService.deleteWallSection(wall.getId());
+
+        testForClearWallSection();
+    }
+
+    @Test
+    @Order(6)
+    @DisplayName("Test for Wall Deletion Error")
+    void testForWallDeletionErrorCase(){
+        clearWallSection();
+        testForClearWallSection();
+
+        String climberFirebaseUid = "testFirebaseUid";
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+                authorizationService.authorize(climberFirebaseUid, ActionDefinition.DELETE_WALL)
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+
+        String setterFirebaseUid = "testFirebaseUid2";
+
+        ex = assertThrows(ResponseStatusException.class, () ->
+                authorizationService.authorize(setterFirebaseUid, ActionDefinition.DELETE_WALL)
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+
+        ex = assertThrows(ResponseStatusException.class, () ->
+                climbingWallService.resetWallSection(12345L)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+}
