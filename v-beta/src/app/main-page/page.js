@@ -72,6 +72,7 @@ export default function MainPage() {
     router.push(`/wall/${section.wallSectionID}`);
   };
 
+  // TODO: replace client-side ID generation with real ID from API response
   const handleAddSection = (e) => {
     e.preventDefault();
     const name = newSectionName.trim();
@@ -98,6 +99,7 @@ export default function MainPage() {
     toast.success("Wall section added.");
   };
 
+  // TODO: send delete request to API to remove section from database
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
     const id = deleteTarget.wallSectionID;
@@ -110,9 +112,6 @@ export default function MainPage() {
   if (!ready) return <PageLoader message="Loading…" />;
   if (!user) return <PageLoader message="Redirecting…" />;
   
-  // Used for the delete confirmation dialog
-  const deleteName = deleteTarget?.wallSectionName || "this wall section";
-
   return (
     <main className="min-h-screen bg-zinc-100 px-6 py-7 pb-12 font-sans text-zinc-900">
       <div className="mx-auto max-w-[960px]">
@@ -148,6 +147,8 @@ export default function MainPage() {
           }}
         >
           <h2 className="m-0 text-lg font-bold text-zinc-900">Wall Sections</h2>
+
+          {/* TODO: hide if not admin */}
           <Button
             type="button"
             className="shrink-0 border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
@@ -163,6 +164,7 @@ export default function MainPage() {
           </div>
         )}
 
+        {/* Wall sections grid or empty state */}
         {sections.length === 0 ? (
           <p className="m-0 text-zinc-500">No wall sections found.</p>
         ) : (
@@ -176,6 +178,7 @@ export default function MainPage() {
                   "--section-btn-primary-hover": colors.primaryDark,
                 }}
               >
+                {/* Wall section card */}
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="m-0 min-w-0 flex-1 text-lg font-semibold leading-[1.3] text-zinc-900">
                     {section.wallSectionName}
@@ -222,6 +225,7 @@ export default function MainPage() {
         )}
       </div>
 
+      {/* Add wall section dialog */}
       <Dialog
         open={addOpen}
         onOpenChange={(open) => {
@@ -292,6 +296,7 @@ export default function MainPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete wall section confirmation */}
       <AlertDialog
         open={deleteTarget != null}
         onOpenChange={(open) => {
@@ -300,7 +305,7 @@ export default function MainPage() {
       >
         <AlertDialogContent className="data-[size=default]:sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle> Delete "{deleteName}"?</AlertDialogTitle>
+            <AlertDialogTitle> Delete "{deleteTarget?.wallSectionName}"?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone.
             </AlertDialogDescription>
