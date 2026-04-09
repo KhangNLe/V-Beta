@@ -2,8 +2,6 @@ package edu.ics499.VBeta.application.support;
 
 import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.repository.*;
-import org.apache.catalina.User;
-import org.aspectj.apache.bcel.classfile.Module;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,20 +36,18 @@ public class ClimbingProblemDeletionManager {
     }
 
     public void deleteClimbingProblem(ClimbingProblem problem){
-        validateClimbingProblem(problem);
+        if(validateClimbingProblem(problem)){
+            return ;
+        }
+
         deleteUserRelatedBeta(problem);
         deleteUserRelatedComment(problem);
         deleteProblemPerceiveGrades(problem);
         climbingProblemRepository.delete(problem);
     }
 
-    private void validateClimbingProblem(ClimbingProblem problem){
-        if (problem == null){
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Incorrect problem ID or problem not longer exist."
-            );
-        }
+    private boolean validateClimbingProblem(ClimbingProblem problem){
+        return problem == null;
     }
 
     private void deleteUserRelatedBeta(ClimbingProblem problem){

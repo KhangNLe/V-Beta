@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 public record ClimbingProblemCreationRequest(
         @NotBlank @Size(max = 25)
         String holdColor,
-        @Size(max = 250)
+        @NotBlank @Size(max = 250)
         String info,
         @NotBlank
         GradeDefinition assignedGrade

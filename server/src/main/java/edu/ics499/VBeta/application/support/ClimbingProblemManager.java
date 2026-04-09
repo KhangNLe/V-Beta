@@ -77,12 +77,4 @@ public class ClimbingProblemManager {
         problems.forEach(p -> p.setProblemStatus(LifecycleStatus.ARCHIVE));
         climbingProblemRepository.saveAll(problems);
     }
-
-    public void disconnectFromWallSection(List<ClimbingProblem> problems){
-        problems.forEach(p -> {
-            p.setWallSection(null);
-            p.setProblemStatus(LifecycleStatus.ARCHIVE);
-        });
-        climbingProblemRepository.saveAll(problems);
-    }
 }

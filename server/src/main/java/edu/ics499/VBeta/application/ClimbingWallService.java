@@ -89,8 +89,7 @@ public class ClimbingWallService {
         }
 
         List<ClimbingProblem> problems = climbingProblemManager.getAllProblemsFromWallSection(wallSection);
-        // dereference all climbing problem with a wall and archive their status
-        climbingProblemManager.disconnectFromWallSection(problems);
+        problems.forEach(climbingProblemDeletionManager::deleteClimbingProblem);
         wallSectionManager.removeWallSection(wallSectionId);
     }
 
@@ -135,11 +134,6 @@ public class ClimbingWallService {
     public void deleteClimbingProblem(Long problemId){
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
         climbingProblemDeletionManager.deleteClimbingProblem(problem);
-    }
-
-    public void addClimbingProblemPerceiveGrade(String firebaseUid, Long problemId, PerceiveGradeRequest request){
-        ClimbingProblem problem = getActiveProblem(problemId);
-        userPerceiveGradeManager.addPerceiveGrade(problem, firebaseUid, request.perceiveGrade());
     }
 
     private ClimbingProblem getActiveProblem(Long problemId){

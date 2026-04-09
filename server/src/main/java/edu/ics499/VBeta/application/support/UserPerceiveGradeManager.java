@@ -1,6 +1,5 @@
 package edu.ics499.VBeta.application.support;
 
-import edu.ics499.VBeta.api.dto.PerceiveGradeRequest;
 import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.repository.ClimbingGradeRepository;
 import edu.ics499.VBeta.repository.UserPerceiveGradeRepository;
@@ -33,11 +32,21 @@ public class UserPerceiveGradeManager {
         UserAccount userAccount = getUserAccount(firebaseUid);
         ClimbingGrade grade = getClimbingGrade(gradeDefinition);
 
-        UserPerceiveGrade perceiveGrade = new UserPerceiveGrade();
-        perceiveGrade.setClimbingGrade(grade);
-        perceiveGrade.setClimbingProblem(problem);
-        perceiveGrade.setUserAccount(userAccount);
+        Optional<UserPerceiveGrade> existing =
+                userPerceiveGradeRepository.findByUserAccountAndClimbingProblem(userAccount, problem);
+        if (existing.isPresent()) {
+            UserPerceiveGrade perceiveGrade = existing.get();
+            perceiveGrade.setClimbingGrade(grade);
+            userPerceiveGradeRepository.save(perceiveGrade);
+            return;
+        }
 
+        UserPerceiveGrade perceiveGrade = new UserPerceiveGrade();
+        UserPerceiveGradeId id = new UserPerceiveGradeId(userAccount.getId(), problem.getId());
+        perceiveGrade.setId(id);
+        perceiveGrade.setUserAccount(userAccount);
+        perceiveGrade.setClimbingProblem(problem);
+        perceiveGrade.setClimbingGrade(grade);
         userPerceiveGradeRepository.save(perceiveGrade);
     }
 
