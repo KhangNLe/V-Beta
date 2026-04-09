@@ -13,6 +13,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -32,6 +40,9 @@ export default function MainPage() {
   const [sections, setSections] = useState([]);
   const [fetchError, setFetchError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [newSectionName, setNewSectionName] = useState("");
+  const [newSectionInfo, setNewSectionInfo] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -61,35 +72,45 @@ export default function MainPage() {
     router.push(`/wall/${section.wallSectionID}`);
   };
 
+  const handleAddSection = (e) => {
+    e.preventDefault();
+    const name = newSectionName.trim();
+    const info = newSectionInfo.trim();
+
+    // Temporary fake ID
+    const nextId =
+      sections.length === 0
+        ? 1
+        : Math.max(...sections.map((s) => s.wallSectionID)) + 1;
+
+    setSections((prev) => [
+      ...prev,
+      {
+        wallSectionID: nextId,
+        wallSectionName: name,
+        wallSectionInfo: info,
+      },
+    ]);
+
+    setNewSectionName("");
+    setNewSectionInfo("");
+    setAddOpen(false);
+    toast.success("Wall section added.");
+  };
+
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
-    const snapshot = { ...deleteTarget };
-    const id = snapshot.wallSectionID;
+    const id = deleteTarget.wallSectionID;
 
     setSections((prev) => prev.filter((s) => s.wallSectionID !== id));
     setDeleteTarget(null);
-
-    toast(({ closeToast }) => (
-      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm">
-        <span>Wall section deleted.</span>
-        <button
-          type="button"
-          className="font-semibold underline-offset-2 hover:underline"
-          style={{ color: colors.primary }}
-          onClick={() => {
-            setSections((prev) => [...prev, snapshot]);
-            closeToast?.();
-          }}
-        >
-          Undo
-        </button>
-      </span>
-    ));
+    toast.success("Wall section deleted.");
   }, [deleteTarget]);
 
   if (!ready) return <PageLoader message="Loading…" />;
   if (!user) return <PageLoader message="Redirecting…" />;
-
+  
+  // Used for the delete confirmation dialog
   const deleteName = deleteTarget?.wallSectionName || "this wall section";
 
   return (
@@ -130,6 +151,7 @@ export default function MainPage() {
           <Button
             type="button"
             className="shrink-0 border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
+            onClick={() => setAddOpen(true)}
           >
             Add Wall Section
           </Button>
@@ -173,7 +195,6 @@ export default function MainPage() {
                       <MoreVertical className="size-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
                       <DropdownMenuItem
                         variant="destructive"
                         onClick={() => setDeleteTarget(section)}
@@ -201,6 +222,76 @@ export default function MainPage() {
         )}
       </div>
 
+      <Dialog
+        open={addOpen}
+        onOpenChange={(open) => {
+          setAddOpen(open);
+          if (!open) {
+            setNewSectionName("");
+            setNewSectionInfo("");
+          }
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          style={{
+            "--section-btn-primary": colors.primary,
+            "--section-btn-primary-hover": colors.primaryDark,
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Add Wall Section</DialogTitle>
+            <DialogDescription>
+              Enter a name and description for this section.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddSection} className="grid gap-3">
+            <div className="grid gap-1.5">
+              <label htmlFor="add-ws-name" className="text-sm font-medium text-zinc-700">
+                Name
+              </label>
+              <input
+                id="add-ws-name"
+                name="name"
+                type="text"
+                autoComplete="off"
+                required
+                value={newSectionName}
+                onChange={(ev) => setNewSectionName(ev.target.value)}
+                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                placeholder="e.g. Bouldering Wall A"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <label htmlFor="add-ws-info" className="text-sm font-medium text-zinc-700">
+                Description
+              </label>
+              <textarea
+                id="add-ws-info"
+                name="info"
+                rows={3}
+                required
+                value={newSectionInfo}
+                onChange={(ev) => setNewSectionInfo(ev.target.value)}
+                className="resize-y rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                placeholder="Short summary for climbers"
+              />
+            </div>
+            <DialogFooter className="mt-1 gap-2 sm:justify-end">
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
+              >
+                Add section
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog
         open={deleteTarget != null}
         onOpenChange={(open) => {
@@ -209,12 +300,12 @@ export default function MainPage() {
       >
         <AlertDialogContent className="data-[size=default]:sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete wall section?</AlertDialogTitle>
+            <AlertDialogTitle> Delete "{deleteName}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {deleteName}?
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="pt-4">
             <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
             <AlertDialogAction
               type="button"
