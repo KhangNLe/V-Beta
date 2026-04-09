@@ -15,7 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
         classes = VBetaApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class TeamSatisfactionApplicationTests {
+class VBetaApplicationTests {
 
     @LocalServerPort
     private int port;
