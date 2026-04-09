@@ -1,6 +1,7 @@
 package edu.ics499.VBeta;
 
 import edu.ics499.VBeta.application.AccountService;
+import edu.ics499.VBeta.application.AuthorizationService;
 import edu.ics499.VBeta.application.ProblemDiscussionService;
 import edu.ics499.VBeta.controller.ProblemDiscussionController;
 import org.mockito.Mockito;
@@ -18,5 +19,10 @@ public class TestConfig {
     @Bean
     ProblemDiscussionService problemDiscussionService() {
         return Mockito.mock(ProblemDiscussionService.class);
+    }
+
+    @Bean
+    AuthorizationService authorizationService(){
+        return Mockito.mock(AuthorizationService.class);
     }
 }

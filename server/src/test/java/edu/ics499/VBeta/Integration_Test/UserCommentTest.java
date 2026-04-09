@@ -1,6 +1,5 @@
 package edu.ics499.VBeta.Integration_Test;
 
-import com.google.cloud.Service;
 import edu.ics499.VBeta.api.dto.UserCommentData;
 import edu.ics499.VBeta.application.ProblemDiscussionService;
 import edu.ics499.VBeta.api.dto.DiscussionCommentRequest;
@@ -52,8 +51,6 @@ public class UserCommentTest {
 
     @Autowired
     private ClimbingProblemManager climbingProblemManager;
-    @Autowired
-    private Service service;
 
     private boolean checkProblemComments(String firebaseUid, DiscussionCommentRequest request){
         UserAccount account = userAccountManager.findUserAccount(firebaseUid);

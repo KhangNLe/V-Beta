@@ -1,8 +1,11 @@
 package edu.ics499.VBeta.application;
 
+import edu.ics499.VBeta.api.dto.CloudFileStorageRequest;
+import edu.ics499.VBeta.api.dto.CloudFileStorageResponse;
 import edu.ics499.VBeta.api.dto.DiscussionCommentRequest;
 import edu.ics499.VBeta.application.support.ClimbingProblemDiscussionManager;
 import edu.ics499.VBeta.application.support.ClimbingProblemManager;
+import edu.ics499.VBeta.application.support.SolutionBetaManager;
 import edu.ics499.VBeta.domain.model.ClimbingProblem;
 import edu.ics499.VBeta.domain.model.UserAccount;
 import edu.ics499.VBeta.repository.DiscussionCommentRepository;
@@ -18,19 +21,26 @@ public class ProblemDiscussionService {
     private final UserAccountManager userAccountManager;
     private final ClimbingProblemManager climbingProblemManager;
     private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
+    private final SolutionBetaManager solutionBetaManager;
 
     public ProblemDiscussionService(UserAccountManager userAccountManager,
                                     ClimbingProblemManager climbingProblemManager,
-                                    ClimbingProblemDiscussionManager climbingProblemDiscussionManager){
+                                    ClimbingProblemDiscussionManager climbingProblemDiscussionManager,
+                                    SolutionBetaManager solutionBetaManager){
         this.userAccountManager = userAccountManager;
         this.climbingProblemManager = climbingProblemManager;
         this.climbingProblemDiscussionManager = climbingProblemDiscussionManager;
+        this.solutionBetaManager = solutionBetaManager;
     }
 
     public void addComment(String firebaseUid, DiscussionCommentRequest request){
         UserAccount account = getUserAccount(firebaseUid);
         ClimbingProblem problem = getClimbingProblem(request.problemId());
         climbingProblemDiscussionManager.storeDiscussionComment(account, problem, request.commentInfo());
+    }
+
+    public CloudFileStorageResponse getSignedUrl(CloudFileStorageRequest request){
+        return solutionBetaManager.createSignedUrl(request);
     }
 
     private UserAccount getUserAccount(String firebaseUid){
