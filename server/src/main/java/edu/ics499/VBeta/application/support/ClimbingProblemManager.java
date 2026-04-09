@@ -24,17 +24,10 @@ public class ClimbingProblemManager {
 
     public ClimbingProblem getActiveProblem(Long problemId){
         Optional<ClimbingProblem> result = climbingProblemRepository.findById(problemId);
-        if (result.isEmpty()){
-            throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED,
-                    String.format("Climbing problem with id %d is no longer exist.",
-                            problemId));
+        if (result.isEmpty() || result.get().getProblemStatus().equals(LifecycleStatus.ARCHIVE)){
+            return null;
         }
-        ClimbingProblem problem = result.get();
-        if (problem.getProblemStatus().equals(LifecycleStatus.ARCHIVE)){
-            throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED,
-                    String.format("Climbing problem %s is no longer active.", problem.getProblemInfo()));
-        }
-        return problem;
+        return result.get();
     }
 
     public List<ClimbingProblem> getAllActiveProblemFromWallSection(WallSection section){

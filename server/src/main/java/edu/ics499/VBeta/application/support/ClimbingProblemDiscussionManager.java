@@ -2,16 +2,21 @@ package edu.ics499.VBeta.application.support;
 
 import edu.ics499.VBeta.api.dto.UserCommentData;
 import edu.ics499.VBeta.domain.model.*;
+import edu.ics499.VBeta.repository.DiscussionCommentRepository;
+import edu.ics499.VBeta.repository.UserCommentRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ClimbingProblemDiscussionManager {
     private final DiscussionCommentManager discussionCommentManager;
     private final SolutionBetaManager solutionBetaManager;
+
 
     public ClimbingProblemDiscussionManager(
             DiscussionCommentManager discussionCommentManager,
@@ -65,5 +70,9 @@ public class ClimbingProblemDiscussionManager {
                 ));
             }
         });
+    }
+
+    public void storeDiscussionComment(UserAccount user, ClimbingProblem problem, String commentInfo){
+        discussionCommentManager.storeDiscussionComment(user, problem,commentInfo);
     }
 }
