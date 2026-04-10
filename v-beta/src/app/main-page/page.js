@@ -26,6 +26,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { colors } from "@/ui/appTheme";
@@ -120,24 +129,28 @@ export default function MainPage() {
         </header>
 
         {/* Gym Info Card */}
-        <section className="relative mb-7 overflow-hidden rounded-xl border border-zinc-200 bg-white py-[22px] pr-[22px] pl-5 shadow-sm">
+        <Card className="relative mb-7 gap-0 overflow-hidden border border-zinc-200 bg-white py-[22px] pr-[22px] pl-5 shadow-sm ring-0">
           <div
             className="pointer-events-none absolute top-0 bottom-0 left-0 w-1 bg-linear-to-b from-blue-600 to-blue-700"
             aria-hidden
           />
-          <p className="mb-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-            Gym info
-          </p>
-          <p className="mb-3 max-w-[65ch] text-[0.9375rem] leading-[1.55] text-zinc-600">
-            A fantastic gym with a variety of climbing walls for all skill levels. Come in and climb!
-          </p>
-          <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2">
-            <span className="text-sm font-medium text-zinc-600">
-              <span className="text-zinc-500">Location · </span>
-              123 Climbing St, Boulder City
-            </span>
-          </div>
-        </section>
+          <CardHeader className="rounded-none px-0 pt-0 pb-0">
+            <CardTitle className="mb-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              Gym info
+            </CardTitle>
+            <CardDescription className="mb-3 max-w-[65ch] text-[0.9375rem] leading-[1.55] text-zinc-600">
+              A fantastic gym with a variety of climbing walls for all skill levels. Come in and climb!
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2">
+              <span className="text-sm font-medium text-zinc-600">
+                <span className="text-zinc-500">Location · </span>
+                123 Climbing St, Boulder City
+              </span>
+            </div>
+          </CardContent>
+        </Card>
 
         <div
           className="mb-4 flex flex-wrap items-center justify-between gap-3"
@@ -164,62 +177,67 @@ export default function MainPage() {
           </div>
         )}
 
-        {/* Wall sections grid or empty state */}
+        {/* Wall sections grid or empty */}
         {sections.length === 0 ? (
           <p className="m-0 text-zinc-500">No wall sections found.</p>
         ) : (
           <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
             {sections.map((section) => (
-              <article
+              <Card
                 key={section.wallSectionID}
-                className="flex flex-col gap-2.5 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
+                className="gap-2.5 overflow-hidden border border-zinc-200 bg-white p-0 py-5 shadow-sm ring-0"
                 style={{
                   "--section-btn-primary": colors.primary,
                   "--section-btn-primary-hover": colors.primaryDark,
                 }}
               >
-                {/* Wall section card */}
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="m-0 min-w-0 flex-1 text-lg font-semibold leading-[1.3] text-zinc-900">
+                <CardHeader className="px-5 pt-0 pb-0">
+                  <CardTitle className="min-w-0 text-lg font-semibold leading-[1.3] text-zinc-900">
                     {section.wallSectionName}
-                  </h3>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          className="shrink-0 text-zinc-600"
-                          aria-label="Section actions"
-                        />
-                      }
-                    >
-                      <MoreVertical className="size-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => setDeleteTarget(section)}
+                  </CardTitle>
+                  <CardAction>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="shrink-0 text-zinc-600"
+                            aria-label="Section actions"
+                          />
+                        }
                       >
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                        <MoreVertical className="size-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteTarget(section)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </CardAction>
+                </CardHeader>
 
-                <p className="m-0 flex-grow text-sm leading-normal text-zinc-600">
-                  {section.wallSectionInfo || "No description available for this section."}
-                </p>
+                <CardContent className="flex flex-grow flex-col px-5 pb-0 pt-0">
+                  <p className="m-0 text-sm leading-normal text-zinc-600">
+                    {section.wallSectionInfo || "No description available for this section."}
+                  </p>
+                </CardContent>
 
-                <Button
-                  type="button"
-                  className="mt-1.5 self-start border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
-                  onClick={() => handleSelectSection(section)}
-                >
-                  View section
-                </Button>
-              </article>
+                <CardFooter className="mt-1.5 flex w-full flex-col rounded-none border-t border-zinc-200 px-5 py-4">
+                  <Button
+                    type="button"
+                    className="w-full border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
+                    onClick={() => handleSelectSection(section)}
+                  >
+                    View section
+                  </Button>
+                </CardFooter>
+              </Card>
             ))}
           </div>
         )}
@@ -305,7 +323,7 @@ export default function MainPage() {
       >
         <AlertDialogContent className="data-[size=default]:sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle> Delete "{deleteTarget?.wallSectionName}"?</AlertDialogTitle>
+            <AlertDialogTitle>{` Delete "${deleteTarget?.wallSectionName}"?`}</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone.
             </AlertDialogDescription>
