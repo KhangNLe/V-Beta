@@ -1,5 +1,6 @@
 "use client";
 
+import { requestSignedUploadUrl, saveSolutionBetaToDatabase, uploadSolutionBeta } from "@/api/solutionBeta";
 import { fetchProblemForUser } from "@/api/wallSections";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -38,6 +39,8 @@ export default function ProblemPage() {
   const [perceivedGrade, setPerceivedGrade] = useState("VB");
   const [entryMode, setEntryMode] = useState("comment"); // "comment" | "file"
   const [solutionFile, setSolutionFile] = useState(null);
+  const [uploadingSolution, setUploadingSolution] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState(null);
 
   const handleDeleteComment = async (commentIndex) => {
     // TODO: Implement backend API call to delete comment
@@ -113,10 +116,70 @@ export default function ProblemPage() {
     }
   };
 
-  const handleUploadSolutionBeta = () => {
-    // TODO: Implement backend API call to upload solution beta
-    if (!solutionFile) return;
-    console.log("Selected beta file:", solutionFile.name, solutionFile.type);
+  const handleUploadSolutionBeta = async () => {
+    if (!solutionFile || !user || !problemId || !wallSectionID) return;
+    setUploadingSolution(true);
+    setUploadStatus(null);
+
+    try {
+      const requestPayload = {
+        fileName: solutionFile.name,
+        contentType: solutionFile.type || "application/octet-stream",
+        problemId,
+        wallSectionId: wallSectionID,
+      };
+
+      const signedData = await requestSignedUploadUrl(user, requestPayload);
+      if (!signedData?.signedURL) {
+        throw new Error("Signed URL response is missing signedURL.");
+      }
+
+      await uploadSolutionBeta(solutionFile, signedData);
+
+      let verificationMessage = "Uploaded to bucket successfully.";
+      if (signedData.publicURL) {
+        try {
+          const verifyResponse = await fetch(signedData.publicURL, { method: "HEAD" });
+          verificationMessage = verifyResponse.ok
+            ? "Uploaded and verified from bucket."
+            : "Uploaded, but public URL verification did not return success.";
+        } catch {
+          verificationMessage = "Uploaded, but public URL verification was unavailable.";
+        }
+      }
+
+      try {
+        await saveSolutionBetaToDatabase(user, {
+          problemId,
+          betaName: solutionFile.name,
+          videoURL: signedData.publicURL || "",
+        });
+        const updatedProblem = await fetchProblemForUser(user, wallSectionID, problemId);
+        setProblem(updatedProblem);
+        verificationMessage = `${verificationMessage} Metadata saved to database.`;
+      } catch (dbError) {
+        const dbMessage = dbError instanceof Error ? dbError.message : "Unknown database save error.";
+        verificationMessage = `${verificationMessage} Upload succeeded, but DB save failed: ${dbMessage}. Please contact the developer team.`;
+      }
+
+      setUploadStatus({
+        type: verificationMessage.includes("DB save failed") ? "error" : "success",
+        message: verificationMessage,
+        publicURL: signedData.publicURL || null,
+      });
+      setSolutionFile(null);
+    } catch (err) {
+      console.error("Solution beta upload flow failed before DB save:", err);
+      setUploadStatus({
+        type: "error",
+        message: `Upload failed before completion: ${
+          err instanceof Error ? err.message : "Unexpected upload error."
+        }`,
+        publicURL: null,
+      });
+    } finally {
+      setUploadingSolution(false);
+    }
   };
 
   if (!ready) return <PageLoader message="Loading…" />;
@@ -383,14 +446,68 @@ export default function ProblemPage() {
                   ) : (
                     <div style={{ marginBottom: "12px" }}>
                       <input
+                        id="solution-beta-file-input"
                         type="file"
                         accept="video/mp4,video/webm"
-                        onChange={(e) => setSolutionFile(e.target.files?.[0] || null)}
-                        style={{ fontFamily, fontSize: "0.875rem" }}
+                        onChange={(e) => {
+                          setSolutionFile(e.target.files?.[0] || null);
+                          setUploadStatus(null);
+                        }}
+                        style={{ display: "none" }}
                       />
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                        <label
+                          htmlFor="solution-beta-file-input"
+                          style={{
+                            ...buttons.secondary,
+                            padding: "6px 10px",
+                            fontSize: "0.78rem",
+                            lineHeight: 1.1,
+                            borderRadius: "999px",
+                            borderColor: colors.border,
+                            background: colors.surfaceAlt,
+                            color: colors.text,
+                            cursor: "pointer",
+                            margin: 0,
+                          }}
+                        >
+                          Choose Video
+                        </label>
+                        <span
+                          style={{
+                            fontSize: "0.8rem",
+                            color: solutionFile ? colors.text : colors.subtle,
+                            maxWidth: "100%",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {solutionFile ? solutionFile.name : "No file selected"}
+                        </span>
+                      </div>
                       <p style={{ margin: "8px 0 0", fontSize: "0.8rem", color: colors.subtle }}>
                         Allowed file types: .mp4, .webm
                       </p>
+                      {uploadStatus && (
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            fontSize: "0.85rem",
+                            color: uploadStatus.type === "success" ? colors.primary : colors.danger,
+                          }}
+                        >
+                          {uploadStatus.message}
+                          {uploadStatus.publicURL && (
+                            <>
+                              {" "}
+                              <a href={uploadStatus.publicURL} target="_blank" rel="noreferrer">
+                                View file
+                              </a>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                   <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -411,14 +528,14 @@ export default function ProblemPage() {
                       <button
                         type="button"
                         onClick={handleUploadSolutionBeta}
-                        disabled={!solutionFile}
+                        disabled={!solutionFile || uploadingSolution}
                         style={{
                           ...buttons.primary,
-                          opacity: !solutionFile ? 0.6 : 1,
-                          cursor: !solutionFile ? "not-allowed" : "pointer",
+                          opacity: !solutionFile || uploadingSolution ? 0.6 : 1,
+                          cursor: !solutionFile || uploadingSolution ? "not-allowed" : "pointer",
                         }}
                       >
-                        Upload Solution Beta
+                        {uploadingSolution ? "Uploading..." : "Upload Solution Beta"}
                       </button>
                     )}
                   </div>
