@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface SolutionBetaRepository extends JpaRepository<SolutionBeta, Long>{
     Optional<SolutionBeta> findByUserBeta(UserBeta userBeta);
+    Optional<SolutionBeta> findByVideoURL(String publicUrl);
 }

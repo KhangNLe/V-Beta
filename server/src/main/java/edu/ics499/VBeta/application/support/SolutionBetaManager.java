@@ -1,6 +1,7 @@
 package edu.ics499.VBeta.application.support;
 
 import com.google.cloud.storage.StorageException;
+import edu.ics499.VBeta.api.dto.ClimbingProblemResponse;
 import edu.ics499.VBeta.api.dto.CloudFileStorageRequest;
 import edu.ics499.VBeta.api.dto.CloudFileStorageResponse;
 import edu.ics499.VBeta.domain.model.*;
@@ -12,6 +13,7 @@ import edu.ics499.VBeta.domain.model.ClimbingProblem;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -51,6 +53,63 @@ public class SolutionBetaManager {
         return solutionBeta.orElse(null);
     }
 
+    public SolutionBeta storeUserSolutionBeta(UserAccount user, ClimbingProblem problem,
+                                      String objectFileName, String publicUrl){
+        UserBeta userBeta = createUserBeta(user, problem);
+        return createSolutionBeta(userBeta, objectFileName, publicUrl);
+    }
+
+    public void removeUserSolutionBeta(UserAccount userAccount, ClimbingProblem problem, String publicUrl,
+                                       LocalDateTime createdDate){
+        List<UserBeta> userBetas = userBetaRepository.findByUserAndProblem(userAccount, problem);
+        SolutionBeta solutionBeta = findSolutionBeta(userBetas, publicUrl, createdDate);
+        gcpFileStorageAdapter.deleteFile(gcpFileStorageAdapter.getPublicBucketName(), solutionBeta.getBetaName());
+        UserBeta deletingBeta = solutionBeta.getUserBeta();
+        solutionBetaRepository.delete(solutionBeta);
+        userBetaRepository.delete(deletingBeta);
+    }
+
+    private UserBeta createUserBeta(UserAccount userAccount, ClimbingProblem problem){
+        UserBeta userBeta = new UserBeta();
+        userBeta.setUser(userAccount);
+        userBeta.setProblem(problem);
+        return userBetaRepository.save(userBeta);
+    }
+
+    private SolutionBeta createSolutionBeta(UserBeta userBeta, String objectFileName, String publicURL){
+        checkForExistingSolutionBeta(publicURL);
+        SolutionBeta solutionBeta = new SolutionBeta();
+        solutionBeta.setUserBeta(userBeta);
+        solutionBeta.setBetaName(objectFileName);
+        solutionBeta.setVideoURL(publicURL);
+        solutionBeta.setCreateDate(LocalDateTime.now());
+        return solutionBetaRepository.save(solutionBeta);
+    }
+
+    private void checkForExistingSolutionBeta(String publicUrl){
+        Optional<SolutionBeta> beta = solutionBetaRepository.findByVideoURL(publicUrl);
+        if (beta.isPresent()){
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Cannot submit the same solution beta video twice."
+            );
+        }
+    }
+
+    private SolutionBeta findSolutionBeta(List<UserBeta> betas, String publicUrl, LocalDateTime createdDate){
+        for (UserBeta b : betas){
+            Optional<SolutionBeta> solutionBeta = solutionBetaRepository.findByUserBeta(b);
+            if (solutionBeta.isEmpty()) continue;
+            if (solutionBeta.get().getVideoURL().equals(publicUrl) &&
+                solutionBeta.get().getCreateDate().equals(createdDate)){
+                return solutionBeta.get();
+            }
+        }
+        throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Unable to find any solution beta for climbing problem from user."
+        );
+    }
 
     public CloudFileStorageResponse createSignedUrl(CloudFileStorageRequest request){
         if(!checkForActiveClimbingProblem(request.problemId())){
