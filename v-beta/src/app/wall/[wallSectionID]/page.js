@@ -18,9 +18,18 @@ import {
   CardAction,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +50,10 @@ export default function WallSectionPage() {
   const [problems, setProblems] = useState([]);
   const [fetchError, setFetchError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [newHoldColor, setNewHoldColor] = useState("");
+  const [newAssignedGrade, setNewAssignedGrade] = useState("");
+  const [newProblemInfo, setNewProblemInfo] = useState("");
   const [loading, setLoading] = useState(true);
 
   const rawWallSectionID = params?.wallSectionID;
@@ -98,6 +111,31 @@ export default function WallSectionPage() {
     setDeleteTarget(null);
   }, [deleteTarget]);
 
+  const handleAddProblem = (e) => {
+    e.preventDefault();
+    const holdColor = newHoldColor.trim();
+    const assignedGrade = newAssignedGrade.trim();
+    const problemInfo = newProblemInfo.trim();
+    const nextId =
+      problems.length === 0
+        ? 1
+        : Math.max(...problems.map((problem) => Number(problem.problemId) || 0)) + 1;
+
+    setProblems((prev) => [
+      ...prev,
+      {
+        problemId: nextId,
+        holdColor,
+        assignedGrade,
+        problemInfo,
+      },
+    ]);
+    setNewHoldColor("");
+    setNewAssignedGrade("");
+    setNewProblemInfo("");
+    setAddOpen(false);
+  };
+
   if (!ready) return <PageLoader message="Loading…" />;
   if (!user) return <PageLoader message="Redirecting…" />;
   if (loading) return <PageLoader message="Loading wall section…" />;
@@ -123,7 +161,7 @@ export default function WallSectionPage() {
             />
             <CardHeader className="rounded-none px-0 pt-0 pb-0">
               <CardTitle className="m-0 text-[1.75rem] font-bold text-zinc-900">
-                Wall Section: {section?.wallSectionName || `Section ${wallSectionID}`}
+                {section?.wallSectionName || `Section ${wallSectionID}`}
               </CardTitle>
               <CardDescription className="mt-2 max-w-[65ch] text-[0.9375rem] leading-[1.55] text-zinc-600">
                 {section?.wallSectionInfo || "No section description available."}
@@ -132,7 +170,16 @@ export default function WallSectionPage() {
           </Card>
         </section>
 
-        <h2 className="mb-4 text-lg font-semibold text-zinc-700">Problems</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="m-0 text-lg font-bold text-zinc-900">Problems</h2>
+          <Button
+            type="button"
+            className="shrink-0 border-transparent bg-blue-600 text-white hover:bg-blue-700"
+            onClick={() => setAddOpen(true)}
+          >
+            Add Problem
+          </Button>
+        </div>
 
         {fetchError && (
           <Card className="mb-5 gap-0 border-destructive/40 bg-destructive/8 py-0 text-destructive ring-0">
@@ -146,11 +193,11 @@ export default function WallSectionPage() {
           <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
             {problems.map((problem) => (
               <article key={problem.problemId}>
-                <Card className="gap-3 border border-zinc-200 bg-white py-5 shadow-sm ring-0">
+                <Card className="gap-2.5 overflow-hidden border border-zinc-200 bg-white p-0 py-5 shadow-sm ring-0">
                   <CardHeader className="px-5 pt-0 pb-0">
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-lg font-semibold leading-[1.35] text-zinc-900">
-                        {problem.holdColor} {problem.assignedGrade || "V?"}
+                        {problem.holdColor}
                       </CardTitle>
                       <CardAction>
                         <DropdownMenu>
@@ -180,24 +227,108 @@ export default function WallSectionPage() {
                     </div>
                   </CardHeader>
 
-                  <CardContent className="flex flex-1 flex-col px-5 pt-0">
+                  <CardContent className="flex flex-grow flex-col px-5 pb-0 pt-0">
                     <p className="m-0 text-sm leading-6 text-zinc-600">
-                      {problem.problemInfo || "No problem notes available."}
+                      {problem.info || "No problem notes available."}
                     </p>
+                  </CardContent>
+
+                  <CardFooter className="mt-1.5 flex w-full flex-col rounded-none border-t border-zinc-200 px-5 py-4">
                     <Button
                       type="button"
                       onClick={() => handleViewProblem(problem.problemId)}
-                      className="mt-4 w-fit border-transparent bg-blue-600 text-white hover:bg-blue-700"
+                      className="w-full border-transparent bg-blue-600 text-white hover:bg-blue-700"
                     >
                       View problem
                     </Button>
-                  </CardContent>
+                  </CardFooter>
                 </Card>
               </article>
             ))}
           </div>
         )}
       </div>
+
+      <Dialog
+        open={addOpen}
+        onOpenChange={(open) => {
+          setAddOpen(open);
+          if (!open) {
+            setNewHoldColor("");
+            setNewAssignedGrade("");
+            setNewProblemInfo("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Problem</DialogTitle>
+            <DialogDescription>
+              Enter problem details for this wall section.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddProblem} className="grid gap-3">
+            <div className="grid gap-1.5">
+              <label htmlFor="add-problem-hold-color" className="text-sm font-medium text-zinc-700">
+                Hold Color
+              </label>
+              <input
+                id="add-problem-hold-color"
+                name="holdColor"
+                type="text"
+                autoComplete="off"
+                required
+                value={newHoldColor}
+                onChange={(ev) => setNewHoldColor(ev.target.value)}
+                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                placeholder="e.g. Blue"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <label htmlFor="add-problem-grade" className="text-sm font-medium text-zinc-700">
+                Assigned Grade
+              </label>
+              <input
+                id="add-problem-grade"
+                name="assignedGrade"
+                type="text"
+                autoComplete="off"
+                required
+                value={newAssignedGrade}
+                onChange={(ev) => setNewAssignedGrade(ev.target.value)}
+                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                placeholder="e.g. V4"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <label htmlFor="add-problem-info" className="text-sm font-medium text-zinc-700">
+                Notes
+              </label>
+              <textarea
+                id="add-problem-info"
+                name="problemInfo"
+                rows={3}
+                required
+                value={newProblemInfo}
+                onChange={(ev) => setNewProblemInfo(ev.target.value)}
+                className="resize-y rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                placeholder="Short summary for climbers"
+              />
+            </div>
+            <DialogFooter className="mt-1 gap-2 sm:justify-end">
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="border-transparent bg-blue-600 text-white hover:bg-blue-700"
+              >
+                Add problem
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         open={deleteTarget != null}
