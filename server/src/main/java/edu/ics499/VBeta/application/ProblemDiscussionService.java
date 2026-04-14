@@ -60,14 +60,24 @@ public class ProblemDiscussionService {
     }
 
     public void removeUserSolutionBeta(UserCommentData requestData, String firebaseUid, Long problemId){
-        UserAccount user = userAccountManager.findUserAccount(firebaseUid);
+        UserAccount requestUser = getUserAccount(firebaseUid);
+        UserAccount solutionBetaOwner = getUserAccount(requestData.userId());
         ClimbingProblem problem = getActiveClimbingProblem(problemId);
-        validateDeletionOwnerObject(user, requestData.userId());
-        solutionBetaManager.removeUserSolutionBeta(user, problem, requestData.videoURL(), requestData.createdDate());
+        validateDeletionOwnerObject(requestUser, requestData.userId());
+        solutionBetaManager.removeUserSolutionBeta(solutionBetaOwner, problem, requestData.videoURL(), requestData.createdDate());
     }
 
     private UserAccount getUserAccount(String firebaseUid){
         UserAccount account =  userAccountManager.findUserAccount(firebaseUid);
+        if (account == null){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "User Account with the unique firebase ID does not exist. Please log in and try again.");
+        }
+        return account;
+    }
+
+    private UserAccount getUserAccount(Long userId){
+        UserAccount account =  userAccountManager.findUserAccountById(userId);
         if (account == null){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "User Account with the unique firebase ID does not exist. Please log in and try again.");
