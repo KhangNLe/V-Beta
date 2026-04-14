@@ -7,6 +7,7 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { buttons, card, colors, layout, fontFamily } from "@/ui/appTheme";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 
 /** @param {string | null | undefined} raw */
 function formatCommentDate(raw) {
@@ -87,7 +88,7 @@ export default function ProblemPage() {
         setProblem(problemData);
         setFetchError(null);
       } catch (err) {
-        console.error("Failed to fetch problem data:", err);
+        toast.error("Failed to fetch problem data:", err);
         if (!cancelled) setFetchError(err instanceof Error ? err.message : "Unknown error");
       } finally {
         if (!cancelled) setLoading(false);
@@ -109,8 +110,9 @@ export default function ProblemPage() {
       setCommentText("");
       const refreshedProblem = await fetchProblemForUser(user, wallSectionID, problemId);
       setProblem(refreshedProblem);
+      toast.success("Comment posted successfully!");
     } catch (err) {
-      console.error("Failed to post comment:", err);
+      toast.error("Failed to post comment:", err);
       setFetchError(err instanceof Error ? err.message : "Failed to post comment");
     } finally {
       setSubmittingComment(false);
