@@ -40,6 +40,7 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { MoreVertical } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 
 export default function WallSectionPage() {
   const router = useRouter();
@@ -50,6 +51,7 @@ export default function WallSectionPage() {
   const [problems, setProblems] = useState([]);
   const [fetchError, setFetchError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [resetOpen, setResetOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [newHoldColor, setNewHoldColor] = useState("");
   const [newAssignedGrade, setNewAssignedGrade] = useState("");
@@ -109,6 +111,7 @@ export default function WallSectionPage() {
     const targetId = deleteTarget.problemId;
     setProblems((prev) => prev.filter((problem) => problem.problemId !== targetId));
     setDeleteTarget(null);
+    toast.success("Problem deleted.");
   }, [deleteTarget]);
 
   const handleAddProblem = (e) => {
@@ -134,7 +137,14 @@ export default function WallSectionPage() {
     setNewAssignedGrade("");
     setNewProblemInfo("");
     setAddOpen(false);
+    toast.success("Problem added.");
   };
+
+  const handleResetWallSection = useCallback(() => {
+    setProblems([]);
+    setResetOpen(false);
+    toast.success("Wall section reset.");
+  }, []);
 
   if (!ready) return <PageLoader message="Loading…" />;
   if (!user) return <PageLoader message="Redirecting…" />;
@@ -172,13 +182,23 @@ export default function WallSectionPage() {
 
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="m-0 text-lg font-bold text-zinc-900">Problems</h2>
-          <Button
-            type="button"
-            className="shrink-0 border-transparent bg-blue-600 text-white hover:bg-blue-700"
-            onClick={() => setAddOpen(true)}
-          >
-            Add Problem
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="destructive"
+              className="shrink-0"
+              onClick={() => setResetOpen(true)}
+            >
+              Reset Wall Section
+            </Button>
+            <Button
+              type="button"
+              className="shrink-0 border-transparent bg-blue-600 text-white hover:bg-blue-700"
+              onClick={() => setAddOpen(true)}
+            >
+              Add New Problem
+            </Button>
+          </div>
         </div>
 
         {fetchError && (
@@ -329,6 +349,32 @@ export default function WallSectionPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={resetOpen}
+        onOpenChange={(open) => {
+          setResetOpen(open);
+        }}
+      >
+        <AlertDialogContent className="data-[size=default]:sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset this wall section?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all problems from this wall section and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="pt-4">
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              variant="destructive"
+              onClick={handleResetWallSection}
+            >
+              Reset
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={deleteTarget != null}
