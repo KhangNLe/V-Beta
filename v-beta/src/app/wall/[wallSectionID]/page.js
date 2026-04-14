@@ -1,18 +1,36 @@
 "use client";
 
 import { fetchWallSectionProblemsForUser, fetchWallSectionsForUser } from "@/api/wallSections";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import PageLoader from "@/components/ui/PageLoader";
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { MoreVertical } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export default function WallSectionPage() {
   const router = useRouter();
@@ -22,6 +40,7 @@ export default function WallSectionPage() {
   const [section, setSection] = useState(null);
   const [problems, setProblems] = useState([]);
   const [fetchError, setFetchError] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const rawWallSectionID = params?.wallSectionID;
@@ -71,6 +90,13 @@ export default function WallSectionPage() {
   const handleBackToSections = () => {
     router.push("/main-page");
   };
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    const targetId = deleteTarget.problemId;
+    setProblems((prev) => prev.filter((problem) => problem.problemId !== targetId));
+    setDeleteTarget(null);
+  }, [deleteTarget]);
 
   if (!ready) return <PageLoader message="Loading…" />;
   if (!user) return <PageLoader message="Redirecting…" />;
@@ -126,7 +152,31 @@ export default function WallSectionPage() {
                       <CardTitle className="text-lg font-semibold leading-[1.35] text-zinc-900">
                         {problem.holdColor} {problem.assignedGrade || "V?"}
                       </CardTitle>
-                      <span className="text-xs font-medium text-zinc-500">#{problem.problemId}</span>
+                      <CardAction>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                className="shrink-0 text-zinc-600"
+                                aria-label="Problem actions"
+                              />
+                            }
+                          >
+                            <MoreVertical className="size-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => setDeleteTarget(problem)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </CardAction>
                     </div>
                   </CardHeader>
 
@@ -148,6 +198,32 @@ export default function WallSectionPage() {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={deleteTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent className="data-[size=default]:sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{`Delete "${deleteTarget?.holdColor || "problem"}"?`}</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="pt-4">
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
