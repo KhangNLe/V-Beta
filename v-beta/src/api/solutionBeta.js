@@ -47,9 +47,8 @@ export async function uploadSolutionBeta(file, signedResponse) {
             body: file,
         });
     } catch (error) {
-        throw new Error(
-            "Network error while uploading to signed URL. This is commonly a bucket CORS/preflight issue for browser PUT requests."
-        );
+        const message = error instanceof Error ? error.message : "Unknown upload error";
+        throw new Error(`Failed to upload solution beta: ${message}`);
     }
 
     if (!request.ok) {

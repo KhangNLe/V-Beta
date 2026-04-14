@@ -7,6 +7,7 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { buttons, card, colors, layout, fontFamily } from "@/ui/appTheme";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import ToastProvider from "@/components/ToastProvider";
 
 /** @param {string | null | undefined} raw */
 function formatCommentDate(raw) {
@@ -23,6 +24,18 @@ function formatCommentDate(raw) {
 function inferVideoMimeType(url) {
   const value = (url || "").toLowerCase();
   return value.endsWith(".webm") ? "video/webm" : "video/mp4";
+}
+
+/** @param {unknown} error */
+function extractErrorMessage(error) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    const candidate = error.message;
+    return typeof candidate === "string" && candidate.trim()
+      ? candidate
+      : "Unexpected error shape.";
+  }
+  return typeof error === "string" && error.trim() ? error : "Unknown error.";
 }
 
 export default function ProblemPage() {
@@ -144,7 +157,7 @@ export default function ProblemPage() {
             ? "Uploaded and verified from bucket."
             : "Uploaded, but public URL verification did not return success.";
         } catch {
-          verificationMessage = "Uploaded, but public URL verification was unavailable.";
+          verificationMessage = "Uploaded, but public URL verification was unavailable (often caused by browser/network policy).";
         }
       }
 
@@ -154,12 +167,18 @@ export default function ProblemPage() {
           betaName: solutionFile.name,
           videoURL: signedData.publicURL || "",
         });
-        const updatedProblem = await fetchProblemForUser(user, wallSectionID, problemId);
-        setProblem(updatedProblem);
         verificationMessage = `${verificationMessage} Metadata saved to database.`;
       } catch (dbError) {
-        const dbMessage = dbError instanceof Error ? dbError.message : "Unknown database save error.";
+        const dbMessage = extractErrorMessage(dbError);
         verificationMessage = `${verificationMessage} Upload succeeded, but DB save failed: ${dbMessage}. Please contact the developer team.`;
+      }
+
+      try {
+        const updatedProblem = await fetchProblemForUser(user, wallSectionID, problemId);
+        setProblem(updatedProblem);
+      } catch (refreshError) {
+        const refreshMessage = extractErrorMessage(refreshError);
+        verificationMessage = `${verificationMessage} Saved data, but failed to refresh page data: ${refreshMessage}`;
       }
 
       setUploadStatus({
@@ -169,7 +188,6 @@ export default function ProblemPage() {
       });
       setSolutionFile(null);
     } catch (err) {
-      console.error("Solution beta upload flow failed before DB save:", err);
       setUploadStatus({
         type: "error",
         message: `Upload failed before completion: ${
@@ -340,7 +358,7 @@ export default function ProblemPage() {
                               cursor: "pointer",
                             }}
                           >
-                            Play video
+                            Watch Beta
                           </summary>
                           <div style={{ marginTop: "10px" }}>
                             <video
