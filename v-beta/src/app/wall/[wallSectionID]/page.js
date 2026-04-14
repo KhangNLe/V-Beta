@@ -2,8 +2,15 @@
 
 import { fetchWallSectionProblemsForUser, fetchWallSectionsForUser } from "@/api/wallSections";
 import PageLoader from "@/components/ui/PageLoader";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { buttons, card, colors, layout, fontFamily } from "@/ui/appTheme";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -70,104 +77,72 @@ export default function WallSectionPage() {
   if (loading) return <PageLoader message="Loading wall section…" />;
 
   return (
-    <main style={layout.main}>
-      <div style={layout.maxWidth960}>
-        <button
+    <main className="min-h-screen bg-zinc-100 px-6 py-7 pb-12 text-zinc-900">
+      <div className="mx-auto max-w-[960px]">
+        <Button
           type="button"
+          variant="outline"
           onClick={handleBackToSections}
-          style={{ ...buttons.secondary, marginBottom: "16px" }}
+          className="mb-4"
         >
           Back
-        </button>
+        </Button>
 
         {/* Section Header Card */}
-        <section
-          style={{
-            ...card.surface,
-            position: "relative",
-            padding: "22px 22px 22px 20px",
-            marginBottom: "28px",
-            overflow: "hidden",
-            fontFamily,
-          }}
-        >
-          <div style={card.accentBar} aria-hidden />
-          <h1 style={{ margin: "0 0 8px", fontSize: "1.75rem", fontWeight: 700, color: colors.text }}>
-            Wall Section: {section?.wallSectionName || `Section ${wallSectionID}`}
-          </h1>
-          <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55, maxWidth: "65ch" }}>
-            {section?.wallSectionInfo || "No section description available."}
-          </p>
+        <section>
+          <Card className="relative mb-7 gap-0 overflow-hidden border border-zinc-200 bg-white py-[22px] pr-[22px] pl-5 shadow-sm ring-0">
+            <div
+              className="pointer-events-none absolute top-0 bottom-0 left-0 w-1 bg-linear-to-b from-blue-600 to-blue-700"
+              aria-hidden
+            />
+            <CardHeader className="rounded-none px-0 pt-0 pb-0">
+              <CardTitle className="m-0 text-[1.75rem] font-bold text-zinc-900">
+                Wall Section: {section?.wallSectionName || `Section ${wallSectionID}`}
+              </CardTitle>
+              <CardDescription className="mt-2 max-w-[65ch] text-[0.9375rem] leading-[1.55] text-zinc-600">
+                {section?.wallSectionInfo || "No section description available."}
+              </CardDescription>
+            </CardHeader>
+          </Card>
         </section>
 
-        <h2 style={{ margin: "0 0 16px", fontSize: "1.125rem", fontWeight: 600, color: colors.muted }}>
-          Problems
-        </h2>
+        <h2 className="mb-4 text-lg font-semibold text-zinc-700">Problems</h2>
 
         {fetchError && (
-          <div style={{ 
-            color: colors.danger, 
-            background: colors.dangerBg, 
-            border: `1px solid ${colors.dangerBorder}`, 
-            borderRadius: "8px", 
-            padding: "12px 14px", 
-            marginBottom: "20px" 
-          }}>
-            {fetchError}
-          </div>
+          <Card className="mb-5 gap-0 border-destructive/40 bg-destructive/8 py-0 text-destructive ring-0">
+            <CardContent className="px-3.5 py-3">{fetchError}</CardContent>
+          </Card>
         )}
 
         {problems.length === 0 ? (
-          <p style={{ margin: 0, color: colors.subtle }}>No problems found for this wall section.</p>
+          <p className="m-0 text-zinc-500">No problems found for this wall section.</p>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-              gap: "20px",
-            }}
-          >
+          <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
             {problems.map((problem) => (
-              <article
-                key={problem.problemId}
-                style={{
-                  ...card.surface,
-                  padding: "20px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 600, lineHeight: 1.35, color: colors.text }}>
-                    {problem.holdColor} {problem.assignedGrade || "V?"}
-                  </h3>
-                  <span style={{ fontSize: "0.75rem", fontWeight: 500, color: colors.subtle }}>
-                    #{problem.problemId}
-                  </span>
-                </div>
+              <article key={problem.problemId}>
+                <Card className="gap-3 border border-zinc-200 bg-white py-5 shadow-sm ring-0">
+                  <CardHeader className="px-5 pt-0 pb-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-lg font-semibold leading-[1.35] text-zinc-900">
+                        {problem.holdColor} {problem.assignedGrade || "V?"}
+                      </CardTitle>
+                      <span className="text-xs font-medium text-zinc-500">#{problem.problemId}</span>
+                    </div>
+                  </CardHeader>
 
-                <p style={{ 
-                    margin: 0, 
-                    fontSize: "0.875rem", 
-                    color: colors.muted, 
-                    lineHeight: 1.5,
-                    flexGrow: 1 
-                }}>
-                  {problem.problemInfo || "No problem notes available."}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => handleViewProblem(problem.problemId)}
-                  style={{ 
-                    ...buttons.primary, 
-                    marginTop: "4px", 
-                    alignSelf: "flex-start" 
-                  }}
-                >
-                  View problem
-                </button>
+                  <CardContent className="flex flex-1 flex-col px-5 pt-0">
+                    <p className="m-0 text-sm leading-6 text-zinc-600">
+                      {problem.problemInfo || "No problem notes available."}
+                    </p>
+                    <Button
+                      type="button"
+                      onClick={() => handleViewProblem(problem.problemId)}
+                      className="mt-4 w-fit border-transparent bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      View problem
+                    </Button>
+                  </CardContent>
+                </Card>
               </article>
             ))}
           </div>
