@@ -36,6 +36,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ArrowLeftIcon } from "lucide-react";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { MoreVertical } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -106,6 +107,7 @@ export default function WallSectionPage() {
     router.push("/main-page");
   };
 
+  // TODO: send delete request to API to remove problem from database
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
     const targetId = deleteTarget.problemId;
@@ -114,11 +116,12 @@ export default function WallSectionPage() {
     toast.success("Problem deleted.");
   }, [deleteTarget]);
 
+  // TODO: replace client-side ID generation with real ID from API response
   const handleAddProblem = (e) => {
     e.preventDefault();
     const holdColor = newHoldColor.trim();
     const assignedGrade = newAssignedGrade.trim();
-    const problemInfo = newProblemInfo.trim();
+    const info = newProblemInfo.trim();
     const nextId =
       problems.length === 0
         ? 1
@@ -130,7 +133,7 @@ export default function WallSectionPage() {
         problemId: nextId,
         holdColor,
         assignedGrade,
-        problemInfo,
+        info,
       },
     ]);
     setNewHoldColor("");
@@ -140,6 +143,7 @@ export default function WallSectionPage() {
     toast.success("Problem added.");
   };
 
+  // TODO: call backend reset endpoint to remove all section problems in database
   const handleResetWallSection = useCallback(() => {
     setProblems([]);
     setResetOpen(false);
@@ -153,13 +157,14 @@ export default function WallSectionPage() {
   return (
     <main className="min-h-screen bg-zinc-100 px-6 py-7 pb-12 text-zinc-900">
       <div className="mx-auto max-w-[960px]">
+        {/* Back button to main page */}
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           onClick={handleBackToSections}
           className="mb-4"
         >
-          Back
+          <ArrowLeftIcon className="size-4" />
         </Button>
 
         {/* Section Header Card */}
@@ -180,9 +185,11 @@ export default function WallSectionPage() {
           </Card>
         </section>
 
+        {/* Problems heading + actions */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="m-0 text-lg font-bold text-zinc-900">Problems</h2>
           <div className="flex flex-wrap items-center gap-2">
+            {/* TODO: hide if not admin */}
             <Button
               type="button"
               variant="destructive"
@@ -191,6 +198,7 @@ export default function WallSectionPage() {
             >
               Reset Wall Section
             </Button>
+            {/* TODO: hide if not admin */}
             <Button
               type="button"
               className="shrink-0 border-transparent bg-blue-600 text-white hover:bg-blue-700"
@@ -201,12 +209,14 @@ export default function WallSectionPage() {
           </div>
         </div>
 
+        {/* Fetch error */}
         {fetchError && (
           <Card className="mb-5 gap-0 border-destructive/40 bg-destructive/8 py-0 text-destructive ring-0">
             <CardContent className="px-3.5 py-3">{fetchError}</CardContent>
           </Card>
         )}
 
+        {/* Problems grid or empty */}
         {problems.length === 0 ? (
           <p className="m-0 text-zinc-500">No problems found for this wall section.</p>
         ) : (
@@ -219,6 +229,7 @@ export default function WallSectionPage() {
                       <CardTitle className="text-lg font-semibold leading-[1.35] text-zinc-900">
                         {problem.holdColor}
                       </CardTitle>
+                      {/* Problem actions menu */}
                       <CardAction>
                         <DropdownMenu>
                           <DropdownMenuTrigger
@@ -247,12 +258,14 @@ export default function WallSectionPage() {
                     </div>
                   </CardHeader>
 
+                  {/* Problem description */}
                   <CardContent className="flex flex-grow flex-col px-5 pb-0 pt-0">
                     <p className="m-0 text-sm leading-6 text-zinc-600">
                       {problem.info || "No problem notes available."}
                     </p>
                   </CardContent>
 
+                  {/* Primary action */}
                   <CardFooter className="mt-1.5 flex w-full flex-col rounded-none border-t border-zinc-200 px-5 py-4">
                     <Button
                       type="button"
@@ -269,6 +282,7 @@ export default function WallSectionPage() {
         )}
       </div>
 
+      {/* Add problem dialog */}
       <Dialog
         open={addOpen}
         onOpenChange={(open) => {
@@ -350,6 +364,7 @@ export default function WallSectionPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Reset wall section confirmation */}
       <AlertDialog
         open={resetOpen}
         onOpenChange={(open) => {
@@ -358,8 +373,8 @@ export default function WallSectionPage() {
       >
         <AlertDialogContent className="data-[size=default]:sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Reset this wall section?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle>{`Reset "${section?.wallSectionName || `Section ${wallSectionID}`}"?`}</AlertDialogTitle>
+            <AlertDialogDescription className="text-left sm:text-left [text-wrap:wrap] md:[text-wrap:wrap]">
               This will remove all problems from this wall section and cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -376,6 +391,7 @@ export default function WallSectionPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Delete problem confirmation */}
       <AlertDialog
         open={deleteTarget != null}
         onOpenChange={(open) => {
