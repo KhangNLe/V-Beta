@@ -42,10 +42,10 @@ public class ProblemDiscussionController {
         return problemDiscussionService.saveSolutionBeta(request, firebaseUid);
     }
 
-    @PostMapping("/solution-beta/{problemId}/delete")
+    @DeleteMapping("/solution-beta")
     @ResponseStatus(HttpStatus.OK)
-    public void deleteUserSolutionBeta(@RequestBody UserCommentData requestData, @Valid @PathVariable Long problemId){
+    public void deleteUserSolutionBeta(@RequestBody SolutionBetaDeletionRequest request){
         String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        problemDiscussionService.removeUserSolutionBeta(requestData, firebaseUid, problemId);
+        problemDiscussionService.removeUserSolutionBeta(request, firebaseUid);
     }
 }

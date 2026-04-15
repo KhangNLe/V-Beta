@@ -59,10 +59,9 @@ public class SolutionBetaManager {
         return createSolutionBeta(userBeta, objectFileName, publicUrl);
     }
 
-    public void removeUserSolutionBeta(UserAccount userAccount, ClimbingProblem problem, String publicUrl,
-                                       LocalDateTime createdDate){
+    public void removeUserSolutionBeta(UserAccount userAccount, ClimbingProblem problem, String publicUrl){
         List<UserBeta> userBetas = userBetaRepository.findByUserAndProblem(userAccount, problem);
-        SolutionBeta solutionBeta = findSolutionBeta(userBetas, publicUrl, createdDate);
+        SolutionBeta solutionBeta = findSolutionBeta(userBetas, publicUrl);
         gcpFileStorageAdapter.deleteFile(gcpFileStorageAdapter.getPublicBucketName(), solutionBeta.getBetaName());
         UserBeta deletingBeta = solutionBeta.getUserBeta();
         solutionBetaRepository.delete(solutionBeta);
@@ -96,18 +95,13 @@ public class SolutionBetaManager {
         }
     }
 
-    private SolutionBeta findSolutionBeta(List<UserBeta> betas, String publicUrl, LocalDateTime createdDate){
-        for (UserBeta b : betas){
-            Optional<SolutionBeta> solutionBeta = solutionBetaRepository.findByUserBeta(b);
-            if (solutionBeta.isEmpty()) continue;
-            if (solutionBeta.get().getVideoURL().equals(publicUrl) &&
-                solutionBeta.get().getCreateDate().equals(createdDate)){
-                return solutionBeta.get();
-            }
-        }
-        throw new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Unable to find any solution beta for climbing problem from user."
+    private SolutionBeta findSolutionBeta(List<UserBeta> betas, String publicUrl){
+        Optional<SolutionBeta> solutionBeta = solutionBetaRepository.findByUserBetaInAndVideoURL(betas, publicUrl);
+        return solutionBeta.orElseThrow( () ->
+            new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Unable to find any solution beta for climbing problem from user."
+            )
         );
     }
 

@@ -1,6 +1,7 @@
 package edu.ics499.VBeta.Integration_Test;
 
 import edu.ics499.VBeta.api.dto.SolutionBetaCreateRequest;
+import edu.ics499.VBeta.api.dto.SolutionBetaDeletionRequest;
 import edu.ics499.VBeta.api.dto.UserCommentData;
 import edu.ics499.VBeta.application.ProblemDiscussionService;
 import edu.ics499.VBeta.application.support.ClimbingProblemManager;
@@ -114,12 +115,12 @@ public class SolutionBetaCreationDeletionTest {
         Long problemId = 2L;
         String objectKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
         String publicUrl = "https://storage.googleapis.com/test-bucket/" + objectKey;
-        UserCommentData deletePayload = createFakeSolutionBeta(firebaseUid, objectKey, publicUrl, problemId);
+        SolutionBetaDeletionRequest deletePayload = createFakeSolutionBeta(firebaseUid, objectKey, publicUrl, problemId);
 
         UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
         ClimbingProblem climbingProblem = climbingProblemManager.getActiveProblem(problemId);
 
-        problemDiscussionService.removeUserSolutionBeta(deletePayload, firebaseUid, problemId);
+        problemDiscussionService.removeUserSolutionBeta(deletePayload, firebaseUid);
         verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(objectKey));
         assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isEmpty());
 
@@ -130,19 +131,17 @@ public class SolutionBetaCreationDeletionTest {
     @Test
     @DisplayName("test for fail deletion due to unexisting object file name")
     void testFailSolutionBetaDeletion(){
-        UserCommentData userCommentData = new UserCommentData(
+        SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
                 1L,
-                "testUser",
-                null,
-                "testSolutionBeta.mp4",
-                LocalDateTime.now()
+                1L,
+                "testSolutionBeta.mp4"
         );
 
         String firebaseUid = "testFirebaseUid";
         Long problemId = 1L;
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
-                problemDiscussionService.removeUserSolutionBeta(userCommentData, firebaseUid, problemId)
+                problemDiscussionService.removeUserSolutionBeta(request, firebaseUid)
         );
 
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
@@ -152,19 +151,17 @@ public class SolutionBetaCreationDeletionTest {
     @Test
     @DisplayName("test for fail delete solution beta due to wrong owner/authorization")
     void testFailDeletionForWrongAuthor(){
-        UserCommentData userCommentData = new UserCommentData(
+        SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
                 1L,
-                "testUser",
-                null,
-                "testSolutionBeta.mp4",
-                LocalDateTime.now()
+                1L,
+                "testSolutionBeta.mp4"
         );
 
         String firebaseUid = "testFirebaseUid2";
         Long problemId = 1L;
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
-                problemDiscussionService.removeUserSolutionBeta(userCommentData, firebaseUid, problemId)
+                problemDiscussionService.removeUserSolutionBeta(request, firebaseUid)
         );
 
         assertNotEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
@@ -178,10 +175,10 @@ public class SolutionBetaCreationDeletionTest {
         Long problemId = 1L;
         String objectKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
         String publicUrl = "https://storage.googleapis.com/test-bucket/" + objectKey;
-        UserCommentData fakeData = createFakeSolutionBeta(firebaseUid, objectKey, publicUrl, problemId);
+        SolutionBetaDeletionRequest fakeData = createFakeSolutionBeta(firebaseUid, objectKey, publicUrl, problemId);
 
         String adminFirebaseUid = "testFirebaseUid3";
-        problemDiscussionService.removeUserSolutionBeta(fakeData, adminFirebaseUid, problemId);
+        problemDiscussionService.removeUserSolutionBeta(fakeData, adminFirebaseUid);
         verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(objectKey));
         assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isEmpty());
     }
@@ -189,36 +186,31 @@ public class SolutionBetaCreationDeletionTest {
     @Test
     @DisplayName("test for failure from unknown userId")
     void testForFailDeletionFromUnknownUserID(){
-        UserCommentData testData = new UserCommentData(
-                123467L,
-                "testusername",
-                null,
-                "testvideo.mp4",
-                LocalDateTime.now()
+        SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
+                123454L,
+                1L,
+                "testSolutionBeta.mp4"
         );
-
         String adminFirebaseUid = "testFirebaseUid3";
 
         ResponseStatusException ex = assertThrows( ResponseStatusException.class, () ->
-                problemDiscussionService.removeUserSolutionBeta(testData, adminFirebaseUid, 1L)
+                problemDiscussionService.removeUserSolutionBeta(request, adminFirebaseUid)
         );
 
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
-    private UserCommentData createFakeSolutionBeta(String firebaseUid, String objectKey, String publicUrl, Long problemId){
+    private SolutionBetaDeletionRequest createFakeSolutionBeta(String firebaseUid, String objectKey, String publicUrl, Long problemId){
 
         when(gcpFileStorageAdapter.getPublicBucketName()).thenReturn("test-bucket");
 
         SolutionBetaCreateRequest createRequest = new SolutionBetaCreateRequest(problemId, objectKey, publicUrl);
         UserCommentData saved = problemDiscussionService.saveSolutionBeta(createRequest, firebaseUid);
 
-        return new UserCommentData(
+        return new SolutionBetaDeletionRequest(
                 saved.userId(),
-                saved.username(),
-                saved.comment(),
-                saved.videoURL(),
-                saved.createdDate()
+                problemId,
+                saved.videoURL()
         );
     }
 

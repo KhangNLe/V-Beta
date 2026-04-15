@@ -59,12 +59,12 @@ public class ProblemDiscussionService {
         );
     }
 
-    public void removeUserSolutionBeta(UserCommentData requestData, String firebaseUid, Long problemId){
+    public void removeUserSolutionBeta(SolutionBetaDeletionRequest request, String firebaseUid){
         UserAccount requestUser = getUserAccount(firebaseUid);
-        UserAccount solutionBetaOwner = getUserAccount(requestData.userId());
-        ClimbingProblem problem = getActiveClimbingProblem(problemId);
-        validateDeletionOwnerObject(requestUser, requestData.userId());
-        solutionBetaManager.removeUserSolutionBeta(solutionBetaOwner, problem, requestData.videoURL(), requestData.createdDate());
+        UserAccount solutionBetaOwner = getUserAccount(request.userId());
+        ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
+        validateDeletionOwnerObject(requestUser, request.userId());
+        solutionBetaManager.removeUserSolutionBeta(solutionBetaOwner, problem, request.publicUrl());
     }
 
     private UserAccount getUserAccount(String firebaseUid){
