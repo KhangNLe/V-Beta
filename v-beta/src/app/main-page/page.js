@@ -45,8 +45,10 @@ import { toast } from "react-toastify";
 
 export default function MainPage() {
   const router = useRouter();
-  const { user, ready } = useRequireAuth({ redirectMode: "push" });
+  const { user, account, ready } = useRequireAuth({ redirectMode: "push" });
   const [sections, setSections] = useState([]);
+  const isAdmin = (account?.roleName || "").toUpperCase().includes("ADMIN");
+
   const [fetchError, setFetchError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -84,6 +86,7 @@ export default function MainPage() {
   // TODO: replace client-side ID generation with real ID from API response
   const handleAddSection = (e) => {
     e.preventDefault();
+    if (!isAdmin) return;
     const name = newSectionName.trim();
     const info = newSectionInfo.trim();
 
@@ -110,13 +113,17 @@ export default function MainPage() {
 
   // TODO: send delete request to API to remove section from database
   const handleConfirmDelete = useCallback(() => {
+    if (!isAdmin) {
+      setDeleteTarget(null);
+      return;
+    }
     if (!deleteTarget) return;
     const id = deleteTarget.wallSectionID;
 
     setSections((prev) => prev.filter((s) => s.wallSectionID !== id));
     setDeleteTarget(null);
     toast.success("Wall section deleted.");
-  }, [deleteTarget]);
+  }, [deleteTarget, isAdmin]);
 
   if (!ready) return <PageLoader message="Loading…" />;
   if (!user) return <PageLoader message="Redirecting…" />;
@@ -161,14 +168,15 @@ export default function MainPage() {
         >
           <h2 className="m-0 text-lg font-bold text-zinc-900">Wall Sections</h2>
 
-          {/* TODO: hide if not admin */}
-          <Button
-            type="button"
-            className="shrink-0 border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
-            onClick={() => setAddOpen(true)}
-          >
-            Add Wall Section
-          </Button>
+          {isAdmin && (
+            <Button
+              type="button"
+              className="shrink-0 border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
+              onClick={() => setAddOpen(true)}
+            >
+              Add Wall Section
+            </Button>
+          )}
         </div>
 
         {fetchError && (
@@ -195,31 +203,33 @@ export default function MainPage() {
                   <CardTitle className="min-w-0 text-lg font-semibold leading-[1.3] text-zinc-900">
                     {section.wallSectionName}
                   </CardTitle>
-                  <CardAction>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="shrink-0 text-zinc-600"
-                            aria-label="Section actions"
-                          />
-                        }
-                      >
-                        <MoreVertical className="size-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => setDeleteTarget(section)}
+                  {isAdmin && (
+                    <CardAction>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="shrink-0 text-zinc-600"
+                              aria-label="Section actions"
+                            />
+                          }
                         >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </CardAction>
+                          <MoreVertical className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setDeleteTarget(section)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </CardAction>
+                  )}
                 </CardHeader>
 
                 <CardContent className="flex flex-grow flex-col px-5 pb-0 pt-0">
