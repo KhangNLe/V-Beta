@@ -1,9 +1,11 @@
 package edu.ics499.VBeta.controller;
 
+import edu.ics499.VBeta.api.dto.CommentDeletionRequest;
 import edu.ics499.VBeta.api.dto.DiscussionCommentRequest;
 import edu.ics499.VBeta.application.AuthorizationService;
 import edu.ics499.VBeta.application.ProblemDiscussionService;
 import edu.ics499.VBeta.application.support.SolutionBetaManager;
+import edu.ics499.VBeta.domain.model.ActionDefinition;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -36,5 +38,13 @@ public class ProblemDiscussionController {
     @PostMapping("/solution-beta/upload-url")
     public CloudFileStorageResponse getSignedURL(@RequestBody CloudFileStorageRequest body){
         return problemDiscussionService.getSignedUrl(body);
+    }
+
+    @DeleteMapping("/comment/delete")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteComment(@Valid @RequestBody CommentDeletionRequest request){
+        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+        authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_COMMENT);
+        problemDiscussionService.removeUserComment(firebaseUid, request);
     }
 }

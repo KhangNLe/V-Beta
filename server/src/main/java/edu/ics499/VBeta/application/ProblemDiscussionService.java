@@ -2,6 +2,7 @@ package edu.ics499.VBeta.application;
 
 import edu.ics499.VBeta.api.dto.CloudFileStorageRequest;
 import edu.ics499.VBeta.api.dto.CloudFileStorageResponse;
+import edu.ics499.VBeta.api.dto.CommentDeletionRequest;
 import edu.ics499.VBeta.api.dto.DiscussionCommentRequest;
 import edu.ics499.VBeta.application.support.ClimbingProblemDiscussionManager;
 import edu.ics499.VBeta.application.support.ClimbingProblemManager;
@@ -41,6 +42,15 @@ public class ProblemDiscussionService {
 
     public CloudFileStorageResponse getSignedUrl(CloudFileStorageRequest request){
         return solutionBetaManager.createSignedUrl(request);
+    }
+
+    public void removeUserComment(String firebaseUid, CommentDeletionRequest request){
+        UserAccount requestUser = userAccountManager.findUserAccount(firebaseUid);
+        UserAccount commentAuthor = userAccountManager.findUserAccountById(request.authorId());
+       ClimbingProblem problem = getClimbingProblem(request.problemId());
+
+        //There will be a permission check on here that is current on another PR
+        climbingProblemDiscussionManager.removeUserComment(commentAuthor, problem, request.commentContent());
     }
 
     private UserAccount getUserAccount(String firebaseUid){
