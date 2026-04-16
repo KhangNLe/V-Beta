@@ -4,14 +4,10 @@ import edu.ics499.VBeta.api.dto.*;
 import edu.ics499.VBeta.application.AuthorizationService;
 import edu.ics499.VBeta.application.ClimbingWallService;
 import edu.ics499.VBeta.application.ProblemDiscussionService;
-import edu.ics499.VBeta.application.support.SolutionBetaManager;
 import edu.ics499.VBeta.domain.model.ActionDefinition;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/discussion")
@@ -48,4 +44,18 @@ public class ProblemDiscussionController {
         authorizationService.authorize(firebaseUid, ActionDefinition.GRADE_PROBLEM);
         problemDiscussionService.addClimbingProblemPerceiveGrade(firebaseUid, problemId, request);
         return climbingWallService.getClimbingProblem(problemId);
-    }}
+    }
+
+    @PostMapping("solution-beta/save")
+    public UserCommentData storeUserSolutionBeta(@Valid @RequestBody SolutionBetaCreateRequest request){
+        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+        return problemDiscussionService.saveSolutionBeta(request, firebaseUid);
+    }
+
+    @DeleteMapping("/solution-beta")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteUserSolutionBeta(@RequestBody SolutionBetaDeletionRequest request){
+        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+        problemDiscussionService.removeUserSolutionBeta(request, firebaseUid);
+    }
+}
