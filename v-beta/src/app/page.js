@@ -1,13 +1,7 @@
-import styles from "./page.module.css";
-import Authentication from "../components/authentication";
-
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        {/* Firebase Authentication */}
-        <Authentication />
-      </main>
-    </div>
+    <main>
+      <h1>Landing page coming soon</h1>
+    </main>
   );
 }

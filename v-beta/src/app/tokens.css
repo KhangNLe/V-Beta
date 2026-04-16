@@ -1,0 +1,74 @@
+:root {
+  /* === App shell SSOT (appTheme.js + inline styles) === */
+  --app-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    sans-serif;
+
+  --app-bg: #f4f4f5;
+  --app-text: #18181b;
+  --app-muted: #52525b;
+  --app-subtle: #71717a;
+  --app-zinc-600: #3f3f46;
+  --app-border: #e4e4e7;
+  --app-border-hairline: #d4d4d8;
+  --app-primary: #2563eb;
+  --app-primary-dark: #1d4ed8;
+  --app-danger: #b91c1c;
+  --app-danger-bg: #fef2f2;
+  --app-danger-border: #fecaca;
+  --app-muted-surface: #e2e8f0;
+  --app-accent-soft: #eff6ff;
+
+  --app-layout-main-min-height: 100vh;
+  --app-layout-main-padding: 28px 24px 48px;
+  --app-layout-main-compact-padding: 28px 24px;
+  --app-max-width-960: 960px;
+  --app-max-width-640: 640px;
+  --app-max-width-560: 560px;
+
+  --app-card-surface-bg: #ffffff;
+  --app-card-radius: 12px;
+  --app-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --app-card-accent-bar-width: 4px;
+
+  --app-btn-primary-padding: 10px 16px;
+  --app-btn-primary-radius: 8px;
+  --app-btn-primary-font-size: 0.875rem;
+  --app-btn-primary-font-weight: 600;
+  --app-btn-primary-fg: #ffffff;
+  --app-btn-primary-hover-bg: #1d4ed8;
+
+  --app-btn-secondary-padding: 8px 14px;
+  --app-btn-secondary-radius: 8px;
+  --app-btn-secondary-font-size: 0.875rem;
+  --app-btn-secondary-font-weight: 500;
+  --app-btn-secondary-bg: #ffffff;
+  --app-btn-secondary-hover-bg: #f4f4f5;
+
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --app-bg: #0a0a0a;
+    --app-text: #ededed;
+    --app-muted: #a1a1aa;
+    --app-subtle: #a1a1aa;
+    --app-zinc-600: #d4d4d8;
+    --app-border: #3f3f46;
+    --app-border-hairline: #52525b;
+    --app-primary: #60a5fa;
+    --app-primary-dark: #3b82f6;
+    --app-danger: #f87171;
+    --app-danger-bg: #450a0a;
+    --app-danger-border: #7f1d1d;
+    --app-muted-surface: #334155;
+    --app-accent-soft: #1e3a5f;
+
+    --app-card-surface-bg: #171717;
+    --app-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+
+    --app-btn-secondary-bg: #171717;
+    --app-btn-secondary-hover-bg: #262626;
+    --app-btn-primary-hover-bg: #3b82f6;
+
+  }
+}

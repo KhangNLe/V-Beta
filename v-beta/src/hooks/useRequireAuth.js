@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { auth } from "@/app/firebase";
 
 /**
- * Redirects unauthenticated visitors to `/`.
+ * Redirects unauthenticated visitors to `/login`.
  *
  * @param {{ redirectMode?: "push" | "replace" }} [options]
  * @returns {{
@@ -25,8 +25,8 @@ export function useRequireAuth(options = {}) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
-        if (redirectMode === "replace") router.replace("/");
-        else router.push("/");
+        if (redirectMode === "replace") router.replace("/login");
+        else router.push("/login");
       } else {
         setUser(currentUser);
       }

@@ -1,0 +1,77 @@
+:root {
+  /* === Shadcn semantic tokens (alias app / landing SSOT) === */
+  --background: var(--app-card-surface-bg);
+  --foreground: var(--app-text);
+  --card: var(--app-bg);
+  --card-foreground: var(--app-text);
+  --primary: var(--app-primary);
+  --primary-foreground: var(--app-btn-primary-fg);
+  --secondary: var(--app-muted-surface);
+  --secondary-foreground: var(--app-text);
+  --accent: var(--app-accent-soft);
+  --accent-foreground: var(--app-primary-dark);
+  --muted: var(--app-bg);
+  --muted-foreground: var(--app-muted);
+  --destructive: var(--app-danger);
+  --destructive-foreground: #ffffff;
+  --border: var(--app-border);
+  --input: var(--app-border-hairline);
+  --ring: var(--app-primary);
+  --popover: var(--app-card-surface-bg);
+  --popover-foreground: var(--app-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Shadcn follows updated --app-* / --landing-* */
+    --background: var(--app-card-surface-bg);
+    --foreground: var(--app-text);
+    --card: var(--app-bg);
+    --card-foreground: var(--app-text);
+    --primary: var(--app-primary);
+    --primary-foreground: #0f172a;
+    --secondary: var(--app-muted-surface);
+    --secondary-foreground: #f1f5f9;
+    --accent: var(--app-accent-soft);
+    --accent-foreground: #e0e7ff;
+    --muted: #111827;
+    --muted-foreground: #94a3b8;
+    --destructive: var(--app-danger);
+    --destructive-foreground: #0f172a;
+    --border: var(--app-border);
+    --input: var(--app-border-hairline);
+    --ring: var(--app-primary);
+    --popover: var(--app-card-surface-bg);
+    --popover-foreground: var(--app-text);
+  }
+}
+
+/* SHADCN THEME VARIABLES */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}

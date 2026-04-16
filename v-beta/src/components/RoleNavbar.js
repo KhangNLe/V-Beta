@@ -6,13 +6,18 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
 
 import { auth } from "@/app/firebase";
-import { API_BASE_URL } from "@/app/envExports";
+import { fetchBackendAccount } from "@/lib/fetch-backend-account";
 
 function normalizeRole(roleName) {
   const normalized = (roleName || "").toUpperCase();
   if (normalized.includes("ADMIN")) return "admin";
   if (normalized.includes("CLIMBER") || normalized.includes("SETTER")) return "climberSetter";
   return "climberSetter";
+}
+
+/** Navbar is hidden here; do not GET /api/account until user leaves (avoids racing signup POST). */
+function isAuthShellPath(pathname) {
+  return pathname === "/" || pathname === "/login" || pathname === "/signup";
 }
 
 export default function RoleNavbar() {
@@ -22,49 +27,51 @@ export default function RoleNavbar() {
   const [roleType, setRoleType] = useState("guest");
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-
       if (!currentUser) {
         setRoleType("guest");
-        return;
-      }
-
-      try {
-        const idToken = await currentUser.getIdToken();
-        const response = await fetch(`${API_BASE_URL}/api/accounts/session`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
-            username: currentUser.displayName || currentUser.email?.split("@")[0] || "user",
-            email: currentUser.email || "",
-          }),
-        });
-
-        if (!response.ok) {
-          setRoleType("climberSetter");
-          return;
-        }
-
-        const session = await response.json();
-        setRoleType(normalizeRole(session?.roleName));
-      } catch (error) {
-        console.error("Failed to resolve user role:", error);
-        setRoleType("climberSetter");
       }
     });
-
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    const onAuthShell = isAuthShellPath(pathname);
+    if (onAuthShell) {
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const idToken = await user.getIdToken(true);
+        const data = await fetchBackendAccount(idToken);
+        if (cancelled) return;
+        const raw = typeof data?.role === "string" ? data.role : "";
+        setRoleType(normalizeRole(raw));
+      } catch (error) {
+        console.error("Failed to resolve user role:", error);
+        if (!cancelled) {
+          setRoleType("climberSetter");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, pathname]);
 
   const navItems = useMemo(() => {
     if (!user || roleType === "guest") {
       return [
-        { href: "/", label: "Login" },
-        { href: "/?mode=signup", label: "Sign Up" },
+        { href: "/login", label: "Login" },
+        { href: "/signup", label: "Sign Up" },
         { href: "/main-page", label: "Gym" },
       ];
     }
@@ -87,13 +94,13 @@ export default function RoleNavbar() {
     try {
       await signOut(auth);
       setRoleType("guest");
-      router.push("/");
+      router.push("/login");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
-  if (pathname === "/") {
+  if (isAuthShellPath(pathname)) {
     return null;
   }
 

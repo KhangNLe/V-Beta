@@ -11,6 +11,7 @@ import {
 } from "firebase/auth"
 
 import { cn } from "@/lib/utils"
+import { formatLoginAuthError } from "@/lib/format-login-auth-error"
 import { syncSessionWithBackend } from "@/lib/sync-backend-session"
 import { Button } from "@/components/ui/button"
 import {
@@ -50,7 +51,8 @@ export function LoginForm({ className, ...props }) {
         throw syncErr
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed.")
+      console.error(err)
+      setError(formatLoginAuthError(err))
     } finally {
       setIsLoading(false)
     }
@@ -74,7 +76,8 @@ export function LoginForm({ className, ...props }) {
         throw syncErr
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Google login failed.")
+      console.error(err)
+      setError(formatLoginAuthError(err))
     } finally {
       setIsLoading(false)
     }
@@ -82,14 +85,19 @@ export function LoginForm({ className, ...props }) {
 
   return (
     <form
-      className={cn("flex flex-col gap-6", className)}
+      className={cn(
+        "flex flex-col gap-6 [&_[data-slot=label]]:font-[var(--font-geist-sans),system-ui,sans-serif] [&_[data-slot=label]]:text-[0.7rem] [&_[data-slot=label]]:font-normal [&_[data-slot=label]]:tracking-[0.12em] [&_[data-slot=label]]:uppercase [&_[data-slot=label]]:text-muted-foreground",
+        className
+      )}
       onSubmit={handleEmailLogin}
       {...props}
     >
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="auth-heading text-2xl md:text-3xl">Login to your account</h1>
-          <p className="auth-lede text-sm text-balance text-muted-foreground">
+          <h1 className="font-[var(--font-inter),ui-sans-serif,system-ui,sans-serif] text-2xl font-bold tracking-[-0.03em] text-foreground md:text-3xl">
+            Login to your account
+          </h1>
+          <p className="font-[var(--font-geist-sans),system-ui,sans-serif] text-sm font-light text-balance text-muted-foreground">
             Enter your email below to login to your account
           </p>
         </div>
@@ -135,7 +143,7 @@ export function LoginForm({ className, ...props }) {
           <Button
             variant="outline"
             type="button"
-            className="auth-btn-outline"
+            className="!border-primary !bg-background !text-primary hover:!bg-accent hover:!text-primary"
             onClick={handleGoogleLogin}
             disabled={isLoading}
           >
