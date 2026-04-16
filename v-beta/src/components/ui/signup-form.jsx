@@ -23,10 +23,11 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { auth } from "@/app/firebase"
+import { SiGoogle } from "react-icons/si"
 
 export function SignupForm({ className, ...props }) {
   const router = useRouter()
-  const [name, setName] = useState("")
+  const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -52,11 +53,11 @@ export function SignupForm({ className, ...props }) {
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password)
       try {
-        if (name.trim()) {
-          await updateProfile(user, { displayName: name.trim() })
+        if (username.trim()) {
+          await updateProfile(user, { displayName: username.trim() })
         }
         await syncSessionWithBackend(
-          name.trim() ? { username: name.trim() } : {}
+          username.trim() ? { username: username.trim() } : {}
         )
         router.push("/main-page")
       } catch (afterCreateErr) {
@@ -117,13 +118,13 @@ export function SignupForm({ className, ...props }) {
           </p>
         </div>
         <Field>
-          <FieldLabel htmlFor="name">Full Name</FieldLabel>
+          <FieldLabel htmlFor="username">Username</FieldLabel>
           <Input
-            id="name"
+            id="username"
             type="text"
-            placeholder="John Doe"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            placeholder="John"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
           />
         </Field>
@@ -183,12 +184,7 @@ export function SignupForm({ className, ...props }) {
             onClick={handleGoogleSignup}
             disabled={isLoading}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path
-                d="M21.35 11.1H12v2.93h5.36c-.23 1.5-1.74 4.42-5.36 4.42-3.23 0-5.87-2.68-5.87-6s2.64-6 5.87-6c1.84 0 3.07.78 3.77 1.46l2.57-2.49C16.7 3.89 14.57 3 12 3 7.03 3 3 7.03 3 12s4.03 9 9 9c5.19 0 8.63-3.65 8.63-8.8 0-.59-.07-1.04-.15-1.1Z"
-                fill="currentColor"
-              />
-            </svg>
+            <SiGoogle className="size-[.9rem] shrink-0" aria-hidden />
             Sign up with Google
           </Button>
           <FieldDescription className="px-6 text-center">

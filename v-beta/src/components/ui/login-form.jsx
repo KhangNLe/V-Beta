@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { auth } from "@/app/firebase"
+import { SiGoogle } from "react-icons/si"
 
 export function LoginForm({ className, ...props }) {
   const router = useRouter()
@@ -147,12 +148,7 @@ export function LoginForm({ className, ...props }) {
             onClick={handleGoogleLogin}
             disabled={isLoading}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path
-                d="M21.35 11.1H12v2.93h5.36c-.23 1.5-1.74 4.42-5.36 4.42-3.23 0-5.87-2.68-5.87-6s2.64-6 5.87-6c1.84 0 3.07.78 3.77 1.46l2.57-2.49C16.7 3.89 14.57 3 12 3 7.03 3 3 7.03 3 12s4.03 9 9 9c5.19 0 8.63-3.65 8.63-8.8 0-.59-.07-1.04-.15-1.1Z"
-                fill="currentColor"
-              />
-            </svg>
+            <SiGoogle className="size-[.9rem] shrink-0" aria-hidden />
             Login with Google
           </Button>
           <FieldDescription className="text-center">

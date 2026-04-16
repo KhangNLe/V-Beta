@@ -5,7 +5,7 @@ import { API_BASE_URL } from "@/app/envExports"
  * POST session to the app backend. Throws if the request fails or returns non-OK.
  *
  * @param {object} [options]
- * @param {string} [options.username] - Preferred username (e.g. from signup "Full name"). If missing/empty, uses Firebase displayName, then email local part, then "user".
+ * @param {string} [options.username] - Preferred username (e.g. from signup). If missing/empty, uses Firebase displayName, then email local part, then "user".
  */
 export async function syncSessionWithBackend(options = {}) {
   const currentUser = auth.currentUser
