@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/app/envExports";
+import { toast } from "react-toastify";
 
 /**
  * Request signed upload URL for a solution beta video.
@@ -24,7 +25,9 @@ export async function requestSignedUploadUrl(user, { fileName, contentType, prob
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to request signed upload URL: ${response.status}`);
+        const message = `Failed to request signed upload URL: ${response.status}`;
+        toast.error(message);
+        throw new Error(message);
     }
 
     return response.json();
@@ -48,12 +51,16 @@ export async function uploadSolutionBeta(file, signedResponse) {
         });
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown upload error";
-        throw new Error(`Failed to upload solution beta: ${message}`);
+        const toastMessage = `Failed to upload solution beta: ${message}`;
+        toast.error(toastMessage);
+        throw new Error(toastMessage);
     }
 
     if (!request.ok) {
         const errorText = await request.text().catch(() => "Unknown error");
-        throw new Error(`Failed to upload solution beta: ${request.status} ${errorText}`);
+        const message = `Failed to upload solution beta: ${request.status} ${errorText}`;
+        toast.error(message);
+        throw new Error(message);
     }
 
     return {
@@ -82,7 +89,9 @@ export async function saveSolutionBetaToDatabase(user, payload) {
 
     if (!response.ok) {
         const errorText = await response.text().catch(() => "Unknown error");
-        throw new Error(`Failed to save solution beta metadata: ${response.status} ${errorText}`);
+        const message = `Failed to save solution beta metadata: ${response.status} ${errorText}`;
+        toast.error(message);
+        throw new Error(message);
     }
 
     // Supports both empty and JSON success responses.

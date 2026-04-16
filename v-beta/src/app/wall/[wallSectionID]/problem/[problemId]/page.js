@@ -9,7 +9,6 @@ import { buttons, card, colors, layout, fontFamily } from "@/ui/appTheme";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import ToastProvider from "@/components/ToastProvider";
 
 /** @param {string | null | undefined} raw */
 function formatCommentDate(raw) {
