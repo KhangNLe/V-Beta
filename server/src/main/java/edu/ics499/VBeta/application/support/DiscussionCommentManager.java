@@ -1,7 +1,6 @@
 package edu.ics499.VBeta.application.support;
 
 import edu.ics499.VBeta.domain.model.*;
-import edu.ics499.VBeta.repository.UserBetaRepository;
 import edu.ics499.VBeta.repository.UserCommentRepository;
 import edu.ics499.VBeta.repository.DiscussionCommentRepository;
 import org.springframework.http.HttpStatus;
@@ -9,11 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class DiscussionCommentManager {
@@ -76,13 +72,18 @@ public class DiscussionCommentManager {
     }
 
     private DiscussionComment findDiscussionComment(List<UserComment> userComments, String commentContent){
-        Optional<DiscussionComment> discussionComment = discussionCommentRepository.findByCommentInfoAndUserCommentIn(
-                commentContent, userComments
+        List<DiscussionComment> discussionComment = discussionCommentRepository.
+                findByCommentInfoAndUserCommentInOrderByCreateDateDesc(
+                    commentContent, userComments
         );
-        return discussionComment.orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        String.format("Could not find comment from user that match %s.", commentContent)
-                ));
+
+        if (discussionComment.isEmpty()){
+            throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                String.format("Could not find comment from user that match %s.", commentContent)
+            );
+        }
+        
+        return discussionComment.get(0);
     }
 }
