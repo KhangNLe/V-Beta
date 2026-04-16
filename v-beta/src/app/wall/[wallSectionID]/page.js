@@ -70,6 +70,8 @@ export default function WallSectionPage() {
   useEffect(() => {
     if (!ready || !user) return;
     if (!wallSectionID) {
+      setSection(null);
+      setProblems([]);
       setLoading(false);
       setFetchError("Invalid wall section id.");
       return;
@@ -77,27 +79,45 @@ export default function WallSectionPage() {
 
     let cancelled = false;
     (async () => {
+      let redirectingUnknownWall = false;
       try {
         setLoading(true);
-        const [sectionsData, problemsData] = await Promise.all([
-          fetchWallSectionsForUser(user),
-          fetchWallSectionProblemsForUser(user, wallSectionID),
-        ]);
+        setSection(null);
+        setProblems([]);
+        setFetchError(null);
+
+        const sectionsData = await fetchWallSectionsForUser(user);
         if (cancelled) return;
 
-        const selected = sectionsData.find((item) => item.wallSectionID === wallSectionID) || null;
+        const selected =
+          sectionsData.find((item) => item.wallSectionID === wallSectionID) || null;
+        if (!selected) {
+          if (!cancelled) {
+            toast.error("That wall section does not exist.");
+            router.replace("/main-page");
+            redirectingUnknownWall = true;
+          }
+          return;
+        }
+
         setSection(selected);
+
+        const problemsData = await fetchWallSectionProblemsForUser(user, wallSectionID);
+        if (cancelled) return;
+
         setProblems(Array.isArray(problemsData) ? problemsData : []);
         setFetchError(null);
       } catch (err) {
         console.error("Failed to fetch wall section page data:", err);
         if (!cancelled) setFetchError(err instanceof Error ? err.message : "Unknown error");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !redirectingUnknownWall) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, [ready, user, wallSectionID]);
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, user, wallSectionID, router]);
 
   const handleViewProblem = (problemId) => {
     router.push(`/wall/${wallSectionID}/problem/${problemId}`);
@@ -189,7 +209,7 @@ export default function WallSectionPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="m-0 text-lg font-bold text-zinc-900">Problems</h2>
           <div className="flex flex-wrap items-center gap-2">
-            {/* TODO: hide if not admin */}
+            {/* TODO: hide if not admin or setter*/}
             <Button
               type="button"
               variant="destructive"
@@ -198,7 +218,7 @@ export default function WallSectionPage() {
             >
               Reset Wall Section
             </Button>
-            {/* TODO: hide if not admin */}
+            {/* TODO: hide if not admin or setter*/}
             <Button
               type="button"
               className="shrink-0 border-transparent bg-blue-600 text-white hover:bg-blue-700"
@@ -230,6 +250,7 @@ export default function WallSectionPage() {
                         {problem.holdColor}
                       </CardTitle>
                       {/* Problem actions menu */}
+                      {/* TODO: hide if not admin or setter*/}
                       <CardAction>
                         <DropdownMenu>
                           <DropdownMenuTrigger
