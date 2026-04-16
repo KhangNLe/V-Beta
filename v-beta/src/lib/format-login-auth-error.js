@@ -6,11 +6,11 @@ const MESSAGES = {
   "auth/user-disabled": "This account has been disabled.",
   "auth/too-many-requests": "Too many attempts. Try again later.",
   "auth/network-request-failed": "Network error. Check your connection.",
-  "auth/popup-closed-by-user": "Sign-in was cancelled.",
+  "auth/popup-closed-by-user": "Login was cancelled.",
   "auth/popup-blocked": "Pop-up was blocked. Allow pop-ups for this site and try again.",
-  "auth/cancelled-popup-request": "Sign-in was cancelled.",
+  "auth/cancelled-popup-request": "Login was cancelled.",
   "auth/account-exists-with-different-credential":
-    "An account already exists with this email using a different sign-in method.",
+    "An account already exists with this email using a different Login method.",
 }
 
 /**

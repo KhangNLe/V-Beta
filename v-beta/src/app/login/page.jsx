@@ -4,10 +4,10 @@ import { GuestRouteGuard } from "@/components/guest-route-guard"
 
 export default function LoginPage() {
   return (
-    <AuthBrandedShell>
-      <GuestRouteGuard>
+    <GuestRouteGuard>
+      <AuthBrandedShell>
         <LoginForm />
-      </GuestRouteGuard>
-    </AuthBrandedShell>
+      </AuthBrandedShell>
+    </GuestRouteGuard>
   )
 }
