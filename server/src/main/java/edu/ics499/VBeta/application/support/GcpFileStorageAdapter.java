@@ -1,11 +1,11 @@
 package edu.ics499.VBeta.application.support;
 
-import com.google.cloud.storage.HttpMethod;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.*;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URL;
 import java.util.Map;
@@ -47,6 +47,22 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
         return String.format("https://storage.googleapis.com/%s/%s",
                 bucketName,
                 fileName);
+    }
+
+    @Override
+    public void deleteFile(String bucketName, String fileName){
+        Blob blob = storage.get(bucketName, fileName);
+
+        if (blob == null){
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    String.format("Unable to find file %s inside the cloud storage. The object may already be deleted.",
+                            fileName)
+            );
+        }
+
+        BlobId idWithGeneration = blob.getBlobId();
+        storage.delete(idWithGeneration);
     }
 
 }

@@ -10,8 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 export default function WallSectionPage() {
   const router = useRouter();
   const params = useParams();
-  const { user, ready } = useRequireAuth({ redirectMode: "push" });
-
+  const { user, ready } = useRequireAuth({ requireAuth: false });
   const [section, setSection] = useState(null);
   const [problems, setProblems] = useState([]);
   const [fetchError, setFetchError] = useState(null);
@@ -26,7 +25,7 @@ export default function WallSectionPage() {
   }, [rawWallSectionID]);
 
   useEffect(() => {
-    if (!ready || !user) return;
+    if (!ready) return;
     if (!wallSectionID) {
       setLoading(false);
       setFetchError("Invalid wall section id.");
@@ -66,7 +65,6 @@ export default function WallSectionPage() {
   };
 
   if (!ready) return <PageLoader message="Loading…" />;
-  if (!user) return <PageLoader message="Redirecting…" />;
   if (loading) return <PageLoader message="Loading wall section…" />;
 
   return (

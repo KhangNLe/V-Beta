@@ -1,0 +1,228 @@
+package edu.ics499.VBeta.Integration_Test;
+
+import edu.ics499.VBeta.api.dto.SolutionBetaCreateRequest;
+import edu.ics499.VBeta.api.dto.SolutionBetaDeletionRequest;
+import edu.ics499.VBeta.api.dto.UserCommentData;
+import edu.ics499.VBeta.application.ProblemDiscussionService;
+import edu.ics499.VBeta.application.support.ClimbingProblemManager;
+import edu.ics499.VBeta.application.support.GcpFileStorageAdapter;
+import edu.ics499.VBeta.application.support.UserAccountManager;
+import edu.ics499.VBeta.domain.model.ClimbingProblem;
+import edu.ics499.VBeta.domain.model.SolutionBeta;
+import edu.ics499.VBeta.domain.model.UserAccount;
+import edu.ics499.VBeta.domain.model.UserBeta;
+import edu.ics499.VBeta.repository.SolutionBetaRepository;
+import edu.ics499.VBeta.repository.UserBetaRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@SpringBootTest
+@Transactional
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/${MYSQL_TEST_DB:V_Beta_Test}",
+        "spring.datasource.username=${MYSQL_USERNAME:${SQL_USERNAME:khang}}",
+        "spring.datasource.password=${MYSQL_PASSWORD:${SQL_PASSWORD:}}",
+        "spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver",
+        "spring.jpa.hibernate.ddl-auto=validate",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect"
+})
+public class SolutionBetaCreationDeletionTest {
+
+    @Autowired
+    private ProblemDiscussionService problemDiscussionService;
+
+    @Autowired
+    private SolutionBetaRepository solutionBetaRepository;
+
+    @Autowired
+    private UserBetaRepository userBetaRepository;
+
+    @Autowired
+    private UserAccountManager userAccountManager;
+
+    @MockitoBean
+    private GcpFileStorageAdapter gcpFileStorageAdapter;
+    @Autowired
+    private ClimbingProblemManager climbingProblemManager;
+
+    @Test
+    @DisplayName("test for creating new solution beta after file been stored in cloud bucket")
+    void testSolutionBetaDataCreation(){
+        SolutionBetaCreateRequest testRequest = new SolutionBetaCreateRequest(
+                1L,
+                "testvid.mp4",
+                "https://storage.googleapis.com/test-bucket/testvid.mp4"
+        );
+
+        String testFirebaseUid = "testFirebaseUid";
+        UserCommentData newDataResponse = problemDiscussionService.saveSolutionBeta(testRequest, testFirebaseUid);
+
+        UserAccount user = userAccountManager.findUserAccount(testFirebaseUid);
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(testRequest.problemId());
+
+        List<UserBeta> userBetas = userBetaRepository.findByUserAndProblem(user, problem);
+
+        assertFalse(userBetas.isEmpty());
+        assertEquals(testRequest.videoURL(), newDataResponse.videoURL());
+        assertTrue(checkForSolutionBetaExist(userBetas, testRequest.objectFileName(), testRequest.videoURL()));
+    }
+
+    @Test
+    @DisplayName("test for fail creation of solution beta from archive climbing problem")
+    void testFailSolutionBetaCreation(){
+        SolutionBetaCreateRequest testRequest = new SolutionBetaCreateRequest(
+                3L,
+                "testvid.mp4",
+                "https://storage.googleapis.com/test-bucket/testvid.mp4"
+        );
+        String testFirebaseUid = "testFirebaseUid";
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+                problemDiscussionService.saveSolutionBeta(testRequest, testFirebaseUid)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("solution beta delete calls bucket delete with stored object key, then removes DB row")
+    void testDeleteUserSolutionBeta() {
+        String firebaseUid = "testFirebaseUid";
+        Long problemId = 2L;
+        String objectKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
+        String publicUrl = "https://storage.googleapis.com/test-bucket/" + objectKey;
+        SolutionBetaDeletionRequest deletePayload = createFakeSolutionBeta(firebaseUid, objectKey, publicUrl, problemId);
+
+        UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
+        ClimbingProblem climbingProblem = climbingProblemManager.getActiveProblem(problemId);
+
+        problemDiscussionService.removeUserSolutionBeta(deletePayload, firebaseUid);
+        verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(objectKey));
+        assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isEmpty());
+
+        List<UserBeta> deletedBeta = userBetaRepository.findByUserAndProblem(userAccount, climbingProblem);
+        assertTrue(deletedBeta.isEmpty());
+    }
+
+    @Test
+    @DisplayName("test for fail deletion due to unexisting object file name")
+    void testFailSolutionBetaDeletion(){
+        SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
+                1L,
+                1L,
+                "testSolutionBeta.mp4"
+        );
+
+        String firebaseUid = "testFirebaseUid";
+        Long problemId = 1L;
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+                problemDiscussionService.removeUserSolutionBeta(request, firebaseUid)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertNotEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("test for fail delete solution beta due to wrong owner/authorization")
+    void testFailDeletionForWrongAuthor(){
+        SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
+                1L,
+                1L,
+                "testSolutionBeta.mp4"
+        );
+
+        String firebaseUid = "testFirebaseUid2";
+        Long problemId = 1L;
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+                problemDiscussionService.removeUserSolutionBeta(request, firebaseUid)
+        );
+
+        assertNotEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("test for success solution beta deletion from admin account for different user solution beta")
+    void testSuccessDeletionFromAdmin(){
+        String firebaseUid = "testFirebaseUid";
+        Long problemId = 1L;
+        String objectKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
+        String publicUrl = "https://storage.googleapis.com/test-bucket/" + objectKey;
+        SolutionBetaDeletionRequest fakeData = createFakeSolutionBeta(firebaseUid, objectKey, publicUrl, problemId);
+
+        String adminFirebaseUid = "testFirebaseUid3";
+        problemDiscussionService.removeUserSolutionBeta(fakeData, adminFirebaseUid);
+        verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(objectKey));
+        assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isEmpty());
+    }
+
+    @Test
+    @DisplayName("test for failure from unknown userId")
+    void testForFailDeletionFromUnknownUserID(){
+        SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
+                123454L,
+                1L,
+                "testSolutionBeta.mp4"
+        );
+        String adminFirebaseUid = "testFirebaseUid3";
+
+        ResponseStatusException ex = assertThrows( ResponseStatusException.class, () ->
+                problemDiscussionService.removeUserSolutionBeta(request, adminFirebaseUid)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    private SolutionBetaDeletionRequest createFakeSolutionBeta(String firebaseUid, String objectKey, String publicUrl, Long problemId){
+
+        when(gcpFileStorageAdapter.getPublicBucketName()).thenReturn("test-bucket");
+
+        SolutionBetaCreateRequest createRequest = new SolutionBetaCreateRequest(problemId, objectKey, publicUrl);
+        UserCommentData saved = problemDiscussionService.saveSolutionBeta(createRequest, firebaseUid);
+
+        return new SolutionBetaDeletionRequest(
+                saved.userId(),
+                problemId,
+                saved.videoURL()
+        );
+    }
+
+    private boolean checkForSolutionBetaExist(List<UserBeta> betas, String objectFileName, String publicUrl){
+        for(UserBeta b : betas){
+            Optional<SolutionBeta> sol = solutionBetaRepository.findByUserBeta(b);
+            if (sol.isEmpty()) continue;
+            SolutionBeta solBeta = sol.get();
+            if (solBeta.getVideoURL().equals(publicUrl) && solBeta.getBetaName().equals(objectFileName)){
+                return true;
+            }
+        }
+        return false;
+    }
+}
