@@ -4,8 +4,16 @@ import { requestSignedUploadUrl, saveSolutionBetaToDatabase, uploadSolutionBeta 
 import { fetchProblemForUser } from "@/api/wallSections";
 import { postCommentForUser } from "@/api/comments";
 import PageLoader from "@/components/ui/PageLoader";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { buttons, card, colors, layout, fontFamily } from "@/ui/appTheme";
+import { MoreVertical } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
@@ -27,6 +35,40 @@ function inferVideoMimeType(url) {
   return value.endsWith(".webm") ? "video/webm" : "video/mp4";
 }
 
+/** @param {unknown} comment */
+function getCommentAuthorId(comment) {
+  if (!comment || typeof comment !== "object") return null;
+  const commentRecord = /** @type {Record<string, unknown>} */ (comment);
+  const directAuthorId =
+    commentRecord.authorId ??
+    commentRecord.userId ??
+    commentRecord.uid ??
+    commentRecord.id;
+  if (typeof directAuthorId === "string" || typeof directAuthorId === "number") {
+    return String(directAuthorId);
+  }
+  const nestedAuthor = commentRecord.author;
+  if (nestedAuthor && typeof nestedAuthor === "object") {
+    const nestedRecord = /** @type {Record<string, unknown>} */ (nestedAuthor);
+    const nestedId = nestedRecord.id ?? nestedRecord.uid ?? nestedRecord.userId;
+    if (typeof nestedId === "string" || typeof nestedId === "number") {
+      return String(nestedId);
+    }
+  }
+  return null;
+}
+
+/** @param {unknown} currentUser */
+function getCurrentUserId(currentUser) {
+  if (!currentUser || typeof currentUser !== "object") return null;
+  const userRecord = /** @type {Record<string, unknown>} */ (currentUser);
+  const idValue = userRecord.uid ?? userRecord.id ?? userRecord.userId;
+  if (typeof idValue === "string" || typeof idValue === "number") {
+    return String(idValue);
+  }
+  return null;
+}
+
 /** @param {unknown} error */
 function extractErrorMessage(error) {
   if (error instanceof Error) return error.message;
@@ -42,7 +84,7 @@ function extractErrorMessage(error) {
 export default function ProblemPage() {
   const router = useRouter();
   const params = useParams();
-  const { user, ready } = useRequireAuth({ redirectMode: "push" });
+  const { user, account, ready } = useRequireAuth({ redirectMode: "push" });
 
   const [problem, setProblem] = useState(null);
   const [fetchError, setFetchError] = useState(null);
@@ -53,10 +95,21 @@ export default function ProblemPage() {
   const [perceivedGrade, setPerceivedGrade] = useState("VB");
   const [entryMode, setEntryMode] = useState("comment"); // "comment" | "file"
   const [solutionFile, setSolutionFile] = useState(null);
+  const isAdmin = (account?.roleName || "").toUpperCase().includes("ADMIN");
+  const currentUserId = useMemo(() => {
+    if (account?.id != null) return String(account.id);
+    return getCurrentUserId(user);
+  }, [account, user]);
   const [uploadingSolution, setUploadingSolution] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
 
   const handleDeleteComment = async (commentIndex) => {
+    const targetComment = problem?.discussion?.[commentIndex];
+    const authorId = getCommentAuthorId(targetComment);
+    const canDeleteComment = isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
+    if (!canDeleteComment) {
+      return;
+    }
     // TODO: Implement backend API call to delete comment
     setDropdownIndex(null);
   };
@@ -291,6 +344,11 @@ export default function ProblemPage() {
                   }}
                 >
                   {problem.discussion.map((comment, index) => (
+                    (() => {
+                      const authorId = getCommentAuthorId(comment);
+                      const canDeleteComment =
+                        isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
+                      return (
                     <article
                       key={index}
                       style={{
@@ -307,50 +365,30 @@ export default function ProblemPage() {
                         <p style={{ margin: "0 0 8px", fontSize: "0.8rem", color: colors.subtle, whiteSpace: "nowrap" }}>
                           {formatCommentDate(comment.createdDate)}
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => setDropdownIndex(dropdownIndex === index ? null : index)}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            fontSize: "1.5rem",
-                            cursor: "pointer",
-                            color: colors.muted,
-                            padding: "0 8px",
-                          }}
-                        >
-                          ⋮
-                        </button>
-                        {dropdownIndex === index && (
-                          <div
-                            style={{
-                              position: "absolute",
-                              top: "100%",
-                              right: 0,
-                              background: colors.surface,
-                              border: `1px solid ${colors.muted}`,
-                              borderRadius: "4px",
-                              zIndex: 10,
-                              minWidth: "120px",
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteComment(index)}
-                              style={{
-                                width: "100%",
-                                padding: "8px 12px",
-                                background: "none",
-                                border: "none",
-                                color: colors.danger,
-                                cursor: "pointer",
-                                textAlign: "left",
-                                fontSize: "0.875rem",
-                              }}
+                        {canDeleteComment && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="shrink-0 text-zinc-600"
+                                  aria-label="Comment actions"
+                                />
+                              }
                             >
-                              Delete Comment
-                            </button>
-                          </div>
+                              <MoreVertical className="size-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => handleDeleteComment(index)}
+                              >
+                                Delete Comment
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )}
                       </div>
                       {comment.comment == null && comment.videoURL ? (
@@ -388,6 +426,8 @@ export default function ProblemPage() {
                         </p>
                       )}
                     </article>
+                      );
+                    })()
                   ))}
                 </div>
               ) : (
