@@ -34,6 +34,11 @@ public class UserAccountManager {
         return result.orElse(null);
     }
 
+    public UserAccount findUserAccountWithRole(String firebaseUid) {
+        Optional<UserAccount> result = userAccountRepository.findByFirebaseUidWithRole(firebaseUid);
+        return result.orElse(null);
+    }
+
     public UserAccount createNewAccount(String userName, String email, String firebaseUid){
         Optional<GymRole> role = gymRoleRepository.findByRoleType(RoleType.CLIMBER);
         if (role.isEmpty()){

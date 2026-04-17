@@ -47,7 +47,7 @@ public class WallSectionController {
         return climbingWallService.getClimbingProblem(problemID);
     }
 
-    @GetMapping("/wall-section/creation")
+    @PostMapping("/wall-section/creation")
     @ResponseStatus(HttpStatus.CREATED)
     public WallSectionResponse createWallSection(@Valid @RequestBody WallSectionCreationRequest body){
         String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
@@ -56,7 +56,7 @@ public class WallSectionController {
          return climbingWallService.createNewWallSection(body);
     }
 
-    @GetMapping("wall-section/{wallSectionId}/delete")
+    @DeleteMapping("wall-section/{wallSectionId}/delete")
     @ResponseStatus(HttpStatus.OK)
     public void deleteWallSection(@PathVariable Long wallSectionId){
         String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
@@ -65,7 +65,7 @@ public class WallSectionController {
         climbingWallService.deleteWallSection(wallSectionId);
     }
 
-    @GetMapping("/wall-section/{wallSectionId}/reset")
+    @PostMapping("/wall-section/{wallSectionId}/reset")
     @ResponseStatus(HttpStatus.OK)
     public void resetWallSection(@PathVariable Long wallSectionId){
         String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
