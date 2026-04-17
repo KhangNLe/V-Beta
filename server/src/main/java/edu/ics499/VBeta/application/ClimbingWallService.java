@@ -4,6 +4,9 @@ import edu.ics499.VBeta.api.dto.*;
 import edu.ics499.VBeta.application.support.*;
 import edu.ics499.VBeta.domain.model.ClimbingProblem;
 import edu.ics499.VBeta.domain.model.WallSection;
+import edu.ics499.VBeta.repository.WallSectionRepository;
+import edu.ics499.VBeta.repository.ClimbingProblemRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,21 +17,24 @@ import java.util.*;
 @Service
 @Transactional
 public class ClimbingWallService {
-    private final PerceiveGradeCalculator perceiveGradeCalculator;
     private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
     private final ClimbingProblemManager climbingProblemManager;
     private final WallSectionManager wallSectionManager;
+    private final ClimbingProblemDeletionManager climbingProblemDeletionManager;
+    private final UserPerceiveGradeManager userPerceiveGradeManager;
 
     public ClimbingWallService(
-            PerceiveGradeCalculator perceiveGradeCalculator,
             ClimbingProblemDiscussionManager climbingProblemDiscussionManager,
             ClimbingProblemManager climbingProblemManager,
-            WallSectionManager wallSectionManager
+            WallSectionManager wallSectionManager,
+            ClimbingProblemDeletionManager climbingProblemDeletionManager,
+            UserPerceiveGradeManager userPerceiveGradeManager
     ){
-        this.perceiveGradeCalculator = perceiveGradeCalculator;
         this.climbingProblemDiscussionManager = climbingProblemDiscussionManager;
         this.climbingProblemManager = climbingProblemManager;
         this.wallSectionManager = wallSectionManager;
+        this.climbingProblemDeletionManager = climbingProblemDeletionManager;
+        this.userPerceiveGradeManager = userPerceiveGradeManager;
     }
 
     public List<WallSectionResponse> getWallSections(){
@@ -46,15 +52,16 @@ public class ClimbingWallService {
     }
 
     public ClimbingProblemDetailResponse getClimbingProblem(Long problemId){
-        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
-        String perceiveGrade = perceiveGradeCalculator.findPerceiveGrade(problem);
+        ClimbingProblem problem = getActiveProblem(problemId);
+
+        String perceiveGrade = userPerceiveGradeManager.getPerceiveGrade(problem);
         List<UserCommentData> comments = climbingProblemDiscussionManager.getCommentsForProblem(problem);
         return new ClimbingProblemDetailResponse(
                 new ClimbingProblemResponse(problem.getId(),
                         problem.getHoldColor(),
                         problem.getProblemInfo(),
                         problem.getCreatedDate().toString().split("T")[0],
-                        problem.getClimbingGrade().getGrade()),
+                        problem.getClimbingGrade().getGradeDefinition()),
                 perceiveGrade,
                 comments
         );
@@ -82,8 +89,7 @@ public class ClimbingWallService {
         }
 
         List<ClimbingProblem> problems = climbingProblemManager.getAllProblemsFromWallSection(wallSection);
-        // dereference all climbing problem with a wall and archive their status
-        climbingProblemManager.disconnectFromWallSection(problems);
+        problems.forEach(climbingProblemDeletionManager::deleteClimbingProblem);
         wallSectionManager.removeWallSection(wallSectionId);
     }
 
@@ -107,9 +113,35 @@ public class ClimbingWallService {
                         problem.getHoldColor(),
                         problem.getProblemInfo(),
                         problem.getCreatedDate().toString().split("T")[0],
-                        problem.getClimbingGrade().getGrade()
+                        problem.getClimbingGrade().getGradeDefinition()
                 ));
         });
         return problemsInfo;
+    }
+
+    public ClimbingProblemResponse createNewClimbingProblem(Long wallSectionId, ClimbingProblemCreationRequest request){
+        WallSection wall = wallSectionManager.findWallSection(wallSectionId);
+        ClimbingProblem newProblem = climbingProblemManager.generateNewClimbingProblem(wall, request);
+        return new ClimbingProblemResponse(
+                newProblem.getId(),
+                newProblem.getHoldColor(),
+                newProblem.getProblemInfo(),
+                newProblem.getCreatedDate().toString().split("T")[0],
+                newProblem.getClimbingGrade().getGradeDefinition()
+        );
+    }
+
+    public void deleteClimbingProblem(Long problemId){
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+        climbingProblemDeletionManager.deleteClimbingProblem(problem);
+    }
+
+    private ClimbingProblem getActiveProblem(Long problemId){
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+        if (problem == null){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Problem does not exist or no longer active.");
+        }
+        return problem;
     }
 }

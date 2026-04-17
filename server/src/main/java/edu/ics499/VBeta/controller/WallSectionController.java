@@ -1,9 +1,6 @@
 package edu.ics499.VBeta.controller;
 
-import edu.ics499.VBeta.api.dto.ClimbingProblemResponse;
-import edu.ics499.VBeta.api.dto.WallSectionCreationRequest;
-import edu.ics499.VBeta.api.dto.WallSectionResponse;
-import edu.ics499.VBeta.api.dto.ClimbingProblemDetailResponse;
+import edu.ics499.VBeta.api.dto.*;
 import edu.ics499.VBeta.application.AuthorizationService;
 import edu.ics499.VBeta.application.ClimbingWallService;
 import edu.ics499.VBeta.domain.model.ActionDefinition;
@@ -73,4 +70,25 @@ public class WallSectionController {
 
         climbingWallService.resetWallSection(wallSectionId);
     }
+
+    @GetMapping("/wall-sections/{wallSectionId}/problems/create")
+    public ClimbingProblemResponse createClimbingProblem(@Valid @RequestBody ClimbingProblemCreationRequest request,
+                                                         @PathVariable Long wallSectionId){
+        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+        authorizationService.authorize(firebaseUid, ActionDefinition.CREATE_PROBLEM);
+
+        return climbingWallService.createNewClimbingProblem(wallSectionId, request);
+    }
+
+    @GetMapping("/wall-sections/{wallSectionId}/problems/{problemId}/delete")
+    public List<ClimbingProblemResponse> deleteClimbingProblem(@PathVariable Long wallSectionId,
+                                                               @PathVariable Long problemId){
+        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+        authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_PROBLEM);
+
+        climbingWallService.deleteClimbingProblem(problemId);
+        return climbingWallService.getClimbingProblemsByWallSectionId(wallSectionId);
+    }
+
+
 }
