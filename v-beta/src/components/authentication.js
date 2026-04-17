@@ -15,7 +15,10 @@ import {
   createUserWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "../app/firebase";
-import { API_BASE_URL } from "../app/envExports"; // Import the API base URL from environment variables
+import {
+  clearStoredAccountSession,
+  syncAccountSessionWithBackend,
+} from "@/lib/accountSession";
 import { toast } from "react-toastify";
 
 export default function Authentication() {
@@ -46,28 +49,7 @@ export default function Authentication() {
     const currentUser = auth.currentUser; // Get the current user from Firebase Authentication
     if (!currentUser) return; // If there is no user, exit the function
 
-    const idToken = await currentUser.getIdToken(); // Get the ID token for the current user
-
-    const apiBaseURL = API_BASE_URL; // Get the API base URL from environment variables (port 8080 for local development)
-
-    const response = await fetch(`${apiBaseURL}/api/accounts/session`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        Authorization: `Bearer ${idToken}`, // Include the ID token in the Authorization header
-      },
-      body: JSON.stringify({
-        username: currentUser.displayName || currentUser.email?.split("@")[0] || "user",
-        email: currentUser.email || "",
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("Failed to create backend session", response.statusText); // debug log the error response from the backend
-      throw new Error("Failed to create backend session"); // Throw an error if the response is not successful
-    }
-
-    return response.json(); // Return the response as JSON, from the backend session creation endpoint
+    return syncAccountSessionWithBackend(currentUser);
   };
 
   // Handle user sign-up using email and password using Firebase Authentication
@@ -104,6 +86,7 @@ export default function Authentication() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      clearStoredAccountSession();
       router.push("/login");
     } catch (error) {
       toast.error(error.message);

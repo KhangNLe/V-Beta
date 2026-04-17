@@ -17,17 +17,16 @@ public class UserPerceiveGrade {
     private UserPerceiveGradeId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("user_id")
+    @MapsId("userId")
     @JoinColumn(name = "user_id", referencedColumnName = "user_id")
     private UserAccount userAccount;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("grade_id")
-    @JoinColumn(name = "grade_id", referencedColumnName = "grade_id")
-    private ClimbingGrade climbingGrade;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("problem_id")
+    @MapsId("problemId")
     @JoinColumn(name = "problem_id", referencedColumnName = "problem_id")
     private ClimbingProblem climbingProblem;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "grade_id", referencedColumnName = "grade_id", nullable = false)
+    private ClimbingGrade climbingGrade;
 }
