@@ -41,8 +41,8 @@ export default function AccountPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-4">
-        <Card>
+      <div className="container mx-auto p-4 bg-[#fafafa] min-h-screen">
+        <Card className="bg-white text-gray-900 border border-gray-200">
           <CardHeader>
             <CardTitle>Account</CardTitle>
             <CardDescription>Error loading account information</CardDescription>
@@ -56,8 +56,8 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <Card>
+    <div className="container mx-auto p-4 bg-[#fafafa] min-h-screen">
+      <Card className="bg-white text-gray-900 border border-gray-200">
         <CardHeader>
           <CardTitle>Account Information</CardTitle>
           <CardDescription>Your account details</CardDescription>
