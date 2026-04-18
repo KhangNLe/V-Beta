@@ -1,6 +1,11 @@
 "use client";
 
-import { requestSignedUploadUrl, saveSolutionBetaToDatabase, uploadSolutionBeta } from "@/api/solutionBeta";
+import {
+  deleteSolutionBetaFromDatabase,
+  requestSignedUploadUrl,
+  saveSolutionBetaToDatabase,
+  uploadSolutionBeta,
+} from "@/api/solutionBeta";
 import { fetchProblemForUser } from "@/api/wallSections";
 import { postCommentForUser } from "@/api/comments";
 import PageLoader from "@/components/ui/PageLoader";
@@ -42,8 +47,7 @@ function getCommentAuthorId(comment) {
   const directAuthorId =
     commentRecord.authorId ??
     commentRecord.userId ??
-    commentRecord.uid ??
-    commentRecord.id;
+    commentRecord.uid;
   if (typeof directAuthorId === "string" || typeof directAuthorId === "number") {
     return String(directAuthorId);
   }
@@ -81,6 +85,19 @@ function extractErrorMessage(error) {
   return typeof error === "string" && error.trim() ? error : "Unknown error.";
 }
 
+/** @param {string | number | null | undefined} raw */
+function parsePositiveNumberId(raw) {
+  if (raw == null || raw === "") return null;
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function buildShortUploadFileName(originalFileName, problemId) {
+  const name = (originalFileName || "").toLowerCase();
+  const extension = name.endsWith(".webm") ? "webm" : "mp4";
+  return `beta_${problemId}.${extension}`;
+}
+
 export default function ProblemPage() {
   const router = useRouter();
   const params = useParams();
@@ -91,7 +108,6 @@ export default function ProblemPage() {
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
-  const [dropdownIndex, setDropdownIndex] = useState(null);
   const [perceivedGrade, setPerceivedGrade] = useState("VB");
   const [entryMode, setEntryMode] = useState("comment"); // "comment" | "file"
   const [solutionFile, setSolutionFile] = useState(null);
@@ -103,6 +119,11 @@ export default function ProblemPage() {
   const [uploadingSolution, setUploadingSolution] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
 
+  const refreshProblem = async () => {
+    const refreshedProblem = await fetchProblemForUser(user, wallSectionID, problemId);
+    setProblem(refreshedProblem);
+  };
+
   const handleDeleteComment = async (commentIndex) => {
     const targetComment = problem?.discussion?.[commentIndex];
     const authorId = getCommentAuthorId(targetComment);
@@ -110,8 +131,41 @@ export default function ProblemPage() {
     if (!canDeleteComment) {
       return;
     }
-    // TODO: Implement backend API call to delete comment
-    setDropdownIndex(null);
+    // Comment deletion endpoint is not available yet on the frontend API layer.
+    toast.info("Comment deletion is not available yet.");
+  };
+
+  const handleDeleteSolutionBeta = async (commentIndex) => {
+    const targetComment = problem?.discussion?.[commentIndex];
+    if (!targetComment || !targetComment.videoURL || !user || !problemId) {
+      return;
+    }
+
+    const authorId = getCommentAuthorId(targetComment);
+    const canDeleteSolutionBeta =
+      isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
+    if (!canDeleteSolutionBeta) {
+      return;
+    }
+
+    const payloadUserId = parsePositiveNumberId(authorId);
+    if (!payloadUserId) {
+      toast.error("Unable to determine owner id for solution beta deletion.");
+      return;
+    }
+
+    try {
+      await deleteSolutionBetaFromDatabase(user, {
+        userId: payloadUserId,
+        problemId,
+        publicUrl: targetComment.videoURL,
+      });
+      await refreshProblem();
+      toast.success("Solution beta deletion requested.");
+    } catch (err) {
+      const message = extractErrorMessage(err);
+      toast.error(`Failed to delete solution beta: ${message}`);
+    }
   };
 
   const handleSuggestPerceivedGrade = async () => {
@@ -193,8 +247,12 @@ export default function ProblemPage() {
     setUploadStatus(null);
 
     try {
+      const shortenedUploadName = buildShortUploadFileName(
+        solutionFile.name,
+        problemId,
+      );
       const requestPayload = {
-        fileName: solutionFile.name,
+        fileName: shortenedUploadName,
         contentType: solutionFile.type || "application/octet-stream",
         problemId,
         wallSectionId: wallSectionID,
@@ -203,6 +261,10 @@ export default function ProblemPage() {
       const signedData = await requestSignedUploadUrl(user, requestPayload);
       if (!signedData?.signedURL) {
         throw new Error("Signed URL response is missing signedURL.");
+      }
+      const uploadObjectName = signedData.uploadObjectName || signedData.objectName || "";
+      if (!uploadObjectName) {
+        throw new Error("Signed URL response is missing uploadObjectName.");
       }
 
       await uploadSolutionBeta(solutionFile, signedData);
@@ -222,7 +284,7 @@ export default function ProblemPage() {
       try {
         await saveSolutionBetaToDatabase(user, {
           problemId,
-          betaName: solutionFile.name,
+          objectFileName: uploadObjectName,
           videoURL: signedData.publicURL || "",
         });
         verificationMessage = `${verificationMessage} Metadata saved to database.`;
@@ -232,8 +294,7 @@ export default function ProblemPage() {
       }
 
       try {
-        const updatedProblem = await fetchProblemForUser(user, wallSectionID, problemId);
-        setProblem(updatedProblem);
+        await refreshProblem();
       } catch (refreshError) {
         const refreshMessage = extractErrorMessage(refreshError);
         verificationMessage = `${verificationMessage} Saved data, but failed to refresh page data: ${refreshMessage}`;
@@ -348,6 +409,7 @@ export default function ProblemPage() {
                       const authorId = getCommentAuthorId(comment);
                       const canDeleteComment =
                         isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
+                      const isSolutionBeta = comment.comment == null && !!comment.videoURL;
                       return (
                     <article
                       key={index}
@@ -383,9 +445,13 @@ export default function ProblemPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 variant="destructive"
-                                onClick={() => handleDeleteComment(index)}
+                                onClick={() =>
+                                  isSolutionBeta
+                                    ? handleDeleteSolutionBeta(index)
+                                    : handleDeleteComment(index)
+                                }
                               >
-                                Delete Comment
+                                {isSolutionBeta ? "Delete Solution Beta" : "Delete Comment"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -401,7 +467,7 @@ export default function ProblemPage() {
                               cursor: "pointer",
                             }}
                           >
-                            Play video
+                            Watch Beta
                           </summary>
                           <div style={{ marginTop: "10px" }}>
                             <video

@@ -70,15 +70,14 @@ export async function uploadSolutionBeta(file, signedResponse) {
 }
 
 /**
- * TODO: Persist uploaded solution beta metadata in backend DB.
- * Expected backend route (to be implemented): POST /discussion/solution-beta
+ * Save solution beta metadata to database.
  *
  * @param {import("firebase/auth").User} user
- * @param {{problemId: number, betaName: string, videoURL: string}} payload
+ * @param {{problemId: number, objectFileName: string, videoURL: string}} payload
  */
 export async function saveSolutionBetaToDatabase(user, payload) {
     const idToken = await user.getIdToken();
-    const response = await fetch(`${API_BASE_URL}/discussion/solution-beta`, {
+    const response = await fetch(`${API_BASE_URL}/discussion/solution-beta/save`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -100,4 +99,31 @@ export async function saveSolutionBetaToDatabase(user, payload) {
         return response.json();
     }
     return null;
+}
+
+/**
+ * Delete solution beta from database.
+ *
+ * @param {import("firebase/auth").User} user
+ * @param {{userId: number, problemId: number, publicUrl: string}} payload
+ */
+export async function deleteSolutionBetaFromDatabase(user, payload) {
+    const idToken = await user.getIdToken();
+    console.log(payload);
+    const response = await fetch(`${API_BASE_URL}/discussion/solution-beta`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text().catch(() => "Unknown error");
+        const message = `Failed to delete solution beta: ${response.status} ${errorText}`;
+        toast.error(message);
+        throw new Error(message);
+    }
+    return;
 }
