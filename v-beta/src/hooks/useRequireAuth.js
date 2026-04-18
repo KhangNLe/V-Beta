@@ -14,7 +14,7 @@ import {
 /**
  * Redirects unauthenticated visitors to `/login`.
  *
- * @param {{ redirectMode?: "push" | "replace" }} [options]
+ * @param {{ skip?: boolean, redirectMode?: "push" | "replace" }} [options]
  * @returns {{
  *   user: import("firebase/auth").User | null,
  *   account: import("@/lib/accountSession").AccountSession | null,
@@ -22,7 +22,7 @@ import {
  * }}
  */
 export function useRequireAuth(options = {}) {
-  const { redirectMode = "push" } = options;
+  const { skip = false, redirectMode = "push" } = options;
   const router = useRouter();
   /** @type {readonly [import("firebase/auth").User | null, (u: import("firebase/auth").User | null) => void]} */
   const [user, setUser] = useState(null);
@@ -30,6 +30,8 @@ export function useRequireAuth(options = {}) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (skip) return;
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         setUser(null);
@@ -50,7 +52,7 @@ export function useRequireAuth(options = {}) {
       setReady(true);
     });
     return () => unsubscribe();
-  }, [router, redirectMode]);
+  }, [router, redirectMode, skip]);
 
   return { user, account, ready };
 }

@@ -12,7 +12,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { formatLoginAuthError } from "@/lib/format-login-auth-error"
-import { syncSessionWithBackend } from "@/lib/sync-backend-session"
+import { syncAccountSessionWithBackend } from "@/lib/accountSession"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -41,7 +41,7 @@ export function LoginForm({ className, ...props }) {
     try {
       await signInWithEmailAndPassword(auth, email, password)
       try {
-        await syncSessionWithBackend()
+        await syncAccountSessionWithBackend(auth.currentUser)
         router.push("/main-page")
       } catch (syncErr) {
         try {
@@ -66,7 +66,7 @@ export function LoginForm({ className, ...props }) {
     try {
       await signInWithPopup(auth, googleProvider)
       try {
-        await syncSessionWithBackend()
+        await syncAccountSessionWithBackend(auth.currentUser)
         router.push("/main-page")
       } catch (syncErr) {
         try {

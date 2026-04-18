@@ -2,15 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { useEffect, useMemo, useState } from "react";
+import { signOut } from "firebase/auth";
+import { useMemo } from "react";
 
 import { auth } from "@/app/firebase";
-import {
-  clearStoredAccountSession,
-  getStoredAccountSession,
-  syncAccountSessionWithBackend,
-} from "@/lib/accountSession";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 function normalizeRole(roleName) {
   const normalized = (roleName || "").toUpperCase();
@@ -27,30 +23,14 @@ function isAuthShellPath(pathname) {
 export default function RoleNavbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [roleType, setRoleType] = useState("guest");
+  const { user, account, ready } = useRequireAuth({
+    skip: isAuthShellPath(pathname),
+  });
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (!currentUser) {
-        setRoleType("guest");
-        clearStoredAccountSession();
-        return;
-      }
-
-      try {
-        const session = await syncAccountSessionWithBackend(currentUser);
-        setRoleType(normalizeRole(session?.roleName));
-      } catch (error) {
-        console.error("Failed to resolve user role:", error);
-        const cachedSession = getStoredAccountSession();
-        setRoleType(normalizeRole(cachedSession?.roleName));
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const roleType = useMemo(() => {
+    if (!user || !ready) return "guest";
+    return normalizeRole(account?.roleName);
+  }, [user, account, ready]);
 
   const navItems = useMemo(() => {
     if (!user || roleType === "guest") {
@@ -78,15 +58,13 @@ export default function RoleNavbar() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setRoleType("guest");
-      clearStoredAccountSession();
       router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
-  if (isAuthShellPath(pathname)) {
+  if (!ready || isAuthShellPath(pathname)) {
     return null;
   }
 

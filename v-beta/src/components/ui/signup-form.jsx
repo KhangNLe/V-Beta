@@ -12,7 +12,8 @@ import {
 } from "firebase/auth"
 
 import { cn } from "@/lib/utils"
-import { syncSessionWithBackend } from "@/lib/sync-backend-session"
+import { formatSignupAuthError } from "@/lib/format-login-auth-error"
+import { syncAccountSessionWithBackend } from "@/lib/accountSession"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -56,7 +57,8 @@ export function SignupForm({ className, ...props }) {
         if (username.trim()) {
           await updateProfile(user, { displayName: username.trim() })
         }
-        await syncSessionWithBackend(
+        await syncAccountSessionWithBackend(
+          auth.currentUser,
           username.trim() ? { username: username.trim() } : {}
         )
         router.push("/main-page")
@@ -69,7 +71,8 @@ export function SignupForm({ className, ...props }) {
         throw afterCreateErr
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign up failed.")
+      console.error(err)
+      setError(formatSignupAuthError(err))
     } finally {
       setIsLoading(false)
     }
@@ -82,7 +85,7 @@ export function SignupForm({ className, ...props }) {
     try {
       await signInWithPopup(auth, googleProvider)
       try {
-        await syncSessionWithBackend()
+        await syncAccountSessionWithBackend(auth.currentUser)
         router.push("/main-page")
       } catch (syncErr) {
         try {
@@ -93,7 +96,8 @@ export function SignupForm({ className, ...props }) {
         throw syncErr
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Google sign up failed.")
+      console.error(err)
+      setError(formatSignupAuthError(err))
     } finally {
       setIsLoading(false)
     }

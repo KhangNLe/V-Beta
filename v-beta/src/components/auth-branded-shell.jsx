@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 
 /**
@@ -9,10 +10,13 @@ export function AuthBrandedShell({ children }) {
   return (
     <div className="grid min-h-svh bg-background text-foreground lg:grid-cols-2">
       <div className="relative order-2 hidden bg-foreground lg:order-1 lg:block dark:bg-card">
-        <img
+        <Image
           src="/auth-bg.svg"
           alt=""
-          className="absolute inset-0 h-full w-full object-cover opacity-[0.88]"
+          fill
+          sizes="50vw"
+          loading="eager"
+          className="object-cover opacity-[0.88]"
         />
         <div
           className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--foreground)_58%,transparent)_0%,color-mix(in_srgb,var(--foreground)_38%,transparent)_100%)] dark:bg-[linear-gradient(135deg,color-mix(in_srgb,var(--background)_58%,transparent)_0%,color-mix(in_srgb,var(--background)_38%,transparent)_100%)]"
@@ -26,11 +30,11 @@ export function AuthBrandedShell({ children }) {
             className="flex items-center gap-0 transition-opacity hover:opacity-90"
             aria-label="V-Beta Landing Page"
           >
-            <img
+            <Image
               src="/logo.svg"
               alt=""
-              width={120}
-              height={48}
+              width={60}
+              height={30}
               className="h-12 w-auto shrink-0 -mr-2 object-contain object-left"
             />
             <span className="font-[var(--font-inter),ui-sans-serif,system-ui,sans-serif] text-[1.25rem] leading-[1.1] font-bold tracking-[-0.03em] text-primary">
