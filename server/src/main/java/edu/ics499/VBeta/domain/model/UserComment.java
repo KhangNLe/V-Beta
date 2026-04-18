@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 
+/**
+ * {@code UserComment} links a user and climbing problem for discussion records.
+ */
 @Entity
 @Table(name = "User_Comment")
 @Setter

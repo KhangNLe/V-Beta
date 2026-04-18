@@ -13,7 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
  * It resolves a user by Firebase identity and creates a new account when no matching record exists.
  * <p>
  * This service delegates persistence concerns to {@link UserAccountManager} and returns API-facing
- * data using {@link AccountResponse}.
+ * data using {@link AccountResponse}. It also handles account removal requests for an authenticated
+ * identity key.
  */
 @Service
 @Transactional
@@ -42,6 +43,12 @@ public class AccountService {
         return responseInfo(account);
     }
 
+    /**
+     * Deletes an account by Firebase UID when the account exists.
+     *
+     * @param firebaseUid Firebase UID of the account to delete
+     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when no account matches the UID
+     */
     public void deleteAccount(String firebaseUid){
         UserAccount account = userAccountManager.findUserAccount(firebaseUid);
         if (account == null){

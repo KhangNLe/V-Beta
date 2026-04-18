@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * {@code UserPerceiveGrade} stores an individual user's selected grade for a climbing problem.
+ */
 @Entity
 @Table(name = "User_Perceive_Grade")
 @Setter

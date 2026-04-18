@@ -14,6 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
+
+/**
+ * {@code AccountController} exposes session/account bootstrap endpoints.
+ * <p>
+ * It maps authenticated Firebase principal data into account login/upsert operations
+ * handled by {@link AccountService}.
+ */
 @RestController
 @RequestMapping("/api/accounts")
 public class AccountController {
@@ -21,10 +28,23 @@ public class AccountController {
     private final AccountService accountService;
 
 
+    /**
+     * Constructs a new {@code AccountController} with account service dependency.
+     *
+     * @param accountService service responsible for account login/upsert behavior
+     */
     public AccountController(AccountService accountService) {
         this.accountService = accountService;
     }
 
+    /**
+     * Creates or resolves a session account for the authenticated principal.
+     * <p>
+     * Email may be overridden by token claims when available.
+     *
+     * @param body account request payload from client
+     * @return normalized account response
+     */
     @PostMapping("/session")
     public AccountResponse session(@Valid @RequestBody AccountRequest body) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

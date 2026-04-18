@@ -11,6 +11,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * {@code RolePermission} maps a {@link GymRole} to a permitted {@link GymAction}.
+ */
 @Entity
 @Table(name = "Role_Permission")
 @Getter

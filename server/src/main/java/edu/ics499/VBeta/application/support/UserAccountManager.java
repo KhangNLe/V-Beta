@@ -16,7 +16,7 @@ import java.util.Optional;
  * {@code UserAccountManager} provides account lookup and account creation operations.
  * <p>
  * It is responsible for assigning the default {@link RoleType#CLIMBER} role to new users
- * and exposing account retrieval methods used by service-level authorization and profile flows.
+ * and exposing account retrieval/removal methods used by service-level authorization and profile flows.
  */
 @Service
 @Transactional
@@ -91,6 +91,11 @@ public class UserAccountManager {
         return userAccountRepository.save(newAccount);
     }
 
+    /**
+     * Deletes an existing account entity.
+     *
+     * @param account account entity to remove
+     */
     public void removeAccount(UserAccount account){
         userAccountRepository.delete(account);
     }
