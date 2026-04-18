@@ -20,7 +20,7 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { buttons, card, colors, layout, fontFamily } from "@/ui/appTheme";
 import { MoreVertical } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
 /** @param {string | null | undefined} raw */
@@ -118,14 +118,21 @@ export default function ProblemPage() {
   }, [account, user]);
   const [uploadingSolution, setUploadingSolution] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const clearSelectedSolutionFile = () => {
+    setSolutionFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const refreshProblem = async () => {
     const refreshedProblem = await fetchProblemForUser(user, wallSectionID, problemId);
     setProblem(refreshedProblem);
   };
 
-  const handleDeleteComment = async (commentIndex) => {
-    const targetComment = problem?.discussion?.[commentIndex];
+  const handleDeleteComment = async (targetComment) => {
     const authorId = getCommentAuthorId(targetComment);
     const canDeleteComment = isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
     if (!canDeleteComment) {
@@ -135,8 +142,7 @@ export default function ProblemPage() {
     toast.info("Comment deletion is not available yet.");
   };
 
-  const handleDeleteSolutionBeta = async (commentIndex) => {
-    const targetComment = problem?.discussion?.[commentIndex];
+  const handleDeleteSolutionBeta = async (targetComment) => {
     if (!targetComment || !targetComment.videoURL || !user || !problemId) {
       return;
     }
@@ -161,6 +167,7 @@ export default function ProblemPage() {
         publicUrl: targetComment.videoURL,
       });
       await refreshProblem();
+      clearSelectedSolutionFile();
       toast.success("Solution beta deletion requested.");
     } catch (err) {
       const message = extractErrorMessage(err);
@@ -305,7 +312,7 @@ export default function ProblemPage() {
         message: verificationMessage,
         publicURL: signedData.publicURL || null,
       });
-      setSolutionFile(null);
+      clearSelectedSolutionFile();
     } catch (err) {
       setUploadStatus({
         type: "error",
@@ -412,7 +419,7 @@ export default function ProblemPage() {
                       const isSolutionBeta = comment.comment == null && !!comment.videoURL;
                       return (
                     <article
-                      key={index}
+                      key={comment.videoURL || `${comment.username || "anonymous"}-${comment.createdDate || index}-${index}`}
                       style={{
                         padding: "16px",
                         borderTop: index > 0 ? `1px solid ${colors.border}` : "none",
@@ -447,8 +454,8 @@ export default function ProblemPage() {
                                 variant="destructive"
                                 onClick={() =>
                                   isSolutionBeta
-                                    ? handleDeleteSolutionBeta(index)
-                                    : handleDeleteComment(index)
+                                    ? handleDeleteSolutionBeta(comment)
+                                    : handleDeleteComment(comment)
                                 }
                               >
                                 {isSolutionBeta ? "Delete Solution Beta" : "Delete Comment"}
@@ -575,6 +582,7 @@ export default function ProblemPage() {
                   ) : (
                     <div style={{ marginBottom: "12px" }}>
                       <input
+                        ref={fileInputRef}
                         id="solution-beta-file-input"
                         type="file"
                         accept="video/mp4,video/webm"
