@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/app/envExports";
+import { toast } from "react-toastify";
 
 /**
  * @param {import("firebase/auth").User} user
@@ -61,4 +62,69 @@ export async function fetchProblemForUser(user, sectionId, problemId) {
     perceiveGrade: typeof data.perceiveGrade === "string" ? data.perceiveGrade : "",
     discussion: Array.isArray(data.discussion) ? data.discussion : [],
   };
+}
+
+/**
+ * Add Wall Section into the server
+ * 
+ * @param {import("firebase/auth").User} user
+ * @param {{wallSectionName: string, wallSectionInfo: string}} requestPayload
+ */
+export async function addWallSection(user, requestPayload) {
+  const idToken = await user.getIdToken();
+  const response = await fetch(`${API_BASE_URL}/home/wall-section/creation`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(requestPayload),
+  });
+
+  if (!response.ok) {
+    toast.error(`Failed to add wall section: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Delete a wall section from the server
+ * 
+ * @param {import("firebase/auth").User} user
+ * @param {number} wallSectionId
+ */
+export async function deleteWallSection(user, wallSectionId) {
+  const idToken = await user.getIdToken();
+  const response = await fetch(`${API_BASE_URL}/home/wall-section/${wallSectionId}/delete`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+
+  if (!response.ok) {
+    toast.error(`Failed to delete wall section: ${response.status}`);
+  }
+
+  return; // No response body
+}
+
+/**
+ * Reset a wall section from the server
+ * 
+ * @param {import("firebase/auth").User} user
+ * @param {number} wallSectionId
+ */
+export async function resetWallSection(user, wallSectionId) {
+  const idToken = await user.getIdToken();
+  const response = await fetch(`${API_BASE_URL}/home/wall-section/${wallSectionId}/reset`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+
+  if (!response.ok) {
+    toast.error(`Failed to reset wall section: ${response.status}`);
+  }
+
+  return;
 }

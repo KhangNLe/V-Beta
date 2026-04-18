@@ -28,6 +28,6 @@ public class DiscussionComment {
     private LocalDateTime createDate;
 
     @OneToOne
-    @JoinColumn(name = "user_comment_id", referencedColumnName = "user_comment_id")
+    @JoinColumn(name = "user_comment_id", referencedColumnName = "user_comment_id", nullable = false, unique = true)
     private UserComment userComment;
 }

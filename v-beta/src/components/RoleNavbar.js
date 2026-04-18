@@ -6,7 +6,11 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
 
 import { auth } from "@/app/firebase";
-import { fetchBackendAccount } from "@/lib/fetch-backend-account";
+import {
+  clearStoredAccountSession,
+  getStoredAccountSession,
+  syncAccountSessionWithBackend,
+} from "@/lib/accountSession";
 
 function normalizeRole(roleName) {
   const normalized = (roleName || "").toUpperCase();
@@ -27,45 +31,26 @@ export default function RoleNavbar() {
   const [roleType, setRoleType] = useState("guest");
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (!currentUser) {
         setRoleType("guest");
+        clearStoredAccountSession();
+        return;
       }
-    });
-    return () => unsubscribe();
-  }, []);
 
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-    const onAuthShell = isAuthShellPath(pathname);
-    if (onAuthShell) {
-      return;
-    }
-
-    let cancelled = false;
-
-    (async () => {
       try {
-        const idToken = await user.getIdToken(true);
-        const data = await fetchBackendAccount(idToken);
-        if (cancelled) return;
-        const raw = typeof data?.role === "string" ? data.role : "";
-        setRoleType(normalizeRole(raw));
+        const session = await syncAccountSessionWithBackend(currentUser);
+        setRoleType(normalizeRole(session?.roleName));
       } catch (error) {
         console.error("Failed to resolve user role:", error);
-        if (!cancelled) {
-          setRoleType("climberSetter");
-        }
+        const cachedSession = getStoredAccountSession();
+        setRoleType(normalizeRole(cachedSession?.roleName));
       }
-    })();
+    });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [user, pathname]);
+    return () => unsubscribe();
+  }, []);
 
   const navItems = useMemo(() => {
     if (!user || roleType === "guest") {
@@ -94,7 +79,8 @@ export default function RoleNavbar() {
     try {
       await signOut(auth);
       setRoleType("guest");
-      router.push("/login");
+      clearStoredAccountSession();
+      router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }
