@@ -90,4 +90,8 @@ public class UserAccountManager {
         newAccount.setFirebaseUid(firebaseUid);
         return userAccountRepository.save(newAccount);
     }
+
+    public void removeAccount(UserAccount account){
+        userAccountRepository.delete(account);
+    }
 }
