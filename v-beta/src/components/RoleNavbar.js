@@ -6,7 +6,11 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
 
 import { auth } from "@/app/firebase";
-import { API_BASE_URL } from "@/app/envExports";
+import {
+  clearStoredAccountSession,
+  getStoredAccountSession,
+  syncAccountSessionWithBackend,
+} from "@/lib/accountSession";
 
 function normalizeRole(roleName) {
   const normalized = (roleName || "").toUpperCase();
@@ -27,33 +31,17 @@ export default function RoleNavbar() {
 
       if (!currentUser) {
         setRoleType("guest");
+        clearStoredAccountSession();
         return;
       }
 
       try {
-        const idToken = await currentUser.getIdToken();
-        const response = await fetch(`${API_BASE_URL}/api/accounts/session`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
-            username: currentUser.displayName || currentUser.email?.split("@")[0] || "user",
-            email: currentUser.email || "",
-          }),
-        });
-
-        if (!response.ok) {
-          setRoleType("climberSetter");
-          return;
-        }
-
-        const session = await response.json();
+        const session = await syncAccountSessionWithBackend(currentUser);
         setRoleType(normalizeRole(session?.roleName));
       } catch (error) {
         console.error("Failed to resolve user role:", error);
-        setRoleType("climberSetter");
+        const cachedSession = getStoredAccountSession();
+        setRoleType(normalizeRole(cachedSession?.roleName));
       }
     });
 
@@ -87,6 +75,7 @@ export default function RoleNavbar() {
     try {
       await signOut(auth);
       setRoleType("guest");
+      clearStoredAccountSession();
       router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);

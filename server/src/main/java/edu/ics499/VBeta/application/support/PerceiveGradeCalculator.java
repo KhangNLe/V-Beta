@@ -37,6 +37,6 @@ public class PerceiveGradeCalculator {
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse(null);
-        return (consensusGrade != null)? consensusGrade.getGrade() : " ";
+        return (consensusGrade != null)? consensusGrade.getGradeDefinition().name() : " ";
     }
 }
