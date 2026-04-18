@@ -36,7 +36,7 @@ public class UserAccount {
     @Column(name = "firebase_uid", nullable = false, unique = true, length = 128)
     private String firebaseUid;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gym_role_id", referencedColumnName = "role_id")
     private GymRole gymRole;
 }

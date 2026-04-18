@@ -22,7 +22,7 @@ public class CurrentAccountController {
     @GetMapping("/account")
     public ResponseEntity<AccountMeResponse> currentAccount(Authentication authentication) {
         String firebaseUid = (String) authentication.getPrincipal();
-        UserAccount account = userAccountRepository.findByFirebaseUid(firebaseUid)
+        UserAccount account = userAccountRepository.findByFirebaseUidWithRole(firebaseUid)
                 .orElseThrow(() -> new IllegalStateException("Account not found for UID " + firebaseUid));
 
         String role = account.getGymRole() != null ? account.getGymRole().getRoleType().name() : null;
