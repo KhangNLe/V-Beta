@@ -6,15 +6,35 @@ import edu.ics499.VBeta.domain.model.UserAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * {@code AccountService} is the application-level entry point for account login/upsert behavior.
+ * It resolves a user by Firebase identity and creates a new account when no matching record exists.
+ * <p>
+ * This service delegates persistence concerns to {@link UserAccountManager} and returns API-facing
+ * data using {@link AccountResponse}.
+ */
 @Service
 @Transactional
 public class AccountService {
     private final UserAccountManager userAccountManager;
 
+    /**
+     * Constructs a new {@code AccountService} with required account management dependency.
+     *
+     * @param userAccountManager manager responsible for account lookup and creation
+     */
     public AccountService(UserAccountManager userAccountManager){
         this.userAccountManager = userAccountManager;
     }
 
+    /**
+     * Logs in an account by Firebase identity, creating one if missing.
+     *
+     * @param username requested username for first-time account creation
+     * @param email requested email for first-time account creation
+     * @param firebaseUid Firebase UID from authenticated identity token
+     * @return normalized account response payload
+     */
     public AccountResponse loginAccount(String username, String email, String firebaseUid) {
         UserAccount account = getUserInfo(username, email, firebaseUid);
         return responseInfo(account);
