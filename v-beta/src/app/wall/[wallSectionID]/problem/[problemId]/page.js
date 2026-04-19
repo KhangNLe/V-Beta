@@ -21,6 +21,7 @@ import { MoreVertical } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
+import GuestBanner from '@/components/GuestBanner';
 
 /** @param {string | null | undefined} raw */
 function formatCommentDate(raw) {
@@ -329,6 +330,13 @@ export default function ProblemPage() {
         >
           Back to Wall Section
         </button>
+
+        {!isSignedIn && (
+          <GuestBanner
+            message="You are viewing as a guest. Sign in to comment, upload beta, suggest a difficulty, and access your account."
+            className="mb-5"
+          />
+        )}
 
         {fetchError && (
           <div

@@ -46,6 +46,7 @@ import { MoreVertical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import GuestBanner from '@/components/GuestBanner';
 
 export default function MainPage() {
   const router = useRouter();
@@ -63,6 +64,7 @@ export default function MainPage() {
   const [newSectionInfo, setNewSectionInfo] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const isSignedIn = !!user;
 
   const loadSections = useCallback(async (currentUser) => {
     try {
@@ -144,6 +146,12 @@ export default function MainPage() {
   return (
     <main className="min-h-screen bg-zinc-100 px-6 py-7 pb-12 font-sans text-zinc-900">
       <div className="mx-auto max-w-[960px]">
+        {!isSignedIn && (
+          <GuestBanner
+            message="You are browsing as a guest. Log in or sign up to access interactive features "
+            className="mb-5"
+          />
+        )}
         <header className="mb-6">
           <h1 className="m-0 text-[1.75rem] font-bold">GYM</h1>
         </header>
