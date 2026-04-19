@@ -2,6 +2,7 @@ package edu.ics499.VBeta.repository;
 
 import edu.ics499.VBeta.domain.model.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 
 public interface UserAccountRepository extends JpaRepository<UserAccount, Long>{
@@ -10,4 +11,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long>{
     Optional<UserAccount> findByEmail(String email);
 
     Optional<UserAccount> findByFirebaseUid(String firebaseUid);
+
+    @Query("select ua from UserAccount ua left join fetch ua.gymRole where ua.firebaseUid = :firebaseUid")
+    Optional<UserAccount> findByFirebaseUidWithRole(String firebaseUid);
 }

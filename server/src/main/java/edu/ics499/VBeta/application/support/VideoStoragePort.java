@@ -5,4 +5,5 @@ import java.net.URL;
 public interface VideoStoragePort {
     URL generateSignedPutURL(String objectName, String contentType);
     String generatePublicURL(String bucketName, String fileName);
+    void deleteFile(String bucketName, String fileName);
 }

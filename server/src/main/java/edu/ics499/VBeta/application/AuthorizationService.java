@@ -51,7 +51,7 @@ public class AuthorizationService {
     }
 
     public void authorize(String firebaseUid, ActionDefinition action) {
-        UserAccount user = userAccountManager.findUserAccount(firebaseUid);
+        UserAccount user = userAccountManager.findUserAccountWithRole(firebaseUid);
 
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated user account does not exist");

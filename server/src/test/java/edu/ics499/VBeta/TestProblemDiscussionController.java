@@ -3,6 +3,7 @@ package edu.ics499.VBeta;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.ics499.VBeta.api.dto.DiscussionCommentRequest;
 import edu.ics499.VBeta.application.AuthorizationService;
+import edu.ics499.VBeta.application.ClimbingWallService;
 import edu.ics499.VBeta.application.ProblemDiscussionService;
 import edu.ics499.VBeta.controller.ProblemDiscussionController;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ public class TestProblemDiscussionController {
 
     @MockitoBean
     private AuthorizationService authorizationService;
+
+    @MockitoBean
+    private ClimbingWallService climbingWallService;
 
     @Test
     void returns201_whenAuthenticated() throws Exception {

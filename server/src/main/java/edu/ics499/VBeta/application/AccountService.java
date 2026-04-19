@@ -25,6 +25,17 @@ public class AccountService {
         return responseInfo(account);
     }
 
+    public void deleteAccount(String firebaseUid){
+        UserAccount account = userAccountManager.findUserAccount(firebaseUid);
+        if (account == null){
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "The request account is currently does not exist within the database."
+            );
+        }
+        userAccountManager.removeAccount(account);
+    }
+
     // This method changes the role of a user account. It takes the user ID and the new role type as parameters. It returns an AccountResponse with the updated account information after the role change. If the user account is not found, it throws a 404 NOT FOUND error. If the specified role type does not exist in the database, it throws a 400 BAD REQUEST error.
     public AccountResponse changeUserRole(Long userId, RoleType roleType) {
         UserAccount account = userAccountManager.findUserAccountById(userId);

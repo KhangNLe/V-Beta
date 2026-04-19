@@ -1,10 +1,19 @@
 "use client";
 
+import { requestSignedUploadUrl, saveSolutionBetaToDatabase, uploadSolutionBeta } from "@/api/solutionBeta";
 import { fetchProblemForUser } from "@/api/wallSections";
 import { postCommentForUser } from "@/api/comments";
 import PageLoader from "@/components/ui/PageLoader";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { buttons, card, colors, layout, fontFamily } from "@/ui/appTheme";
+import { MoreVertical } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
@@ -26,10 +35,56 @@ function inferVideoMimeType(url) {
   return value.endsWith(".webm") ? "video/webm" : "video/mp4";
 }
 
+/** @param {unknown} comment */
+function getCommentAuthorId(comment) {
+  if (!comment || typeof comment !== "object") return null;
+  const commentRecord = /** @type {Record<string, unknown>} */ (comment);
+  const directAuthorId =
+    commentRecord.authorId ??
+    commentRecord.userId ??
+    commentRecord.uid ??
+    commentRecord.id;
+  if (typeof directAuthorId === "string" || typeof directAuthorId === "number") {
+    return String(directAuthorId);
+  }
+  const nestedAuthor = commentRecord.author;
+  if (nestedAuthor && typeof nestedAuthor === "object") {
+    const nestedRecord = /** @type {Record<string, unknown>} */ (nestedAuthor);
+    const nestedId = nestedRecord.id ?? nestedRecord.uid ?? nestedRecord.userId;
+    if (typeof nestedId === "string" || typeof nestedId === "number") {
+      return String(nestedId);
+    }
+  }
+  return null;
+}
+
+/** @param {unknown} currentUser */
+function getCurrentUserId(currentUser) {
+  if (!currentUser || typeof currentUser !== "object") return null;
+  const userRecord = /** @type {Record<string, unknown>} */ (currentUser);
+  const idValue = userRecord.uid ?? userRecord.id ?? userRecord.userId;
+  if (typeof idValue === "string" || typeof idValue === "number") {
+    return String(idValue);
+  }
+  return null;
+}
+
+/** @param {unknown} error */
+function extractErrorMessage(error) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    const candidate = error.message;
+    return typeof candidate === "string" && candidate.trim()
+      ? candidate
+      : "Unexpected error shape.";
+  }
+  return typeof error === "string" && error.trim() ? error : "Unknown error.";
+}
+
 export default function ProblemPage() {
   const router = useRouter();
   const params = useParams();
-  const { user, ready } = useRequireAuth({ redirectMode: "push" });
+  const { user, account, ready } = useRequireAuth({ redirectMode: "push" });
 
   const [problem, setProblem] = useState(null);
   const [fetchError, setFetchError] = useState(null);
@@ -40,8 +95,21 @@ export default function ProblemPage() {
   const [perceivedGrade, setPerceivedGrade] = useState("VB");
   const [entryMode, setEntryMode] = useState("comment"); // "comment" | "file"
   const [solutionFile, setSolutionFile] = useState(null);
+  const isAdmin = (account?.roleName || "").toUpperCase().includes("ADMIN");
+  const currentUserId = useMemo(() => {
+    if (account?.id != null) return String(account.id);
+    return getCurrentUserId(user);
+  }, [account, user]);
+  const [uploadingSolution, setUploadingSolution] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState(null);
 
   const handleDeleteComment = async (commentIndex) => {
+    const targetComment = problem?.discussion?.[commentIndex];
+    const authorId = getCommentAuthorId(targetComment);
+    const canDeleteComment = isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
+    if (!canDeleteComment) {
+      return;
+    }
     // TODO: Implement backend API call to delete comment
     setDropdownIndex(null);
   };
@@ -119,10 +187,75 @@ export default function ProblemPage() {
     }
   };
 
-  const handleUploadSolutionBeta = () => {
-    // TODO: Implement backend API call to upload solution beta
-    if (!solutionFile) return;
-    console.log("Selected beta file:", solutionFile.name, solutionFile.type);
+  const handleUploadSolutionBeta = async () => {
+    if (!solutionFile || !user || !problemId || !wallSectionID) return;
+    setUploadingSolution(true);
+    setUploadStatus(null);
+
+    try {
+      const requestPayload = {
+        fileName: solutionFile.name,
+        contentType: solutionFile.type || "application/octet-stream",
+        problemId,
+        wallSectionId: wallSectionID,
+      };
+
+      const signedData = await requestSignedUploadUrl(user, requestPayload);
+      if (!signedData?.signedURL) {
+        throw new Error("Signed URL response is missing signedURL.");
+      }
+
+      await uploadSolutionBeta(solutionFile, signedData);
+
+      let verificationMessage = "Uploaded to bucket successfully.";
+      if (signedData.publicURL) {
+        try {
+          const verifyResponse = await fetch(signedData.publicURL, { method: "HEAD" });
+          verificationMessage = verifyResponse.ok
+            ? "Uploaded and verified from bucket."
+            : "Uploaded, but public URL verification did not return success.";
+        } catch {
+          verificationMessage = "Uploaded, but public URL verification was unavailable (often caused by browser/network policy).";
+        }
+      }
+
+      try {
+        await saveSolutionBetaToDatabase(user, {
+          problemId,
+          betaName: solutionFile.name,
+          videoURL: signedData.publicURL || "",
+        });
+        verificationMessage = `${verificationMessage} Metadata saved to database.`;
+      } catch (dbError) {
+        const dbMessage = extractErrorMessage(dbError);
+        verificationMessage = `${verificationMessage} Upload succeeded, but DB save failed: ${dbMessage}. Please contact the developer team.`;
+      }
+
+      try {
+        const updatedProblem = await fetchProblemForUser(user, wallSectionID, problemId);
+        setProblem(updatedProblem);
+      } catch (refreshError) {
+        const refreshMessage = extractErrorMessage(refreshError);
+        verificationMessage = `${verificationMessage} Saved data, but failed to refresh page data: ${refreshMessage}`;
+      }
+
+      setUploadStatus({
+        type: verificationMessage.includes("DB save failed") ? "error" : "success",
+        message: verificationMessage,
+        publicURL: signedData.publicURL || null,
+      });
+      setSolutionFile(null);
+    } catch (err) {
+      setUploadStatus({
+        type: "error",
+        message: `Upload failed before completion: ${
+          err instanceof Error ? err.message : "Unexpected upload error."
+        }`,
+        publicURL: null,
+      });
+    } finally {
+      setUploadingSolution(false);
+    }
   };
 
   if (!ready) return <PageLoader message="Loading…" />;
@@ -211,6 +344,11 @@ export default function ProblemPage() {
                   }}
                 >
                   {problem.discussion.map((comment, index) => (
+                    (() => {
+                      const authorId = getCommentAuthorId(comment);
+                      const canDeleteComment =
+                        isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
+                      return (
                     <article
                       key={index}
                       style={{
@@ -227,50 +365,30 @@ export default function ProblemPage() {
                         <p style={{ margin: "0 0 8px", fontSize: "0.8rem", color: colors.subtle, whiteSpace: "nowrap" }}>
                           {formatCommentDate(comment.createdDate)}
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => setDropdownIndex(dropdownIndex === index ? null : index)}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            fontSize: "1.5rem",
-                            cursor: "pointer",
-                            color: colors.muted,
-                            padding: "0 8px",
-                          }}
-                        >
-                          ⋮
-                        </button>
-                        {dropdownIndex === index && (
-                          <div
-                            style={{
-                              position: "absolute",
-                              top: "100%",
-                              right: 0,
-                              background: colors.surface,
-                              border: `1px solid ${colors.muted}`,
-                              borderRadius: "4px",
-                              zIndex: 10,
-                              minWidth: "120px",
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteComment(index)}
-                              style={{
-                                width: "100%",
-                                padding: "8px 12px",
-                                background: "none",
-                                border: "none",
-                                color: colors.danger,
-                                cursor: "pointer",
-                                textAlign: "left",
-                                fontSize: "0.875rem",
-                              }}
+                        {canDeleteComment && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="shrink-0 text-zinc-600"
+                                  aria-label="Comment actions"
+                                />
+                              }
                             >
-                              Delete Comment
-                            </button>
-                          </div>
+                              <MoreVertical className="size-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => handleDeleteComment(index)}
+                              >
+                                Delete Comment
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )}
                       </div>
                       {comment.comment == null && comment.videoURL ? (
@@ -308,6 +426,8 @@ export default function ProblemPage() {
                         </p>
                       )}
                     </article>
+                      );
+                    })()
                   ))}
                 </div>
               ) : (
@@ -389,14 +509,68 @@ export default function ProblemPage() {
                   ) : (
                     <div style={{ marginBottom: "12px" }}>
                       <input
+                        id="solution-beta-file-input"
                         type="file"
                         accept="video/mp4,video/webm"
-                        onChange={(e) => setSolutionFile(e.target.files?.[0] || null)}
-                        style={{ fontFamily, fontSize: "0.875rem" }}
+                        onChange={(e) => {
+                          setSolutionFile(e.target.files?.[0] || null);
+                          setUploadStatus(null);
+                        }}
+                        style={{ display: "none" }}
                       />
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                        <label
+                          htmlFor="solution-beta-file-input"
+                          style={{
+                            ...buttons.secondary,
+                            padding: "6px 10px",
+                            fontSize: "0.78rem",
+                            lineHeight: 1.1,
+                            borderRadius: "999px",
+                            borderColor: colors.border,
+                            background: colors.surfaceAlt,
+                            color: colors.text,
+                            cursor: "pointer",
+                            margin: 0,
+                          }}
+                        >
+                          Choose Video
+                        </label>
+                        <span
+                          style={{
+                            fontSize: "0.8rem",
+                            color: solutionFile ? colors.text : colors.subtle,
+                            maxWidth: "100%",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {solutionFile ? solutionFile.name : "No file selected"}
+                        </span>
+                      </div>
                       <p style={{ margin: "8px 0 0", fontSize: "0.8rem", color: colors.subtle }}>
                         Allowed file types: .mp4, .webm
                       </p>
+                      {uploadStatus && (
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            fontSize: "0.85rem",
+                            color: uploadStatus.type === "success" ? colors.primary : colors.danger,
+                          }}
+                        >
+                          {uploadStatus.message}
+                          {uploadStatus.publicURL && (
+                            <>
+                              {" "}
+                              <a href={uploadStatus.publicURL} target="_blank" rel="noreferrer">
+                                View file
+                              </a>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                   <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -417,14 +591,14 @@ export default function ProblemPage() {
                       <button
                         type="button"
                         onClick={handleUploadSolutionBeta}
-                        disabled={!solutionFile}
+                        disabled={!solutionFile || uploadingSolution}
                         style={{
                           ...buttons.primary,
-                          opacity: !solutionFile ? 0.6 : 1,
-                          cursor: !solutionFile ? "not-allowed" : "pointer",
+                          opacity: !solutionFile || uploadingSolution ? 0.6 : 1,
+                          cursor: !solutionFile || uploadingSolution ? "not-allowed" : "pointer",
                         }}
                       >
-                        Upload Solution Beta
+                        {uploadingSolution ? "Uploading..." : "Upload Solution Beta"}
                       </button>
                     )}
                   </div>

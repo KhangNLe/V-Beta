@@ -1,6 +1,10 @@
 "use client";
 
-import { fetchWallSectionsForUser } from "@/api/wallSections";
+import {
+  addWallSection,
+  deleteWallSection,
+  fetchWallSectionsForUser,
+} from "@/api/wallSections";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,78 +49,88 @@ import { toast } from "react-toastify";
 
 export default function MainPage() {
   const router = useRouter();
-  const { user, ready } = useRequireAuth({ redirectMode: "push" });
+  const { user, account, ready } = useRequireAuth({ redirectMode: "push" });
   const [sections, setSections] = useState([]);
+  const isAdmin = (account?.roleName || "").toUpperCase().includes("ADMIN");
+
   const [fetchError, setFetchError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState("");
   const [newSectionInfo, setNewSectionInfo] = useState("");
+  const [addSubmitting, setAddSubmitting] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
+  const loadSections = useCallback(async (currentUser) => {
+    try {
+      const data = await fetchWallSectionsForUser(currentUser);
+      setSections(Array.isArray(data) ? data : []);
+      setFetchError(null);
+    } catch (err) {
+      console.error("Fetch wall sections failed:", err);
+      setFetchError(err instanceof Error ? err.message : "Unknown error");
+    }
+  }, []);
 
   useEffect(() => {
     if (!user) return;
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await fetchWallSectionsForUser(user);
-        if (!cancelled) {
-          setSections(data);
-          setFetchError(null);
-        }
-      } catch (err) {
-        console.error("Fetch wall sections failed:", err);
-        if (!cancelled) {
-          setFetchError(err instanceof Error ? err.message : "Unknown error");
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+    void loadSections(user);
+  }, [loadSections, user]);
 
   const handleSelectSection = (section) => {
     router.push(`/wall/${section.wallSectionID}`);
   };
 
-  // TODO: replace client-side ID generation with real ID from API response
-  const handleAddSection = (e) => {
+  const handleAddSection = async (e) => {
     e.preventDefault();
+    if (!isAdmin || !user || addSubmitting) return;
+
     const name = newSectionName.trim();
     const info = newSectionInfo.trim();
+    if (!name || !info) {
+      toast.error("Please enter both a name and description.");
+      return;
+    }
 
-    // Temporary fake ID
-    const nextId =
-      sections.length === 0
-        ? 1
-        : Math.max(...sections.map((s) => s.wallSectionID)) + 1;
-
-    setSections((prev) => [
-      ...prev,
-      {
-        wallSectionID: nextId,
+    try {
+      setAddSubmitting(true);
+      await addWallSection(user, {
         wallSectionName: name,
         wallSectionInfo: info,
-      },
-    ]);
-
-    setNewSectionName("");
-    setNewSectionInfo("");
-    setAddOpen(false);
-    toast.success("Wall section added.");
+      });
+      await loadSections(user);
+      setNewSectionName("");
+      setNewSectionInfo("");
+      setAddOpen(false);
+      toast.success("Wall section added.");
+    } catch (err) {
+      console.error("Add wall section failed:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to add wall section.");
+    } finally {
+      setAddSubmitting(false);
+    }
   };
 
-  // TODO: send delete request to API to remove section from database
-  const handleConfirmDelete = useCallback(() => {
-    if (!deleteTarget) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!isAdmin) {
+      setDeleteTarget(null);
+      return;
+    }
+    if (!deleteTarget || !user || deleteSubmitting) return;
     const id = deleteTarget.wallSectionID;
-
-    setSections((prev) => prev.filter((s) => s.wallSectionID !== id));
-    setDeleteTarget(null);
-    toast.success("Wall section deleted.");
-  }, [deleteTarget]);
+    try {
+      setDeleteSubmitting(true);
+      await deleteWallSection(user, id);
+      await loadSections(user);
+      setDeleteTarget(null);
+      toast.success("Wall section deleted.");
+    } catch (err) {
+      console.error("Delete wall section failed:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to delete wall section.");
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  }, [deleteSubmitting, deleteTarget, isAdmin, loadSections, user]);
 
   if (!ready) return <PageLoader message="Loading…" />;
   if (!user) return <PageLoader message="Redirecting…" />;
@@ -161,14 +175,15 @@ export default function MainPage() {
         >
           <h2 className="m-0 text-lg font-bold text-zinc-900">Wall Sections</h2>
 
-          {/* TODO: hide if not admin */}
-          <Button
-            type="button"
-            className="shrink-0 border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
-            onClick={() => setAddOpen(true)}
-          >
-            Add Wall Section
-          </Button>
+          {isAdmin && (
+            <Button
+              type="button"
+              className="shrink-0 border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
+              onClick={() => setAddOpen(true)}
+            >
+              Add Wall Section
+            </Button>
+          )}
         </div>
 
         {fetchError && (
@@ -195,31 +210,33 @@ export default function MainPage() {
                   <CardTitle className="min-w-0 text-lg font-semibold leading-[1.3] text-zinc-900">
                     {section.wallSectionName}
                   </CardTitle>
-                  <CardAction>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="shrink-0 text-zinc-600"
-                            aria-label="Section actions"
-                          />
-                        }
-                      >
-                        <MoreVertical className="size-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => setDeleteTarget(section)}
+                  {isAdmin && (
+                    <CardAction>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="shrink-0 text-zinc-600"
+                              aria-label="Section actions"
+                            />
+                          }
                         >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </CardAction>
+                          <MoreVertical className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setDeleteTarget(section)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </CardAction>
+                  )}
                 </CardHeader>
 
                 <CardContent className="flex flex-grow flex-col px-5 pb-0 pt-0">
@@ -305,9 +322,10 @@ export default function MainPage() {
               </Button>
               <Button
                 type="submit"
+                disabled={addSubmitting}
                 className="border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
               >
-                Add section
+                {addSubmitting ? "Adding..." : "Add section"}
               </Button>
             </DialogFooter>
           </form>
@@ -333,9 +351,10 @@ export default function MainPage() {
             <AlertDialogAction
               type="button"
               variant="destructive"
+              disabled={deleteSubmitting}
               onClick={handleConfirmDelete}
             >
-              Delete
+              {deleteSubmitting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
