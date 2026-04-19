@@ -21,6 +21,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/health").permitAll() // Allow unauthenticated access to the health endpoint for monitoring tools like Heroku and uptime robots to check if the server is running
                         .requestMatchers("/api/v1/meta").permitAll()
+                        // guest or public read only browsing
+                        .requestMatchers("/home/wall-sections").permitAll()
+                        .requestMatchers("/home/wall-sections/*/problems").permitAll()
+                        .requestMatchers("/home/wall-sections/*/problems/*").permitAll()
+
+                        // Everything else requires authentication
                         .anyRequest().authenticated())
                 .addFilterBefore(firebaseAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
