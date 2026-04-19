@@ -56,4 +56,18 @@ public class UserAccountManager {
     public void removeAccount(UserAccount account){
         userAccountRepository.delete(account);
     }
+
+
+    public UserAccount saveUserAccount(UserAccount userAccount) {
+        // Saves a user account to the database. It is used for updating an existing account or creating a new one. It returns the saved user account with any changes that were made during the save operation (like generated ID).
+        return userAccountRepository.save(userAccount);
+    }
+
+    public GymRole findGymRole(RoleType roleType) {
+        // Find a gym role by its role type. It returns null if no role is found with the given role type.
+        Optional<GymRole> result = gymRoleRepository.findByRoleType(roleType);
+
+        return result.orElse(null);
+    }
+
 }
