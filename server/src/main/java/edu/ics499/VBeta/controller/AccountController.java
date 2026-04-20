@@ -19,12 +19,29 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * {@code AccountController} exposes account-facing endpoints for session bootstrap and role updates.
+ * <p>
+ * It maps Firebase-authenticated principals into account login/upsert operations and routes
+ * privileged role-change requests through authorization checks.
+ * <p>
+ * Business logic is delegated to {@link AccountService}, while permission enforcement for
+ * sensitive operations is delegated to {@link AuthorizationService}.
+ */
 @RestController
 @RequestMapping("/api/accounts")
 public class AccountController {
 
   private final AccountService accountService;
   private final AuthorizationService authorizationService;
+
+
+  /**
+   * Constructs a new {@code AccountController} with account and authorization dependencies.
+   *
+   * @param accountService service responsible for account lifecycle operations
+   * @param authorizationService service used to enforce action-based authorization
+   */
 
   public AccountController(
     AccountService accountService,
@@ -34,6 +51,16 @@ public class AccountController {
     this.authorizationService = authorizationService;
   }
 
+  /**
+   * Creates or resolves an account session for the authenticated Firebase principal.
+   * <p>
+   * The endpoint trusts the UID from the verified security context and prefers token-claim email
+   * over client-supplied email when available.
+   *
+   * @param body account request payload containing username and fallback email
+   * @return normalized account response for the resolved account
+   * @throws ResponseStatusException with {@link HttpStatus#UNAUTHORIZED} when authentication is missing or invalid
+   */
   @PostMapping("/session")
   public AccountResponse session(@Valid @RequestBody AccountRequest body) {
     Authentication auth = SecurityContextHolder
@@ -65,6 +92,15 @@ public class AccountController {
     );
   }
 
+  /**
+   * Changes the role of a target user account.
+   * <p>
+   * Caller must be authorized for {@link ActionDefinition#CHANGE_ROLE} before the update is applied.
+   *
+   * @param userId identifier of the user account whose role will be updated
+   * @param body payload containing the desired target role
+   * @return updated account response after role change
+   */
   @PatchMapping("/{userId}/role")
   public AccountResponse changeUserRole(
     @PathVariable Long userId,

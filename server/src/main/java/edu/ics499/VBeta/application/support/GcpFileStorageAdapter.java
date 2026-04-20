@@ -11,6 +11,13 @@ import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * {@code GcpFileStorageAdapter} is a Google Cloud Storage-backed implementation of
+ * {@link VideoStoragePort}.
+ * <p>
+ * It generates V4 signed upload URLs, builds public object URLs, and deletes uploaded
+ * objects by bucket/key identity.
+ */
 @Service
 public class GcpFileStorageAdapter implements VideoStoragePort {
     private final Storage storage;
@@ -18,6 +25,13 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
     private final String publicBucketName;
     private final long expirationMinutes;
 
+    /**
+     * Creates a cloud storage adapter with configured bucket and URL expiration.
+     *
+     * @param storage Google Cloud storage client
+     * @param publicBucketName public bucket name for solution videos
+     * @param expirationMinutes signed URL expiration duration in minutes
+     */
     public GcpFileStorageAdapter(
             Storage storage,
             @Value("${app.public-bucket-name}") String publicBucketName,
@@ -27,6 +41,9 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
         this.expirationMinutes = expirationMinutes;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public URL generateSignedPutURL(String objectName, String contentType){
         BlobInfo blobInfo = BlobInfo.newBuilder(publicBucketName, objectName)
@@ -42,6 +59,9 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String generatePublicURL(String bucketName, String fileName){
         return String.format("https://storage.googleapis.com/%s/%s",
@@ -49,6 +69,9 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
                 fileName);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void deleteFile(String bucketName, String fileName){
         Blob blob = storage.get(bucketName, fileName);

@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * {@code GymRole} stores a role identity used for authorization assignment.
+ */
 @Entity
 @Table(name = "Gym_Role")
 @Getter

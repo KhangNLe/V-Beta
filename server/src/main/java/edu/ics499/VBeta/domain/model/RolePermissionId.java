@@ -10,6 +10,9 @@ import lombok.Setter;
 
 import java.io.Serializable;
 
+/**
+ * Composite identifier for {@link RolePermission}, keyed by role and action IDs.
+ */
 @Embeddable
 @Getter
 @Setter

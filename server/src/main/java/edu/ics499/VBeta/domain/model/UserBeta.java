@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * {@code UserBeta} associates a user with a climbing problem for beta submissions.
+ */
 @Entity
 @Table(name = "User_Beta")
 @Getter

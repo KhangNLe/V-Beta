@@ -17,8 +17,23 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * {@code FirebaseAuthFilter} validates Firebase bearer tokens and populates Spring Security context.
+ * <p>
+ * When a valid token is provided, the authenticated principal is set to the Firebase UID and token
+ * claims are attached as authentication details.
+ */
 @Component
 public class FirebaseAuthFilter extends OncePerRequestFilter {
+    /**
+     * Processes each request for optional Firebase bearer authentication.
+     *
+     * @param request incoming HTTP request
+     * @param response HTTP response
+     * @param filterChain downstream filter chain
+     * @throws ServletException when servlet-level filtering fails
+     * @throws IOException when IO fails while writing unauthorized response
+     */
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
