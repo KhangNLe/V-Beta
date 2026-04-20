@@ -151,8 +151,6 @@ export default function ProblemPage() {
     const authorId = getCommentAuthorId(targetComment);
     const canDeleteComment =
       isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
-    const canDeleteComment =
-      isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
     if (!canDeleteComment) {
       return;
     }
