@@ -8,6 +8,9 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code SolutionBeta} stores a user's uploaded beta media metadata.
+ */
 @Entity
 @Table(name = "Solution_Beta")
 @Setter

@@ -21,6 +21,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Objects;
 
+/**
+ * {@code ProblemDiscussionService} is the orchestration layer for discussion-thread interactions
+ * around climbing problems, including text comments, beta video uploads, and perceived grade updates.
+ * <p>
+ * It validates user/problem context and delegates persistence operations to specialized managers such as
+ * {@link ClimbingProblemDiscussionManager}, {@link SolutionBetaManager}, and
+ * {@link UserPerceiveGradeManager}.
+ */
 @Service
 @Transactional
 public class ProblemDiscussionService {
@@ -30,6 +38,15 @@ public class ProblemDiscussionService {
     private final SolutionBetaManager solutionBetaManager;
     private final UserPerceiveGradeManager userPerceiveGradeManager;
 
+    /**
+     * Constructs a new {@code ProblemDiscussionService} with required collaborators.
+     *
+     * @param userAccountManager manager for account lookups
+     * @param climbingProblemManager manager for climbing problem retrieval
+     * @param climbingProblemDiscussionManager manager for discussion comment persistence
+     * @param solutionBetaManager manager for beta storage and uploads
+     * @param userPerceiveGradeManager manager for perceived grade writes
+     */
     public ProblemDiscussionService(UserAccountManager userAccountManager,
                                     ClimbingProblemManager climbingProblemManager,
                                     ClimbingProblemDiscussionManager climbingProblemDiscussionManager,
@@ -42,25 +59,35 @@ public class ProblemDiscussionService {
         this.userPerceiveGradeManager = userPerceiveGradeManager;
     }
 
+    /**
+     * Adds a discussion comment for an active climbing problem.
+     *
+     * @param firebaseUid Firebase UID of the authenticated user
+     * @param request discussion comment payload
+     */
     public void addComment(String firebaseUid, DiscussionCommentRequest request){
         UserAccount account = getUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
         climbingProblemDiscussionManager.storeDiscussionComment(account, problem, request.commentInfo());
     }
 
+    /**
+     * Generates cloud upload metadata and signed URL for solution video upload.
+     *
+     * @param request cloud storage request payload
+     * @return signed upload and public URL metadata
+     */
     public CloudFileStorageResponse getSignedUrl(CloudFileStorageRequest request){
         return solutionBetaManager.createSignedUrl(request);
     }
 
-    public void removeUserComment(String firebaseUid, CommentDeletionRequest request){
-        UserAccount requestUser = userAccountManager.findUserAccount(firebaseUid);
-        UserAccount commentAuthor = userAccountManager.findUserAccountById(request.authorId());
-        ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
-        validateDeletionOwnerObject(requestUser, request.authorId());
-
-        climbingProblemDiscussionManager.removeUserComment(commentAuthor, problem, request.commentContent());
-    }
-
+    /**
+     * Persists a user-submitted solution beta after upload completes.
+     *
+     * @param request solution beta creation payload
+     * @param firebaseUid Firebase UID of the authenticated user
+     * @return comment stream entry representing the uploaded video
+     */
     public UserCommentData saveSolutionBeta(SolutionBetaCreateRequest request, String firebaseUid){
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
         UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
@@ -75,6 +102,12 @@ public class ProblemDiscussionService {
         );
     }
 
+    /**
+     * Removes a user's solution beta when requester is owner or admin.
+     *
+     * @param request solution beta deletion payload
+     * @param firebaseUid Firebase UID of the authenticated requester
+     */
     public void removeUserSolutionBeta(SolutionBetaDeletionRequest request, String firebaseUid){
         UserAccount requestUser = getUserAccount(firebaseUid);
         UserAccount solutionBetaOwner = getUserAccount(request.userId());
@@ -92,9 +125,31 @@ public class ProblemDiscussionService {
         return account;
     }
 
+    /**
+     * Stores or updates the authenticated user's perceived grade for a problem.
+     *
+     * @param firebaseUid Firebase UID of the authenticated user
+     * @param problemId climbing problem identifier
+     * @param request perceived grade payload
+     */
     public void addClimbingProblemPerceiveGrade(String firebaseUid, Long problemId, PerceiveGradeRequest request){
         ClimbingProblem problem = getActiveClimbingProblem(problemId);
         userPerceiveGradeManager.addPerceiveGrade(problem, firebaseUid, request.perceiveGrade());
+    }
+
+    /**
+     * Removes a user discussion comment when requester is the author or an admin.
+     *
+     * @param firebaseUid Firebase UID of the authenticated requester
+     * @param request comment deletion payload
+     */
+    public void removeUserComment(String firebaseUid, CommentDeletionRequest request){
+        UserAccount requestUser = userAccountManager.findUserAccount(firebaseUid);
+        UserAccount commentAuthor = userAccountManager.findUserAccountById(request.authorId());
+        ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
+        validateDeletionOwnerObject(requestUser, request.authorId());
+
+        climbingProblemDiscussionManager.removeUserComment(commentAuthor, problem, request.commentContent());
     }
 
     private UserAccount getUserAccount(Long userId){
@@ -115,8 +170,14 @@ public class ProblemDiscussionService {
         return problem;
     }
 
+    /**
+     * Validates that deletion is requested by the original author or an administrator.
+     *
+     * @param user requester account
+     * @param authorId author user ID associated with the target content
+     * @throws ResponseStatusException with {@link HttpStatus#UNAUTHORIZED} when deletion is not permitted
+     */
     private void validateDeletionOwnerObject(UserAccount user, Long authorId){
-        // Can only delete the object if it is from author or admin account
         if (!Objects.equals(user.getId(), authorId) &&
                 !user.getGymRole().getRoleType().equals(RoleType.ADMIN)){
             throw new ResponseStatusException(

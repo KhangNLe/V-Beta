@@ -14,6 +14,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * {@code UserAccount} represents an authenticated platform user and assigned gym role.
+ */
 @Entity
 @Table(name = "User_Account")
 @Getter

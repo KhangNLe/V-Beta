@@ -16,6 +16,14 @@ import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * {@code SolutionBetaManager} encapsulates domain operations for solution beta video entries.
+ * It manages the relationship between {@link UserBeta} and {@link SolutionBeta}, validates uniqueness,
+ * coordinates object-storage cleanup, and prepares signed upload metadata.
+ * <p>
+ * Storage concerns are delegated to {@link GcpFileStorageAdapter}, while climbing problem validation
+ * is delegated to {@link ClimbingProblemManager}.
+ */
 @Service
 public class SolutionBetaManager {
     private final UserBetaRepository userBetaRepository;
@@ -23,6 +31,14 @@ public class SolutionBetaManager {
     private final GcpFileStorageAdapter gcpFileStorageAdapter;
     private final ClimbingProblemManager climbingProblemManager;
 
+    /**
+     * Constructs a new {@code SolutionBetaManager} with repository and storage dependencies.
+     *
+     * @param userBetaRepository repository for user/problem beta links
+     * @param solutionBetaRepository repository for solution beta entities
+     * @param gcpFileStorageAdapter storage adapter used for URL and object deletion
+     * @param climbingProblemManager manager used to validate active problem state
+     */
     public SolutionBetaManager(UserBetaRepository userBetaRepository,
                                SolutionBetaRepository solutionBetaRepository,
                                GcpFileStorageAdapter gcpFileStorageAdapter,
@@ -33,6 +49,12 @@ public class SolutionBetaManager {
         this.climbingProblemManager = climbingProblemManager;
     }
 
+    /**
+     * Returns persisted solution beta objects for a climbing problem.
+     *
+     * @param problem climbing problem context
+     * @return list of solution betas, or {@code null} when none exist
+     */
     public List<SolutionBeta> getProblemSolutionBeta(ClimbingProblem problem){
         List<UserBeta> userBetas = getUserBetasForClimbingProblem(problem);
         if (userBetas.isEmpty()) return null;
@@ -44,21 +66,49 @@ public class SolutionBetaManager {
         return betas;
     }
 
+    /**
+     * Returns user-beta link rows for a climbing problem.
+     *
+     * @param problem climbing problem context
+     * @return matching user-beta rows
+     */
     public List<UserBeta> getUserBetasForClimbingProblem(ClimbingProblem problem){
         return userBetaRepository.findByProblem(problem);
     }
 
+    /**
+     * Returns the solution beta associated with a user-beta row.
+     *
+     * @param userBeta user-beta relationship row
+     * @return solution beta or {@code null} when not found
+     */
     public SolutionBeta getSolutionBetaFromUserBeta(UserBeta userBeta){
         Optional<SolutionBeta> solutionBeta = solutionBetaRepository.findByUserBeta(userBeta);
         return solutionBeta.orElse(null);
     }
 
+    /**
+     * Stores a solution beta for a user and climbing problem.
+     *
+     * @param user owner account
+     * @param problem target climbing problem
+     * @param objectFileName storage object key/name
+     * @param publicUrl public media URL
+     * @return persisted solution beta
+     */
     public SolutionBeta storeUserSolutionBeta(UserAccount user, ClimbingProblem problem,
                                       String objectFileName, String publicUrl){
         UserBeta userBeta = createUserBeta(user, problem);
         return createSolutionBeta(userBeta, objectFileName, publicUrl);
     }
 
+    /**
+     * Removes a user's solution beta and its underlying storage object.
+     *
+     * @param userAccount owner account
+     * @param problem target climbing problem
+     * @param publicUrl public URL identifying the beta to remove
+     */
     public void removeUserSolutionBeta(UserAccount userAccount, ClimbingProblem problem, String publicUrl){
         List<UserBeta> userBetas = userBetaRepository.findByUserAndProblem(userAccount, problem);
         SolutionBeta solutionBeta = findSolutionBeta(userBetas, publicUrl);
@@ -105,6 +155,12 @@ public class SolutionBetaManager {
         );
     }
 
+    /**
+     * Creates signed upload data for a new solution video.
+     *
+     * @param request upload request payload
+     * @return signed upload and public URL metadata
+     */
     public CloudFileStorageResponse createSignedUrl(CloudFileStorageRequest request){
         if(!checkForActiveClimbingProblem(request.problemId())){
             throw new IllegalStateException(
@@ -189,4 +245,5 @@ public class SolutionBetaManager {
 
     private String sanitizeFileName(String fileName) {
         return fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
-    }}
+    }
+}

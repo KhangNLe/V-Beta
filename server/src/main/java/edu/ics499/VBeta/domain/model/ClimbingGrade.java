@@ -3,6 +3,9 @@ package edu.ics499.VBeta.domain.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * {@code ClimbingGrade} is a persisted grade reference used by climbing problems and perceived grades.
+ */
 @Entity
 @Table(name = "Climbing_Grade")
 @Setter

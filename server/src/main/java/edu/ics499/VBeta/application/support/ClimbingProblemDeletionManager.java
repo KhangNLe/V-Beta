@@ -10,6 +10,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * {@code ClimbingProblemDeletionManager} performs cascading deletion for a
+ * {@link ClimbingProblem} and all dependent records.
+ * <p>
+ * The manager explicitly removes related betas, comments, and perceived grades in a controlled
+ * sequence before deleting the problem itself, ensuring referential integrity at the application level.
+ */
 @Service
 @Transactional
 public class ClimbingProblemDeletionManager {
@@ -21,6 +28,16 @@ public class ClimbingProblemDeletionManager {
     private final ClimbingProblemRepository climbingProblemRepository;
 
 
+    /**
+     * Constructs a new {@code ClimbingProblemDeletionManager} with repositories for all dependent entities.
+     *
+     * @param userPerceiveGradeRepository repository for perceived grade rows
+     * @param solutionBetaRepository repository for solution beta entities
+     * @param userBetaRepository repository for user/problem beta links
+     * @param userCommentRepository repository for user comment anchors
+     * @param discussionCommentRepository repository for discussion comment bodies
+     * @param climbingProblemRepository repository for climbing problem entities
+     */
     public ClimbingProblemDeletionManager(UserPerceiveGradeRepository userPerceiveGradeRepository,
                                           SolutionBetaRepository solutionBetaRepository,
                                           UserBetaRepository userBetaRepository,
@@ -35,6 +52,11 @@ public class ClimbingProblemDeletionManager {
         this.climbingProblemRepository = climbingProblemRepository;
     }
 
+    /**
+     * Deletes a climbing problem and associated comments, beta records, and perceived grades.
+     *
+     * @param problem climbing problem to delete
+     */
     public void deleteClimbingProblem(ClimbingProblem problem){
         if(validateClimbingProblem(problem)){
             return ;
