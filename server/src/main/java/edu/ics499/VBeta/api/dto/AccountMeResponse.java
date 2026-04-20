@@ -1,4 +1,11 @@
 package edu.ics499.VBeta.api.dto;
 
-// DTO (Data Transfer Object) for the /api/account endpoint response, which includes the user's account info and role (if any).
+/**
+ * Response DTO for the current authenticated account endpoint.
+ *
+ * @param userId unique identifier of the authenticated user
+ * @param username username of the authenticated user
+ * @param email email address of the authenticated user
+ * @param role role name assigned to the user, when available
+ */
 public record AccountMeResponse(Long userId, String username, String email, String role) {}

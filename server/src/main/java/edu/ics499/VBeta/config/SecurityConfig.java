@@ -9,9 +9,26 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * {@code SecurityConfig} defines HTTP security policy for the API.
+ * <p>
+ * It configures stateless token-based authentication, enables CORS integration,
+ * and inserts the {@link FirebaseAuthFilter} into Spring Security's filter chain.
+ */
 @Configuration
 public class SecurityConfig {
 
+    /**
+     * Builds the primary {@link SecurityFilterChain} for API requests.
+     * <p>
+     * This chain disables CSRF for stateless API usage, permits selected public endpoints,
+     * and requires authentication for all other routes.
+     *
+     * @param http Spring Security HTTP builder
+     * @param firebaseAuthFilter Firebase token authentication filter
+     * @return configured security filter chain
+     * @throws Exception when the security chain cannot be built
+     */
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, FirebaseAuthFilter firebaseAuthFilter)
             throws Exception {

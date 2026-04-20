@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code ClimbingProblem} models a route/problem set on a wall section.
+ */
 @Entity
 @Table(name = "Climbing_Problem")
 @Getter

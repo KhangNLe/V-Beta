@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * {@code GymAction} stores a single action that can be granted to roles.
+ */
 @Entity
 @Table(name = "Gym_Action")
 @Getter

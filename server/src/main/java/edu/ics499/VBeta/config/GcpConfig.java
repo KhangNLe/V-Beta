@@ -11,9 +11,23 @@ import org.springframework.core.io.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * {@code GcpConfig} provides Google Cloud Platform infrastructure beans.
+ * <p>
+ * It creates a configured {@link Storage} client using application credentials
+ * and project metadata from Spring properties.
+ */
 @Configuration
 public class GcpConfig {
 
+    /**
+     * Creates a Google Cloud Storage client bean.
+     *
+     * @param projectId GCP project identifier used by the storage client
+     * @param credentialsLocation resource location of the service-account credentials file
+     * @return configured Google Cloud {@link Storage} service
+     * @throws IOException when credential resource cannot be read
+     */
     @Bean
     public Storage storage(
             @Value("${spring.cloud.gcp.project-id}") String projectId,

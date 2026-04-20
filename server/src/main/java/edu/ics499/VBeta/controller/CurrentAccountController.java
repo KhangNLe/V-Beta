@@ -11,6 +11,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * {@code CurrentAccountController} exposes endpoints for the currently authenticated account.
+ * <p>
+ * It provides account profile retrieval and self-service account deletion using the
+ * Firebase-authenticated identity from the active security context.
+ */
 @RestController
 @RequestMapping("/api")
 public class CurrentAccountController {
@@ -19,6 +25,13 @@ public class CurrentAccountController {
     private final AuthorizationService authorizationService;
     private final AccountService accountService;
 
+    /**
+     * Constructs a new {@code CurrentAccountController} with account and authorization services.
+     *
+     * @param userAccountRepository repository for reading current account with role data
+     * @param authorizationService authorization helper for current-user identity lookup
+     * @param accountService service handling account-level operations
+     */
     public CurrentAccountController(UserAccountRepository userAccountRepository,
                                     AuthorizationService authorizationService,
                                     AccountService accountService) {
@@ -27,6 +40,12 @@ public class CurrentAccountController {
         this.accountService = accountService;
     }
 
+    /**
+     * Returns profile information for the currently authenticated account.
+     *
+     * @param authentication Spring Security authentication object for current request
+     * @return current account payload including role information
+     */
     @GetMapping("/account")
     public ResponseEntity<AccountMeResponse> currentAccount(Authentication authentication) {
         String firebaseUid = (String) authentication.getPrincipal();
@@ -43,6 +62,9 @@ public class CurrentAccountController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Deletes the currently authenticated account.
+     */
     @DeleteMapping("/account/deletion")
     @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.OK)
