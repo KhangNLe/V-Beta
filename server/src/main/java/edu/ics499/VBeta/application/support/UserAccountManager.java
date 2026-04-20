@@ -16,7 +16,8 @@ import java.util.Optional;
  * {@code UserAccountManager} provides account lookup and account creation operations.
  * <p>
  * It is responsible for assigning the default {@link RoleType#CLIMBER} role to new users
- * and exposing account retrieval/removal methods used by service-level authorization and profile flows.
+ * and exposing account retrieval/removal/update methods used by service-level authorization
+ * and profile administration flows.
  */
 @Service
 @Transactional
@@ -99,4 +100,27 @@ public class UserAccountManager {
     public void removeAccount(UserAccount account){
         userAccountRepository.delete(account);
     }
+
+    /**
+     * Persists account changes to storage.
+     *
+     * @param userAccount account entity to save
+     * @return saved account entity
+     */
+    public UserAccount saveUserAccount(UserAccount userAccount) {
+        return userAccountRepository.save(userAccount);
+    }
+
+    /**
+     * Resolves a persisted gym role by role type.
+     *
+     * @param roleType role type to resolve
+     * @return matching gym role or {@code null} when missing
+     */
+    public GymRole findGymRole(RoleType roleType) {
+        Optional<GymRole> result = gymRoleRepository.findByRoleType(roleType);
+
+        return result.orElse(null);
+    }
+
 }
