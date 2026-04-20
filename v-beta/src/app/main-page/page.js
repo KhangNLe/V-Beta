@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
 import {
   addWallSection,
   deleteWallSection,
   fetchWallSectionsForUser,
-} from "@/api/wallSections";
+} from '@/api/wallSections';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,8 +14,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -23,13 +23,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Card,
   CardAction,
@@ -38,28 +38,33 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import PageLoader from "@/components/ui/PageLoader";
-import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { colors } from "@/ui/appTheme";
-import { MoreVertical } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "react-toastify";
+} from '@/components/ui/card';
+import PageLoader from '@/components/ui/PageLoader';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { colors } from '@/ui/appTheme';
+import { MoreVertical } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+import GuestBanner from '@/components/GuestBanner';
 
 export default function MainPage() {
   const router = useRouter();
-  const { user, account, ready } = useRequireAuth({ redirectMode: "push" });
+  const { user, account, ready } = useRequireAuth({
+    redirectMode: 'push',
+    requireAuth: false,
+  });
   const [sections, setSections] = useState([]);
-  const isAdmin = (account?.roleName || "").toUpperCase().includes("ADMIN");
+  const isAdmin = (account?.roleName || '').toUpperCase().includes('ADMIN');
 
   const [fetchError, setFetchError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [newSectionName, setNewSectionName] = useState("");
-  const [newSectionInfo, setNewSectionInfo] = useState("");
+  const [newSectionName, setNewSectionName] = useState('');
+  const [newSectionInfo, setNewSectionInfo] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const isSignedIn = !!user;
 
   const loadSections = useCallback(async (currentUser) => {
     try {
@@ -67,15 +72,15 @@ export default function MainPage() {
       setSections(Array.isArray(data) ? data : []);
       setFetchError(null);
     } catch (err) {
-      console.error("Fetch wall sections failed:", err);
-      setFetchError(err instanceof Error ? err.message : "Unknown error");
+      console.error('Fetch wall sections failed:', err);
+      setFetchError(err instanceof Error ? err.message : 'Unknown error');
     }
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!ready) return;
     void loadSections(user);
-  }, [loadSections, user]);
+  }, [loadSections, user, ready]);
 
   const handleSelectSection = (section) => {
     router.push(`/wall/${section.wallSectionID}`);
@@ -88,7 +93,7 @@ export default function MainPage() {
     const name = newSectionName.trim();
     const info = newSectionInfo.trim();
     if (!name || !info) {
-      toast.error("Please enter both a name and description.");
+      toast.error('Please enter both a name and description.');
       return;
     }
 
@@ -99,13 +104,15 @@ export default function MainPage() {
         wallSectionInfo: info,
       });
       await loadSections(user);
-      setNewSectionName("");
-      setNewSectionInfo("");
+      setNewSectionName('');
+      setNewSectionInfo('');
       setAddOpen(false);
-      toast.success("Wall section added.");
+      toast.success('Wall section added.');
     } catch (err) {
-      console.error("Add wall section failed:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to add wall section.");
+      console.error('Add wall section failed:', err);
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to add wall section.',
+      );
     } finally {
       setAddSubmitting(false);
     }
@@ -123,21 +130,28 @@ export default function MainPage() {
       await deleteWallSection(user, id);
       await loadSections(user);
       setDeleteTarget(null);
-      toast.success("Wall section deleted.");
+      toast.success('Wall section deleted.');
     } catch (err) {
-      console.error("Delete wall section failed:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to delete wall section.");
+      console.error('Delete wall section failed:', err);
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to delete wall section.',
+      );
     } finally {
       setDeleteSubmitting(false);
     }
   }, [deleteSubmitting, deleteTarget, isAdmin, loadSections, user]);
 
   if (!ready) return <PageLoader message="Loading…" />;
-  if (!user) return <PageLoader message="Redirecting…" />;
-  
+
   return (
     <main className="min-h-screen bg-zinc-100 px-6 py-7 pb-12 font-sans text-zinc-900">
       <div className="mx-auto max-w-[960px]">
+        {!isSignedIn && (
+          <GuestBanner
+            message="You are browsing as a guest. Log in or sign up to access interactive features "
+            className="mb-5"
+          />
+        )}
         <header className="mb-6">
           <h1 className="m-0 text-[1.75rem] font-bold">GYM</h1>
         </header>
@@ -153,7 +167,8 @@ export default function MainPage() {
               Gym info
             </CardTitle>
             <CardDescription className="mb-3 max-w-[65ch] text-[0.9375rem] leading-[1.55] text-zinc-600">
-              A fantastic gym with a variety of climbing walls for all skill levels. Come in and climb!
+              A fantastic gym with a variety of climbing walls for all skill
+              levels. Come in and climb!
             </CardDescription>
           </CardHeader>
           <CardContent className="px-0 pb-0">
@@ -169,8 +184,8 @@ export default function MainPage() {
         <div
           className="mb-4 flex flex-wrap items-center justify-between gap-3"
           style={{
-            "--section-btn-primary": colors.primary,
-            "--section-btn-primary-hover": colors.primaryDark,
+            '--section-btn-primary': colors.primary,
+            '--section-btn-primary-hover': colors.primaryDark,
           }}
         >
           <h2 className="m-0 text-lg font-bold text-zinc-900">Wall Sections</h2>
@@ -202,8 +217,8 @@ export default function MainPage() {
                 key={section.wallSectionID}
                 className="gap-2.5 overflow-hidden border border-zinc-200 bg-white p-0 py-5 shadow-sm ring-0"
                 style={{
-                  "--section-btn-primary": colors.primary,
-                  "--section-btn-primary-hover": colors.primaryDark,
+                  '--section-btn-primary': colors.primary,
+                  '--section-btn-primary-hover': colors.primaryDark,
                 }}
               >
                 <CardHeader className="px-5 pt-0 pb-0">
@@ -241,7 +256,8 @@ export default function MainPage() {
 
                 <CardContent className="flex flex-grow flex-col px-5 pb-0 pt-0">
                   <p className="m-0 text-sm leading-normal text-zinc-600">
-                    {section.wallSectionInfo || "No description available for this section."}
+                    {section.wallSectionInfo ||
+                      'No description available for this section.'}
                   </p>
                 </CardContent>
 
@@ -266,16 +282,16 @@ export default function MainPage() {
         onOpenChange={(open) => {
           setAddOpen(open);
           if (!open) {
-            setNewSectionName("");
-            setNewSectionInfo("");
+            setNewSectionName('');
+            setNewSectionInfo('');
           }
         }}
       >
         <DialogContent
           className="sm:max-w-md"
           style={{
-            "--section-btn-primary": colors.primary,
-            "--section-btn-primary-hover": colors.primaryDark,
+            '--section-btn-primary': colors.primary,
+            '--section-btn-primary-hover': colors.primaryDark,
           }}
         >
           <DialogHeader>
@@ -286,7 +302,10 @@ export default function MainPage() {
           </DialogHeader>
           <form onSubmit={handleAddSection} className="grid gap-3">
             <div className="grid gap-1.5">
-              <label htmlFor="add-ws-name" className="text-sm font-medium text-zinc-700">
+              <label
+                htmlFor="add-ws-name"
+                className="text-sm font-medium text-zinc-700"
+              >
                 Name
               </label>
               <input
@@ -302,7 +321,10 @@ export default function MainPage() {
               />
             </div>
             <div className="grid gap-1.5">
-              <label htmlFor="add-ws-info" className="text-sm font-medium text-zinc-700">
+              <label
+                htmlFor="add-ws-info"
+                className="text-sm font-medium text-zinc-700"
+              >
                 Description
               </label>
               <textarea
@@ -317,7 +339,11 @@ export default function MainPage() {
               />
             </div>
             <DialogFooter className="mt-1 gap-2 sm:justify-end">
-              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setAddOpen(false)}
+              >
                 Cancel
               </Button>
               <Button
@@ -325,7 +351,7 @@ export default function MainPage() {
                 disabled={addSubmitting}
                 className="border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
               >
-                {addSubmitting ? "Adding..." : "Add section"}
+                {addSubmitting ? 'Adding...' : 'Add section'}
               </Button>
             </DialogFooter>
           </form>
@@ -354,7 +380,7 @@ export default function MainPage() {
               disabled={deleteSubmitting}
               onClick={handleConfirmDelete}
             >
-              {deleteSubmitting ? "Deleting..." : "Delete"}
+              {deleteSubmitting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

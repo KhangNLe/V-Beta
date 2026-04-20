@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
 // This component handles user authentication using Firebase Authentication.
 // It allows users to sign up, log in, and log out using their email and password.
 // The component listens for authentication state changes and updates the UI accordingly.
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
@@ -13,19 +13,19 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
-} from "firebase/auth";
-import { auth } from "../app/firebase";
+} from 'firebase/auth';
+import { auth } from '../app/firebase';
 import {
   clearStoredAccountSession,
   syncAccountSessionWithBackend,
-} from "@/lib/accountSession";
-import { toast } from "react-toastify";
+} from '@/lib/accountSession';
+import { toast } from 'react-toastify';
 
 export default function Authentication() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const googleProvider = new GoogleAuthProvider();
 
@@ -37,7 +37,7 @@ export default function Authentication() {
 
       // Redirect to the main page if the user is authenticated
       if (currentUser) {
-        router.push("/main-page");
+        router.push('/main-page');
       }
     });
 
@@ -82,12 +82,17 @@ export default function Authentication() {
     }
   };
 
+  const handleContinueAsGuest = () => {
+    clearStoredAccountSession();
+    router.push('/main-page');
+  };
+
   // Handle user sign-out using Firebase Authentication
   const handleSignOut = async () => {
     try {
       await signOut(auth);
       clearStoredAccountSession();
-      router.push("/login");
+      router.push('/login');
     } catch (error) {
       toast.error(error.message);
     }
@@ -119,6 +124,7 @@ export default function Authentication() {
           <button onClick={handleSignIn}>Log in</button>
           <button onClick={handleSignup}>Sign up</button>
           <button onClick={handleGoogleSignIn}>Sign in with Google</button>
+          <button onClick={handleContinueAsGuest}>Continue as Guest</button>
         </div>
       )}
     </div>
