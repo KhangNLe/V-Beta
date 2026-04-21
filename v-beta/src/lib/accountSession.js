@@ -57,24 +57,46 @@ export function getStoredAccountSession() {
 
 /**
  * @param {import("firebase/auth").User} currentUser
+ * @param {{ username?: string }} [options]
  * @returns {Promise<AccountSession>}
  */
-export async function syncAccountSessionWithBackend(currentUser) {
+export async function syncAccountSessionWithBackend(currentUser, options = {}) {
+  const explicit = options.username;
+  const username =
+    typeof explicit === "string" && explicit.trim() !== ""
+      ? explicit.trim()
+      : currentUser.displayName?.trim() ||
+        currentUser.email?.split("@")[0] ||
+        "user";
+
   const idToken = await currentUser.getIdToken();
-  const response = await fetch(`${API_BASE_URL}/api/accounts/session`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      Authorization: `Bearer ${idToken}`,
-    },
-    body: JSON.stringify({
-      username: currentUser.displayName || currentUser.email?.split("@")[0] || "user",
-      email: currentUser.email || "",
-    }),
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/accounts/session`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        username,
+        email: currentUser.email || "",
+      }),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to reach backend.";
+    throw new Error(`Backend session sync failed: ${message}`);
+  }
 
   if (!response.ok) {
-    throw new Error(`Failed to create backend session: ${response.status}`);
+    let detail = "";
+    try {
+      const text = await response.text();
+      detail = text ? `: ${text.slice(0, 200)}` : "";
+    } catch {
+      // ignore
+    }
+    throw new Error(`Backend session failed (${response.status} ${response.statusText})${detail}`);
   }
 
   const raw = await response.json();

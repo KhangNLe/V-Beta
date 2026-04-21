@@ -1,0 +1,63 @@
+/* ROLE NAVBAR */
+.role-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.role-navbar__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.role-navbar__links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+}
+
+.role-navbar__links--right {
+  margin-left: auto;
+  gap: 0.4rem 0.5rem;
+}
+
+.role-navbar__link {
+  display: inline-block;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.role-navbar__link:hover {
+  background: #eef2ff;
+}
+
+.role-navbar__link--active {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.role-navbar__link--disabled {
+  opacity: 0.8;
+  cursor: default;
+  user-select: none;
+}
+
+.role-navbar__link--disabled:hover {
+  background: transparent;
+}
+
+.role-navbar__link--action {
+  cursor: pointer;
+}

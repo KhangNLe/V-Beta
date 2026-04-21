@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { buttons, card, colors, layout, fontFamily } from '@/ui/appTheme';
-import { MoreVertical } from 'lucide-react';
+import { ArrowLeftIcon, MoreVertical } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -102,8 +102,9 @@ export default function ProblemPage() {
   const router = useRouter();
   const params = useParams();
   const { user, account, ready } = useRequireAuth({
-    redirectMode: 'push',
+    redirectMode: "push",
     requireAuth: false,
+    requireEmailVerified: true,
   });
 
   const [problem, setProblem] = useState(null);
@@ -385,20 +386,26 @@ export default function ProblemPage() {
   return (
     <main style={layout.main}>
       <div style={layout.maxWidth960}>
-        <button
-          type="button"
-          onClick={handleBackToSection}
-          style={{ ...buttons.secondary, marginBottom: '16px' }}
-        >
-          Back to Wall Section
-        </button>
 
+        {/* Guest View Message */}
         {!isSignedIn && (
           <GuestBanner
             message="You are viewing as a guest. Sign in to comment, upload beta, suggest a difficulty, and access your account."
             className="mb-5"
           />
         )}
+        
+        {/* Back to Wall Section Button */}
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={handleBackToSection}
+          className="mb-4 text-muted-foreground hover:text-foreground"
+          aria-label="Back to wall section"
+        >
+          <ArrowLeftIcon className="size-4" />
+        </Button>
+
 
         {fetchError && (
           <div
@@ -458,7 +465,7 @@ export default function ProblemPage() {
               <p
                 style={{
                   margin: 0,
-                  color: colors.text,
+                  color: colors.muted,
                   lineHeight: 1.55,
                   maxWidth: '65ch',
                 }}
@@ -627,22 +634,6 @@ export default function ProblemPage() {
                 <p style={{ color: colors.subtle, marginBottom: '24px' }}>
                   No comments yet. Be the first to discuss this problem!
                 </p>
-              )}
-              {/* Guest View Message */}
-              {!user && (
-                <div
-                  style={{
-                    marginBottom: '16px',
-                    padding: '12px 14px',
-                    borderRadius: '8px',
-                    border: `1px solid ${colors.border}`,
-                    background: colors.surface,
-                    color: colors.muted,
-                  }}
-                >
-                  You are viewing as a guest. Sign in to comment, upload beta,
-                  and access your account.
-                </div>
               )}
 
               {/* Add Comment Form */}

@@ -27,7 +27,7 @@ export async function fetchWallSectionsForUser(user) {
  *
  * @param {import("firebase/auth").User} user
  * @param {number} sectionId
- * @returns {Promise<import("@/types/climbProblem").ClimbProblem[]>}
+ * @returns {Promise<import("@/types/climbingProblem").ClimbingProblem[]>}
  */
 export async function fetchWallSectionProblemsForUser(user, sectionId) {
   const headers = {};
@@ -157,6 +157,62 @@ export async function resetWallSection(user, wallSectionId) {
   );
 
   if (!response.ok) {
-    toast.error(`Failed to reset wall section: ${response.status}`);
+    throw new Error(`Failed to reset wall section: ${response.status}`);
   }
+}
+
+/**
+ * Create a climbing problem under a wall section (setter / admin per server rules).
+ *
+ * @param {import("firebase/auth").User} user
+ * @param {number} sectionId
+ * @param {{ holdColor: string, info: string, assignedGrade: string }} body assignedGrade must match server GradeDefinition (e.g. V4, VB)
+ * @returns {Promise<Record<string, unknown>>}
+ */
+export async function createWallSectionProblem(user, sectionId, body) {
+  const idToken = await user.getIdToken();
+  const response = await fetch(
+    `${API_BASE_URL}/home/wall-sections/${sectionId}/problems/create`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to create problem: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Delete a climbing problem; returns the updated list of active problems for the section.
+ *
+ * @param {import("firebase/auth").User} user
+ * @param {number} sectionId
+ * @param {number} problemId
+ * @returns {Promise<import("@/types/climbingProblem").ClimbingProblem[]>}
+ */
+export async function deleteWallSectionProblem(user, sectionId, problemId) {
+  const idToken = await user.getIdToken();
+  const response = await fetch(
+    `${API_BASE_URL}/home/wall-sections/${sectionId}/problems/${problemId}/delete`,
+    {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${idToken}` },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete problem: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 }
