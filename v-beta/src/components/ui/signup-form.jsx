@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
@@ -198,11 +197,16 @@ export function SignupForm({ className, ...props }) {
             <SiGoogle className="size-[.9rem] shrink-0" aria-hidden />
             Sign up with Google
           </Button>
-          <FieldDescription className="px-6 text-center">
+          <FieldDescription className="px-6 text-center text-xs text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="underline underline-offset-4">
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              disabled={isLoading}
+              onClick={() => router.push("/login")}
+            >
               Sign in
-            </Link>
+            </button>
           </FieldDescription>
         </Field>
       </FieldGroup>

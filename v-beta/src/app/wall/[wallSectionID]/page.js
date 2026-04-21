@@ -87,7 +87,7 @@ export default function WallSectionPage() {
   const isSignedIn = !!user;
   const canManageWallProblems = useMemo(() => {
     const roleUpper = (account?.roleName || "").toUpperCase();
-    return roleUpper.includes("ADMIN") || roleUpper.includes("SETTER");
+    return roleUpper.includes("SETTER");
   }, [account?.roleName]);
 
   const rawWallSectionID = params?.wallSectionID;

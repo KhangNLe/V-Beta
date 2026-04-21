@@ -167,9 +167,14 @@ export function LoginForm({ className, ...props }) {
           </Button>
           <FieldDescription className="text-center text-xs text-muted-foreground whitespace-nowrap">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              disabled={isLoading}
+              onClick={() => router.push("/signup")}
+            >
               Sign up
-            </Link>
+            </button>
             <span className="mx-1 text-muted-foreground/80" aria-hidden>
               ·
             </span>
