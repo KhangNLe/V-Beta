@@ -124,7 +124,7 @@ public class WallSectionController {
      * @param wallSectionId wall section identifier
      * @return created climbing problem response
      */
-    @GetMapping("/wall-sections/{wallSectionId}/problems/create")
+    @PostMapping("/wall-sections/{wallSectionId}/problems/create")
     public ClimbingProblemResponse createClimbingProblem(@Valid @RequestBody ClimbingProblemCreationRequest request,
                                                          @PathVariable Long wallSectionId){
         String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();

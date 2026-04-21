@@ -1,6 +1,12 @@
 "use client";
 
-import { fetchWallSectionProblemsForUser, fetchWallSectionsForUser } from "@/api/wallSections";
+import {
+  createWallSectionProblem,
+  deleteWallSectionProblem,
+  fetchWallSectionProblemsForUser,
+  fetchWallSectionsForUser,
+  resetWallSection,
+} from "@/api/wallSections";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,17 +42,36 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, MoreVertical } from "lucide-react";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { MoreVertical } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 
+/** @param {string} raw */
+function assignedGradeToEnum(raw) {
+  const t = raw.trim().toUpperCase();
+  if (t === "VB") return "VB";
+  const match = /^V(\d+)$/.exec(t);
+  if (match) {
+    const n = parseInt(match[1], 10);
+    if (n >= 0 && n <= 17) return `V${n}`;
+  }
+  return null;
+}
+
 export default function WallSectionPage() {
   const router = useRouter();
   const params = useParams();
-  const { user, ready } = useRequireAuth({ requireAuth: false });
+  const { user, account, ready } = useRequireAuth({
+    redirectMode: "push",
+    requireAuth: false,
+  });
+  const roleUpper = (account?.roleName || "").toUpperCase();
+  const isAdmin = roleUpper.includes("ADMIN");
+  const isSetter = roleUpper.includes("SETTER");
+  const canManageWallProblems = isSetter || isAdmin;
+
   const [section, setSection] = useState(null);
   const [problems, setProblems] = useState([]);
   const [fetchError, setFetchError] = useState(null);
@@ -57,6 +82,9 @@ export default function WallSectionPage() {
   const [newAssignedGrade, setNewAssignedGrade] = useState("");
   const [newProblemInfo, setNewProblemInfo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [addSubmitting, setAddSubmitting] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   const rawWallSectionID = params?.wallSectionID;
   const wallSectionID = useMemo(() => {
@@ -65,6 +93,15 @@ export default function WallSectionPage() {
     const parsed = Number(normalized);
     return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
   }, [rawWallSectionID]);
+
+  const loadProblems = useCallback(
+    async (currentUser) => {
+      if (!wallSectionID) return;
+      const problemsData = await fetchWallSectionProblemsForUser(currentUser, wallSectionID);
+      setProblems(Array.isArray(problemsData) ? problemsData : []);
+    },
+    [wallSectionID],
+  );
 
   useEffect(() => {
     if (!ready) return;
@@ -101,10 +138,9 @@ export default function WallSectionPage() {
 
         setSection(selected);
 
-        const problemsData = await fetchWallSectionProblemsForUser(user, wallSectionID);
+        await loadProblems(user);
         if (cancelled) return;
 
-        setProblems(Array.isArray(problemsData) ? problemsData : []);
         setFetchError(null);
       } catch (err) {
         console.error("Failed to fetch wall section page data:", err);
@@ -116,7 +152,7 @@ export default function WallSectionPage() {
     return () => {
       cancelled = true;
     };
-  }, [ready, user, wallSectionID, router]);
+  }, [ready, user, wallSectionID, router, loadProblems]);
 
   const handleViewProblem = (problemId) => {
     router.push(`/wall/${wallSectionID}/problem/${problemId}`);
@@ -126,48 +162,76 @@ export default function WallSectionPage() {
     router.push("/main-page");
   };
 
-  // TODO: send delete request to API to remove problem from database
-  const handleConfirmDelete = useCallback(() => {
-    if (!deleteTarget) return;
-    const targetId = deleteTarget.problemId;
-    setProblems((prev) => prev.filter((problem) => problem.problemId !== targetId));
-    setDeleteTarget(null);
-    toast.success("Problem deleted.");
-  }, [deleteTarget]);
+  const handleConfirmDelete = useCallback(async () => {
+    if (!canManageWallProblems || !user || !deleteTarget || !wallSectionID || deleteSubmitting) return;
+    try {
+      setDeleteSubmitting(true);
+      const list = await deleteWallSectionProblem(user, wallSectionID, deleteTarget.problemId);
+      setProblems(list);
+      setDeleteTarget(null);
+      toast.success("Problem deleted.");
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to delete problem.");
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  }, [
+    canManageWallProblems,
+    user,
+    deleteTarget,
+    wallSectionID,
+    deleteSubmitting,
+  ]);
 
-  // TODO: replace client-side ID generation with real ID from API response
-  const handleAddProblem = (e) => {
+  const handleAddProblem = async (e) => {
     e.preventDefault();
-    const holdColor = newHoldColor.trim();
-    const assignedGrade = newAssignedGrade.trim();
-    const info = newProblemInfo.trim();
-    const nextId =
-      problems.length === 0
-        ? 1
-        : Math.max(...problems.map((problem) => Number(problem.problemId) || 0)) + 1;
+    if (!canManageWallProblems || !user || addSubmitting || !wallSectionID) return;
 
-    setProblems((prev) => [
-      ...prev,
-      {
-        problemId: nextId,
+    const holdColor = newHoldColor.trim();
+    const assignedGradeEnum = assignedGradeToEnum(newAssignedGrade);
+    const info = newProblemInfo.trim();
+    if (!assignedGradeEnum) {
+      toast.error("Enter a valid grade: VB or V0 through V17.");
+      return;
+    }
+
+    try {
+      setAddSubmitting(true);
+      await createWallSectionProblem(user, wallSectionID, {
         holdColor,
-        assignedGrade,
         info,
-      },
-    ]);
-    setNewHoldColor("");
-    setNewAssignedGrade("");
-    setNewProblemInfo("");
-    setAddOpen(false);
-    toast.success("Problem added.");
+        assignedGrade: assignedGradeEnum,
+      });
+      await loadProblems(user);
+      setNewHoldColor("");
+      setNewAssignedGrade("");
+      setNewProblemInfo("");
+      setAddOpen(false);
+      toast.success("Problem added.");
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to add problem.");
+    } finally {
+      setAddSubmitting(false);
+    }
   };
 
-  // TODO: call backend reset endpoint to remove all section problems in database
-  const handleResetWallSection = useCallback(() => {
-    setProblems([]);
-    setResetOpen(false);
-    toast.success("Wall section reset.");
-  }, []);
+  const handleResetWallSection = useCallback(async () => {
+    if (!canManageWallProblems || !user || !wallSectionID || resetSubmitting) return;
+    try {
+      setResetSubmitting(true);
+      await resetWallSection(user, wallSectionID);
+      await loadProblems(user);
+      setResetOpen(false);
+      toast.success("Wall section reset.");
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to reset wall section.");
+    } finally {
+      setResetSubmitting(false);
+    }
+  }, [canManageWallProblems, user, wallSectionID, resetSubmitting, loadProblems]);
 
   if (!ready) return <PageLoader message="Loading…" />;
   if (loading) return <PageLoader message="Loading wall section…" />;
@@ -206,25 +270,25 @@ export default function WallSectionPage() {
         {/* Problems heading + actions */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="m-0 text-lg font-bold text-zinc-900">Problems</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* TODO: hide if not admin or setter*/}
-            <Button
-              type="button"
-              variant="destructive"
-              className="shrink-0"
-              onClick={() => setResetOpen(true)}
-            >
-              Reset Wall Section
-            </Button>
-            {/* TODO: hide if not admin or setter*/}
-            <Button
-              type="button"
-              className="shrink-0 border-transparent bg-blue-600 text-white hover:bg-blue-700"
-              onClick={() => setAddOpen(true)}
-            >
-              Add New Problem
-            </Button>
-          </div>
+          {canManageWallProblems && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                className="shrink-0"
+                onClick={() => setResetOpen(true)}
+              >
+                Reset Wall Section
+              </Button>
+              <Button
+                type="button"
+                className="shrink-0 border-transparent bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => setAddOpen(true)}
+              >
+                Add New Problem
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Fetch error */}
@@ -247,33 +311,33 @@ export default function WallSectionPage() {
                       <CardTitle className="text-lg font-semibold leading-[1.35] text-zinc-900">
                         {problem.holdColor}
                       </CardTitle>
-                      {/* Problem actions menu */}
-                      {/* TODO: hide if not admin or setter*/}
-                      <CardAction>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                className="shrink-0 text-zinc-600"
-                                aria-label="Problem actions"
-                              />
-                            }
-                          >
-                            <MoreVertical className="size-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => setDeleteTarget(problem)}
+                      {canManageWallProblems && (
+                        <CardAction>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="shrink-0 text-zinc-600"
+                                  aria-label="Problem actions"
+                                />
+                              }
                             >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </CardAction>
+                              <MoreVertical className="size-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => setDeleteTarget(problem)}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </CardAction>
+                      )}
                     </div>
                   </CardHeader>
 
@@ -317,7 +381,7 @@ export default function WallSectionPage() {
           <DialogHeader>
             <DialogTitle>Add Problem</DialogTitle>
             <DialogDescription>
-              Enter problem details for this wall section.
+              Enter problem details for this wall section. Grade must be VB or V0 through V17 (e.g. V4).
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddProblem} className="grid gap-3">
@@ -374,9 +438,10 @@ export default function WallSectionPage() {
               </Button>
               <Button
                 type="submit"
+                disabled={addSubmitting}
                 className="border-transparent bg-blue-600 text-white hover:bg-blue-700"
               >
-                Add problem
+                {addSubmitting ? "Adding…" : "Add problem"}
               </Button>
             </DialogFooter>
           </form>
@@ -402,9 +467,10 @@ export default function WallSectionPage() {
             <AlertDialogAction
               type="button"
               variant="destructive"
+              disabled={resetSubmitting}
               onClick={handleResetWallSection}
             >
-              Reset
+              {resetSubmitting ? "Resetting…" : "Reset"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -429,9 +495,10 @@ export default function WallSectionPage() {
             <AlertDialogAction
               type="button"
               variant="destructive"
+              disabled={deleteSubmitting}
               onClick={handleConfirmDelete}
             >
-              Delete
+              {deleteSubmitting ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
