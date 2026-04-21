@@ -2,6 +2,7 @@ package edu.ics499.VBeta.api.dto;
 
 import edu.ics499.VBeta.domain.model.GradeDefinition;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -16,7 +17,7 @@ public record ClimbingProblemCreationRequest(
         String holdColor,
         @NotBlank @Size(max = 250)
         String info,
-        @NotBlank
+        @NotNull
         GradeDefinition assignedGrade
 ) {
 }

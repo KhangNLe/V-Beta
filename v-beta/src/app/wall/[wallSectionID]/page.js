@@ -17,8 +17,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import GuestBanner from "@/components/GuestBanner";
 import PageLoader from "@/components/ui/PageLoader";
 import { Button } from "@/components/ui/button";
+import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
 import {
   Card,
   CardAction,
@@ -66,12 +68,8 @@ export default function WallSectionPage() {
   const { user, account, ready } = useRequireAuth({
     redirectMode: "push",
     requireAuth: false,
+    requireEmailVerified: true,
   });
-  const roleUpper = (account?.roleName || "").toUpperCase();
-  const isAdmin = roleUpper.includes("ADMIN");
-  const isSetter = roleUpper.includes("SETTER");
-  const canManageWallProblems = isSetter || isAdmin;
-
   const [section, setSection] = useState(null);
   const [problems, setProblems] = useState([]);
   const [fetchError, setFetchError] = useState(null);
@@ -86,6 +84,12 @@ export default function WallSectionPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [resetSubmitting, setResetSubmitting] = useState(false);
 
+  const isSignedIn = !!user;
+  const canManageWallProblems = useMemo(() => {
+    const roleUpper = (account?.roleName || "").toUpperCase();
+    return roleUpper.includes("ADMIN") || roleUpper.includes("SETTER");
+  }, [account?.roleName]);
+
   const rawWallSectionID = params?.wallSectionID;
   const wallSectionID = useMemo(() => {
     const normalized = Array.isArray(rawWallSectionID) ? rawWallSectionID[0] : rawWallSectionID;
@@ -97,8 +101,16 @@ export default function WallSectionPage() {
   const loadProblems = useCallback(
     async (currentUser) => {
       if (!wallSectionID) return;
-      const problemsData = await fetchWallSectionProblemsForUser(currentUser, wallSectionID);
-      setProblems(Array.isArray(problemsData) ? problemsData : []);
+      try {
+        const problemsData = await fetchWallSectionProblemsForUser(currentUser, wallSectionID);
+        setProblems(Array.isArray(problemsData) ? problemsData : []);
+      } catch (err) {
+        console.error("Failed to fetch wall section problems:", err);
+        const message =
+          err instanceof Error ? err.message : "Failed to load problems for this section.";
+        toast.error(message);
+        setProblems([]);
+      }
     },
     [wallSectionID],
   );
@@ -237,17 +249,19 @@ export default function WallSectionPage() {
   if (loading) return <PageLoader message="Loading wall section…" />;
 
   return (
-    <main className="min-h-screen bg-zinc-100 px-6 py-7 pb-12 text-zinc-900">
-      <div className="mx-auto max-w-[960px]">
-        {/* Back button to main page */}
-        <Button
+    <main style={layout.main}>
+      <div style={layout.maxWidth960}>
+        {!isSignedIn && (
+          <GuestBanner message="You are viewing this wall section as a guest. Sign in to unlock interactive features." />
+        )}
+        <button
           type="button"
           variant="ghost"
           onClick={handleBackToSections}
           className="mb-4"
         >
           <ArrowLeftIcon className="size-4" />
-        </Button>
+        </button>
 
         {/* Section Header Card */}
         <section>

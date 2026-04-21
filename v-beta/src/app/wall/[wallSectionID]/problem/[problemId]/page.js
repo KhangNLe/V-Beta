@@ -102,8 +102,9 @@ export default function ProblemPage() {
   const router = useRouter();
   const params = useParams();
   const { user, account, ready } = useRequireAuth({
-    redirectMode: 'push',
+    redirectMode: "push",
     requireAuth: false,
+    requireEmailVerified: true,
   });
 
   const [problem, setProblem] = useState(null);

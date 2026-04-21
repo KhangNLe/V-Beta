@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, useDeviceLanguage as syncAuthWithDeviceLanguage } from "firebase/auth";
 import {
   API_KEY,
   AUTH_DOMAIN,
@@ -26,5 +26,6 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
+syncAuthWithDeviceLanguage(auth);
 
 export default app;

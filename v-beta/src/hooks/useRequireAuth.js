@@ -1,49 +1,68 @@
 'use client';
 
-import { onAuthStateChanged } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { onAuthStateChanged } from "firebase/auth";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { auth } from '@/app/firebase';
 import {
   clearStoredAccountSession,
   getStoredAccountSession,
   syncAccountSessionWithBackend,
-} from '@/lib/accountSession';
+} from "@/lib/accountSession";
+import { needsPasswordProviderEmailVerification } from "@/lib/emailVerification";
 
 /**
- * Redirects unauthenticated visitors to `/`.
+ * Redirects unauthenticated visitors to `/login` unless `allowGuest` is true.
+ * `requireAuth: false` is treated as `allowGuest: true` for backwards compatibility.
+ * `requireEmailVerified: true` sends email/password unverified users to `/verify-email`.
  *
- * @param {{ redirectMode?: "push" | "replace" }} [options]
- * @returns {{
- *   user: import("firebase/auth").User | null,
- *   account: import("@/lib/accountSession").AccountSession | null,
- *   ready: boolean,
- * }}
+ * @param {{
+ *   skip?: boolean,
+ *   redirectMode?: "push" | "replace",
+ *   allowGuest?: boolean,
+ *   requireAuth?: boolean,
+ *   requireEmailVerified?: boolean,
+ * }} [options]
  */
 export function useRequireAuth(options = {}) {
-  const { redirectMode = 'push', requireAuth = true } = options;
+  const {
+    skip = false,
+    redirectMode = "push",
+    allowGuest: allowGuestOpt,
+    requireAuth,
+    requireEmailVerified = false,
+  } = options;
+  const allowGuest = allowGuestOpt ?? requireAuth === false;
   const router = useRouter();
-  /** @type {readonly [import("firebase/auth").User | null, (u: import("firebase/auth").User | null) => void]} */
+  const pathname = usePathname() ?? "";
   const [user, setUser] = useState(null);
   const [account, setAccount] = useState(() => getStoredAccountSession());
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (skip) return undefined;
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         setUser(null);
         setAccount(null);
         clearStoredAccountSession();
-
-        // If the user is not authenticated, redirect to the home page
-        if (requireAuth) {
-          if (redirectMode === 'replace') router.replace('/');
-          else router.push('/');
+        if (!allowGuest) {
+          if (redirectMode === "replace") router.replace("/login");
+          else router.push("/login");
         }
-
         setReady(true);
         return;
+      }
+
+      setUser(currentUser);
+      try {
+        const session = await syncAccountSessionWithBackend(currentUser);
+        setAccount(session);
+      } catch (error) {
+        console.error("Failed to sync backend account session:", error);
+        setAccount(getStoredAccountSession());
       }
       setUser(currentUser);
 
@@ -59,7 +78,14 @@ export function useRequireAuth(options = {}) {
     });
 
     return () => unsubscribe();
-  }, [router, redirectMode, requireAuth]);
+  }, [router, redirectMode, skip, allowGuest]);
+
+  useEffect(() => {
+    if (skip || !ready || !user) return;
+    if (!requireEmailVerified || !needsPasswordProviderEmailVerification(user)) return;
+    if (pathname === "/verify-email") return;
+    router.replace("/verify-email");
+  }, [skip, ready, user, requireEmailVerified, pathname, router]);
 
   return { user, account, ready };
 }
