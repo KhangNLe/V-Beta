@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * {@code AccountService} is the application-level entry point for account lifecycle behavior.
@@ -31,6 +33,18 @@ public class AccountService {
      */
     public AccountService(UserAccountManager userAccountManager){
         this.userAccountManager = userAccountManager;
+    }
+
+    /**
+     * Retrieves all user accounts.
+     *
+     * @return list of all account responses
+     */
+    public List<AccountResponse> getAllAccounts() {
+        List<UserAccount> accounts = userAccountManager.findAllUserAccounts();
+        return accounts.stream()
+                .map(this::responseInfo)
+                .collect(Collectors.toList());
     }
 
     /**
