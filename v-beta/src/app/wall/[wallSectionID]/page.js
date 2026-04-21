@@ -254,27 +254,36 @@ export default function WallSectionPage() {
         {!isSignedIn && (
           <GuestBanner message="You are viewing this wall section as a guest. Sign in to unlock interactive features." />
         )}
-        <button
+        <Button
           type="button"
           variant="ghost"
           onClick={handleBackToSections}
-          className="mb-4"
+          className="mb-4 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeftIcon className="size-4" />
-        </button>
+        </Button>
 
         {/* Section Header Card */}
         <section>
-          <Card className="relative mb-7 gap-0 overflow-hidden border border-zinc-200 bg-white py-[22px] pr-[22px] pl-5 shadow-sm ring-0">
-            <div
-              className="pointer-events-none absolute top-0 bottom-0 left-0 w-1 bg-linear-to-b from-blue-600 to-blue-700"
-              aria-hidden
-            />
+          <Card
+            className="relative mb-7 gap-0 overflow-hidden py-0 ring-0"
+            style={{
+              ...card.surface,
+              position: "relative",
+              overflow: "hidden",
+              fontFamily,
+              padding: "22px 22px 22px 20px",
+            }}
+          >
+            <div style={card.accentBar} aria-hidden />
             <CardHeader className="rounded-none px-0 pt-0 pb-0">
-              <CardTitle className="m-0 text-[1.75rem] font-bold text-zinc-900">
+              <CardTitle className="m-0 text-[1.75rem] font-bold" style={{ color: colors.text }}>
                 {section?.wallSectionName || `Section ${wallSectionID}`}
               </CardTitle>
-              <CardDescription className="mt-2 max-w-[65ch] text-[0.9375rem] leading-[1.55] text-zinc-600">
+              <CardDescription
+                className="mt-2 max-w-[65ch] text-[0.9375rem] leading-[1.55]"
+                style={{ color: colors.muted }}
+              >
                 {section?.wallSectionInfo || "No section description available."}
               </CardDescription>
             </CardHeader>
@@ -283,7 +292,9 @@ export default function WallSectionPage() {
 
         {/* Problems heading + actions */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="m-0 text-lg font-bold text-zinc-900">Problems</h2>
+          <h2 className="m-0 text-lg font-semibold" style={{ color: colors.muted }}>
+            Problems
+          </h2>
           {canManageWallProblems && (
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -294,11 +305,7 @@ export default function WallSectionPage() {
               >
                 Reset Wall Section
               </Button>
-              <Button
-                type="button"
-                className="shrink-0 border-transparent bg-blue-600 text-white hover:bg-blue-700"
-                onClick={() => setAddOpen(true)}
-              >
+              <Button type="button" className="shrink-0" style={buttons.primary} onClick={() => setAddOpen(true)}>
                 Add New Problem
               </Button>
             </div>
@@ -307,22 +314,41 @@ export default function WallSectionPage() {
 
         {/* Fetch error */}
         {fetchError && (
-          <Card className="mb-5 gap-0 border-destructive/40 bg-destructive/8 py-0 text-destructive ring-0">
-            <CardContent className="px-3.5 py-3">{fetchError}</CardContent>
-          </Card>
+          <div
+            className="mb-5 rounded-lg px-3.5 py-3"
+            style={{
+              color: colors.danger,
+              background: colors.dangerBg,
+              border: `1px solid ${colors.dangerBorder}`,
+            }}
+          >
+            {fetchError}
+          </div>
         )}
 
         {/* Problems grid or empty */}
         {problems.length === 0 ? (
-          <p className="m-0 text-zinc-500">No problems found for this wall section.</p>
+          <p className="m-0" style={{ color: colors.subtle }}>
+            No problems found for this wall section.
+          </p>
         ) : (
           <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
             {problems.map((problem) => (
               <article key={problem.problemId}>
-                <Card className="gap-2.5 overflow-hidden border border-zinc-200 bg-white p-0 py-5 shadow-sm ring-0">
+                <Card
+                  className="gap-2.5 overflow-hidden p-0 py-5 ring-0"
+                  style={{
+                    ...card.surface,
+                    fontFamily,
+                    position: "relative",
+                  }}
+                >
                   <CardHeader className="px-5 pt-0 pb-0">
                     <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="text-lg font-semibold leading-[1.35] text-zinc-900">
+                      <CardTitle
+                        className="min-w-0 text-lg font-semibold leading-[1.35]"
+                        style={{ color: colors.text }}
+                      >
                         {problem.holdColor}
                       </CardTitle>
                       {canManageWallProblems && (
@@ -334,7 +360,7 @@ export default function WallSectionPage() {
                                   type="button"
                                   variant="ghost"
                                   size="icon-sm"
-                                  className="shrink-0 text-zinc-600"
+                                  className="shrink-0 text-muted-foreground"
                                   aria-label="Problem actions"
                                 />
                               }
@@ -357,17 +383,18 @@ export default function WallSectionPage() {
 
                   {/* Problem description */}
                   <CardContent className="flex flex-grow flex-col px-5 pb-0 pt-0">
-                    <p className="m-0 text-sm leading-6 text-zinc-600">
+                    <p className="m-0 text-sm leading-6" style={{ color: colors.muted }}>
                       {problem.info || "No problem notes available."}
                     </p>
                   </CardContent>
 
                   {/* Primary action */}
-                  <CardFooter className="mt-1.5 flex w-full flex-col rounded-none border-t border-zinc-200 px-5 py-4">
+                  <CardFooter className="mt-1.5 flex w-full flex-col rounded-none border-border border-t bg-transparent px-5 py-4">
                     <Button
                       type="button"
+                      className="w-full"
+                      style={buttons.primary}
                       onClick={() => handleViewProblem(problem.problemId)}
-                      className="w-full border-transparent bg-blue-600 text-white hover:bg-blue-700"
                     >
                       View problem
                     </Button>
@@ -400,7 +427,7 @@ export default function WallSectionPage() {
           </DialogHeader>
           <form onSubmit={handleAddProblem} className="grid gap-3">
             <div className="grid gap-1.5">
-              <label htmlFor="add-problem-hold-color" className="text-sm font-medium text-zinc-700">
+              <label htmlFor="add-problem-hold-color" className="text-sm font-medium text-foreground">
                 Hold Color
               </label>
               <input
@@ -411,12 +438,12 @@ export default function WallSectionPage() {
                 required
                 value={newHoldColor}
                 onChange={(ev) => setNewHoldColor(ev.target.value)}
-                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
                 placeholder="e.g. Blue"
               />
             </div>
             <div className="grid gap-1.5">
-              <label htmlFor="add-problem-grade" className="text-sm font-medium text-zinc-700">
+              <label htmlFor="add-problem-grade" className="text-sm font-medium text-foreground">
                 Assigned Grade
               </label>
               <input
@@ -427,12 +454,12 @@ export default function WallSectionPage() {
                 required
                 value={newAssignedGrade}
                 onChange={(ev) => setNewAssignedGrade(ev.target.value)}
-                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
                 placeholder="e.g. V4"
               />
             </div>
             <div className="grid gap-1.5">
-              <label htmlFor="add-problem-info" className="text-sm font-medium text-zinc-700">
+              <label htmlFor="add-problem-info" className="text-sm font-medium text-foreground">
                 Notes
               </label>
               <textarea
@@ -442,7 +469,7 @@ export default function WallSectionPage() {
                 required
                 value={newProblemInfo}
                 onChange={(ev) => setNewProblemInfo(ev.target.value)}
-                className="resize-y rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                className="resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
                 placeholder="Short summary for climbers"
               />
             </div>
@@ -450,11 +477,7 @@ export default function WallSectionPage() {
               <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={addSubmitting}
-                className="border-transparent bg-blue-600 text-white hover:bg-blue-700"
-              >
+              <Button type="submit" disabled={addSubmitting} style={buttons.primary}>
                 {addSubmitting ? "Adding…" : "Add problem"}
               </Button>
             </DialogFooter>
