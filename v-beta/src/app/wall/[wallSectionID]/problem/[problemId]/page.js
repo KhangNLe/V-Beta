@@ -386,6 +386,16 @@ export default function ProblemPage() {
   return (
     <main style={layout.main}>
       <div style={layout.maxWidth960}>
+
+        {/* Guest View Message */}
+        {!isSignedIn && (
+          <GuestBanner
+            message="You are viewing as a guest. Sign in to comment, upload beta, suggest a difficulty, and access your account."
+            className="mb-5"
+          />
+        )}
+        
+        {/* Back to Wall Section Button */}
         <Button
           type="button"
           variant="ghost"
@@ -396,12 +406,6 @@ export default function ProblemPage() {
           <ArrowLeftIcon className="size-4" />
         </Button>
 
-        {!isSignedIn && (
-          <GuestBanner
-            message="You are viewing as a guest. Sign in to comment, upload beta, suggest a difficulty, and access your account."
-            className="mb-5"
-          />
-        )}
 
         {fetchError && (
           <div
@@ -461,7 +465,7 @@ export default function ProblemPage() {
               <p
                 style={{
                   margin: 0,
-                  color: colors.subtle,
+                  color: colors.muted,
                   lineHeight: 1.55,
                   maxWidth: '65ch',
                 }}
@@ -630,22 +634,6 @@ export default function ProblemPage() {
                 <p style={{ color: colors.subtle, marginBottom: '24px' }}>
                   No comments yet. Be the first to discuss this problem!
                 </p>
-              )}
-              {/* Guest View Message */}
-              {!user && (
-                <div
-                  style={{
-                    marginBottom: '16px',
-                    padding: '12px 14px',
-                    borderRadius: '8px',
-                    border: `1px solid ${colors.border}`,
-                    background: colors.surface,
-                    color: colors.muted,
-                  }}
-                >
-                  You are viewing as a guest. Sign in to comment, upload beta,
-                  and access your account.
-                </div>
               )}
 
               {/* Add Comment Form */}
