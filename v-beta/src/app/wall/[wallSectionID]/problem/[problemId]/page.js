@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { buttons, card, colors, layout, fontFamily } from '@/ui/appTheme';
-import { MoreVertical } from 'lucide-react';
+import { ArrowLeftIcon, MoreVertical } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -386,13 +386,15 @@ export default function ProblemPage() {
   return (
     <main style={layout.main}>
       <div style={layout.maxWidth960}>
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={handleBackToSection}
-          style={{ ...buttons.secondary, marginBottom: '16px' }}
+          className="mb-4 text-muted-foreground hover:text-foreground"
+          aria-label="Back to wall section"
         >
-          Back to Wall Section
-        </button>
+          <ArrowLeftIcon className="size-4" />
+        </Button>
 
         {!isSignedIn && (
           <GuestBanner
@@ -459,7 +461,7 @@ export default function ProblemPage() {
               <p
                 style={{
                   margin: 0,
-                  color: colors.text,
+                  color: colors.subtle,
                   lineHeight: 1.55,
                   maxWidth: '65ch',
                 }}
