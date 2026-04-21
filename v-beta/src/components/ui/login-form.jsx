@@ -12,7 +12,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { formatLoginAuthError } from "@/lib/format-login-auth-error"
-import { syncAccountSessionWithBackend } from "@/lib/accountSession"
+import { clearStoredAccountSession, syncAccountSessionWithBackend } from "@/lib/accountSession"
 import { needsPasswordProviderEmailVerification } from "@/lib/emailVerification"
 import { Button } from "@/components/ui/button"
 import {
@@ -93,6 +93,11 @@ export function LoginForm({ className, ...props }) {
     }
   }
 
+  const handleContinueAsGuest = () => {
+    clearStoredAccountSession()
+    router.push("/main-page")
+  }
+
   return (
     <form
       className={cn(
@@ -160,11 +165,22 @@ export function LoginForm({ className, ...props }) {
             <SiGoogle className="size-[.9rem] shrink-0" aria-hidden />
             Login with Google
           </Button>
-          <FieldDescription className="text-center">
+          <FieldDescription className="text-center text-xs text-muted-foreground whitespace-nowrap">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="underline underline-offset-4">
+            <Link href="/signup" className="text-muted-foreground hover:text-foreground">
               Sign up
             </Link>
+            <span className="mx-1 text-muted-foreground/80" aria-hidden>
+              ·
+            </span>
+            <button
+              type="button"
+              onClick={handleContinueAsGuest}
+              disabled={isLoading}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Continue as Guest
+            </button>
           </FieldDescription>
         </Field>
       </FieldGroup>

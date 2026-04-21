@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
 import {
   addWallSection,
   deleteWallSection,
   fetchWallSectionsForUser,
-} from "@/api/wallSections";
+} from '@/api/wallSections';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,8 +14,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -23,13 +23,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Card,
   CardAction,
@@ -39,6 +39,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import GuestBanner from "@/components/GuestBanner";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
@@ -51,18 +52,20 @@ export default function MainPage() {
   const router = useRouter();
   const { user, account, ready } = useRequireAuth({
     redirectMode: "push",
+    requireAuth: false,
     requireEmailVerified: true,
   });
   const [sections, setSections] = useState([]);
-  const isAdmin = (account?.roleName || "").toUpperCase().includes("ADMIN");
+  const isAdmin = (account?.roleName || '').toUpperCase().includes('ADMIN');
 
   const [fetchError, setFetchError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [newSectionName, setNewSectionName] = useState("");
-  const [newSectionInfo, setNewSectionInfo] = useState("");
+  const [newSectionName, setNewSectionName] = useState('');
+  const [newSectionInfo, setNewSectionInfo] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const isSignedIn = !!user;
 
   const loadSections = useCallback(async (currentUser) => {
     try {
@@ -70,15 +73,15 @@ export default function MainPage() {
       setSections(Array.isArray(data) ? data : []);
       setFetchError(null);
     } catch (err) {
-      console.error("Fetch wall sections failed:", err);
-      setFetchError(err instanceof Error ? err.message : "Unknown error");
+      console.error('Fetch wall sections failed:', err);
+      setFetchError(err instanceof Error ? err.message : 'Unknown error');
     }
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!ready) return;
     void loadSections(user);
-  }, [loadSections, user]);
+  }, [loadSections, user, ready]);
 
   const handleSelectSection = (section) => {
     router.push(`/wall/${section.wallSectionID}`);
@@ -91,7 +94,7 @@ export default function MainPage() {
     const name = newSectionName.trim();
     const info = newSectionInfo.trim();
     if (!name || !info) {
-      toast.error("Please enter both a name and description.");
+      toast.error('Please enter both a name and description.');
       return;
     }
 
@@ -102,13 +105,15 @@ export default function MainPage() {
         wallSectionInfo: info,
       });
       await loadSections(user);
-      setNewSectionName("");
-      setNewSectionInfo("");
+      setNewSectionName('');
+      setNewSectionInfo('');
       setAddOpen(false);
-      toast.success("Wall section added.");
+      toast.success('Wall section added.');
     } catch (err) {
-      console.error("Add wall section failed:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to add wall section.");
+      console.error('Add wall section failed:', err);
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to add wall section.',
+      );
     } finally {
       setAddSubmitting(false);
     }
@@ -126,21 +131,25 @@ export default function MainPage() {
       await deleteWallSection(user, id);
       await loadSections(user);
       setDeleteTarget(null);
-      toast.success("Wall section deleted.");
+      toast.success('Wall section deleted.');
     } catch (err) {
-      console.error("Delete wall section failed:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to delete wall section.");
+      console.error('Delete wall section failed:', err);
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to delete wall section.',
+      );
     } finally {
       setDeleteSubmitting(false);
     }
   }, [deleteSubmitting, deleteTarget, isAdmin, loadSections, user]);
 
   if (!ready) return <PageLoader message="Loading…" />;
-  if (!user) return <PageLoader message="Redirecting…" />;
-  
+
   return (
     <main style={layout.main}>
       <div style={layout.maxWidth960}>
+        {!isSignedIn && (
+          <GuestBanner message="You are browsing as a guest. Sign in to manage your account and access all features." />
+        )}
         <header className="mb-6">
           <h1 className="m-0 text-[1.75rem] font-bold" style={{ color: colors.text }}>
             GYM
@@ -290,8 +299,8 @@ export default function MainPage() {
         onOpenChange={(open) => {
           setAddOpen(open);
           if (!open) {
-            setNewSectionName("");
-            setNewSectionInfo("");
+            setNewSectionName('');
+            setNewSectionInfo('');
           }
         }}
       >
@@ -335,7 +344,11 @@ export default function MainPage() {
               />
             </div>
             <DialogFooter className="mt-1 gap-2 sm:justify-end">
-              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setAddOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={addSubmitting} style={buttons.primary}>
@@ -368,7 +381,7 @@ export default function MainPage() {
               disabled={deleteSubmitting}
               onClick={handleConfirmDelete}
             >
-              {deleteSubmitting ? "Deleting..." : "Delete"}
+              {deleteSubmitting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

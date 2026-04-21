@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
 import { onAuthStateChanged } from "firebase/auth";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { auth } from "@/app/firebase";
+import { auth } from '@/app/firebase';
 import {
   clearStoredAccountSession,
   getStoredAccountSession,
@@ -64,8 +64,19 @@ export function useRequireAuth(options = {}) {
         console.error("Failed to sync backend account session:", error);
         setAccount(getStoredAccountSession());
       }
+      setUser(currentUser);
+
+      try {
+        const session = await syncAccountSessionWithBackend(currentUser);
+        setAccount(session);
+      } catch (error) {
+        console.error('Failed to sync backend account session:', error);
+        setAccount(getStoredAccountSession());
+      }
+
       setReady(true);
     });
+
     return () => unsubscribe();
   }, [router, redirectMode, skip, allowGuest]);
 

@@ -26,11 +26,17 @@ function isAuthShellPath(pathname) {
   );
 }
 
+function isGuestAllowedPath(pathname) {
+  if (pathname === "/main-page") return true;
+  return /^\/wall\/[^/]+(?:\/problem\/[^/]+)?$/.test(pathname);
+}
+
 export default function RoleNavbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, account, ready } = useRequireAuth({
     skip: isAuthShellPath(pathname),
+    allowGuest: isGuestAllowedPath(pathname),
   });
 
   const roleType = useMemo(() => {

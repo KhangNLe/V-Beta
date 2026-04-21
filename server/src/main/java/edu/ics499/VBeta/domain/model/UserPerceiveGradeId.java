@@ -10,6 +10,9 @@ import lombok.Setter;
 
 import java.io.Serializable;
 
+/**
+ * Composite identifier for {@link UserPerceiveGrade}, keyed by user and problem IDs.
+ */
 @Embeddable
 @Getter
 @Setter

@@ -1,6 +1,7 @@
 "use client";
 
 import { fetchWallSectionProblemsForUser, fetchWallSectionsForUser } from "@/api/wallSections";
+import GuestBanner from "@/components/GuestBanner";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { buttons, card, colors, layout, fontFamily } from "@/ui/appTheme";
@@ -18,6 +19,7 @@ export default function WallSectionPage() {
   const [problems, setProblems] = useState([]);
   const [fetchError, setFetchError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isSignedIn = !!user;
 
   const rawWallSectionID = params?.wallSectionID;
   const wallSectionID = useMemo(() => {
@@ -73,6 +75,9 @@ export default function WallSectionPage() {
   return (
     <main style={layout.main}>
       <div style={layout.maxWidth960}>
+        {!isSignedIn && (
+          <GuestBanner message="You are viewing this wall section as a guest. Sign in to unlock interactive features." />
+        )}
         <button
           type="button"
           onClick={handleBackToSections}

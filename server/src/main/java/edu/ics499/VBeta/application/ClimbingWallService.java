@@ -14,6 +14,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
+/**
+ * {@code ClimbingWallService} coordinates business operations for wall sections and climbing problems.
+ * It assembles API response DTOs, validates entity existence, and orchestrates lifecycle changes such as
+ * creation, archive, and deletion.
+ * <p>
+ * Core operations are delegated to support managers including {@link WallSectionManager},
+ * {@link ClimbingProblemManager}, and {@link ClimbingProblemDeletionManager}.
+ */
 @Service
 @Transactional
 public class ClimbingWallService {
@@ -23,6 +31,15 @@ public class ClimbingWallService {
     private final ClimbingProblemDeletionManager climbingProblemDeletionManager;
     private final UserPerceiveGradeManager userPerceiveGradeManager;
 
+    /**
+     * Constructs a new {@code ClimbingWallService} with required domain managers.
+     *
+     * @param climbingProblemDiscussionManager manager for discussion timeline composition
+     * @param climbingProblemManager manager for climbing problem persistence and state
+     * @param wallSectionManager manager for wall section operations
+     * @param climbingProblemDeletionManager manager for cascading problem deletion
+     * @param userPerceiveGradeManager manager for perceived grade aggregation
+     */
     public ClimbingWallService(
             ClimbingProblemDiscussionManager climbingProblemDiscussionManager,
             ClimbingProblemManager climbingProblemManager,
@@ -37,6 +54,11 @@ public class ClimbingWallService {
         this.userPerceiveGradeManager = userPerceiveGradeManager;
     }
 
+    /**
+     * Returns all wall sections in lightweight response form.
+     *
+     * @return list of wall section responses
+     */
     public List<WallSectionResponse> getWallSections(){
         List<WallSection> wallSections = wallSectionManager.getWallSections();
         List<WallSectionResponse> wallSectionInfo = new ArrayList<>();
@@ -51,6 +73,12 @@ public class ClimbingWallService {
         return wallSectionInfo;
     }
 
+    /**
+     * Returns detailed climbing problem data, including discussion and perceived grade.
+     *
+     * @param problemId climbing problem identifier
+     * @return detailed climbing problem response
+     */
     public ClimbingProblemDetailResponse getClimbingProblem(Long problemId){
         ClimbingProblem problem = getActiveProblem(problemId);
 
@@ -67,11 +95,23 @@ public class ClimbingWallService {
         );
     }
 
+    /**
+     * Returns active climbing problems under a wall section.
+     *
+     * @param wallSectionId wall section identifier
+     * @return list of climbing problem summaries
+     */
     public List<ClimbingProblemResponse> getClimbingProblemsByWallSectionId(Long wallSectionId) {
         WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
         return mapProblemsForWall(wallSection);
     }
 
+    /**
+     * Creates a new wall section.
+     *
+     * @param request wall section creation payload
+     * @return created wall section response
+     */
     public WallSectionResponse createNewWallSection(WallSectionCreationRequest request){
         WallSection newWall = wallSectionManager.createNewWallSection(request);
         return new WallSectionResponse(
@@ -81,6 +121,11 @@ public class ClimbingWallService {
         );
     }
 
+    /**
+     * Deletes a wall section and all related climbing problem data.
+     *
+     * @param wallSectionId wall section identifier
+     */
     public void deleteWallSection(Long wallSectionId){
         WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
         if (wallSection == null){
@@ -93,6 +138,11 @@ public class ClimbingWallService {
         wallSectionManager.removeWallSection(wallSectionId);
     }
 
+    /**
+     * Archives active problems in a wall section without deleting the section itself.
+     *
+     * @param wallSectionId wall section identifier
+     */
     public void resetWallSection(Long wallSectionId){
         WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
         if (wallSection == null){
@@ -119,6 +169,13 @@ public class ClimbingWallService {
         return problemsInfo;
     }
 
+    /**
+     * Creates a new climbing problem in a given wall section.
+     *
+     * @param wallSectionId wall section identifier
+     * @param request climbing problem creation payload
+     * @return created climbing problem response
+     */
     public ClimbingProblemResponse createNewClimbingProblem(Long wallSectionId, ClimbingProblemCreationRequest request){
         WallSection wall = wallSectionManager.findWallSection(wallSectionId);
         ClimbingProblem newProblem = climbingProblemManager.generateNewClimbingProblem(wall, request);
@@ -131,6 +188,11 @@ public class ClimbingWallService {
         );
     }
 
+    /**
+     * Deletes a climbing problem and dependent discussion/beta data.
+     *
+     * @param problemId climbing problem identifier
+     */
     public void deleteClimbingProblem(Long problemId){
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
         climbingProblemDeletionManager.deleteClimbingProblem(problem);

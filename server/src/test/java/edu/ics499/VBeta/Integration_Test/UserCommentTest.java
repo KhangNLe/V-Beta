@@ -1,15 +1,18 @@
 package edu.ics499.VBeta.Integration_Test;
 
+import edu.ics499.VBeta.api.dto.CommentDeletionRequest;
 import edu.ics499.VBeta.api.dto.UserCommentData;
 import edu.ics499.VBeta.application.ProblemDiscussionService;
 import edu.ics499.VBeta.api.dto.DiscussionCommentRequest;
 import edu.ics499.VBeta.application.support.ClimbingProblemDiscussionManager;
 import edu.ics499.VBeta.application.support.ClimbingProblemManager;
 import edu.ics499.VBeta.application.support.UserAccountManager;
-import edu.ics499.VBeta.domain.model.ClimbingProblem;
-import edu.ics499.VBeta.domain.model.LifecycleStatus;
-import edu.ics499.VBeta.domain.model.UserAccount;
+import edu.ics499.VBeta.application.support.WallSectionManager;
+import edu.ics499.VBeta.domain.model.*;
+import edu.ics499.VBeta.repository.ClimbingGradeRepository;
 import edu.ics499.VBeta.repository.ClimbingProblemRepository;
+import edu.ics499.VBeta.repository.UserCommentRepository;
+import edu.ics499.VBeta.repository.WallSectionRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +23,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.yaml.snakeyaml.events.CommentEvent;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -52,6 +57,15 @@ public class UserCommentTest {
     @Autowired
     private ClimbingProblemManager climbingProblemManager;
 
+    @Autowired
+    private UserCommentRepository userCommentRepository;
+
+    @Autowired
+    private WallSectionRepository wallSectionRepository;
+    
+    @Autowired
+    private ClimbingGradeRepository climbingGradeRepository;
+
     private boolean checkProblemComments(String firebaseUid, DiscussionCommentRequest request){
         UserAccount account = userAccountManager.findUserAccount(firebaseUid);
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(request.problemId());
@@ -59,10 +73,8 @@ public class UserCommentTest {
 
         if (account == null || problem == null || comments.isEmpty()) return false;
 
-        return comments.stream().filter(data ->
-            data.userId().equals(account.getId()) && data.comment().equals(request.commentInfo())
-            )
-            .count() == 1;
+        return comments.stream().anyMatch(data ->
+                data.userId().equals(account.getId()) && data.comment().equals(request.commentInfo()));
     }
 
     @Test
@@ -157,5 +169,274 @@ public class UserCommentTest {
 
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
         assertNotEquals(HttpStatus.OK, ex.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("test for adding the same comment twice")
+    void testForAddingCommentTwice(){
+        String authorUid = "testFirebaseUid";
+        Long problemId = 2L;
+
+        assertDoesNotThrow(() -> generateCommentForDeletion(authorUid, problemId));
+        assertDoesNotThrow(() -> generateCommentForDeletion(authorUid, problemId));
+    }
+
+    @Test
+    @DisplayName("test successfully removing comment by a user from a climbing problem: Author")
+    void testAuthorRemovingComment(){
+        String firebaseUid = "testFirebaseUid";
+        Long problemId = 2L;
+        CommentDeletionRequest deletionRequest = generateCommentForDeletion(firebaseUid, problemId);
+
+        UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+
+        // Check for deleting comment from the user
+        assertDoesNotThrow(() -> problemDiscussionService.removeUserComment(firebaseUid, deletionRequest));
+        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
+                userAccount,problem);
+        assertTrue(userComments.isEmpty());
+    }
+
+    @Test
+    @DisplayName("test successfully removing comment by a user from climbing problem: Admin")
+    void testAdminRemovingComment(){
+        String authorFirebaseUid = "testFirebaseUid";
+        Long problemId = 2L;
+        String adminFirebaseUid = "testFirebaseUid3";
+
+        CommentDeletionRequest deletionRequest = generateCommentForDeletion(authorFirebaseUid, problemId);
+
+        UserAccount authorUserAccount = userAccountManager.findUserAccount(authorFirebaseUid);
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+
+        assertDoesNotThrow(() -> problemDiscussionService.removeUserComment(adminFirebaseUid, deletionRequest));
+        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
+                authorUserAccount, problem
+        );
+        assertTrue(userComments.isEmpty());
+    }
+
+    @Test
+    @DisplayName("test failure removing comment by a user from climbing problem: Another User")
+    void testFailRemovingComment(){
+        String authorFirebaseUid = "testFirebaseUid";
+        Long problemId = 2L;
+        String requesterFirebaseUid = "testFirebaseUid2";
+
+        CommentDeletionRequest deletionRequest = generateCommentForDeletion(authorFirebaseUid, problemId);
+
+        UserAccount authorUserAccount = userAccountManager.findUserAccount(authorFirebaseUid);
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> problemDiscussionService.removeUserComment(requesterFirebaseUid, deletionRequest));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
+
+        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
+                authorUserAccount, problem);
+        assertFalse(userComments.isEmpty());
+        assertEquals(1, userComments.size());
+    }
+
+    @Test
+    @DisplayName("test failure for requesting an unexisting comment")
+    void testFailureDeletingUnexistingComment(){
+        String requestFirebaseUid = "testFirebaseUid";
+        UserAccount userAccount = userAccountManager.findUserAccount(requestFirebaseUid);
+        Long problemId = 2L;
+
+        CommentDeletionRequest request = new CommentDeletionRequest(
+                userAccount.getId(),
+                problemId,
+                "blahblahblahblah"
+        );
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> problemDiscussionService.removeUserComment(requestFirebaseUid, request));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("test failure for requesting an existing comment by changing authorId")
+    void testFailureDeletingExistingCommentByChangingId(){
+        String authorUid = "testFirebaseUid";
+        Long problemId = 2L;
+        UserAccount author = userAccountManager.findUserAccount(authorUid);
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+
+        CommentDeletionRequest realRequest = generateCommentForDeletion(authorUid, problemId);
+
+        String threatActorUid = "testFirebaseUid2";
+        UserAccount threatActor = userAccountManager.findUserAccount(threatActorUid);
+        assertNotNull(threatActor);
+
+        CommentDeletionRequest modifiedRequest = new CommentDeletionRequest(
+                threatActor.getId(),
+                realRequest.problemId(),
+                realRequest.commentContent()
+        );
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> problemDiscussionService.removeUserComment(threatActorUid, modifiedRequest));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+
+        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
+                author, problem
+        );
+        assertFalse(userComments.isEmpty());
+        assertEquals(1, userComments.size());
+    }
+
+    @Test
+    @DisplayName("test cross-problem isolation when deleting comment")
+    void testCrossProblemIsolationDeletingComment(){
+        String firebaseUid = "testFirebaseUid";
+        String sameComment = "same text across two problems";
+        Long problemIdA = createNewClimbingProblem();
+        Long problemIdB = 2L;
+
+        DiscussionCommentRequest requestA = new DiscussionCommentRequest(problemIdA, sameComment);
+        DiscussionCommentRequest requestB = new DiscussionCommentRequest(problemIdB, sameComment);
+
+        assertDoesNotThrow(() -> problemDiscussionService.addComment(firebaseUid, requestA));
+        assertDoesNotThrow(() -> problemDiscussionService.addComment(firebaseUid, requestB));
+        assertTrue(checkProblemComments(firebaseUid, requestA));
+        assertTrue(checkProblemComments(firebaseUid, requestB));
+
+        UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
+        assertNotNull(userAccount);
+
+        CommentDeletionRequest deleteFromProblemA = new CommentDeletionRequest(
+                userAccount.getId(),
+                problemIdA,
+                sameComment
+        );
+
+        assertDoesNotThrow(() -> problemDiscussionService.removeUserComment(firebaseUid, deleteFromProblemA));
+
+        ClimbingProblem problemA = climbingProblemManager.getActiveProblem(problemIdA);
+        ClimbingProblem problemB = climbingProblemManager.getActiveProblem(problemIdB);
+        assertNotNull(problemA);
+        assertNotNull(problemB);
+
+        List<UserComment> commentsOnA = userCommentRepository.findByUserAccountAndClimbingProblem(userAccount, problemA);
+        List<UserComment> commentsOnB = userCommentRepository.findByUserAccountAndClimbingProblem(userAccount, problemB);
+
+        assertTrue(commentsOnA.isEmpty());
+        assertFalse(commentsOnB.isEmpty());
+        assertEquals(1, commentsOnB.size());
+    }
+
+    @Test
+    @DisplayName("test failure deleting same comment twice")
+    void testDeletingSameCommentTwice(){
+        String firebaseUid = "testFirebaseUid";
+        Long problemId = 2L;
+        CommentDeletionRequest deletionRequest = generateCommentForDeletion(firebaseUid, problemId);
+
+        assertDoesNotThrow(() -> problemDiscussionService.removeUserComment(firebaseUid, deletionRequest));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> problemDiscussionService.removeUserComment(firebaseUid, deletionRequest));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("test failure admin deleting comment with mismatched payload")
+    void testAdminDeletingCommentWithMismatchedPayload(){
+        String authorUid = "testFirebaseUid";
+        Long problemId = 2L;
+        CommentDeletionRequest realRequest = generateCommentForDeletion(authorUid, problemId);
+
+        String adminUid = "testFirebaseUid3";
+        UserAccount author = userAccountManager.findUserAccount(authorUid);
+        assertNotNull(author);
+
+        CommentDeletionRequest mismatchedRequest = new CommentDeletionRequest(
+                author.getId(),
+                realRequest.problemId(),
+                realRequest.commentContent() + " - modified"
+        );
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> problemDiscussionService.removeUserComment(adminUid, mismatchedRequest));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+        List<UserComment> comments = userCommentRepository.findByUserAccountAndClimbingProblem(author, problem);
+        assertFalse(comments.isEmpty());
+        assertEquals(1, comments.size());
+    }
+
+    @Test
+    @DisplayName("test for user adding comment twice and delete one of them")
+    void testRemoveOneOfDuplicateComment(){
+        String authorUid = "testFirebaseUid";
+        Long problemId = 2L;
+
+        UserAccount author = userAccountManager.findUserAccount(authorUid);
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+
+        CommentDeletionRequest requestA = generateCommentForDeletion(authorUid, problemId);
+        CommentDeletionRequest requestB = generateCommentForDeletion(authorUid, problemId);
+
+        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
+                author, problem
+        );
+        assertEquals(2, userComments.size());
+
+        assertDoesNotThrow(() -> problemDiscussionService.removeUserComment(authorUid, requestA));
+
+        userComments = userCommentRepository.findByUserAccountAndClimbingProblem(author, problem);
+        assertEquals(1, userComments.size());
+    }
+
+    private CommentDeletionRequest generateCommentForDeletion(String firebaseUid, Long problemId){
+        DiscussionCommentRequest addingRequest = new DiscussionCommentRequest(
+                problemId,
+                "Cool problem dude"
+        );
+
+        UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+
+        //Check to make sure there a comment successfully add from a user
+        assertNotNull(userAccount);
+        assertNotNull(problem);
+        assertDoesNotThrow(() -> problemDiscussionService.addComment(firebaseUid, addingRequest));
+        assertTrue(checkProblemComments(firebaseUid, addingRequest));
+        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
+                userAccount,problem);
+        assertFalse(userComments.isEmpty());
+
+        return new CommentDeletionRequest(
+                userAccount.getId(),
+                problemId,
+                addingRequest.commentInfo()
+        );
+    }
+
+    // Creating new climbing problem has yet been implement, therefore, this will do for now
+    private Long createNewClimbingProblem(){
+        Optional<WallSection> wallSection = wallSectionRepository.findById(1L);
+        assertTrue(wallSection.isPresent());
+
+        List<ClimbingGrade> grades = climbingGradeRepository.findAll();
+        assertFalse(grades.isEmpty());
+
+        ClimbingProblem problem = new ClimbingProblem();
+        problem.setCreatedDate(LocalDateTime.now());
+        problem.setProblemStatus(LifecycleStatus.ACTIVE);
+        problem.setProblemInfo("test problem");
+        problem.setWallSection(wallSection.get());
+        problem.setHoldColor("Red");
+        problem.setClimbingGrade(grades.get(0));
+        problem = climbingProblemRepository.save(problem);
+
+        return problem.getId();
     }
 }
