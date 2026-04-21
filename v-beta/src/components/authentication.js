@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
 // This component handles user authentication using Firebase Authentication.
 // It allows users to sign up, log in, and log out using their email and password.
 // The component listens for authentication state changes and updates the UI accordingly.
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
@@ -13,16 +13,19 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
-} from "firebase/auth";
-import { auth } from "../app/firebase";
-import { API_BASE_URL } from "../app/envExports"; // Import the API base URL from environment variables
-import { toast } from "react-toastify";
+} from 'firebase/auth';
+import { auth } from '../app/firebase';
+import {
+  clearStoredAccountSession,
+  syncAccountSessionWithBackend,
+} from '@/lib/accountSession';
+import { toast } from 'react-toastify';
 
 export default function Authentication() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const googleProvider = new GoogleAuthProvider();
 
@@ -34,7 +37,7 @@ export default function Authentication() {
 
       // Redirect to the main page if the user is authenticated
       if (currentUser) {
-        router.push("/main-page");
+        router.push('/main-page');
       }
     });
 
@@ -46,28 +49,7 @@ export default function Authentication() {
     const currentUser = auth.currentUser; // Get the current user from Firebase Authentication
     if (!currentUser) return; // If there is no user, exit the function
 
-    const idToken = await currentUser.getIdToken(); // Get the ID token for the current user
-
-    const apiBaseURL = API_BASE_URL; // Get the API base URL from environment variables (port 8080 for local development)
-
-    const response = await fetch(`${apiBaseURL}/api/accounts/session`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        Authorization: `Bearer ${idToken}`, // Include the ID token in the Authorization header
-      },
-      body: JSON.stringify({
-        username: currentUser.displayName || currentUser.email?.split("@")[0] || "user",
-        email: currentUser.email || "",
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("Failed to create backend session", response.statusText); // debug log the error response from the backend
-      throw new Error("Failed to create backend session"); // Throw an error if the response is not successful
-    }
-
-    return response.json(); // Return the response as JSON, from the backend session creation endpoint
+    return syncAccountSessionWithBackend(currentUser);
   };
 
   // Handle user sign-up using email and password using Firebase Authentication
@@ -100,11 +82,17 @@ export default function Authentication() {
     }
   };
 
+  const handleContinueAsGuest = () => {
+    clearStoredAccountSession();
+    router.push('/main-page');
+  };
+
   // Handle user sign-out using Firebase Authentication
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.push("/login");
+      clearStoredAccountSession();
+      router.push('/login');
     } catch (error) {
       toast.error(error.message);
     }
@@ -136,6 +124,7 @@ export default function Authentication() {
           <button onClick={handleSignIn}>Log in</button>
           <button onClick={handleSignup}>Sign up</button>
           <button onClick={handleGoogleSignIn}>Sign in with Google</button>
+          <button onClick={handleContinueAsGuest}>Continue as Guest</button>
         </div>
       )}
     </div>

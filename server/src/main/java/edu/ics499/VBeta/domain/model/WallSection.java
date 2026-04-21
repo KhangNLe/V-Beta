@@ -14,6 +14,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * {@code WallSection} represents a named segment of the climbing wall.
+ */
 @Entity
 @Table(name = "Wall_Section")
 @Getter

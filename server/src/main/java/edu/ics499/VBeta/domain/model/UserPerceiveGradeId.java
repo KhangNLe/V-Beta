@@ -10,22 +10,21 @@ import lombok.Setter;
 
 import java.io.Serializable;
 
+/**
+ * Composite identifier for {@link UserPerceiveGrade}, keyed by user and problem IDs.
+ */
 @Embeddable
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class UserPerceiveGradeId implements Serializable{
-    private static final Long serialVersionUID = 1L;
+public class UserPerceiveGradeId implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "grade_id")
-    private Long gradeId;
-
     @Column(name = "problem_id")
     private Long problemId;
-
 }

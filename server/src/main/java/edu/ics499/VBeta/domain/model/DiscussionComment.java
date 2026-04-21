@@ -9,6 +9,9 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code DiscussionComment} stores the text and timestamp for a user discussion entry.
+ */
 @Entity
 @Table(name = "Discussion_Comment")
 @Getter
@@ -28,6 +31,6 @@ public class DiscussionComment {
     private LocalDateTime createDate;
 
     @OneToOne
-    @JoinColumn(name = "user_comment_id", referencedColumnName = "user_comment_id")
+    @JoinColumn(name = "user_comment_id", referencedColumnName = "user_comment_id", nullable = false, unique = true)
     private UserComment userComment;
 }

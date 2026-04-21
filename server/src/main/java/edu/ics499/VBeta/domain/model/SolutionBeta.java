@@ -8,6 +8,9 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code SolutionBeta} stores a user's uploaded beta media metadata.
+ */
 @Entity
 @Table(name = "Solution_Beta")
 @Setter
@@ -21,7 +24,7 @@ public class SolutionBeta {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_beta_id", referencedColumnName = "user_beta_id")
+    @JoinColumn(name = "user_beta_id", referencedColumnName = "user_beta_id", unique = true, nullable = false)
     private UserBeta userBeta;
 
     @Column(name = "beta_name", nullable = false, length = 125)
