@@ -48,27 +48,27 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --app-bg: #0a0a0a;
-    --app-text: #ededed;
-    --app-muted: #a1a1aa;
-    --app-subtle: #a1a1aa;
-    --app-zinc-600: #d4d4d8;
-    --app-border: #3f3f46;
-    --app-border-hairline: #52525b;
-    --app-primary: #60a5fa;
-    --app-primary-dark: #3b82f6;
+    --app-bg: #0a1120;
+    --app-text: #e5edf8;
+    --app-muted: #a4b2c8;
+    --app-subtle: #8594ad;
+    --app-zinc-600: #d3deef;
+    --app-border: #2d3a52;
+    --app-border-hairline: #3a4a67;
+    --app-primary: #6ea8ff;
+    --app-primary-dark: #4f8ff7;
     --app-danger: #f87171;
     --app-danger-bg: #450a0a;
     --app-danger-border: #7f1d1d;
-    --app-muted-surface: #334155;
-    --app-accent-soft: #1e3a5f;
+    --app-muted-surface: #1a2537;
+    --app-accent-soft: #1d2c44;
 
-    --app-card-surface-bg: #171717;
-    --app-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --app-card-surface-bg: #111a29;
+    --app-card-shadow: 0 8px 30px rgba(2, 8, 23, 0.42);
 
-    --app-btn-secondary-bg: #171717;
-    --app-btn-secondary-hover-bg: #262626;
-    --app-btn-primary-hover-bg: #3b82f6;
+    --app-btn-secondary-bg: #152238;
+    --app-btn-secondary-hover-bg: #1f3150;
+    --app-btn-primary-hover-bg: #5a97ff;
 
   }
 }

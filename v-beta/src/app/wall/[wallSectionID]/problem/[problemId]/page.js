@@ -558,7 +558,8 @@ export default function ProblemPage() {
                                       type="button"
                                       variant="ghost"
                                       size="icon-sm"
-                                      className="shrink-0 text-zinc-600"
+                                      className="shrink-0"
+                                      style={{ color: colors.muted }}
                                       aria-label="Comment actions"
                                     />
                                   }
@@ -678,7 +679,7 @@ export default function ProblemPage() {
                           ? {
                               border: `1px solid ${colors.primary}`,
                               color: colors.primary,
-                              background: '#eff6ff',
+                              background: colors.accentSoft,
                             }
                           : {}),
                       }}
@@ -694,7 +695,7 @@ export default function ProblemPage() {
                           ? {
                               border: `1px solid ${colors.primary}`,
                               color: colors.primary,
-                              background: '#eff6ff',
+                              background: colors.accentSoft,
                             }
                           : {}),
                       }}
@@ -910,10 +911,10 @@ export default function ProblemPage() {
                       style={{
                         fontSize: '0.75rem',
                         padding: '4px 6px',
-                        border: `1px solid ${colors.muted}`,
+                        border: `1px solid ${colors.borderHairline}`,
                         borderRadius: '6px',
                         fontFamily,
-                        background: 'white',
+                        background: colors.surfaceAlt,
                         color: colors.text,
                         cursor: 'pointer',
                       }}

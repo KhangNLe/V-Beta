@@ -61,3 +61,24 @@
 .role-navbar__link--action {
   cursor: pointer;
 }
+
+@media (prefers-color-scheme: dark) {
+  .role-navbar {
+    border-bottom-color: var(--app-border);
+    background: color-mix(in srgb, var(--app-card-surface-bg) 86%, black);
+    backdrop-filter: saturate(130%) blur(8px);
+  }
+
+  .role-navbar__link {
+    color: var(--app-text);
+  }
+
+  .role-navbar__link:hover {
+    background: color-mix(in srgb, var(--app-accent-soft) 75%, transparent);
+  }
+
+  .role-navbar__link--active {
+    background: color-mix(in srgb, var(--app-primary) 22%, transparent);
+    color: #dbeafe;
+  }
+}
