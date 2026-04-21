@@ -1,13 +1,8 @@
 import { APP_ORIGIN } from "@/app/envExports";
 
 /**
- * Firebase console (team checklist):
- * - Authentication: enable Email/Password (and any OAuth providers you use).
- * - Authentication → Templates: customize "Email address verification" and "Password reset".
- * - Authentication → Settings → Authorized domains: include every origin used in `url` below
- *   (e.g. `localhost`, production host). Add `NEXT_PUBLIC_APP_ORIGIN` when the public URL differs
- *   from `window.location.origin` (reverse proxy, preview deploys).
- *
+ * 
+ * This function is used to get the email action code settings for the Firebase Authentication.
  * @param {string} [continuePath] pathname + query only, e.g. `/verify-email` or `/login`
  * @returns {import("firebase/auth").ActionCodeSettings | undefined}
  */
