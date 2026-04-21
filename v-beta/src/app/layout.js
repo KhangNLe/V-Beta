@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "V-Beta",
   description: "V-Beta is a platform for creating and sharing beta solutions to problems.",
+  icons: {
+    icon: "/VBetaLogo.svg",
+    shortcut: "/VBetaLogo.svg",
+    apple: "/VBetaLogo.svg",
+  },
 };
 
 export default function RootLayout({ children }) {
