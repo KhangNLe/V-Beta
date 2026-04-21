@@ -21,7 +21,8 @@ function isAuthShellPath(pathname) {
     pathname === "/" ||
     pathname === "/login" ||
     pathname === "/signup" ||
-    pathname === "/forgot-password"
+    pathname === "/forgot-password" ||
+    pathname === "/verify-email"
   );
 }
 

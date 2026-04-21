@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { reload, sendEmailVerification } from "firebase/auth";
+import { reload, sendEmailVerification, signOut } from "firebase/auth";
 import { toast } from "react-toastify";
 
 import { auth } from "@/app/firebase";
+import { clearStoredAccountSession } from "@/lib/accountSession";
 import { getEmailActionCodeSettings } from "@/lib/authEmailSettings";
 import { formatEmailVerificationError } from "@/lib/format-login-auth-error";
 import { needsPasswordProviderEmailVerification } from "@/lib/emailVerification";
@@ -77,6 +78,17 @@ export function VerifyEmailForm({ className, ...props }) {
     }
   }, [user, checkLoading, router]);
 
+  const handleBackToLogin = useCallback(async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Failed to sign out before redirecting to login:", err);
+    } finally {
+      clearStoredAccountSession();
+      router.replace("/login");
+    }
+  }, [router]);
+
   if (!ready || !user || !needsPasswordProviderEmailVerification(user)) {
     return <PageLoader message="Loading…" />;
   }
@@ -111,7 +123,14 @@ export function VerifyEmailForm({ className, ...props }) {
             <FieldDescription className="text-center text-red-600">{error}</FieldDescription>
           ) : null}
           <FieldDescription className="text-center">
-            <Link href="/login" className="underline underline-offset-4">
+            <Link
+              href="/login"
+              className="underline underline-offset-4"
+              onClick={(event) => {
+                event.preventDefault();
+                handleBackToLogin();
+              }}
+            >
               Back to login
             </Link>
           </FieldDescription>
