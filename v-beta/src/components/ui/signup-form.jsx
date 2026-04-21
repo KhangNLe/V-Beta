@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation"
 import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   signInWithPopup,
   signOut,
   updateProfile,
 } from "firebase/auth"
 
 import { cn } from "@/lib/utils"
+import { getEmailActionCodeSettings } from "@/lib/authEmailSettings"
 import { formatSignupAuthError } from "@/lib/format-login-auth-error"
 import { syncAccountSessionWithBackend } from "@/lib/accountSession"
 import { Button } from "@/components/ui/button"
@@ -61,7 +63,12 @@ export function SignupForm({ className, ...props }) {
           auth.currentUser,
           username.trim() ? { username: username.trim() } : {}
         )
-        router.push("/main-page")
+        const created = auth.currentUser
+        if (created && !created.emailVerified) {
+          const actionSettings = getEmailActionCodeSettings("/verify-email")
+          await sendEmailVerification(created, actionSettings ?? undefined)
+        }
+        router.replace("/verify-email")
       } catch (afterCreateErr) {
         try {
           await signOut(auth)

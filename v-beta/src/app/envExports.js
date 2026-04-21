@@ -11,3 +11,6 @@ export const MEASUREMENT_ID = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
 
 //  Export API base URL for use in other parts of the application
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL; // set this in .env.local to http://localhost:8080 for local development, or to the production backend URL when deployed
+
+/** Canonical site origin for Firebase action links when it differs from `window.location.origin`. */
+export const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_ORIGIN;

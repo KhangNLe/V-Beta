@@ -10,7 +10,10 @@ import { useEffect, useMemo, useState } from "react";
 export default function WallSectionPage() {
   const router = useRouter();
   const params = useParams();
-  const { user, ready } = useRequireAuth({ requireAuth: false });
+  const { user, ready } = useRequireAuth({
+    requireAuth: false,
+    requireEmailVerified: true,
+  });
   const [section, setSection] = useState(null);
   const [problems, setProblems] = useState([]);
   const [fetchError, setFetchError] = useState(null);

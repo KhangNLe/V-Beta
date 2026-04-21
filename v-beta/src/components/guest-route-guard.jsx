@@ -8,15 +8,15 @@ import { auth } from "@/app/firebase"
 import { getStoredAccountSession } from "@/lib/accountSession"
 import PageLoader from "@/components/ui/PageLoader"
 
-function isLoginOrSignupPath(pathname) {
-  return pathname === "/login" || pathname === "/signup"
+function isLoginSignupOrForgotPath(pathname) {
+  return pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password"
 }
 
 /**
  * Wrap the full guest route (e.g. branded shell + form).
  * Redirects to /main-page when Firebase has a user and a matching backend session is already in storage.
- * On /login and /signup, if the user exists but session is not stored yet, keeps showing children so the form
- * can run sync and navigate (avoids racing signup/login POST with an immediate replace).
+ * On /login, /signup, and /forgot-password, if the user exists but session is not stored yet, keeps showing
+ * children so the form can run sync and navigate (avoids racing signup/login POST with an immediate replace).
  */
 export function GuestRouteGuard({ children }) {
   const router = useRouter()
@@ -42,7 +42,7 @@ export function GuestRouteGuard({ children }) {
         return
       }
 
-      if (isLoginOrSignupPath(pathname)) {
+      if (isLoginSignupOrForgotPath(pathname)) {
         setAllowGuest(true)
         return
       }

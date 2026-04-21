@@ -17,7 +17,12 @@ function normalizeRole(roleName) {
 
 /** Navbar is hidden here; do not GET /api/account until user leaves (avoids racing signup POST). */
 function isAuthShellPath(pathname) {
-  return pathname === "/" || pathname === "/login" || pathname === "/signup";
+  return (
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/forgot-password"
+  );
 }
 
 export default function RoleNavbar() {

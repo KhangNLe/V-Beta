@@ -1,5 +1,7 @@
 const LOGIN_GENERIC = "Login failed. Please try again."
 const SIGNUP_GENERIC = "Sign up failed. Please try again."
+const EMAIL_VERIFY_GENERIC = "Could not send verification email. Please try again."
+const PASSWORD_RESET_GENERIC = "Could not send reset email. Please try again."
 
 const MESSAGES = {
   "auth/invalid-credential": "Incorrect email or password.",
@@ -66,4 +68,20 @@ export function formatSignupAuthError(err) {
     }
   }
   return formatAuthError(err, SIGNUP_GENERIC)
+}
+
+/**
+ * @param {unknown} err
+ * @returns {string}
+ */
+export function formatEmailVerificationError(err) {
+  return formatAuthError(err, EMAIL_VERIFY_GENERIC)
+}
+
+/**
+ * @param {unknown} err
+ * @returns {string}
+ */
+export function formatPasswordResetAuthError(err) {
+  return formatAuthError(err, PASSWORD_RESET_GENERIC)
 }

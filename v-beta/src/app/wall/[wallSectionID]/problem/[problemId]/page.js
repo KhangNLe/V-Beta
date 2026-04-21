@@ -84,7 +84,10 @@ function extractErrorMessage(error) {
 export default function ProblemPage() {
   const router = useRouter();
   const params = useParams();
-  const { user, account, ready } = useRequireAuth({ redirectMode: "push" });
+  const { user, account, ready } = useRequireAuth({
+    redirectMode: "push",
+    requireEmailVerified: true,
+  });
 
   const [problem, setProblem] = useState(null);
   const [fetchError, setFetchError] = useState(null);

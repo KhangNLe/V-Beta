@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 import { formatLoginAuthError } from "@/lib/format-login-auth-error"
 import { syncAccountSessionWithBackend } from "@/lib/accountSession"
+import { needsPasswordProviderEmailVerification } from "@/lib/emailVerification"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -42,7 +43,11 @@ export function LoginForm({ className, ...props }) {
       await signInWithEmailAndPassword(auth, email, password)
       try {
         await syncAccountSessionWithBackend(auth.currentUser)
-        router.push("/main-page")
+        if (needsPasswordProviderEmailVerification(auth.currentUser)) {
+          router.replace("/verify-email")
+        } else {
+          router.push("/main-page")
+        }
       } catch (syncErr) {
         try {
           await signOut(auth)
@@ -67,7 +72,11 @@ export function LoginForm({ className, ...props }) {
       await signInWithPopup(auth, googleProvider)
       try {
         await syncAccountSessionWithBackend(auth.currentUser)
-        router.push("/main-page")
+        if (needsPasswordProviderEmailVerification(auth.currentUser)) {
+          router.replace("/verify-email")
+        } else {
+          router.push("/main-page")
+        }
       } catch (syncErr) {
         try {
           await signOut(auth)
