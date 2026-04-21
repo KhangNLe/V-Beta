@@ -101,4 +101,8 @@ public class ClimbingProblemDiscussionManager {
     public void storeDiscussionComment(UserAccount user, ClimbingProblem problem, String commentInfo){
         discussionCommentManager.storeDiscussionComment(user, problem,commentInfo);
     }
+
+    public void removeUserComment(UserAccount userAccount, ClimbingProblem problem, String commentContent){
+        discussionCommentManager.removeUserComment(userAccount, problem, commentContent);
+    }
 }

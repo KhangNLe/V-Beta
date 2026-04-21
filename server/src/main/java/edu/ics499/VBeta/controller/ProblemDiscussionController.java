@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
  * <p>
  * Endpoints include user comments, solution beta upload lifecycle, and perceived grade submissions.
  * Business logic is delegated to {@link ProblemDiscussionService} and {@link ClimbingWallService}.
+ * Authorization checks are performed via {@link AuthorizationService} for privileged actions.
  */
 @RestController
 @RequestMapping("/discussion")
@@ -84,7 +85,7 @@ public class ProblemDiscussionController {
      * @return discussion timeline item representing the uploaded beta
      */
     @PostMapping("solution-beta/save")
-    public UserCommentData storeUserSolutionBeta(@Valid @RequestBody SolutionBetaCreateRequest request){
+    public UserCommentData storeUserSolutionBeta(@Valid @RequestBody SolutionBetaCreateRequest request) {
         String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
         return problemDiscussionService.saveSolutionBeta(request, firebaseUid);
     }
@@ -99,5 +100,21 @@ public class ProblemDiscussionController {
     public void deleteUserSolutionBeta(@RequestBody SolutionBetaDeletionRequest request){
         String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
         problemDiscussionService.removeUserSolutionBeta(request, firebaseUid);
+    }
+
+    /**
+     * Deletes a discussion comment authored by a user.
+     * <p>
+     * Caller must be authorized for {@link ActionDefinition#DELETE_COMMENT}. The underlying
+     * service validates whether the requester is either the author or an administrator.
+     *
+     * @param request comment deletion payload containing author/problem/content identifiers
+     */
+    @DeleteMapping("/comment/delete")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteComment(@Valid @RequestBody CommentDeletionRequest request){
+        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+        authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_COMMENT);
+        problemDiscussionService.removeUserComment(firebaseUid, request);
     }
 }
