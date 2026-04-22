@@ -5,11 +5,15 @@ import {
   requestSignedUploadUrl,
   saveSolutionBetaToDatabase,
   uploadSolutionBeta,
-} from '@/api/solutionBeta';
-import { fetchProblemForUser } from '@/api/wallSections';
-import { postCommentForUser } from '@/api/comments';
-import PageLoader from '@/components/ui/PageLoader';
-import { Button } from '@/components/ui/button';
+} from "@/api/solutionBeta";
+import { fetchProblemForUser } from "@/api/wallSections";
+import {
+  addUserSuggestedGrade,
+  deleteUserComment,
+  postCommentForUser,
+} from "@/api/comments";
+import PageLoader from "@/components/ui/PageLoader";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -141,14 +145,35 @@ export default function ProblemPage() {
   };
 
   const handleDeleteComment = async (targetComment) => {
+    if (!user || !problemId) {
+      return;
+    }
+
     const authorId = getCommentAuthorId(targetComment);
     const canDeleteComment =
       isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
     if (!canDeleteComment) {
       return;
     }
-    // Comment deletion endpoint is not available yet on the frontend API layer.
-    toast.info('Comment deletion is not available yet.');
+
+    const payloadAuthorId = parsePositiveNumberId(authorId);
+    const commentContent = targetComment?.comment?.trim();
+    if (!payloadAuthorId || !commentContent) {
+      toast.error("Unable to determine comment payload for deletion.");
+      return;
+    }
+
+    try {
+      await deleteUserComment(user, {
+        authorId: payloadAuthorId,
+        problemId,
+        commentContent,
+      });
+      await refreshProblem();
+      toast.success("Comment deleted.");
+    } catch (err) {
+      toast.error(`Failed to delete comment: ${extractErrorMessage(err)}`);
+    }
   };
 
   const handleDeleteSolutionBeta = async (targetComment) => {
@@ -185,14 +210,18 @@ export default function ProblemPage() {
   };
 
   const handleSuggestPerceivedGrade = async () => {
-    if (!user) {
-      toast.error('Please sign in to suggest a perceived grade.');
-      return;
+    if (!user || !problemId || !perceivedGrade) return;
+    try {
+      await addUserSuggestedGrade(
+        user,
+        { perceivedGrade: perceivedGrade.trim() },
+        problemId
+      );
+      await refreshProblem();
+      toast.success("Suggested grade submitted.");
+    } catch (err) {
+      toast.error(`Failed to suggest grade: ${extractErrorMessage(err)}`);
     }
-    if (!perceivedGrade) return;
-    // TODO: Implement backend API call to suggest perceived grade
-    console.log('Suggesting perceived grade:', perceivedGrade);
-    setPerceivedGrade('');
   };
 
   const rawWallSectionID = params?.wallSectionID;
