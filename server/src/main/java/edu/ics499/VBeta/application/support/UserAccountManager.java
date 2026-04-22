@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
+import java.util.List;
 
 /**
  * {@code UserAccountManager} provides account lookup and account creation operations.
@@ -35,6 +36,15 @@ public class UserAccountManager {
                               GymRoleRepository gymRoleRepository){
         this.userAccountRepository = userAccountRepository;
         this.gymRoleRepository = gymRoleRepository;
+    }
+
+    /**
+     * Finds all user accounts.
+     *
+     * @return list of all user accounts
+     */
+    public List<UserAccount> findAllUserAccounts() {
+        return userAccountRepository.findAll();
     }
 
     /**

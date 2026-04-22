@@ -50,7 +50,8 @@ public class RolePermissionTest {
     private final List<ActionDefinition> adminActions = List.of(
             ActionDefinition.CREATE_WALL,
             ActionDefinition.DELETE_WALL,
-            ActionDefinition.CHANGE_ROLE
+            ActionDefinition.CHANGE_ROLE,
+            ActionDefinition.VIEW_ACCOUNTS
     );
 
     @Test
