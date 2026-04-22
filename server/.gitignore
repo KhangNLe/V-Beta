@@ -46,6 +46,8 @@ tmp/
 .env.*
 application-local.properties
 application-local.yml
+firebase-credentials.json
+google-account-credential.json
 
 # OS
 .DS_Store
