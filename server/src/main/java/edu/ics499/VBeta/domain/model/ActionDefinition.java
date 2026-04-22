@@ -24,6 +24,8 @@ public enum ActionDefinition {
     DELETE_WALL,
     /** Permission to change another user's role. */
     CHANGE_ROLE,
+    /** Permission to view all user accounts. */
+    VIEW_ACCOUNTS,
     /** Permission to submit perceived grades for problems. */
     GRADE_PROBLEM
 }
