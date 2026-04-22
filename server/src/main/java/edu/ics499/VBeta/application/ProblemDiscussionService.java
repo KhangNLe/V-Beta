@@ -137,6 +137,21 @@ public class ProblemDiscussionService {
         userPerceiveGradeManager.addPerceiveGrade(problem, firebaseUid, request.perceiveGrade());
     }
 
+    /**
+     * Removes a user discussion comment when requester is the author or an admin.
+     *
+     * @param firebaseUid Firebase UID of the authenticated requester
+     * @param request comment deletion payload
+     */
+    public void removeUserComment(String firebaseUid, CommentDeletionRequest request){
+        UserAccount requestUser = userAccountManager.findUserAccount(firebaseUid);
+        UserAccount commentAuthor = userAccountManager.findUserAccountById(request.authorId());
+        ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
+        validateDeletionOwnerObject(requestUser, request.authorId());
+
+        climbingProblemDiscussionManager.removeUserComment(commentAuthor, problem, request.commentContent());
+    }
+
     private UserAccount getUserAccount(Long userId){
         UserAccount account =  userAccountManager.findUserAccountById(userId);
         if (account == null){
@@ -155,8 +170,14 @@ public class ProblemDiscussionService {
         return problem;
     }
 
+    /**
+     * Validates that deletion is requested by the original author or an administrator.
+     *
+     * @param user requester account
+     * @param authorId author user ID associated with the target content
+     * @throws ResponseStatusException with {@link HttpStatus#UNAUTHORIZED} when deletion is not permitted
+     */
     private void validateDeletionOwnerObject(UserAccount user, Long authorId){
-        // Can only delete the object if it is from author or admin account
         if (!Objects.equals(user.getId(), authorId) &&
                 !user.getGymRole().getRoleType().equals(RoleType.ADMIN)){
             throw new ResponseStatusException(

@@ -4,55 +4,9 @@
 
 @source "../**/*.{js,jsx,mjs}";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-
-  /* SHADCN THEME TOKENS */
-  --card: #f9f9f9;
-  --card-foreground: #171717;
-  --primary: #4f46e5;
-  --primary-foreground: #ffffff;
-  --secondary: #e2e8f0;
-  --secondary-foreground: #1e293b;
-  --accent: #eef2ff;
-  --accent-foreground: #1e1b4b;
-  --muted: #f3f4f6;
-  --muted-foreground: #64748b;
-  --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #6366f1;
-  --popover: #ffffff;
-  --popover-foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-
-      /* SHADCN THEME TOKENS */
-      --card: #1c1c1c;
-      --card-foreground: #ededed;
-      --primary: #818cf8;
-      --primary-foreground: #0f172a;
-      --secondary: #334155;
-      --secondary-foreground: #f1f5f9;
-      --accent: #312e81;
-      --accent-foreground: #e0e7ff;
-      --muted: #111827;
-      --muted-foreground: #94a3b8;
-      --destructive: #f87171;
-      --destructive-foreground: #0f172a;
-      --border: #374151;
-      --input: #374151;
-      --ring: #818cf8;
-      --popover: #1c1c1c;
-      --popover-foreground: #ededed;
-  }
-}
+@import "./tokens.css";
+@import "./shadcn-compat.css";
+@import "../components/role-navbar.css";
 
 /* BASE ELEMENTS */
 html {
@@ -71,11 +25,11 @@ body {
   flex-direction: column;
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
 
 a {
   color: inherit;
@@ -86,98 +40,4 @@ a {
   html {
     color-scheme: dark;
   }
-}
-
-/* ROLE NAVBAR */
-.role-navbar {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
-}
-
-.role-navbar__inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.role-navbar__links {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 1rem;
-}
-
-.role-navbar__links--right {
-  margin-left: auto;
-  gap: 0.4rem 0.5rem;
-}
-
-.role-navbar__link {
-  display: inline-block;
-  padding: 0.4rem 0.6rem;
-  border-radius: 0.4rem;
-  color: #1f2937;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.role-navbar__link:hover {
-  background: #eef2ff;
-}
-
-.role-navbar__link--active {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-.role-navbar__link--disabled {
-  opacity: 0.8;
-  cursor: default;
-  user-select: none;
-}
-
-.role-navbar__link--disabled:hover {
-  background: transparent;
-}
-
-.role-navbar__link--action {
-  cursor: pointer;
-}
-
-/* SHADCN THEME VARIABLES */
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --radius: 0.625rem;
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
 }

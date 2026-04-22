@@ -38,21 +38,22 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import PageLoader from '@/components/ui/PageLoader';
-import { useRequireAuth } from '@/hooks/useRequireAuth';
-import { colors } from '@/ui/appTheme';
-import { MoreVertical } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
-import GuestBanner from '@/components/GuestBanner';
+} from "@/components/ui/card";
+import GuestBanner from "@/components/GuestBanner";
+import PageLoader from "@/components/ui/PageLoader";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
+import { MoreVertical } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 export default function MainPage() {
   const router = useRouter();
   const { user, account, ready } = useRequireAuth({
-    redirectMode: 'push',
+    redirectMode: "push",
     requireAuth: false,
+    requireEmailVerified: true,
   });
   const [sections, setSections] = useState([]);
   const isAdmin = (account?.roleName || '').toUpperCase().includes('ADMIN');
@@ -144,85 +145,101 @@ export default function MainPage() {
   if (!ready) return <PageLoader message="Loading…" />;
 
   return (
-    <main className="min-h-screen bg-zinc-100 px-6 py-7 pb-12 font-sans text-zinc-900">
-      <div className="mx-auto max-w-[960px]">
+    <main style={layout.main}>
+      <div style={layout.maxWidth960}>
         {!isSignedIn && (
-          <GuestBanner
-            message="You are browsing as a guest. Log in or sign up to access interactive features "
-            className="mb-5"
-          />
+          <GuestBanner message="You are browsing as a guest. Sign in to manage your account and access all features." />
         )}
         <header className="mb-6">
-          <h1 className="m-0 text-[1.75rem] font-bold">GYM</h1>
+          <h1 className="m-0 text-[1.75rem] font-bold" style={{ color: colors.text }}>
+            GYM
+          </h1>
         </header>
 
         {/* Gym Info Card */}
-        <Card className="relative mb-7 gap-0 overflow-hidden border border-zinc-200 bg-white py-[22px] pr-[22px] pl-5 shadow-sm ring-0">
-          <div
-            className="pointer-events-none absolute top-0 bottom-0 left-0 w-1 bg-linear-to-b from-blue-600 to-blue-700"
-            aria-hidden
-          />
+        <Card
+          className="relative gap-0 overflow-hidden py-0 ring-0"
+          style={{
+            ...card.surface,
+            position: "relative",
+            overflow: "hidden",
+            fontFamily,
+            padding: "22px 22px 22px 20px",
+            marginBottom: "28px",
+          }}
+        >
+          <div style={card.accentBar} aria-hidden />
           <CardHeader className="rounded-none px-0 pt-0 pb-0">
-            <CardTitle className="mb-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+            <CardTitle
+              className="mb-1.5 text-xs font-semibold tracking-wide uppercase"
+              style={{ color: colors.subtle }}
+            >
               Gym info
             </CardTitle>
-            <CardDescription className="mb-3 max-w-[65ch] text-[0.9375rem] leading-[1.55] text-zinc-600">
-              A fantastic gym with a variety of climbing walls for all skill
-              levels. Come in and climb!
+            <CardDescription
+              className="mb-3 max-w-[65ch] text-[0.9375rem] leading-[1.55]"
+              style={{ color: colors.muted }}
+            >
+              A fantastic gym with a variety of climbing walls for all skill levels. Come in and climb!
             </CardDescription>
           </CardHeader>
           <CardContent className="px-0 pb-0">
             <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2">
-              <span className="text-sm font-medium text-zinc-600">
-                <span className="text-zinc-500">Location · </span>
+              <span className="text-sm font-medium" style={{ color: colors.muted }}>
+                <span style={{ color: colors.subtle }}>Location · </span>
                 123 Climbing St, Boulder City
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <div
-          className="mb-4 flex flex-wrap items-center justify-between gap-3"
-          style={{
-            '--section-btn-primary': colors.primary,
-            '--section-btn-primary-hover': colors.primaryDark,
-          }}
-        >
-          <h2 className="m-0 text-lg font-bold text-zinc-900">Wall Sections</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="m-0 text-lg font-semibold" style={{ color: colors.muted }}>
+            Wall Sections
+          </h2>
 
           {isAdmin && (
-            <Button
-              type="button"
-              className="shrink-0 border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
-              onClick={() => setAddOpen(true)}
-            >
+            <Button type="button" className="shrink-0" style={buttons.primary} onClick={() => setAddOpen(true)}>
               Add Wall Section
             </Button>
           )}
         </div>
 
         {fetchError && (
-          <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-red-700">
+          <div
+            className="mb-5 rounded-lg px-3.5 py-3"
+            style={{
+              color: colors.danger,
+              background: colors.dangerBg,
+              border: `1px solid ${colors.dangerBorder}`,
+            }}
+          >
             {fetchError}
           </div>
         )}
 
         {/* Wall sections grid or empty */}
         {sections.length === 0 ? (
-          <p className="m-0 text-zinc-500">No wall sections found.</p>
+          <p className="m-0" style={{ color: colors.subtle }}>
+            No wall sections found.
+          </p>
         ) : (
           <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
             {sections.map((section) => (
               <Card
                 key={section.wallSectionID}
-                className="gap-2.5 overflow-hidden border border-zinc-200 bg-white p-0 py-5 shadow-sm ring-0"
+                className="gap-2.5 overflow-hidden p-0 py-5 ring-0"
                 style={{
-                  '--section-btn-primary': colors.primary,
-                  '--section-btn-primary-hover': colors.primaryDark,
+                  ...card.surface,
+                  fontFamily,
+                  position: "relative",
                 }}
               >
                 <CardHeader className="px-5 pt-0 pb-0">
-                  <CardTitle className="min-w-0 text-lg font-semibold leading-[1.3] text-zinc-900">
+                  <CardTitle
+                    className="min-w-0 text-lg font-semibold leading-[1.3]"
+                    style={{ color: colors.text }}
+                  >
                     {section.wallSectionName}
                   </CardTitle>
                   {isAdmin && (
@@ -234,7 +251,7 @@ export default function MainPage() {
                               type="button"
                               variant="ghost"
                               size="icon-sm"
-                              className="shrink-0 text-zinc-600"
+                              className="shrink-0 text-muted-foreground"
                               aria-label="Section actions"
                             />
                           }
@@ -255,16 +272,16 @@ export default function MainPage() {
                 </CardHeader>
 
                 <CardContent className="flex flex-grow flex-col px-5 pb-0 pt-0">
-                  <p className="m-0 text-sm leading-normal text-zinc-600">
-                    {section.wallSectionInfo ||
-                      'No description available for this section.'}
+                  <p className="m-0 text-sm leading-normal" style={{ color: colors.muted }}>
+                    {section.wallSectionInfo || "No description available for this section."}
                   </p>
                 </CardContent>
 
-                <CardFooter className="mt-1.5 flex w-full flex-col rounded-none border-t border-zinc-200 px-5 py-4">
+                <CardFooter className="mt-1.5 flex w-full flex-col rounded-none border-border border-t bg-transparent px-5 py-4">
                   <Button
                     type="button"
-                    className="w-full border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
+                    className="w-full"
+                    style={buttons.primary}
                     onClick={() => handleSelectSection(section)}
                   >
                     View section
@@ -287,13 +304,7 @@ export default function MainPage() {
           }
         }}
       >
-        <DialogContent
-          className="sm:max-w-md"
-          style={{
-            '--section-btn-primary': colors.primary,
-            '--section-btn-primary-hover': colors.primaryDark,
-          }}
-        >
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add Wall Section</DialogTitle>
             <DialogDescription>
@@ -302,10 +313,7 @@ export default function MainPage() {
           </DialogHeader>
           <form onSubmit={handleAddSection} className="grid gap-3">
             <div className="grid gap-1.5">
-              <label
-                htmlFor="add-ws-name"
-                className="text-sm font-medium text-zinc-700"
-              >
+              <label htmlFor="add-ws-name" className="text-sm font-medium text-foreground">
                 Name
               </label>
               <input
@@ -316,15 +324,12 @@ export default function MainPage() {
                 required
                 value={newSectionName}
                 onChange={(ev) => setNewSectionName(ev.target.value)}
-                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
                 placeholder="e.g. Bouldering Wall A"
               />
             </div>
             <div className="grid gap-1.5">
-              <label
-                htmlFor="add-ws-info"
-                className="text-sm font-medium text-zinc-700"
-              >
+              <label htmlFor="add-ws-info" className="text-sm font-medium text-foreground">
                 Description
               </label>
               <textarea
@@ -334,7 +339,7 @@ export default function MainPage() {
                 required
                 value={newSectionInfo}
                 onChange={(ev) => setNewSectionInfo(ev.target.value)}
-                className="resize-y rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                className="resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
                 placeholder="Short summary for climbers"
               />
             </div>
@@ -346,12 +351,8 @@ export default function MainPage() {
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={addSubmitting}
-                className="border-transparent bg-[var(--section-btn-primary)] text-white hover:bg-[var(--section-btn-primary-hover)]"
-              >
-                {addSubmitting ? 'Adding...' : 'Add section'}
+              <Button type="submit" disabled={addSubmitting} style={buttons.primary}>
+                {addSubmitting ? "Adding..." : "Add section"}
               </Button>
             </DialogFooter>
           </form>

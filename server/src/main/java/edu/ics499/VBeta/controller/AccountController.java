@@ -11,6 +11,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 /**
  * {@code AccountController} exposes account-facing endpoints for session bootstrap and role updates.
@@ -109,5 +112,19 @@ public class AccountController {
     authorizationService.authorizeCurrentUser(ActionDefinition.CHANGE_ROLE);
 
     return accountService.changeUserRole(userId, body.roleType());
+  }
+
+  /**
+   * Retrieves all user accounts.
+   * <p>
+   * Caller must be authorized for {@link ActionDefinition#VIEW_ACCOUNTS} to access this endpoint.
+   *
+   * @return list of all account responses
+   */
+  @GetMapping
+  public List<AccountResponse> getAllAccounts() {
+    authorizationService.authorizeCurrentUser(ActionDefinition.VIEW_ACCOUNTS);
+
+    return accountService.getAllAccounts();
   }
 }
