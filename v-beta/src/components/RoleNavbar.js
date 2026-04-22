@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { auth } from "@/app/firebase";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -34,10 +34,25 @@ function isGuestAllowedPath(pathname) {
 export default function RoleNavbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [theme, setTheme] = useState("light");
   const { user, account, ready } = useRequireAuth({
     skip: isAuthShellPath(pathname),
     allowGuest: isGuestAllowedPath(pathname),
   });
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem("theme");
+    const nextTheme =
+      storedTheme === "light" || storedTheme === "dark"
+        ? storedTheme
+        : window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+
+    setTheme(nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+    document.documentElement.style.colorScheme = nextTheme;
+  }, []);
 
   const roleType = useMemo(() => {
     if (!user || !ready) return "guest";
@@ -74,6 +89,14 @@ export default function RoleNavbar() {
     } catch (error) {
       console.error("Logout failed:", error);
     }
+  };
+
+  const handleThemeToggle = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    window.localStorage.setItem("theme", nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+    document.documentElement.style.colorScheme = nextTheme;
   };
 
   if (!ready || isAuthShellPath(pathname)) {
@@ -117,6 +140,49 @@ export default function RoleNavbar() {
               </span>
             </li>
           )}
+          <li>
+            <button
+              type="button"
+              className="role-navbar__theme-toggle"
+              onClick={handleThemeToggle}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              aria-pressed={theme === "dark"}
+            >
+              {theme === "dark" ? (
+                <svg
+                  className="role-navbar__theme-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2" />
+                  <path
+                    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="role-navbar__theme-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M21 12.79A9 9 0 1 1 11.21 3c-.13.6-.21 1.22-.21 1.86a9 9 0 0 0 10 8.93Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </button>
+          </li>
         </ul>
       </div>
     </nav>
