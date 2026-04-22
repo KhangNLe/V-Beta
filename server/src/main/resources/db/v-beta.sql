@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS V_Beta_Test;
-USE V_Beta_Test;
+CREATE DATABASE IF NOT EXISTS V_Beta;
+USE V_Beta;
 
 CREATE TABLE Gym_Role (
 	role_id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -116,8 +116,6 @@ INSERT INTO Role_Permission (role_id, action_id)
     
 INSERT INTO Wall_Section (info, wall_section_name) 
 	VALUES ('This is a test wall section', 'Test Wall');
-    
-SELECT * FROM Climbing_Grade ORDER BY grade_id;
 
 INSERT INTO Climbing_Problem(hold_color, info, lifecycle_status, create_date, wall_section_id, assigned_grade_id)
 	VALUES ('BLACK', 'BLACK VB-V0', 'ACTIVE', NOW(), 1, 1),
@@ -147,11 +145,3 @@ INSERT INTO Discussion_Comment(user_comment_id, info, create_date)
 	VALUES (1, 'Fun problem!!!', NOW()),
 		(2, 'Good Warm-up', NOW()),
         (3, 'Maybe a little too hard :(', NOW());
-        
-INSERT INTO User_Beta(user_id, problem_id)
-	VALUES(1, 1);
-
-INSERT INTO Solution_Beta(user_beta_id, beta_name, video_url, create_date)
-	VALUES(1, 'IMG_772.mp4', 'https://storage.googleapis.com/beta_videos_public/problem-1/IMG_772.mp4', NOW());
-    
-SELECT * FROM Solution_Beta;

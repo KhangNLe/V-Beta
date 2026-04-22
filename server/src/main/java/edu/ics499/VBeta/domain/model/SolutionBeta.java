@@ -27,10 +27,10 @@ public class SolutionBeta {
     @JoinColumn(name = "user_beta_id", referencedColumnName = "user_beta_id", unique = true, nullable = false)
     private UserBeta userBeta;
 
-    @Column(name = "beta_name", nullable = false, length = 125)
+    @Column(name = "beta_name", nullable = false, length = 250)
     private String betaName;
 
-    @Column(name = "video_url", length = 150)
+    @Column(name = "video_url", length = 250, nullable = false)
     private String videoURL;
 
     @Column(name = "create_date")

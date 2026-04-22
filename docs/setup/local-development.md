@@ -10,9 +10,10 @@ This guide explains how to run the full project locally:
 
 Before starting, complete:
 
-1. [`docs/setup/enviroment-variables.md`](./enviroment-variables.md)
-2. [`docs/setup/firebase-setup.md`](./firebase-setup.md)
-3. [`docs/setup/google-cloud-setup.md`](./google-cloud-setup.md)
+1. [docs/setup/enviroment-variables.md](./enviroment-variables.md)
+2. [docs/setup/firebase-setup.md](./firebase-setup.md)
+3. [docs/setup/google-cloud-setup.md](./google-cloud-setup.md)
+4. [docs/setup/database-schema.md](./database-schema.md)
 
 ## Prerequisites
 
@@ -61,6 +62,8 @@ GCP_PROJECT_ID=
 GOOGLE_SERVICE_CREDENTIALS_PATH=./google-account-credential.json
 STORAGE_PUBLIC_BUCKET_NAME=
 ```
+
+Note: `application.properties` defaults to `3307`, so keep `MYSQL_PORT` in `server/.env` synced with your proxy `--port`.
 
 ## 2) Start Cloud SQL Auth Proxy
 
