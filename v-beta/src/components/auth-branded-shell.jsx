@@ -8,8 +8,8 @@ import Link from "next/link"
  */
 export function AuthBrandedShell({ children }) {
   return (
-    <div className="grid min-h-svh bg-background text-foreground lg:grid-cols-2">
-      <div className="relative order-2 hidden bg-foreground lg:order-1 lg:block dark:bg-card">
+    <div className="grid min-h-svh bg-background text-foreground lg:grid-cols-2 dark:text-foreground">
+      <div className="relative order-2 hidden bg-background lg:order-1 lg:block dark:bg-background">
         <Image
           src="/auth-bg.svg"
           alt=""
@@ -19,7 +19,7 @@ export function AuthBrandedShell({ children }) {
           className="object-cover opacity-[0.88]"
         />
         <div
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--foreground)_58%,transparent)_0%,color-mix(in_srgb,var(--foreground)_38%,transparent)_100%)] dark:bg-[linear-gradient(135deg,color-mix(in_srgb,var(--background)_58%,transparent)_0%,color-mix(in_srgb,var(--background)_38%,transparent)_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(15,23,42,0.28)_0%,rgba(15,23,42,0.16)_100%)]"
           aria-hidden
         />
       </div>

@@ -12,6 +12,8 @@ export const colors = {
   borderHairline: "var(--app-border-hairline)",
   primary: "var(--app-primary)",
   primaryDark: "var(--app-primary-dark)",
+  accentSoft: "var(--app-accent-soft)",
+  surfaceAlt: "var(--app-muted-surface)",
   danger: "var(--app-danger)",
   dangerBg: "var(--app-danger-bg)",
   dangerBorder: "var(--app-danger-border)",

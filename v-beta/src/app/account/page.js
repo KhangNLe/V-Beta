@@ -41,8 +41,8 @@ export default function AccountPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-4 bg-[#fafafa] min-h-screen">
-        <Card className="bg-white text-gray-900 border border-gray-200">
+      <div className="container mx-auto min-h-screen p-4">
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle>Account</CardTitle>
             <CardDescription>Error loading account information</CardDescription>
@@ -56,24 +56,24 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 bg-[#fafafa] min-h-screen">
-      <Card className="bg-white text-gray-900 border border-gray-200">
+    <div className="container mx-auto min-h-screen p-4">
+      <Card className="border border-border">
         <CardHeader>
           <CardTitle>Account Information</CardTitle>
           <CardDescription>Your account details</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <p className="mt-1 text-sm text-gray-900">{accountInfo?.email || user.email}</p>
+            <label className="block text-sm font-medium text-muted-foreground">Email</label>
+            <p className="mt-1 text-sm">{accountInfo?.email || user.email}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
-            <p className="mt-1 text-sm text-gray-900">{accountInfo?.username || user.username}</p>
+            <label className="block text-sm font-medium text-muted-foreground">Username</label>
+            <p className="mt-1 text-sm">{accountInfo?.username || user.username}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Role</label>
-            <p className="mt-1 text-sm text-gray-900">{accountInfo?.role || "No role assigned"}</p>
+            <label className="block text-sm font-medium text-muted-foreground">Role</label>
+            <p className="mt-1 text-sm">{accountInfo?.role || "No role assigned"}</p>
           </div>
           <div className="pt-4">
             <Button

@@ -11,12 +11,12 @@ export default function GuestBanner({
         marginBottom: '20px',
         padding: '14px 18px',
         borderRadius: '10px',
-        border: '1px solid #d4d4d8',
-        background: '#ffffff',
-        color: '#52525b',
+        border: '1px solid var(--app-border-hairline)',
+        background: 'var(--app-card-surface-bg)',
+        color: 'var(--app-muted)',
         lineHeight: 1.5,
         fontWeight: 500,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+        boxShadow: 'var(--app-card-shadow)',
         ...style,
       }}
     >
