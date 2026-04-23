@@ -53,4 +53,3 @@ This project is a full-stack climbing gym application with:
 - Frontend state is mostly local component state with Firebase auth listener hooks.
 - Role-based behavior is enforced in both frontend UX gating and backend authorization checks.
 - Public read APIs support guest browsing for wall/problem discovery.
-- Some backend endpoint semantics are legacy and should be documented in API caveats (for example destructive GET route patterns).
