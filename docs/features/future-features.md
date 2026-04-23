@@ -112,6 +112,14 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Add an admin-facing reports queue/history for inappropriate content, plus a structured application event log (errors and important events) for developers to diagnose unexpected bugs.
 - **Dependencies:** Report/audit data model, admin review UI, event ingestion pipeline, and log retention/access policy.
 
+### 13) Perceived Grade Detail Subpage per Problem
+
+- **Priority:** High
+- **Area:** Problem Analytics / User Feedback
+- **Current Gap:** Problem pages show aggregate perceived difficulty, but not a dedicated breakdown of individual user-submitted perceived grades.
+- **Potential Work:** Add a subpage under each climbing problem to display individual user perceived grades, including user attribution and submitted grade values.
+- **Dependencies:** Per-user perceived-grade query endpoint, problem-level routing/subpage UI, and privacy/access rules for displaying user-level grade submissions.
+
 ## Change Log
 
 - Keep this section updated when priorities change or items move to implemented docs.
