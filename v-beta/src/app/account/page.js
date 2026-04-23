@@ -13,12 +13,24 @@ import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { deleteAccount } from "@/api/account";
 
 export default function AccountPage() {
   const { user, ready } = useRequireAuth({ redirectMode: "push" });
   const [accountInfo, setAccountInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const handleDeleteAccount = async (user) => {
+    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      try {
+        await deleteAccount(user);
+      } catch (error) {
+        toast.error(`Failed to delete account: ${error.message}`);
+      }
+    }
+  };
+
 
   useEffect(() => {
     if (ready && user) {
@@ -78,7 +90,7 @@ export default function AccountPage() {
           <div className="pt-4">
             <Button
               variant="destructive"
-              onClick={() => toast.info("Delete account functionality not implemented yet")}
+              onClick={() => handleDeleteAccount(user)}
             >
               Delete Account
             </Button>
