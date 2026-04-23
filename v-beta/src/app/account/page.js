@@ -9,6 +9,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useEffect, useState } from "react";
@@ -20,14 +30,18 @@ export default function AccountPage() {
   const [accountInfo, setAccountInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false); 
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const handleDeleteAccount = async (user) => {
-    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      try {
-        await deleteAccount(user);
-      } catch (error) {
-        toast.error(`Failed to delete account: ${error.message}`);
-      }
+    setDeleteSubmitting(true);
+    try {
+      await deleteAccount(user);
+    } catch (error) {
+      toast.error(`Failed to delete account: ${error.message}`);
+    } finally {
+      setDeleteSubmitting(false);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -90,13 +104,40 @@ export default function AccountPage() {
           <div className="pt-4">
             <Button
               variant="destructive"
-              onClick={() => handleDeleteAccount(user)}
+              onClick={() => setShowDeleteDialog(true)}
             >
               Delete Account
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={showDeleteDialog}
+        onOpenChange={(open) => {
+          if (!open) setShowDeleteDialog(false);
+        }}
+      >
+        <AlertDialogContent className="data-[size=default]:sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{`Delete your account?`}</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="pt-4">
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              variant="destructive"
+              disabled={deleteSubmitting}
+              onClick={() => handleDeleteAccount(user)}
+            >
+              {deleteSubmitting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
