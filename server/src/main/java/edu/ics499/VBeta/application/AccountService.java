@@ -1,6 +1,7 @@
 package edu.ics499.VBeta.application;
 
 import edu.ics499.VBeta.api.dto.AccountResponse;
+import edu.ics499.VBeta.application.support.AccountDeletionManager;
 import edu.ics499.VBeta.application.support.UserAccountManager;
 import edu.ics499.VBeta.domain.model.GymRole;
 import edu.ics499.VBeta.domain.model.RoleType;
@@ -25,14 +26,18 @@ import java.util.stream.Collectors;
 @Transactional
 public class AccountService {
     private final UserAccountManager userAccountManager;
+    private final AccountDeletionManager accountDeletionManager;
 
     /**
      * Constructs a new {@code AccountService} with required account management dependency.
      *
      * @param userAccountManager manager responsible for account lookup and creation
+     * @param accountDeletionManager manager responsible for transactional account teardown
      */
-    public AccountService(UserAccountManager userAccountManager){
+    public AccountService(UserAccountManager userAccountManager,
+                          AccountDeletionManager accountDeletionManager){
         this.userAccountManager = userAccountManager;
+        this.accountDeletionManager = accountDeletionManager;
     }
 
     /**
@@ -74,7 +79,7 @@ public class AccountService {
                     "The request account is currently does not exist within the database."
             );
         }
-        userAccountManager.removeAccount(account);
+        accountDeletionManager.deleteAllUserRelatedDiscussion(account);
     }
 
     /**

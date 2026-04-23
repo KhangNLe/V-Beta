@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.List;
 
@@ -97,6 +98,56 @@ public class DiscussionCommentManager {
         UserComment deletingUserComment = discussionComment.getUserComment();
         discussionCommentRepository.delete(discussionComment);
         userCommentRepository.delete(deletingUserComment);
+    }
+
+    /**
+     * Removes all discussion-comment rows and user-comment anchors owned by a user.
+     * <p>
+     * This method validates one-to-one row consistency between {@link UserComment}
+     * and {@link DiscussionComment} before deleting either side.
+     *
+     * @param user account whose comments should be removed
+     */
+    public void removeAllUserComments(UserAccount user){
+        List<UserComment> userComments = getAllUserComments(user);
+        if (userComments.isEmpty()) return;
+        List<DiscussionComment> discussionComments = getDiscussionComments(userComments);
+        discussionCommentRepository.deleteAll(discussionComments);
+        userCommentRepository.deleteAll(userComments);
+    }
+
+    /**
+     * Returns all user-comment anchors authored by a user.
+     *
+     * @param userAccount comment author account
+     * @return user-comment anchors for that author
+     */
+    private List<UserComment> getAllUserComments(UserAccount userAccount){
+        return userCommentRepository.findByUserAccount(userAccount);
+    }
+
+    /**
+     * Resolves discussion comments for a set of user-comment anchors and enforces
+     * one-to-one mapping cardinality.
+     *
+     * @param userComments user-comment anchors expected to have matching discussion rows
+     * @return discussion-comment rows matching each anchor
+     * @throws ResponseStatusException with {@link HttpStatus#INTERNAL_SERVER_ERROR}
+     * when one or more discussion rows are missing
+     */
+    private List<DiscussionComment> getDiscussionComments(List<UserComment> userComments){
+        List<DiscussionComment> discussionComments = discussionCommentRepository.findByUserCommentIn(userComments);
+        if (discussionComments.size() != userComments.size()){
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    String.format(
+                            "Mismatching size between user comments %d and discussion comment %d for user comment id %s."
+                            + " Please contact the developer for this issue",
+                            userComments.size(), discussionComments.size(), userComments.get(0).getUserCommentId()
+                    )
+            );
+        }
+        return discussionComments;
     }
 
     /**

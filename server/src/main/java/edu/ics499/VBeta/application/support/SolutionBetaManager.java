@@ -156,6 +156,60 @@ public class SolutionBetaManager {
     }
 
     /**
+     * Removes every beta/video row associated with a user.
+     * <p>
+     * This bulk flow validates that each {@link UserBeta} has a corresponding
+     * {@link SolutionBeta} before deleting storage objects and database rows.
+     *
+     * @param userAccount account whose beta entries should be removed
+     */
+    public void removeAllUserRelatedSolutionBeta(UserAccount userAccount){
+        List<UserBeta> userBetas = getAllUserBetas(userAccount);
+        if (userBetas.isEmpty()) return;
+        List<SolutionBeta> solutionBetas = getAllUserRelateSolutionBeta(userBetas);
+        solutionBetas.forEach(sb ->
+                gcpFileStorageAdapter.deleteFile(gcpFileStorageAdapter.getPublicBucketName(), sb.getBetaName())
+        );
+        solutionBetaRepository.deleteAll(solutionBetas);
+        userBetaRepository.deleteAll(userBetas);
+    }
+
+    /**
+     * Returns all user-beta link rows owned by a user.
+     *
+     * @param userAccount owner account
+     * @return user-beta rows for the account
+     */
+    private List<UserBeta> getAllUserBetas(UserAccount userAccount){
+        return userBetaRepository.findByUser(userAccount);
+    }
+
+    /**
+     * Resolves solution-beta rows for a user's user-beta links and checks
+     * one-to-one consistency.
+     *
+     * @param userBetas user-beta rows expected to have solution-beta rows
+     * @return matching solution-beta rows
+     * @throws ResponseStatusException with {@link HttpStatus#INTERNAL_SERVER_ERROR}
+     * when one or more solution rows are missing
+     */
+    private List<SolutionBeta> getAllUserRelateSolutionBeta(List<UserBeta> userBetas){
+        List<SolutionBeta> solutionBetas = solutionBetaRepository.findByUserBetaIn(userBetas);
+
+        if (solutionBetas.size() != userBetas.size()){
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    String.format(
+                            "Mismatching size of solution betas %d and user betas %s from user beta id %d. "
+                            + "Please report this to the developers.",
+                            solutionBetas.size(), userBetas.size(), userBetas.get(0).getId()
+                    )
+            );
+        }
+        return solutionBetas;
+    }
+
+    /**
      * Creates signed upload data for a new solution video.
      *
      * @param request upload request payload

@@ -18,6 +18,23 @@ public interface DiscussionCommentRepository extends JpaRepository<DiscussionCom
      * @return discussion comment when present
      */
     Optional<DiscussionComment> findByUserComment (UserComment userComment);
+
+    /**
+     * Finds discussion comments for a batch of user-comment anchors.
+     *
+     * @param userComments user-comment anchors
+     * @return matching discussion comments
+     */
+    List<DiscussionComment> findByUserCommentIn(List<UserComment> userComments);
+
+    /**
+     * Finds matching discussion comments by text and candidate user comments,
+     * ordered newest first.
+     *
+     * @param commentInfo discussion comment text to match
+     * @param comments candidate user-comment anchors
+     * @return matching discussion comments ordered by create date descending
+     */
     List<DiscussionComment> findByCommentInfoAndUserCommentInOrderByCreateDateDesc(
             String commentInfo, List<UserComment> comments
     );

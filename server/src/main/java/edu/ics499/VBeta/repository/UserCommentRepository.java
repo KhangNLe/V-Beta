@@ -18,5 +18,21 @@ public interface UserCommentRepository extends JpaRepository<UserComment, Long> 
      * @return user comments for the problem
      */
     List<UserComment> findByClimbingProblem(ClimbingProblem problem);
+
+    /**
+     * Returns user-comment anchors authored by a specific account.
+     *
+     * @param userAccount author account
+     * @return user comments for the account
+     */
+    List<UserComment> findByUserAccount(UserAccount userAccount);
+
+    /**
+     * Returns user-comment anchors for a user within a specific climbing problem.
+     *
+     * @param userAccount author account
+     * @param problem climbing problem
+     * @return matching user comments
+     */
     List<UserComment> findByUserAccountAndClimbingProblem(UserAccount userAccount, ClimbingProblem problem);
 }
