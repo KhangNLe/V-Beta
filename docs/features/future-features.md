@@ -120,6 +120,14 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Add a subpage under each climbing problem to display individual user perceived grades, including user attribution and submitted grade values.
 - **Dependencies:** Per-user perceived-grade query endpoint, problem-level routing/subpage UI, and privacy/access rules for displaying user-level grade submissions.
 
+### 14) Centralized Server Error Handling with `@RestControllerAdvice`
+
+- **Priority:** Medium
+- **Area:** API Reliability / Developer Experience
+- **Current Gap:** Error responses are not fully standardized across all backend failure paths.
+- **Potential Work:** Add a centralized global exception handler in the server using Spring `@RestControllerAdvice` and enforce a standardized error message format across all server endpoints (for example: `code`, `message`, `status`, `path`, `timestamp`).
+- **Dependencies:** Exception mapping strategy, standardized error payload contract, and frontend/API client error parsing updates.
+
 ## Change Log
 
 - Keep this section updated when priorities change or items move to implemented docs.
