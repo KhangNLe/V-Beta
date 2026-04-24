@@ -10,22 +10,28 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { changeAccountRole } from "@/api/promoteOrDemote";
 
-const ROLES = ["climber", "setter", "admin"];
+const ROLES = ["CLIMBER", "SETTER", "ADMIN"];
 
-const updateAccountRole = async (accountId, newRole) => {
-  //TODO: Implement API call to update account role.
-  toast.info(`Role updating not quite implemented yet :) ${newRole}`);
+const updateAccountRole = async (user, accountId, newRole) => {
+  try {
+    await changeAccountRole(user, accountId, newRole);
+    toast.success("Account role updated successfully.");
+  } catch (err) {
+    toast.error(`Failed to update account role: ${err.message}`);
+  }
 };
 
 export default function AccountsPage() {
@@ -34,6 +40,9 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [savingRoles, setSavingRoles] = useState({});
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [selectedRole, setSelectedRole] = useState("");
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -56,7 +65,7 @@ export default function AccountsPage() {
   };
 
   const handleRoleSelect = async (accountId, currentRole, newRole) => {
-    if (newRole === currentRole?.toLowerCase()) return;
+    if (newRole === currentRole?.toUpperCase()) return;
 
     setSavingRoles((prev) => ({ ...prev, [accountId]: true }));
     setAccounts((prev) =>
@@ -66,13 +75,32 @@ export default function AccountsPage() {
     );
 
     try {
-      await updateAccountRole(accountId, newRole);
+      await updateAccountRole(user, accountId, newRole);
     } catch (err) {
       toast.error(`Failed to update role: ${err.message}`);
       await loadAccounts();
     } finally {
       setSavingRoles((prev) => ({ ...prev, [accountId]: false }));
     }
+  };
+
+  const openRoleDialog = (account) => {
+    setSelectedAccount(account);
+    setSelectedRole(account.roleName?.toUpperCase() ?? ROLES[0]);
+    setRoleDialogOpen(true);
+  };
+
+  const closeRoleDialog = () => {
+    setRoleDialogOpen(false);
+    setSelectedAccount(null);
+    setSelectedRole("");
+  };
+
+  const handleRoleSubmit = async () => {
+    if (!selectedAccount || !selectedRole) return;
+    const currentRole = selectedAccount.roleName?.toUpperCase();
+    await handleRoleSelect(selectedAccount.id, currentRole, selectedRole.toUpperCase());
+    closeRoleDialog();
   };
 
   if (authLoading || loading) {
@@ -105,7 +133,7 @@ export default function AccountsPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {accounts.map((account) => {
-          const currentRole = account.roleName?.toLowerCase();
+          const currentRole = account.roleName?.toUpperCase();
           const isSaving = !!savingRoles[account.id];
 
           return (
@@ -115,26 +143,18 @@ export default function AccountsPage() {
                 <CardDescription>
                   <div className="flex items-center gap-2">
                     <span>Role:</span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        disabled={isSaving}
-                        className="flex items-center gap-1 h-6 px-2 text-xs capitalize font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
-                      >
-                        {currentRole ?? "Select role"}
-                        <ChevronDown className="h-3 w-3" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        {ROLES.map((role) => (
-                          <DropdownMenuItem
-                            key={role}
-                            className={`text-xs capitalize cursor-pointer ${currentRole === role ? "font-semibold text-blue-600" : ""}`}
-                            onClick={() => handleRoleSelect(account.id, currentRole, role)}
-                          >
-                            {role}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <span className="text-xs capitalize font-medium text-muted-foreground">
+                      {currentRole ?? "No role"}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-6 px-2 text-xs"
+                      disabled={isSaving}
+                      onClick={() => openRoleDialog(account)}
+                    >
+                      Change Role
+                    </Button>
                     {isSaving && (
                       <span className="text-xs animate-pulse">Saving...</span>
                     )}
@@ -171,6 +191,62 @@ export default function AccountsPage() {
           Refresh Accounts
         </Button>
       </div>
+
+      <Dialog
+        open={roleDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeRoleDialog();
+          } else {
+            setRoleDialogOpen(true);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Role Change</DialogTitle>
+            <DialogDescription>
+              Select a new role for {selectedAccount?.username || "this account"} and submit to apply.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-2">
+            <label htmlFor="role-select" className="text-sm font-medium">
+              New role
+            </label>
+            <select
+              id="role-select"
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              value={selectedRole}
+              onChange={(event) => setSelectedRole(event.target.value)}
+              disabled={selectedAccount ? !!savingRoles[selectedAccount.id] : false}
+            >
+              {ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {role.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <DialogFooter className="mt-2 gap-2 sm:justify-end">
+            <Button type="button" variant="outline" onClick={closeRoleDialog}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleRoleSubmit}
+              disabled={
+                !selectedAccount ||
+                (selectedAccount.roleName?.toUpperCase() ?? "") === selectedRole ||
+                !!savingRoles[selectedAccount?.id]
+              }
+            >
+              {selectedAccount && savingRoles[selectedAccount.id] ? "Submitting..." : "Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
