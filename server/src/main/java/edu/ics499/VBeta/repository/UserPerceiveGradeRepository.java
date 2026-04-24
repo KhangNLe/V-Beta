@@ -35,4 +35,12 @@ public interface UserPerceiveGradeRepository extends JpaRepository<UserPerceiveG
             + "JOIN FETCH up.climbingGrade JOIN FETCH up.climbingProblem "
             + "WHERE up.climbingProblem = :problem")
     List<UserPerceiveGrade> findByClimbingProblem(@Param("problem") ClimbingProblem problem);
+
+    /**
+     * Returns perceived-grade entries authored by a specific user.
+     *
+     * @param userAccount user account
+     * @return perceived-grade rows for the account
+     */
+    List<UserPerceiveGrade> findByUserAccount(UserAccount userAccount);
 }

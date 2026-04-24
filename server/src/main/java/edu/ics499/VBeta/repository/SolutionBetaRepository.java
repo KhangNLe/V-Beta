@@ -35,4 +35,12 @@ public interface SolutionBetaRepository extends JpaRepository<SolutionBeta, Long
      * @return matching solution beta when present
      */
     Optional<SolutionBeta> findByUserBetaInAndVideoURL(List<UserBeta> userBetas, String videoUrl);
+
+    /**
+     * Finds solution betas for a batch of user-beta association rows.
+     *
+     * @param userBetas user-beta association rows
+     * @return matching solution beta rows
+     */
+    List<SolutionBeta> findByUserBetaIn(List<UserBeta> userBetas);
 }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -91,6 +92,26 @@ public class UserPerceiveGradeManager {
                                 gradeDefinition.name())
                 )
         );
+    }
+
+    /**
+     * Removes all perceived-grade rows created by a user.
+     *
+     * @param userAccount account whose perceived grades should be removed
+     */
+    public void removeAllUserRelatedPerceiveGrade(UserAccount userAccount){
+        List<UserPerceiveGrade> userPerceiveGrades = getAllPerceiveGradeFromUser(userAccount);
+        userPerceiveGradeRepository.deleteAll(userPerceiveGrades);
+    }
+
+    /**
+     * Returns all perceived-grade rows created by a user.
+     *
+     * @param userAccount account to query
+     * @return perceived-grade rows for the account
+     */
+    private List<UserPerceiveGrade> getAllPerceiveGradeFromUser(UserAccount userAccount){
+        return userPerceiveGradeRepository.findByUserAccount(userAccount);
     }
 
     private UserAccount getUserAccount(String firebaseUid){
