@@ -24,9 +24,8 @@ import { toast } from "react-toastify";
 const ROLES = ["climber", "setter", "admin"];
 
 const updateAccountRole = async (accountId, newRole) => {
-  console.log(`[DUMMY] Updating account ${accountId} to role: ${newRole}`);
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  console.log(`[DUMMY] Successfully updated account ${accountId} to role: ${newRole}`);
+  //TODO: Implement API call to update account role.
+  toast.info(`Role updating not quite implemented yet :) ${newRole}`);
 };
 
 export default function AccountsPage() {
@@ -68,7 +67,6 @@ export default function AccountsPage() {
 
     try {
       await updateAccountRole(accountId, newRole);
-      toast.success(`Role updating not quite implemented yet :) ${newRole}`);
     } catch (err) {
       toast.error(`Failed to update role: ${err.message}`);
       await loadAccounts();
