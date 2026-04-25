@@ -1,0 +1,92 @@
+# Backend Architecture
+
+## Stack
+
+- Spring Boot
+- Spring Web + Spring Security
+- Spring Data JPA (Hibernate)
+- MySQL
+- Firebase Admin SDK
+- Google Cloud Storage client integration
+
+## Layered Design
+
+The backend follows a layered architecture:
+
+1. **Controllers** (`controller/`)
+   - Define REST endpoints and request mapping.
+2. **Application Services** (`application/`)
+   - Coordinate use cases and transaction boundaries.
+3. **Support Managers/Adapters** (`application/support/`)
+   - Domain-specific orchestration and integration helpers.
+4. **Repositories** (`repository/`)
+   - Data access through Spring Data JPA.
+5. **Domain Model** (`domain/model/`)
+   - Entities, enums, and role/action concepts.
+
+## Request Lifecycle
+
+1. Request arrives at Spring Security chain.
+2. `FirebaseAuthFilter` validates bearer token when present.
+3. Controller endpoint executes and delegates to service layer.
+4. `AuthorizationService` enforces role/action permissions where required.
+5. Services/managers read/write entities via repositories.
+6. Response DTOs are returned to the client.
+
+## Security Architecture
+
+- Token auth: Firebase ID tokens.
+- URL-level security: configured in `SecurityConfig`.
+- Action-level authorization: `AuthorizationService` + `ActionDefinition` + role-permission mappings from DB.
+
+Access model types:
+
+- public endpoints
+- authenticated endpoints
+- action-gated endpoints
+
+## Persistence and Domain
+
+- Main entities include user accounts, roles, wall sections, climbing problems, discussion comments, solution betas, and perceived grades.
+- JPA schema mode in runtime is `ddl-auto=validate`, so schema must exist and match.
+- Role permission evaluation is data-driven from role/action tables.
+
+## External Integrations
+
+- **Firebase Admin**
+  - Validates client tokens and provides authenticated principal UID.
+- **Google Cloud Storage**
+  - Generates signed upload URLs and manages video object operations.
+- **MySQL**
+  - Stores relational domain data for all core features.
+
+## Configuration and Profiles
+
+- Main runtime configuration: `application.properties` + `application.yml`
+- Test profile: `application-test.yml`
+- Optional `.env` import for local machine overrides
+
+## Cross-Cutting Concerns
+
+- **Security filter chain**
+  - Firebase token verification runs in `FirebaseAuthFilter`.
+- **CORS**
+  - Configured via `WebConfig` for API route groups.
+- **Transactions**
+  - Service-layer transaction boundaries coordinate multi-step operations.
+- **Error handling**
+  - Mixed approach: `ResponseStatusException`, explicit filter responses, and default Spring exception mapping.
+
+## Request/Permission Patterns
+
+- Endpoint access types:
+  - public
+  - authenticated
+  - action-gated (`ActionDefinition` checks)
+- Role permissions are loaded from DB mappings (`RolePermission`) through authorization support services.
+- Some discussion endpoints are authenticated without full action-gating; enforceable behavior is partly service-rule based.
+
+## Constraints and Technical Debt Notes
+
+- Error payloads are not fully standardized across all failure paths.
+- Role-permission cache behavior and refresh strategy should be considered when permission models evolve.
