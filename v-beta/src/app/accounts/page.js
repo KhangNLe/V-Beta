@@ -22,6 +22,7 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { changeAccountRole } from "@/api/promoteOrDemote";
+import { useRouter } from "next/navigation";
 
 const ROLES = ["CLIMBER", "SETTER", "ADMIN"];
 
@@ -35,7 +36,8 @@ const updateAccountRole = async (user, accountId, newRole) => {
 };
 
 export default function AccountsPage() {
-  const { user, loading: authLoading } = useRequireAuth();
+  const router = useRouter();
+  const { user, account, ready } = useRequireAuth({ requireEmailVerified: true });
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,12 +46,19 @@ export default function AccountsPage() {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [selectedRole, setSelectedRole] = useState("");
 
-  useEffect(() => {
-    if (user && !authLoading) {
-      loadAccounts();
-    }
-  }, [user, authLoading]);
+  const isAdmin = (account?.roleName || "").toUpperCase().includes("ADMIN");
 
+  useEffect(() => {
+    if (!ready) return;
+    if (!user) return;
+
+    if (!isAdmin) {
+      router.replace("/main-page");
+      return;
+    }
+
+    loadAccounts();
+  }, [ready, user, isAdmin, router]);
   const loadAccounts = async () => {
     try {
       setLoading(true);
@@ -57,6 +66,10 @@ export default function AccountsPage() {
       const accountsData = await fetchAllAccounts(user);
       setAccounts(accountsData);
     } catch (err) {
+      if (err?.message === "Access denied.") {
+        router.replace("/main-page");
+        return;
+      }
       setError(err.message);
       toast.error(err.message);
     } finally {
@@ -76,6 +89,10 @@ export default function AccountsPage() {
 
     try {
       await updateAccountRole(user, accountId, newRole);
+      if (account?.id === accountId && newRole.toUpperCase() !== "ADMIN") {
+        router.replace("/main-page");
+        return;
+      }
     } catch (err) {
       toast.error(`Failed to update role: ${err.message}`);
       await loadAccounts();
@@ -103,7 +120,7 @@ export default function AccountsPage() {
     closeRoleDialog();
   };
 
-  if (authLoading || loading) {
+  if (!ready || loading) {
     return <PageLoader />;
   }
 
