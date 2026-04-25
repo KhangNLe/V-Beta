@@ -4,81 +4,113 @@ Spring Boot REST API for the capstone project. It pairs with the Next.js app in 
 
 ## Prerequisites
 
-- **JDK 17 or newer** (JDK 21 is fine).
-- **MySQL 8** reachable when you run the application (not required for automated tests; those use an in-memory H2 database under the `test` profile).
+- **JDK 17+** (JDK 21 is also supported).
+- **MySQL 8** reachable by the backend when running locally.
+- Optional for storage/auth flows: Firebase and Google Cloud credentials.
 
-You do **not** need a global Maven install if you use the wrapper scripts `mvnw` / `mvnw.cmd`.
+Use the Maven wrapper (`./mvnw` or `mvnw.cmd`) so no global Maven install is required.
 
-## Configuration
+## Runtime Configuration
 
-- **`src/main/resources/application.properties`** — datasource and JPA (MySQL by default).
-- **`src/main/resources/application.yml`** — application name, HTTP port (default **8080**), and CORS-related settings.
+The backend reads environment variables from `server/.env` via:
 
-Database defaults assume:
+- `spring.config.import=optional:file:.env[.properties]`
 
-- Host: `localhost`, port: `3306`, database: `V_Beta`
-- User: `root`, password: set via `MYSQL_PASSWORD` (example: `devpassword` in `application.properties`)
+Key config files:
 
-Override with environment variables if needed: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`.
+- `src/main/resources/application.properties` (datasource, JPA, Firebase, GCP settings)
+- `src/main/resources/application.yml` (app name, port, CORS)
 
-## Run the application
+### Required Environment Variables
 
-From this directory (`server/`):
+Minimum DB variables for local boot:
 
-**Linux / macOS**
+- `MYSQL_HOST` (default fallback: `localhost`)
+- `MYSQL_PORT` (default fallback in properties: `3307`)
+- `MYSQL_DB` (default fallback: `V_Beta`)
+- `SQL_USERNAME` (**required**, no fallback)
+- `SQL_PASSWORD` (**required**, no fallback)
+
+Additional variables used by Firebase/GCP integrations:
+
+- `FIREBASE_CREDENTIALS_PATH`
+- `GCP_PROJECT_ID`
+- `GOOGLE_SERVICE_CREDENTIALS_PATH`
+- `STORAGE_PUBLIC_BUCKET_NAME`
+
+Example `server/.env`:
+
+```env
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_DB=V_Beta
+SQL_USERNAME=root
+SQL_PASSWORD=devpassword
+FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
+GCP_PROJECT_ID=your-gcp-project-id
+GOOGLE_SERVICE_CREDENTIALS_PATH=./google-account-credential.json
+STORAGE_PUBLIC_BUCKET_NAME=your-public-bucket
+```
+
+## Run the Application
+
+From `server/`:
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-**Windows**
+Windows:
 
 ```bash
 mvnw.cmd spring-boot:run
 ```
 
-The API listens on **http://localhost:8080** unless you change `server.port` in `application.yml`.
+Default API base URL: `http://localhost:8080`
 
 Quick checks:
 
-- `GET http://localhost:8080/api/health` — liveness JSON (`status: ok`)
-- `GET http://localhost:8080/api/v1/meta` — application metadata JSON
+- `GET http://localhost:8080/api/health`
+- `GET http://localhost:8080/api/v1/meta`
 
-Main class: `edu.ics499.teamsatisfaction.VBetaApplication`.
+Main class: `edu.ics499.VBeta.VBetaApplication`
 
-## Run tests
+## Run Tests
 
-Tests use the **`test`** Spring profile and **H2** (see `src/test/resources/application-test.yml`), so they do not need MySQL.
+Tests use `src/test/resources/application-test.yml` and run against in-memory H2 (not MySQL).
 
 ```bash
 ./mvnw test
 ```
 
-On Windows:
+Windows:
 
 ```bash
 mvnw.cmd test
 ```
 
-To run tests and skip the long integration phase locally, you can still use `./mvnw test`; adjust Surefire or profiles later if the suite grows.
-
-## Build a runnable JAR
+## Build a Runnable JAR
 
 ```bash
 ./mvnw -DskipTests package
 java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 ```
 
-## Optional: MySQL with Docker
+## Notes
 
-If you want a local database without a full MySQL install:
+- `spring.jpa.hibernate.ddl-auto=validate` is enabled in runtime config, so your MySQL schema must already exist and match entity mappings.
+- If you use Cloud SQL Auth Proxy in local setup, point `MYSQL_HOST`/`MYSQL_PORT` to the proxy endpoint (commonly `127.0.0.1:3306`).
 
-```bash
-docker run -d --name team-satisfaction-mysql \
-  -e MYSQL_ROOT_PASSWORD=devpassword \
-  -e MYSQL_DATABASE=V_Beta \
-  -p 3306:3306 \
-  mysql:8
-```
+## Related Docs
 
-Then run the app with `MYSQL_PASSWORD=devpassword` (and `MYSQL_USER=root` if you use the defaults).
+- [Project docs index](../docs/README.md)
+- [Setup: Environment Variables](../docs/setup/enviroment-variables.md)
+- [Setup: Local Development](../docs/setup/local-development.md)
+- [Setup: Database Schema](../docs/setup/database-schema.md)
+- [Setup: Firebase](../docs/setup/firebase-setup.md)
+- [Setup: Google Cloud](../docs/setup/google-cloud-setup.md)
+- [Architecture: Backend](../docs/architecture/backend-architecture.md)
+- [Architecture: Data Model](../docs/architecture/data-model.md)
+- [API: Endpoints](../docs/api/endpoints.md)
+- [API: Error Handling](../docs/api/error-handling.md)
+- [Testing: Strategy](../docs/testing/test-strategy.md)

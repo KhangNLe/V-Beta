@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend (`v-beta`)
 
-## Getting Started
+Next.js frontend for the ICS-499 capstone project. This app connects to the Spring Boot backend in `../server` and uses Firebase Authentication on the client side.
 
-First, run the development server:
+## Prerequisites
+
+- Node.js 20+ (or current LTS compatible with Next.js 16)
+- npm
+- Backend API available (local or deployed)
+- Firebase project configured for client auth
+
+## Install Dependencies
+
+From `v-beta/`:
+
+```bash
+npm install
+```
+
+## Environment Variables
+
+Create `v-beta/.env.local`:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
+
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_APP_ORIGIN=http://localhost:3000
+```
+
+Notes:
+
+- `NEXT_PUBLIC_API_BASE_URL` is used by frontend API calls (for example account session sync).
+- `NEXT_PUBLIC_APP_ORIGIN` is used for Firebase action-link flows when needed.
+
+## Run in Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Build and Run Production Locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+## Lint and Tests
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run lint
+npm test
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Watch mode:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run test:watch
+```
 
-## Deploy on Vercel
+## Quick Local Verification
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Start backend (`../server`) on `http://localhost:8080`.
+2. Start frontend with `npm run dev`.
+3. Open `http://localhost:3000`.
+4. Verify login/signup flow reaches Firebase and backend session sync succeeds.
+5. Verify role-based navigation renders expected links for the signed-in account.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Related Docs
+
+- [Project docs index](../docs/README.md)
+- [Setup: Environment Variables](../docs/setup/environment-variables.md)
+- [Setup: Local Development](../docs/setup/local-development.md)
+- [Setup: Firebase](../docs/setup/firebase-setup.md)
