@@ -28,7 +28,7 @@ This document summarizes the backend automated test run and links to committed e
 ## Committed Evidence (GitHub)
 
 - Surefire HTML report: [`docs/testing/evidence/backend/surefire-report-2026-04-25.html`](./evidence/backend/surefire-report-2026-04-25.html)
-- Add terminal screenshot here: `docs/testing/evidence/backend/mvn-test-summary.png`
+- Maven test run screenshot: [`docs/testing/evidence/backend/maven-test-2026-04-25.png`](./evidence/backend/maven-test-2026-04-25.png)
 
 ## Local Generated Artifacts (Not Committed)
 

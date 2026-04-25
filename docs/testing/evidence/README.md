@@ -6,6 +6,7 @@ Store committed test evidence files here so reviewers can verify results without
 
 - `backend/`
   - `surefire-report-YYYY-MM-DD.html`
+  - `maven-test-YYYY-MM-DD.png`
 - `frontend/`
   - `npm-test-summary.png`
 
@@ -17,4 +18,5 @@ Store committed test evidence files here so reviewers can verify results without
 ## Current Committed Evidence
 
 - Backend: `backend/surefire-report-2026-04-25.html`
+- Backend: `backend/maven-test-2026-04-25.png`
 - Frontend: `frontend/npm-test-summary.png`

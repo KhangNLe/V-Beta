@@ -40,4 +40,5 @@ This directory contains test planning, execution records, traceability artifacts
 Current committed artifacts:
 
 - `evidence/backend/surefire-report-2026-04-25.html`
+- `evidence/backend/maven-test-2026-04-25.png`
 - `evidence/frontend/npm-test-summary.png`
