@@ -2,6 +2,11 @@
 
 This directory contains setup guides, architecture notes, feature documentation, API contracts, testing resources, and team process docs.
 
+## How to Use This Index
+
+- Follow the recommended reading order for onboarding.
+- Use section links below as a quick reference during development and handoff.
+
 ## Recommended Reading Order
 
 1. Setup
@@ -33,6 +38,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 - [`features/wall-and-problems.md`](./features/wall-and-problems.md)
 - [`features/account-page.md`](./features/account-page.md)
 - [`features/future-features.md`](./features/future-features.md)
+- [`features/implemented-feature-template.md`](./features/implemented-feature-template.md)
 
 ## API
 
@@ -46,6 +52,8 @@ This directory contains setup guides, architecture notes, feature documentation,
 - [`testing/test-strategy.md`](./testing/test-strategy.md)
 - [`testing/manual-test-cases.md`](./testing/manual-test-cases.md)
 - [`testing/test-environments.md`](./testing/test-environments.md)
+- [`testing/server-test-report.md`](./testing/server-test-report.md)
+- [`testing/frontend-test-report.md`](./testing/frontend-test-report.md)
 - [`testing/regression-matrix.md`](./testing/regression-matrix.md)
 - [`testing/demo-day-checklist.md`](./testing/demo-day-checklist.md)
 - [`testing/test-data-and-accounts.md`](./testing/test-data-and-accounts.md)
@@ -56,7 +64,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 - [`contributing/coding-standards.md`](./contributing/coding-standards.md)
 - [`contributing/git-workflow.md`](./contributing/git-workflow.md)
 
-## Other Project Docs
+## Project Management and Handoff
 
 - [`requirements.md`](./requirements.md)
 - [`references.md`](./references.md)
