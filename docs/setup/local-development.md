@@ -10,7 +10,7 @@ This guide explains how to run the full project locally:
 
 Before starting, complete:
 
-1. [docs/setup/enviroment-variables.md](./enviroment-variables.md)
+1. [docs/setup/environment-variables.md](./environment-variables.md)
 2. [docs/setup/firebase-setup.md](./firebase-setup.md)
 3. [docs/setup/google-cloud-setup.md](./google-cloud-setup.md)
 4. [docs/setup/database-schema.md](./database-schema.md)

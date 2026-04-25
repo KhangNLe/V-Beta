@@ -2,6 +2,13 @@
 
 Next.js frontend for the ICS-499 capstone project. This app connects to the Spring Boot backend in `../server` and uses Firebase Authentication on the client side.
 
+## Overview
+
+- Framework: Next.js + React + TypeScript
+- Styling/UI: Tailwind CSS + shadcn
+- Auth: Firebase client SDK
+- API target: Spring Boot backend in `../server`
+
 ## Prerequisites
 
 - Node.js 20+ (or current LTS compatible with Next.js 16)

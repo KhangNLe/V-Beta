@@ -2,7 +2,7 @@
 
 Full-stack capstone project for managing climbing gym walls, problems, discussion, and role-based administration.
 
-## Project Overview
+## Overview
 
 The system includes:
 
@@ -39,25 +39,19 @@ Core roles:
 
 ## Documentation
 
-Start here:
-
 - [`docs/README.md`](./docs/README.md) - complete documentation index
-
-Component-specific setup:
-
 - [`server/README.md`](./server/README.md) - backend setup and runtime configuration
 - [`v-beta/README.md`](./v-beta/README.md) - frontend setup and runtime configuration
+- [`docs/architecture/diagrams/README.md`](./docs/architecture/diagrams/README.md) - architecture diagrams index
 
 ## Current Status
 
 This repository is actively used for capstone development and documentation handoff. Some implementation and documentation limitations are tracked in:
 
-- [`docs/know-issues-and-limitation.md`](./docs/know-issues-and-limitation.md)
+- [`docs/known-issues-and-limitations.md`](./docs/known-issues-and-limitations.md)
 
 ## Contribution Workflow
 
 Team workflow standards and review expectations are documented in:
 
 - [`docs/contributing/git-workflow.md`](./docs/contributing/git-workflow.md)
-
-
