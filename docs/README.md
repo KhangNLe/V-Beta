@@ -15,6 +15,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 4. API
 5. Testing
 6. Contributing
+7. Handoff and User Guidance
 
 ## Setup
 
@@ -30,6 +31,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 - [`architecture/frontend-architecture.md`](./architecture/frontend-architecture.md)
 - [`architecture/backend-architecture.md`](./architecture/backend-architecture.md)
 - [`architecture/data-model.md`](./architecture/data-model.md)
+- [`architecture/design-rationale.md`](./architecture/design-rationale.md)
 - [`architecture/diagrams/README.md`](./architecture/diagrams/README.md)
 
 ## Features
@@ -49,14 +51,15 @@ This directory contains setup guides, architecture notes, feature documentation,
 
 ## Testing
 
+- [`testing/README.md`](./testing/README.md) (testing hub and reading order)
 - [`testing/test-strategy.md`](./testing/test-strategy.md)
-- [`testing/manual-test-cases.md`](./testing/manual-test-cases.md)
 - [`testing/test-environments.md`](./testing/test-environments.md)
+- [`testing/test-data-and-accounts.md`](./testing/test-data-and-accounts.md)
+- [`testing/manual-test-cases.md`](./testing/manual-test-cases.md)
+- [`testing/regression-matrix.md`](./testing/regression-matrix.md)
 - [`testing/server-test-report.md`](./testing/server-test-report.md)
 - [`testing/frontend-test-report.md`](./testing/frontend-test-report.md)
-- [`testing/regression-matrix.md`](./testing/regression-matrix.md)
 - [`testing/demo-day-checklist.md`](./testing/demo-day-checklist.md)
-- [`testing/test-data-and-accounts.md`](./testing/test-data-and-accounts.md)
 - [`testing/bug-report-template.md`](./testing/bug-report-template.md)
 
 ## Contributing
@@ -66,6 +69,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 
 ## Project Management and Handoff
 
+- [`user-manual.md`](./user-manual.md)
 - [`requirements.md`](./requirements.md)
 - [`references.md`](./references.md)
 - [`known-issues-and-limitations.md`](./known-issues-and-limitations.md)

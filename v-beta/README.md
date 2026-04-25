@@ -85,6 +85,8 @@ npm run test:watch
 ## Related Docs
 
 - [Project docs index](../docs/README.md)
+- [User Manual](../docs/user-manual.md)
 - [Setup: Environment Variables](../docs/setup/environment-variables.md)
 - [Setup: Local Development](../docs/setup/local-development.md)
 - [Setup: Firebase](../docs/setup/firebase-setup.md)
+- [Testing: Frontend Test Report](../docs/testing/frontend-test-report.md)

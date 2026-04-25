@@ -162,25 +162,26 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 Requirement verification evidence is tracked through:
 
 - [`docs/testing/test-strategy.md`](./testing/test-strategy.md)
+- [`docs/testing/README.md`](./testing/README.md)
 - [`docs/testing/manual-test-cases.md`](./testing/manual-test-cases.md)
 - [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md)
 - [`docs/testing/demo-day-checklist.md`](./testing/demo-day-checklist.md)
 
 
-| Requirement Group                           | Primary Verification Source                                            |
-| ------------------------------------------- | ---------------------------------------------------------------------- |
-| FR-1 to FR-3 (auth/roles)                   | AUTH-01..04, ACCOUNT-03, API-02                                        |
-| FR-4 to FR-8 (walls/problems/lifecycle)     | WALL-01..03                                                            |
-| FR-9 to FR-15 (beta workflow/authorization) | DISC-02, API-02                                                        |
-| FR-16 to FR-20 (comments/authorization)     | DISC-01, API-02                                                        |
-| FR-21 to FR-23 (grades/discovery)           | DISC-03, NAV-01                                                        |
-| FR-24 (guest browsing)                      | NAV-01                                                                 |
-| NFR-1 to NFR-6                              | Smoke/regression execution results and release/demo sign-off artifacts |
+| Requirement Group                           | Primary Verification Source            | Dated Evidence Artifact                                                                                                 | Last Updated |
+| ------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------ |
+| FR-1 to FR-3 (auth/roles)                   | AUTH-01..04, ACCOUNT-03, API-02       | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/manual-test-cases.md`](./testing/manual-test-cases.md) | 2026-04-25   |
+| FR-4 to FR-8 (walls/problems/lifecycle)     | WALL-01..03                            | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/demo-day-checklist.md`](./testing/demo-day-checklist.md) | 2026-04-25   |
+| FR-9 to FR-15 (beta workflow/authorization) | DISC-02, API-02                        | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/server-test-report.md`](./testing/server-test-report.md) | 2026-04-25   |
+| FR-16 to FR-20 (comments/authorization)     | DISC-01, API-02                        | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/server-test-report.md`](./testing/server-test-report.md) | 2026-04-25   |
+| FR-21 to FR-23 (grades/discovery)           | DISC-03, NAV-01                        | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/frontend-test-report.md`](./testing/frontend-test-report.md) | 2026-04-25   |
+| FR-24 (guest browsing)                      | NAV-01                                 | [`docs/testing/manual-test-cases.md`](./testing/manual-test-cases.md), [`docs/testing/frontend-test-report.md`](./testing/frontend-test-report.md) | 2026-04-25   |
+| NFR-1 to NFR-6                              | Smoke/regression + release/demo checks | [`docs/testing/server-test-report.md`](./testing/server-test-report.md), [`docs/testing/frontend-test-report.md`](./testing/frontend-test-report.md), [`docs/testing/evidence/backend/surefire-report-2026-04-25.html`](./testing/evidence/backend/surefire-report-2026-04-25.html) | 2026-04-25   |
 
 
 ## 10. Open Items
 
-- Add release-by-release validation evidence (dated run logs, pass/fail totals, defects) to complete traceability artifacts.
+- Keep adding release-by-release validation evidence (dated run logs, pass/fail totals, defects) for future iterations.
 - Keep this document synchronized with implemented endpoints and role-policy changes.
 
 ## 11. Related Documentation
@@ -205,6 +206,7 @@ This section provides supporting context documents outside the direct requiremen
 - [`docs/architecture/frontend-architecture.md`](./architecture/frontend-architecture.md)
 - [`docs/architecture/backend-architecture.md`](./architecture/backend-architecture.md)
 - [`docs/architecture/data-model.md`](./architecture/data-model.md)
+- [`docs/architecture/design-rationale.md`](./architecture/design-rationale.md)
 
 ### 11.4 Features and Product Behavior
 

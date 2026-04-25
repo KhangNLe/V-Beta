@@ -6,6 +6,10 @@ This folder contains the visual diagrams used to document the system architectur
 
 The diagrams are ordered below in the recommended review sequence for the project narrative.
 
+For design rationale and code mapping context, see:
+
+- [`docs/architecture/design-rationale.md`](../design-rationale.md)
+
 ## Diagram Index
 
 1. [Domain Class Diagram](#domain-class-diagram)

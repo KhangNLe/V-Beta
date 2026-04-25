@@ -40,9 +40,12 @@ Core roles:
 ## Documentation
 
 - [`docs/README.md`](./docs/README.md) - complete documentation index
+- [`docs/user-manual.md`](./docs/user-manual.md) - role-based user guide
+- [`docs/final-handoff.md`](./docs/final-handoff.md) - final deliverable handoff summary
 - [`server/README.md`](./server/README.md) - backend setup and runtime configuration
 - [`v-beta/README.md`](./v-beta/README.md) - frontend setup and runtime configuration
 - [`docs/architecture/diagrams/README.md`](./docs/architecture/diagrams/README.md) - architecture diagrams index
+- [`docs/testing/README.md`](./docs/testing/README.md) - testing documentation and evidence index
 
 ## Current Status
 

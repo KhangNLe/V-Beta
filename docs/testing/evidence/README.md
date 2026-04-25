@@ -5,13 +5,16 @@ Store committed test evidence files here so reviewers can verify results without
 ## Suggested Structure
 
 - `backend/`
-  - `mvn-test-summary.png`
-  - `surefire-html-summary.png`
+  - `surefire-report-YYYY-MM-DD.html`
 - `frontend/`
   - `npm-test-summary.png`
-  - `lint-summary.png`
 
 ## Notes
 
 - Keep screenshots legible and include date/time in terminal where possible.
 - Add one short caption in the related report markdown pointing to each evidence file.
+
+## Current Committed Evidence
+
+- Backend: `backend/surefire-report-2026-04-25.html`
+- Frontend: `frontend/npm-test-summary.png`

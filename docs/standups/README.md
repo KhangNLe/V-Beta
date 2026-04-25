@@ -62,3 +62,8 @@ V-Beta
 - [`2026-03-30-standups.md`](./2026-03-30-standups.md)
 - [`2026-04-13-standups.md`](./2026-04-13-standups.md)
 - [`2026-04-20-standups.md`](./2026-04-20-standups.md)
+
+## Related Docs
+
+- [`docs/final-handoff.md`](../final-handoff.md)
+- [`docs/requirements.md`](../requirements.md)
