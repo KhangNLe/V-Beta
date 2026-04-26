@@ -53,6 +53,7 @@ This document is the final project handoff snapshot for Team Satisfaction (ICS-4
 - Frontend automated coverage is still narrow compared to total UI workflow surface.
 - Some architecture and API consistency improvements remain in backlog (see known issues and future features docs).
 - Operational hardening items (standardized error envelope, deeper observability, full CI gating) are still follow-up work.
+- System integration testing is still narrow in multiple of places
 
 ### Conclusion
 
@@ -94,12 +95,29 @@ The project meets core capstone functional goals with a runnable full-stack impl
 - Good diagrams and documentation made it easier to resolve discrepancies in understanding or clear up confusion and uncertainty.
 - There wasn't always a correct decision, but one that had to be decided and justified nonetheless.
 - Requirements determined from the problem tie directly into verification and validation that what has been created is what actually solves the problem.
+- Chunk goals and feature phases to GitHub issue tickets helped us keep on track to provide a way to centralize work reporting and progress
+- Explored different toolings and documentations for the correct use cases outside of traditional classroom learnings
+- Followed Sprint workflow protocols towards our development and planning phase helped us understand how each work is delegated on taken on for each group member
+- Provided solution possibilities to critical bugs or system implementations during standup meetings or in team chat helped others get unblocked on their issues and which helped with improving efficiency instead of someone stuck and not asking for help last minute
 
 ### Next Iteration Actions
 
 - Expand frontend automated tests for role-critical and wall/problem interaction flows.
 - Standardize backend error response shape and improve API consistency.
 - Add stronger automation around CI quality gates and release verification.
+- Refactor/cleanup files and file structure
+- Refactor code structure as some features are all in 1 file and instead should be decoupled
+- Add in error page and routing handling for when a user navigates to a unknown url
+- Exploratory work on improving and adding in features that would expand beyond documented features
+- Deploy app to production
+- Integrating Observability tooling to view errors, clicks, logs, metrics, etc when app is deployed
+- Improve on dev env, add in stage, and prod
+- Iterate on testing in dev env.
+- Find alternative to cloudSQL
+- Firebase allows for different sign in's, can add those options to our app (e.g Sign in with Apple)
+- Provide official links in footer section on landing page
+- Improve frontend design on few areas in the app
+- Finish out leftover GitHub issues
 
 ## Outstanding Limitations
 
