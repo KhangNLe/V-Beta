@@ -89,7 +89,11 @@ The project meets core capstone functional goals with a runnable full-stack impl
 
 ### Lessons Learned
 
-**ADD LESSONS LEARNED IN HERE**
+- Commitment to effective early planning helped during implementation.
+- Misunderstandings or things not confronted early on ended up cropping up later on in the design lifecycle.
+- Good diagrams and documentation made it easier to resolve discrepancies in understanding or clear up confusion and uncertainty.
+- There wasn't always a correct decision, but one that had to be decided and justified nonetheless.
+- Requirements determined from the problem tie directly into verification and validation that what has been created is what actually solves the problem.
 
 ### Next Iteration Actions
 
