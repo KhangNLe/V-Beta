@@ -32,6 +32,7 @@ const updateAccountRole = async (user, accountId, newRole) => {
     toast.success("Account role updated successfully.");
   } catch (err) {
     toast.error(`Failed to update account role: ${err.message}`);
+    throw err;
   }
 };
 
@@ -94,7 +95,6 @@ export default function AccountsPage() {
         return;
       }
     } catch (err) {
-      toast.error(`Failed to update role: ${err.message}`);
       await loadAccounts();
     } finally {
       setSavingRoles((prev) => ({ ...prev, [accountId]: false }));
