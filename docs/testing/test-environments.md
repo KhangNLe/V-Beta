@@ -61,7 +61,7 @@ This document defines testing environments and expected configuration difference
 
 ### Notes
 
-- Frontend test infrastructure exists, but current suite coverage is limited and should be expanded.
+- Frontend unit-style testing exists, but could be expanded to every page and include end-to-end testing.
 
 ## 4) Environment Comparison (Quick View)
 

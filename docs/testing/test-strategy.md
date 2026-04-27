@@ -73,11 +73,11 @@ Target outcomes:
 - endpoint-to-service-to-repository correctness
 - regression protection for critical domain flows
 
-### 3) Frontend Component/Flow Tests (to expand)
+### 3) Frontend Component/Flow Tests
 
 Priority targets:
 
-- auth forms (login/signup/verify/reset) state and validation behavior
+- auth forms (login(to be added)/signup(to be added)/verify/reset) state and validation behavior
 - role-based UI visibility (guest/climber/setter/admin)
 - wall/problem page interaction states (loading, error, empty, success)
 - account page behaviors (including delete flow and role-management entry points when applicable)
@@ -133,7 +133,7 @@ These areas should always be included in release smoke testing.
 
 ## Planned Improvements
 
-- Add frontend test suites for key pages and auth flows.
+- Improve frontend test coverage and add support for end-to-end testing.
 - Increase contract-style tests for critical API responses and error behavior.
 - Introduce standardized test-data fixtures for repeatable integration tests.
 - Add CI gating so tests run automatically on pull requests.

@@ -50,10 +50,10 @@ This document is the final project handoff snapshot for Team Satisfaction (ICS-4
 
 ### What Did Not Fully Work / Remaining Gaps
 
-- Frontend automated coverage is still narrow compared to total UI workflow surface.
+- Frontend automated coverage is limited to Jest unit testing and doesn't cover end-to-end testing.
 - Some architecture and API consistency improvements remain in backlog (see known issues and future features docs).
 - Operational hardening items (standardized error envelope, deeper observability, full CI gating) are still follow-up work.
-- System integration testing is still narrow in multiple of places
+- System integration testing is still narrow in multiple places
 
 ### Conclusion
 
@@ -102,7 +102,7 @@ The project meets core capstone functional goals with a runnable full-stack impl
 
 ### Next Iteration Actions
 
-- Expand frontend automated tests for role-critical and wall/problem interaction flows.
+- Expand frontend automated tests to include end-to-end coverage and coverage of every page.
 - Standardize backend error response shape and improve API consistency.
 - Add stronger automation around CI quality gates and release verification.
 - Refactor/cleanup files and file structure

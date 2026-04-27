@@ -24,8 +24,8 @@ This document reflects the current repository state on `package_sub` and compari
 
 ## Testing and Quality Limitations
 
-### 5) Frontend automated test coverage is still thin
-- Current frontend automated evidence is limited to a small Jest suite and does not broadly cover role-based/account/wall workflows.
+### 5) Frontend automated test coverage does not cover every page or end-to-end testing
+- Current frontend automated testing is limited only to unit testing, and end-to-end testing is not implemented or supported. Unit testing for signup and login pages do not exist yet either.
 - Impact: higher regression risk in UI behavior and integration points.
 
 ### 6) Backend integration tests depend on MySQL environment setup
