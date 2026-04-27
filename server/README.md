@@ -2,6 +2,12 @@
 
 Spring Boot REST API for the capstone project. It pairs with the Next.js app in `../v-beta`.
 
+## Overview
+
+- Framework: Spring Boot + Spring Security + Spring Data JPA
+- Database: MySQL (runtime), H2 (tests)
+- Integrations: Firebase Admin SDK and Google Cloud Storage
+
 ## Prerequisites
 
 - **JDK 17+** (JDK 21 is also supported).
@@ -104,7 +110,9 @@ java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 ## Related Docs
 
 - [Project docs index](../docs/README.md)
-- [Setup: Environment Variables](../docs/setup/enviroment-variables.md)
+- [User Manual](../docs/user-manual.md)
+- [Final Handoff](../docs/final-handoff.md)
+- [Setup: Environment Variables](../docs/setup/environment-variables.md)
 - [Setup: Local Development](../docs/setup/local-development.md)
 - [Setup: Database Schema](../docs/setup/database-schema.md)
 - [Setup: Firebase](../docs/setup/firebase-setup.md)
@@ -114,3 +122,4 @@ java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 - [API: Endpoints](../docs/api/endpoints.md)
 - [API: Error Handling](../docs/api/error-handling.md)
 - [Testing: Strategy](../docs/testing/test-strategy.md)
+- [Testing: Server Test Report](../docs/testing/server-test-report.md)

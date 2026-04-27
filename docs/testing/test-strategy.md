@@ -34,7 +34,14 @@ cd server
 - Setup files:
   - `jest.setup.js` (`fetch` polyfill)
   - `jest.setupAfterEnv.js` (`@testing-library/jest-dom`)
-- Current status: test runner is configured, but there are no meaningful frontend test suites yet.
+- Test styles in repo:
+  - page-level component tests using React Testing Library
+  - ZOMBIE-style coverage (Zero, One, Many, Boundaries, Interfaces, Exceptions)
+  - boundary mocking for auth/session, route params, router actions, and API modules
+  - async flow validation for loading/error/empty/success states
+  - role/ownership gating tests for guest/climber/setter/admin experiences
+  - mutation and failure-path tests for account role changes, wall actions, comments, and beta upload workflows
+  - pending-state and UI disablement checks for long-running actions (`Adding...`, `Deleting...`, `Submitting...`, `Uploading...`)
 
 Run command:
 
@@ -73,11 +80,11 @@ Target outcomes:
 - endpoint-to-service-to-repository correctness
 - regression protection for critical domain flows
 
-### 3) Frontend Component/Flow Tests (to expand)
+### 3) Frontend Component/Flow Tests
 
 Priority targets:
 
-- auth forms (login/signup/verify/reset) state and validation behavior
+- auth forms (login/signup/verify/reset) state and validation behavior, with login/signup coverage prioritized next
 - role-based UI visibility (guest/climber/setter/admin)
 - wall/problem page interaction states (loading, error, empty, success)
 - account page behaviors (including delete flow and role-management entry points when applicable)
@@ -86,6 +93,7 @@ Target outcomes:
 
 - stable user-visible behavior during UI refactors
 - confidence in auth/role gating in client UX
+- better regression protection for async mutation and error branches in critical pages
 
 ### 4) Manual End-to-End Validation
 
@@ -133,7 +141,7 @@ These areas should always be included in release smoke testing.
 
 ## Planned Improvements
 
-- Add frontend test suites for key pages and auth flows.
+- Expand frontend automation from page-level behavior tests into auth-form coverage and end-to-end testing.
 - Increase contract-style tests for critical API responses and error behavior.
 - Introduce standardized test-data fixtures for repeatable integration tests.
 - Add CI gating so tests run automatically on pull requests.

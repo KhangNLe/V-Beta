@@ -5,7 +5,7 @@ This guide configures Firebase for both applications in this repository:
 - `v-beta/` (Next.js frontend, Firebase Web SDK)
 - `server/` (Spring Boot backend, Firebase Admin SDK)
 
-Use this together with `docs/setup/enviroment-variables.md`.
+Use this together with `docs/setup/environment-variables.md`.
 
 ## 1) Create or select a Firebase project
 
@@ -89,7 +89,7 @@ MYSQL_TEST_DB=V_Beta_Test
 FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 ```
 
-For full backend env options, see `docs/setup/enviroment-variables.md`.
+For full backend env options, see `docs/setup/environment-variables.md`.
 
 ## 7) Run and verify
 

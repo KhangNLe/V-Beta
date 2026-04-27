@@ -61,7 +61,7 @@ This document defines testing environments and expected configuration difference
 
 ### Notes
 
-- Frontend test infrastructure exists, but current suite coverage is limited and should be expanded.
+- Frontend unit-style testing exists, but could be expanded to every page and include end-to-end testing.
 
 ## 4) Environment Comparison (Quick View)
 
@@ -84,6 +84,6 @@ This document defines testing environments and expected configuration difference
 ## 6) Related Docs
 
 - [docs/setup/local-development.md](../setup/local-development.md)
-- [docs/setup/enviroment-variables.md](../setup/enviroment-variables.md)
+- [docs/setup/environment-variables.md](../setup/environment-variables.md)
 - [docs/testing/test-strategy.md](./test-strategy.md)
 - [docs/testing/manual-test-cases.md](./manual-test-cases.md)

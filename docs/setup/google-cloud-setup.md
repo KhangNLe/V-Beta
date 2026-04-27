@@ -7,7 +7,7 @@ This guide covers the two Google Cloud pieces used by this project:
 
 Use this with:
 
-- `docs/setup/enviroment-variables.md`
+- `docs/setup/environment-variables.md`
 - `docs/setup/firebase-setup.md`
 
 ## Prerequisites
