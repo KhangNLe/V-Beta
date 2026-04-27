@@ -84,7 +84,7 @@ Target outcomes:
 
 Priority targets:
 
-- auth forms (login(to be added)/signup(to be added)/verify/reset) state and validation behavior
+- auth forms (login/signup/verify/reset) state and validation behavior, with login/signup coverage prioritized next
 - role-based UI visibility (guest/climber/setter/admin)
 - wall/problem page interaction states (loading, error, empty, success)
 - account page behaviors (including delete flow and role-management entry points when applicable)
