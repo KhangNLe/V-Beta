@@ -1,6 +1,6 @@
 # Frontend (`v-beta`)
 
-Next.js frontend for the ICS-499 capstone project. This app connects to the Spring Boot backend in `../server` and uses Firebase Authentication on the client side.
+Next.js frontend for V-Beta. This app connects to the Spring Boot backend in `../server` and uses Firebase Authentication on the client side.
 
 ## Overview
 
