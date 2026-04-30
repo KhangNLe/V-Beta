@@ -40,6 +40,7 @@ Core roles:
 ## Documentation
 
 - [`docs/README.md`](./docs/README.md) - complete documentation index
+- [`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md) - sprint plan and implementation priorities for contributors
 - [`docs/user-manual.md`](./docs/user-manual.md) - role-based user guide
 - [`server/README.md`](./server/README.md) - backend setup and runtime configuration
 - [`v-beta/README.md`](./v-beta/README.md) - frontend setup and runtime configuration
