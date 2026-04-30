@@ -204,7 +204,7 @@ export async function deleteWallSectionProblem(user, sectionId, problemId) {
   const response = await fetch(
     `${API_BASE_URL}/home/wall-sections/${sectionId}/problems/${problemId}/delete`,
     {
-      method: 'GET',
+      method: 'DELETE',
       headers: { Authorization: `Bearer ${idToken}` },
     },
   );

@@ -4,9 +4,9 @@ import edu.ics499.VBeta.api.dto.*;
 import edu.ics499.VBeta.application.support.*;
 import edu.ics499.VBeta.domain.model.ClimbingProblem;
 import edu.ics499.VBeta.domain.model.WallSection;
-import edu.ics499.VBeta.repository.WallSectionRepository;
-import edu.ics499.VBeta.repository.ClimbingProblemRepository;
-import org.springframework.http.HttpStatus;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +25,9 @@ import java.util.*;
 @Service
 @Transactional
 public class ClimbingWallService {
+    private static final String WALL_SECTIONS_CACHE = "wallSections";
+    private static final String CLIMBING_PROBLEMS_CACHE = "climbingProblems";
+
     private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
     private final ClimbingProblemManager climbingProblemManager;
     private final WallSectionManager wallSectionManager;
@@ -59,6 +62,7 @@ public class ClimbingWallService {
      *
      * @return list of wall section responses
      */
+    @Cacheable(WALL_SECTIONS_CACHE)
     public List<WallSectionResponse> getWallSections(){
         List<WallSection> wallSections = wallSectionManager.getWallSections();
         List<WallSectionResponse> wallSectionInfo = new ArrayList<>();
@@ -101,6 +105,7 @@ public class ClimbingWallService {
      * @param wallSectionId wall section identifier
      * @return list of climbing problem summaries
      */
+    @Cacheable(value = CLIMBING_PROBLEMS_CACHE, key = "#wallSectionId")
     public List<ClimbingProblemResponse> getClimbingProblemsByWallSectionId(Long wallSectionId) {
         WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
         return mapProblemsForWall(wallSection);
@@ -112,6 +117,7 @@ public class ClimbingWallService {
      * @param request wall section creation payload
      * @return created wall section response
      */
+    @CacheEvict(value = WALL_SECTIONS_CACHE, allEntries = true)
     public WallSectionResponse createNewWallSection(WallSectionCreationRequest request){
         WallSection newWall = wallSectionManager.createNewWallSection(request);
         return new WallSectionResponse(
@@ -126,6 +132,10 @@ public class ClimbingWallService {
      *
      * @param wallSectionId wall section identifier
      */
+    @Caching(evict = {
+            @CacheEvict(value = WALL_SECTIONS_CACHE, allEntries = true),
+            @CacheEvict(value = CLIMBING_PROBLEMS_CACHE, key = "#wallSectionId")
+    })
     public void deleteWallSection(Long wallSectionId){
         WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
         if (wallSection == null){
@@ -143,6 +153,7 @@ public class ClimbingWallService {
      *
      * @param wallSectionId wall section identifier
      */
+    @CacheEvict(value = CLIMBING_PROBLEMS_CACHE, key = "#wallSectionId")
     public void resetWallSection(Long wallSectionId){
         WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
         if (wallSection == null){
@@ -176,6 +187,7 @@ public class ClimbingWallService {
      * @param request climbing problem creation payload
      * @return created climbing problem response
      */
+    @CacheEvict(value = CLIMBING_PROBLEMS_CACHE, key = "#wallSectionId")
     public ClimbingProblemResponse createNewClimbingProblem(Long wallSectionId, ClimbingProblemCreationRequest request){
         WallSection wall = wallSectionManager.findWallSection(wallSectionId);
         ClimbingProblem newProblem = climbingProblemManager.generateNewClimbingProblem(wall, request);
@@ -193,6 +205,7 @@ public class ClimbingWallService {
      *
      * @param problemId climbing problem identifier
      */
+    @CacheEvict(value = CLIMBING_PROBLEMS_CACHE, allEntries = true)
     public void deleteClimbingProblem(Long problemId){
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
         climbingProblemDeletionManager.deleteClimbingProblem(problem);

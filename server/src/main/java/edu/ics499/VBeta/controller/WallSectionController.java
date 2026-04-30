@@ -6,11 +6,8 @@ import edu.ics499.VBeta.application.ClimbingWallService;
 import edu.ics499.VBeta.domain.model.ActionDefinition;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -140,7 +137,7 @@ public class WallSectionController {
      * @param problemId climbing problem identifier
      * @return updated list of climbing problem summaries
      */
-    @GetMapping("/wall-sections/{wallSectionId}/problems/{problemId}/delete")
+    @DeleteMapping("/wall-sections/{wallSectionId}/problems/{problemId}/delete")
     public List<ClimbingProblemResponse> deleteClimbingProblem(@PathVariable Long wallSectionId,
                                                                @PathVariable Long problemId){
         String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();

@@ -7,18 +7,26 @@ This document tracks ideas that are not fully implemented in the current release
 - Keep implemented features in their own feature docs.
 - Add only future/potential work here.
 - Mark status clearly so readers do not confuse planned work with shipped work.
+- For each feature, include both a **Priority** and an **Effort** estimate.
 
 ## Priority Legend
 
-- **High**: strong product or technical impact, low-to-medium effort
-- **Medium**: useful improvement, moderate effort
-- **Low**: nice-to-have, exploratory, or higher effort
+- **High**: high impact and/or urgent; should be scheduled soon
+- **Medium**: meaningful improvement; important but not urgent
+- **Low**: nice-to-have or exploratory; can be deferred
+
+## Effort Legend
+
+- **Small**: low implementation complexity; typically a focused change
+- **Medium**: moderate complexity; usually spans multiple files/components
+- **Large**: high complexity; likely needs phased delivery and broader testing
 
 ## Candidate Features
 
 ### 1) Stronger Authorization Consistency
 
 - **Priority:** Medium
+- **Effort:** Medium
 - **Area:** Security/Permissions
 - **Current Gap:** Authorization style differs across some endpoints/flows.
 - **Potential Work:** Standardize permission checks for discussion and beta actions.
@@ -27,6 +35,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 2) Wall and Problem Quality-of-Life Features
 
 - **Priority:** Medium
+- **Effort:** Medium
 - **Area:** Wall/Problems
 - **Current Gap:** Basic CRUD is present, but limited filtering/sorting and workflow support.
 - **Potential Work:** Add filtering, search, and bulk/problem lifecycle utilities.
@@ -35,6 +44,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 3) Better Content Moderation and Auditability
 
 - **Priority:** Medium
+- **Effort:** Medium
 - **Area:** Discussion/Beta
 - **Current Gap:** Deletion and ownership rules exist but limited moderation workflow/audit history.
 - **Potential Work:** Add moderation queue, reason codes, and event logs.
@@ -43,6 +53,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 4) Observability and Operational Hardening
 
 - **Priority:** Low
+- **Effort:** Medium
 - **Area:** Platform
 - **Current Gap:** Minimal operational metadata surfaced in-app.
 - **Potential Work:** Add structured logs, lightweight admin diagnostics, and usage dashboards.
@@ -51,6 +62,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 5) User Profile Pictures in Community Content
 
 - **Priority:** Medium
+- **Effort:** Medium
 - **Area:** Account/Discussion UI
 - **Current Gap:** User identity in comments and solution beta sections is text-only.
 - **Potential Work:** Add profile picture upload/display so each user avatar appears in comments and solution beta entries.
@@ -59,6 +71,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 6) Report Inappropriate Comments and Solution Betas
 
 - **Priority:** High
+- **Effort:** Medium
 - **Area:** Trust and Safety
 - **Current Gap:** Users cannot flag inappropriate comments or beta content in the current UI.
 - **Potential Work:** Add report actions on comments and solution betas, including reason selection and moderation review workflow.
@@ -67,6 +80,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 7) Images for Wall Sections and Climbing Problems
 
 - **Priority:** Medium
+- **Effort:** Medium
 - **Area:** Wall/Problem Experience
 - **Current Gap:** Wall sections and climbing problems are currently displayed without dedicated images.
 - **Potential Work:** Add image support for each wall section and each climbing problem (upload, storage, display).
@@ -75,6 +89,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 8) Search, Grade-Range Filtering, and Sorting for Problems
 
 - **Priority:** High
+- **Effort:** Large
 - **Area:** Wall/Problem Discovery
 - **Current Gap:** Users have limited options to quickly find wall sections/problems by search criteria and grade range.
 - **Potential Work:** Add search for wall sections and climbing problems, grade-range filters (minimum/maximum grade), and sort controls for ascending or descending problem order.
@@ -83,6 +98,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 9) Multi-Gym Support with Per-Gym Roles
 
 - **Priority:** Low
+- **Effort:** Large
 - **Area:** Multi-Tenant / Access Control
 - **Current Gap:** Current data model and permissions assume a single gym context.
 - **Potential Work:** Expand the platform to support multiple climbing gyms, allow users to search/select gyms, and assign roles per gym (for example, user is ADMIN at one gym and CLIMBER at another).
@@ -91,6 +107,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 10) Wall Section Reset Notifications
 
 - **Priority:** Medium
+- **Effort:** Medium
 - **Area:** User Communication / Activity Awareness
 - **Current Gap:** Users are not proactively notified when a wall section is reset.
 - **Potential Work:** Add a notification system so users are informed when specific wall sections are reset, including in-app notifications and optional email/push channels.
@@ -99,6 +116,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 11) Account Activity History and Quick Navigation
 
 - **Priority:** Medium
+- **Effort:** Medium
 - **Area:** Account / User Experience
 - **Current Gap:** Users cannot view their past comments and solution betas from a centralized account view.
 - **Potential Work:** Add an account section where users can see their past comments and solution beta submissions, with direct navigation back to the related currently active problems.
@@ -107,6 +125,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 12) Admin Reports Log and Developer Event Log
 
 - **Priority:** High
+- **Effort:** Large
 - **Area:** Moderation / Reliability
 - **Current Gap:** There is no dedicated admin report log for flagged comments/solution betas and no centralized event/error log for developer debugging.
 - **Potential Work:** Add an admin-facing reports queue/history for inappropriate content, plus a structured application event log (errors and important events) for developers to diagnose unexpected bugs.
@@ -115,6 +134,7 @@ This document tracks ideas that are not fully implemented in the current release
 ### 13) Perceived Grade Detail Subpage per Problem
 
 - **Priority:** High
+- **Effort:** Medium
 - **Area:** Problem Analytics / User Feedback
 - **Current Gap:** Problem pages show aggregate perceived difficulty, but not a dedicated breakdown of individual user-submitted perceived grades.
 - **Potential Work:** Add a subpage under each climbing problem to display individual user perceived grades, including user attribution and submitted grade values.
@@ -123,10 +143,101 @@ This document tracks ideas that are not fully implemented in the current release
 ### 14) Centralized Server Error Handling with `@RestControllerAdvice`
 
 - **Priority:** Medium
+- **Effort:** Small
 - **Area:** API Reliability / Developer Experience
 - **Current Gap:** Error responses are not fully standardized across all backend failure paths.
 - **Potential Work:** Add a centralized global exception handler in the server using Spring `@RestControllerAdvice` and enforce a standardized error message format across all server endpoints (for example: `code`, `message`, `status`, `path`, `timestamp`).
 - **Dependencies:** Exception mapping strategy, standardized error payload contract, and frontend/API client error parsing updates.
+
+### 15) Nested Discussion Threads (Replies) on `discussion_root`
+
+- **Priority:** High
+- **Effort:** Large
+- **Area:** Discussion Architecture / User Experience
+- **Current Gap:** Discussion entries are effectively flat; users cannot create structured reply chains.
+- **Potential Work:** Add optional `parent_discussion_id` on `discussion_root` and enable reply creation, retrieval, and display with depth limits.
+- **Dependencies:** Thread query strategy (recursive CTE or iterative API), API contract updates, and frontend threaded rendering.
+
+### 16) DB-Enforced XOR Integrity for `discussion_root` Children
+
+- **Priority:** High
+- **Effort:** Medium
+- **Area:** Data Integrity
+- **Current Gap:** The application can enforce that a root points to either comment or beta, but the database may still allow drift without stricter constraints.
+- **Potential Work:** Add database triggers/check logic so a `discussion_root` of `type='comment'` can only have one `discussion_comment` child and never a `solution_beta` child (and vice versa).
+- **Dependencies:** Final table design, trigger migration strategy, and integration tests for invalid insert attempts.
+
+### 17) Discussion Reactions (Like/Helpful) for Comments and Betas
+
+- **Priority:** Medium
+- **Effort:** Medium
+- **Area:** Community Engagement
+- **Current Gap:** Users cannot react to discussion items, making it hard to surface useful betas/comments.
+- **Potential Work:** Add a `discussion_reaction` table keyed by `discussion_root_id`, reaction type, and user; support counts and user-specific reaction state in APIs.
+- **Dependencies:** Reaction uniqueness constraints, API payload updates, and frontend reaction controls.
+
+### 18) Pinned and Highlighted Discussion Entries per Problem
+
+- **Priority:** Medium
+- **Effort:** Medium
+- **Area:** Moderation / Content Discovery
+- **Current Gap:** Valuable beta videos and comments cannot be elevated within a problem discussion feed.
+- **Potential Work:** Allow setters/admins to pin or highlight `discussion_root` entries, with deterministic ordering (pinned first, then chronological).
+- **Dependencies:** Moderation permissions, new pin metadata, and timeline sort contract changes.
+
+### 19) Soft Delete and Restoration for Discussion Items
+
+- **Priority:** Medium
+- **Effort:** Medium
+- **Area:** Moderation / Safety
+- **Current Gap:** Delete operations are destructive and can remove evidence needed for moderation review or user recovery.
+- **Potential Work:** Introduce soft delete fields (`deleted_at`, `deleted_by`, `delete_reason`) at `discussion_root`, hide from normal feeds, and provide admin restore tooling.
+- **Dependencies:** Updated delete service flow, audit visibility rules, and admin recovery endpoints/UI.
+
+### 20) Cursor Pagination and Feed Performance for Problem Discussions
+
+- **Priority:** High
+- **Effort:** Large
+- **Area:** API Performance / Scalability
+- **Current Gap:** Timeline retrieval currently relies on full-list loading and in-memory sorting patterns that do not scale.
+- **Potential Work:** Implement cursor-based pagination on `discussion_root` (for example by `created_at` + `id`) and use indexed queries that return mixed comment/beta items efficiently.
+- **Dependencies:** Index design (`problem_id`, `created_at`, `id`), pagination API contract, and frontend infinite-scroll support.
+
+### 21) Edit History for Discussion Content
+
+- **Priority:** Low
+- **Effort:** Medium
+- **Area:** Trust / Transparency
+- **Current Gap:** Comment/beta metadata edits have no history, which reduces transparency during moderation and collaboration.
+- **Potential Work:** Add immutable edit history records for `discussion_comment` text changes and `solution_beta` metadata updates, including editor identity and timestamps.
+- **Dependencies:** History tables, policy decisions on visible history, and API/UI support for "edited" indicators.
+
+### 22) Merge `User_Comment` and `User_Beta` into Unified Discussion Flow
+
+- **Priority:** High
+- **Effort:** Large
+- **Area:** Data Model Refactor / Maintainability
+- **Current Gap:** Discussion comments and solution betas are currently modeled through separate anchor tables (`User_Comment`, `User_Beta`) with duplicated service/repository logic.
+- **Potential Work:** Replace separate anchor tables with a single `discussion_root` model that represents both comment and beta entries, and update managers/repositories/tests to use one shared lifecycle for create/read/delete.
+- **Dependencies:** Finalized shared-PK subtype mapping, service-layer refactor plan, and integration test coverage updates.
+
+### 23) PostgreSQL Migration for Server Database
+
+- **Priority:** High
+- **Effort:** Large
+- **Area:** Platform / Database Infrastructure
+- **Current Gap:** Server schema/configuration is currently MySQL-oriented, which limits standardization with PostgreSQL tooling and future operational flexibility.
+- **Potential Work:** Migrate schema, Spring datasource configuration, and integration-test setup from MySQL to PostgreSQL, including DDL updates, dialect/driver changes, seed scripts, and compatibility checks.
+- **Dependencies:** Migration rollout plan, updated local/CI database provisioning, and full regression test pass on PostgreSQL.
+
+### 24) Server-Side Caching for High-Read Endpoints
+
+- **Priority:** High
+- **Effort:** Medium
+- **Area:** API Performance / Scalability
+- **Current Gap:** Read-heavy endpoints (for example wall sections and per-wall problem lists) can repeatedly hit database/query mapping paths even when data changes infrequently, increasing latency and infrastructure load under concurrent traffic.
+- **Potential Work:** Expand Spring cache coverage on read endpoints, use key-scoped cache entries (for example by `wallSectionId`), and pair writes with targeted cache eviction (`@CacheEvict`) to keep data fresh while reducing repeated query work.
+- **Dependencies:** Cache provider decision (default in-memory vs Redis), cache TTL/invalidation policy, and benchmark guardrails (p95 latency + error-rate checks in performance tests).
 
 ## Change Log
 
