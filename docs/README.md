@@ -71,5 +71,6 @@ This directory contains setup guides, architecture notes, feature documentation,
 
 - [`user-manual.md`](./user-manual.md)
 - [`requirements.md`](./requirements.md)
+- [`implementation-roadmap.md`](./implementation-roadmap.md)
 - [`references.md`](./references.md)
 - [`known-issues-and-limitations.md`](./known-issues-and-limitations.md)
