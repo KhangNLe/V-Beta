@@ -1,0 +1,46 @@
+# ------------------------------
+# OS / Editor
+# ------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# ------------------------------
+# Logs
+# ------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ------------------------------
+# Environment / Secrets
+# ------------------------------
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.jks
+**/firebase-credentials.json
+**/google-account-credential.json
+/important_docs/
+
+# ------------------------------
+# Node / Frontend build artifacts
+# ------------------------------
+**/node_modules/
+**/.next/
+**/out/
+**/coverage/
+**/dist/
+**/build/
+
+# ------------------------------
+# Java / Spring build artifacts
+# ------------------------------
+**/target/
+**/.gradle/
+*.class
