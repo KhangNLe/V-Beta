@@ -2,7 +2,7 @@
 
 ## Goal
 
-This strategy defines how we validate correctness, authorization behavior, and regression safety for the capstone system across:
+This strategy defines how we validate correctness, authorization behavior, and regression safety for the system across:
 
 - frontend (`v-beta/`)
 - backend (`server/`)
@@ -97,7 +97,7 @@ Target outcomes:
 
 ### 4) Manual End-to-End Validation
 
-Because this is a capstone with active feature evolution, manual smoke/regression checks remain required each release.
+Because the product is still evolving, manual smoke/regression checks remain required each release.
 
 Manual checklist details should live in:
 
@@ -130,7 +130,7 @@ These areas should always be included in release smoke testing.
 - New/changed authorization paths are covered by tests.
 - Manual smoke tests pass for affected flows.
 
-### Before release/demo
+### Before release
 
 - Full backend test suite passes.
 - Core manual regression scenarios pass:

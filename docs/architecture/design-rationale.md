@@ -1,19 +1,18 @@
 # Design Rationale and Mapping
 
-This document links core design decisions to concrete project artifacts for rubric traceability.
+This document links core design decisions to concrete project artifacts.
 
 ## 1) Process Model Used
 
 **Model:** Iterative and incremental team development with issue-driven branches and PR-based integration.
 
-**Why this model fit the project:**
+**Why this model fits the project:**
 - The project evolved feature-by-feature (auth, wall/problem, discussion, account/admin) with regular validation.
-- Weekly standups tracked accomplishments, plans, and blockers, which supported short feedback cycles.
+- Regular planning and review cycles support fast feedback and iterative delivery.
 
 **Evidence links:**
 - Workflow standard: [`docs/contributing/git-workflow.md`](../contributing/git-workflow.md)
-- Iteration cadence and weekly status: [`docs/standups/README.md`](../standups/README.md)
-- Release/handoff snapshot: [`docs/final-handoff.md`](../final-handoff.md)
+- Release checklist: [`docs/testing/release-readiness-checklist.md`](../testing/release-readiness-checklist.md)
 
 ## 2) UML Artifacts Used
 
@@ -43,7 +42,7 @@ The project includes the following UML/design diagrams:
 
 ## 4) Notes
 
-- This mapping is intentionally concise for scoring traceability.
+- This mapping is intentionally concise for quick architectural traceability.
 - Detailed behavior and constraints are documented in:
   - [`docs/architecture/system-overview.md`](./system-overview.md)
   - [`docs/architecture/backend-architecture.md`](./backend-architecture.md)

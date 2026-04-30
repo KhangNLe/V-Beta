@@ -11,7 +11,7 @@ Configure both before running the full stack locally.
 
 ### Quick Setup
 
-1. Request access to the shared Firebase project from a teammate/instructor.
+1. Get access to the Firebase project used by your environment.
 2. In the `v-beta/` root, create a file named `.env.local`.
 3. Copy the template below into `.env.local`.
 4. Replace placeholder values with your Firebase project values.

@@ -32,7 +32,7 @@ The backend reads these properties in `server/src/main/resources/application.pro
 2. Click **Create**.
 3. Choose a globally unique bucket name (example: `team-satisfaction-public`).
 4. Select region based on your backend deployment region.
-5. Keep defaults unless your team has stricter requirements.
+5. Keep defaults unless your project has stricter requirements.
 
 Save the bucket name for `STORAGE_PUBLIC_BUCKET_NAME`.
 
@@ -80,7 +80,7 @@ If signed URL generation fails, check project ID, credentials path, and bucket I
 
 1. Open Google Cloud Console -> **SQL**.
 2. Create a **MySQL** instance.
-3. Choose region and machine size appropriate for capstone usage.
+3. Choose region and machine size appropriate for expected usage.
 4. Create database (example: `V_Beta`).
 5. Create SQL user and password.
 
@@ -101,7 +101,7 @@ cloud-sql-proxy \
 
 Keep this process running while backend is running.
 
-If your team uses a different port, keep proxy and `MYSQL_PORT` in sync.
+If your environment uses a different port, keep proxy and `MYSQL_PORT` in sync.
 
 Alternative auth method (same result) if you prefer env-based auth:
 

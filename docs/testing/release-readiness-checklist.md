@@ -1,27 +1,27 @@
-# Demo Day Checklist
+# Release Readiness Checklist
 
-Run this quick checklist before capstone demo/presentation.
+Run this quick checklist before a release demo or stakeholder walkthrough.
 
-## Pre-Demo Environment Check
+## Pre-Release Environment Check
 
 - [ ] Backend is running at `http://localhost:8080`
 - [ ] Frontend is running at `http://localhost:3000`
 - [ ] Cloud SQL proxy is running (if required for environment)
-- [ ] Firebase/GCP credentials are valid for demo environment
+- [ ] Firebase/GCP credentials are valid for release environment
 - [ ] Browser cache/session is clean or intentionally prepared
 
 ## Critical Flow Checks (Must Pass)
 
 - [ ] App landing page loads without console-breaking errors
 - [ ] Email/password login works
-- [ ] Google login works (if enabled for demo environment)
+- [ ] Google login works (if enabled for release environment)
 - [ ] Main page loads wall sections
 - [ ] Wall section opens and problems display
 - [ ] Problem detail page opens
 - [ ] Comment can be posted by authenticated user
 - [ ] Solution beta upload flow works (or known fallback explained)
 - [ ] Account page loads current account info
-- [ ] Admin account role change works (if admin flow is in demo scope)
+- [ ] Admin account role change works (if admin flow is in release scope)
 
 ## Role-Specific Checks
 
@@ -34,10 +34,10 @@ Run this quick checklist before capstone demo/presentation.
 - [ ] `GET /api/health` returns healthy response
 - [ ] `GET /api/v1/meta` returns app metadata
 
-## Demo Readiness
+## Release Readiness
 
 - [ ] Known limitations list is ready to explain
-- [ ] Backup demo path prepared (in case upload/cloud dependency fails)
+- [ ] Backup validation path prepared (in case upload/cloud dependency fails)
 - [ ] Test accounts are available and credentials verified
 - [ ] Presenter has role-switching plan for showing permission differences
 

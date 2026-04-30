@@ -122,7 +122,7 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 
 ### 7.1 Constraints
 
-- Capstone timeline and delivery deadline constrain scope and implementation depth.
+- Time and team capacity constraints can affect scope and implementation depth.
 - Cloud services and credentials (Firebase, database, storage) must be available for full workflow validation.
 
 ### 7.2 Assumptions
@@ -136,7 +136,7 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 - Video upload/playback complexity and storage behavior
 - Data-model complexity around wall resets and lifecycle state transitions
 - Frontend/backend integration drift
-- Uneven workload distribution or delayed handoff between team members
+- Uneven workload distribution or delayed collaboration between team members
 
 ## 8. Acceptance Criteria (Project Success)
 
@@ -165,18 +165,18 @@ Requirement verification evidence is tracked through:
 - [`docs/testing/README.md`](./testing/README.md)
 - [`docs/testing/manual-test-cases.md`](./testing/manual-test-cases.md)
 - [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md)
-- [`docs/testing/demo-day-checklist.md`](./testing/demo-day-checklist.md)
+- [`docs/testing/release-readiness-checklist.md`](./testing/release-readiness-checklist.md)
 
 
 | Requirement Group                           | Primary Verification Source            | Dated Evidence Artifact                                                                                                 | Last Updated |
 | ------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------ |
 | FR-1 to FR-3 (auth/roles)                   | AUTH-01..04, ACCOUNT-03, API-02       | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/manual-test-cases.md`](./testing/manual-test-cases.md) | 2026-04-25   |
-| FR-4 to FR-8 (walls/problems/lifecycle)     | WALL-01..03                            | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/demo-day-checklist.md`](./testing/demo-day-checklist.md) | 2026-04-25   |
+| FR-4 to FR-8 (walls/problems/lifecycle)     | WALL-01..03                            | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/release-readiness-checklist.md`](./testing/release-readiness-checklist.md) | 2026-04-25   |
 | FR-9 to FR-15 (beta workflow/authorization) | DISC-02, API-02                        | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/server-test-report.md`](./testing/server-test-report.md) | 2026-04-25   |
 | FR-16 to FR-20 (comments/authorization)     | DISC-01, API-02                        | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/server-test-report.md`](./testing/server-test-report.md) | 2026-04-25   |
 | FR-21 to FR-23 (grades/discovery)           | DISC-03, NAV-01                        | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/frontend-test-report.md`](./testing/frontend-test-report.md) | 2026-04-25   |
 | FR-24 (guest browsing)                      | NAV-01                                 | [`docs/testing/manual-test-cases.md`](./testing/manual-test-cases.md), [`docs/testing/frontend-test-report.md`](./testing/frontend-test-report.md) | 2026-04-25   |
-| NFR-1 to NFR-6                              | Smoke/regression + release/demo checks | [`docs/testing/server-test-report.md`](./testing/server-test-report.md), [`docs/testing/frontend-test-report.md`](./testing/frontend-test-report.md), [`docs/testing/evidence/backend/surefire-report-2026-04-25.html`](./testing/evidence/backend/surefire-report-2026-04-25.html) | 2026-04-25   |
+| NFR-1 to NFR-6                              | Smoke/regression + release readiness checks | [`docs/testing/server-test-report.md`](./testing/server-test-report.md), [`docs/testing/frontend-test-report.md`](./testing/frontend-test-report.md), [`docs/testing/evidence/backend/surefire-report-2026-04-25.html`](./testing/evidence/backend/surefire-report-2026-04-25.html) | 2026-04-25   |
 
 
 ## 10. Open Items
@@ -222,11 +222,10 @@ This section provides supporting context documents outside the direct requiremen
 - [`docs/api/permissions-matrix.md`](./api/permissions-matrix.md)
 - [`docs/api/error-handling.md`](./api/error-handling.md)
 
-### 11.6 Process and Handoff
+### 11.6 Process and Maintenance
 
 - [`docs/contributing/coding-standards.md`](./contributing/coding-standards.md)
 - [`docs/contributing/git-workflow.md`](./contributing/git-workflow.md)
-- [`docs/final-handoff.md`](./final-handoff.md)
 - [`docs/known-issues-and-limitations.md`](./known-issues-and-limitations.md)
 
 ### 11.7 References

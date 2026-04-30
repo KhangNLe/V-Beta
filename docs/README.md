@@ -1,11 +1,11 @@
 # Project Documentation
 
-This directory contains setup guides, architecture notes, feature documentation, API contracts, testing resources, and team process docs.
+This directory contains setup guides, architecture notes, feature documentation, API contracts, testing resources, and contribution docs.
 
 ## How to Use This Index
 
 - Follow the recommended reading order for onboarding.
-- Use section links below as a quick reference during development and handoff.
+- Use section links below as a quick reference during development.
 
 ## Recommended Reading Order
 
@@ -15,7 +15,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 4. API
 5. Testing
 6. Contributing
-7. Handoff and User Guidance
+7. User Guidance and References
 
 ## Setup
 
@@ -59,7 +59,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 - [`testing/regression-matrix.md`](./testing/regression-matrix.md)
 - [`testing/server-test-report.md`](./testing/server-test-report.md)
 - [`testing/frontend-test-report.md`](./testing/frontend-test-report.md)
-- [`testing/demo-day-checklist.md`](./testing/demo-day-checklist.md)
+- [`testing/release-readiness-checklist.md`](./testing/release-readiness-checklist.md)
 - [`testing/bug-report-template.md`](./testing/bug-report-template.md)
 
 ## Contributing
@@ -67,11 +67,9 @@ This directory contains setup guides, architecture notes, feature documentation,
 - [`contributing/coding-standards.md`](./contributing/coding-standards.md)
 - [`contributing/git-workflow.md`](./contributing/git-workflow.md)
 
-## Project Management and Handoff
+## User Guidance and References
 
 - [`user-manual.md`](./user-manual.md)
 - [`requirements.md`](./requirements.md)
 - [`references.md`](./references.md)
 - [`known-issues-and-limitations.md`](./known-issues-and-limitations.md)
-- [`final-handoff.md`](./final-handoff.md)
-- [`standups/README.md`](./standups/README.md)

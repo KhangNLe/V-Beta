@@ -10,7 +10,7 @@ Use this together with `docs/setup/environment-variables.md`.
 ## 1) Create or select a Firebase project
 
 1. Open [Firebase Console](https://console.firebase.google.com/).
-2. Create a new project (or use the shared capstone project).
+2. Create a new project (or use an existing shared project).
 3. Keep the project ID and project number handy.
 
 ## 2) Configure Authentication providers
@@ -124,4 +124,4 @@ For full backend env options, see `docs/setup/environment-variables.md`.
 
 - Never commit `server/.env`, `v-beta/.env.local`, or service-account JSON keys.
 - Rotate service-account keys if exposed.
-- Use separate Firebase projects for dev and production if the project continues after capstone delivery.
+- Use separate Firebase projects for dev and production when possible.

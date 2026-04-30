@@ -1,6 +1,6 @@
-# Team Satisfaction (ICS-499 Capstone)
+# V-Beta
 
-Full-stack capstone project for managing climbing gym walls, problems, discussion, and role-based administration.
+Full-stack project for managing climbing gym walls, problems, discussion, and role-based administration.
 
 ## Overview
 
@@ -41,7 +41,6 @@ Core roles:
 
 - [`docs/README.md`](./docs/README.md) - complete documentation index
 - [`docs/user-manual.md`](./docs/user-manual.md) - role-based user guide
-- [`docs/final-handoff.md`](./docs/final-handoff.md) - final deliverable handoff summary
 - [`server/README.md`](./server/README.md) - backend setup and runtime configuration
 - [`v-beta/README.md`](./v-beta/README.md) - frontend setup and runtime configuration
 - [`docs/architecture/diagrams/README.md`](./docs/architecture/diagrams/README.md) - architecture diagrams index
@@ -49,7 +48,7 @@ Core roles:
 
 ## Current Status
 
-This repository is actively used for capstone development and documentation handoff. Some implementation and documentation limitations are tracked in:
+Some implementation and documentation limitations are tracked in:
 
 - [`docs/known-issues-and-limitations.md`](./docs/known-issues-and-limitations.md)
 

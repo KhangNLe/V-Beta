@@ -1,6 +1,6 @@
 # Manual Test Cases
 
-This document defines the manual regression checklist for validating core user flows before demo/release.
+This document defines the manual regression checklist for validating core user flows before release.
 
 ## Test Environment Preconditions
 

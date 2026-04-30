@@ -44,7 +44,7 @@ Before implementation starts:
 - [ ] Repro/problem is clear
 - [ ] Acceptance criteria are testable
 - [ ] Required environments/data are known
-- [ ] Owner and target milestone/sprint are set
+- [ ] Owner and target timeline are set
 
 ## Pull Request Workflow Standard
 
@@ -118,7 +118,7 @@ For active work, report:
 
 ### Test Reporting
 
-For release/demo readiness, include:
+For release readiness, include:
 
 - smoke/regression cases executed
 - pass/fail counts
@@ -132,4 +132,4 @@ For release/demo readiness, include:
 - After merge:
   - verify issue is closed/updated
   - remove stale branch
-  - notify team of notable behavior changes
+  - notify maintainers of notable behavior changes

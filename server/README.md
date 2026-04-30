@@ -1,6 +1,6 @@
 # Backend (`server`)
 
-Spring Boot REST API for the capstone project. It pairs with the Next.js app in `../v-beta`.
+Spring Boot REST API for V-Beta. It pairs with the Next.js app in `../v-beta`.
 
 ## Overview
 
@@ -111,7 +111,6 @@ java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 
 - [Project docs index](../docs/README.md)
 - [User Manual](../docs/user-manual.md)
-- [Final Handoff](../docs/final-handoff.md)
 - [Setup: Environment Variables](../docs/setup/environment-variables.md)
 - [Setup: Local Development](../docs/setup/local-development.md)
 - [Setup: Database Schema](../docs/setup/database-schema.md)

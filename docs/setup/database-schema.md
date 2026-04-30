@@ -123,4 +123,4 @@ cd server
 
 - Keep schema updates versioned in SQL files and documented in `docs/`.
 - If entity models change, update bootstrap SQL and this document together.
-- Avoid relying on manual memory for schema changes during handoff.
+- Avoid relying on manual memory for schema changes during team transitions.

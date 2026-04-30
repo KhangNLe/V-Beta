@@ -11,7 +11,7 @@ This directory contains test planning, execution records, traceability artifacts
 5. [`regression-matrix.md`](./regression-matrix.md)
 6. [`server-test-report.md`](./server-test-report.md)
 7. [`frontend-test-report.md`](./frontend-test-report.md)
-8. [`demo-day-checklist.md`](./demo-day-checklist.md)
+8. [`release-readiness-checklist.md`](./release-readiness-checklist.md)
 
 ## Test Planning
 
@@ -29,7 +29,7 @@ This directory contains test planning, execution records, traceability artifacts
 
 - [`server-test-report.md`](./server-test-report.md) - backend automated run summary and artifacts
 - [`frontend-test-report.md`](./frontend-test-report.md) - frontend automated run summary and artifacts
-- [`demo-day-checklist.md`](./demo-day-checklist.md) - release/demo readiness checklist
+- [`release-readiness-checklist.md`](./release-readiness-checklist.md) - release readiness checklist
 
 ## Evidence Artifacts
 
