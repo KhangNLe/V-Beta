@@ -11,11 +11,11 @@ This roadmap prioritizes foundation work first, then product features. It is des
 
 ## Sprint 1: PostgreSQL Migration Foundation
 
-Status: In progress (runtime migration completed; full test-path migration pending).
+Status: Completed (runtime, integration-test paths, and docs aligned to PostgreSQL).
 
 ### Goal
 
-Make PostgreSQL the primary and validated database path for local development and automated testing.
+Make PostgreSQL the primary and validated database path for local development and backend test execution.
 
 ### Estimated Duration
 
@@ -27,6 +27,7 @@ Make PostgreSQL the primary and validated database path for local development an
 - Convert active schema and seed scripts from MySQL-specific syntax to PostgreSQL-compatible SQL.
 - Update test DB setup for PostgreSQL-backed integration tests.
 - Resolve dialect and query differences surfaced by backend regression tests.
+- Defer CI test DB provisioning automation to a later hardening sprint.
 
 ### Deliverables
 
@@ -40,6 +41,7 @@ Make PostgreSQL the primary and validated database path for local development an
 - Backend runtime startup and core health checks pass against PostgreSQL.
 - Core backend startup and API health checks succeed with PostgreSQL.
 - No MySQL-only SQL remains in active runtime paths.
+- CI/local PostgreSQL test provisioning automation is tracked separately in a later sprint.
 
 ## Sprint 2: Discussion Schema Foundation for Future Subthreads
 
@@ -87,18 +89,21 @@ Stabilize and optimize the new database and discussion foundation before additio
 - Add pagination-ready ordering/index strategy for future threaded feed retrieval.
 - Update API and testing documentation for schema changes.
 - Define migration rollback notes and operational validation checklist.
+- Standardize CI/local PostgreSQL test DB provisioning and bootstrap automation.
 
 ### Deliverables
 
 - Performance and integrity indexes for discussion queries.
 - Updated docs and regression matrix references.
 - Migration verification and rollback guidance.
+- CI-ready PostgreSQL test bootstrap flow (schema + seed + env wiring).
 
 ### Acceptance Criteria
 
 - No regressions in core discussion endpoints.
 - Discussion queries remain performant on larger datasets.
 - Documentation reflects implemented database and schema behavior.
+- CI executes backend tests against consistent PostgreSQL test provisioning.
 
 ## Next Feature Sprints (After Foundation)
 
