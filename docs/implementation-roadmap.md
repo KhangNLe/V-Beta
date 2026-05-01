@@ -11,6 +11,8 @@ This roadmap prioritizes foundation work first, then product features. It is des
 
 ## Sprint 1: PostgreSQL Migration Foundation
 
+Status: In progress (runtime migration completed; full test-path migration pending).
+
 ### Goal
 
 Make PostgreSQL the primary and validated database path for local development and automated testing.
@@ -35,9 +37,9 @@ Make PostgreSQL the primary and validated database path for local development an
 
 ### Acceptance Criteria
 
-- Backend tests pass against PostgreSQL.
+- Backend runtime startup and core health checks pass against PostgreSQL.
 - Core backend startup and API health checks succeed with PostgreSQL.
-- No MySQL-only SQL remains in active runtime or test paths.
+- No MySQL-only SQL remains in active runtime paths.
 
 ## Sprint 2: Discussion Schema Foundation for Future Subthreads
 

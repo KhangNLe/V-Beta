@@ -47,15 +47,13 @@ For manual regression, ensure:
 ## Data Reset / Rebuild Guidance
 
 - Runtime schema seed file:
-  - `server/src/main/resources/db/v-beta.sql`
-- Test schema file:
-  - `server/src/test/resources/db/v_beta_test_schema.sql`
+  - `server/src/main/resources/db/pg-v-beta.sql`
 - Setup reference:
   - `docs/setup/database-schema.md`
 
 When data gets inconsistent during testing:
 
-1. Recreate test DB (`V_Beta_Test`) from schema SQL
+1. Recreate test DB from schema SQL (recommended name: `v_beta_test`)
 2. Re-seed required baseline records
 3. Re-run affected manual test cases
 

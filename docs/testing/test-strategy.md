@@ -19,7 +19,7 @@ This strategy defines how we validate correctness, authorization behavior, and r
   - integration-style tests under `Integration_Test/*`
 - Profiles/config:
   - `application-test.yml` uses H2 by default
-  - multiple integration tests override datasource to MySQL test DB via `@TestPropertySource`
+  - integration tests under `Integration_Test/*` now use PostgreSQL datasource overrides aligned with runtime DB settings
 
 Run command:
 
@@ -119,7 +119,7 @@ These areas should always be included in release smoke testing.
 - Local development test baseline:
   - backend: `./mvnw test`
   - frontend: `npm test`
-- Integration tests that require MySQL should use isolated test DB (`MYSQL_TEST_DB`) and never run against shared production-like data.
+- Integration tests that require external DB should use an isolated PostgreSQL test DB and never run against shared production-like data.
 - Cloud dependencies should be mocked or isolated in automated tests when possible.
 
 ## Entry and Exit Criteria

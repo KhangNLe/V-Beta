@@ -7,7 +7,7 @@ This project is a full-stack climbing gym application with:
 - a Next.js frontend in `v-beta/`
 - a Spring Boot backend in `server/`
 - Firebase Authentication for identity
-- MySQL for persistence
+- PostgreSQL for persistence
 - Google Cloud Storage for solution beta video uploads
 
 ## High-Level Architecture
@@ -17,7 +17,7 @@ This project is a full-stack climbing gym application with:
 3. Frontend syncs app account session with backend (`POST /api/accounts/session`).
 4. Frontend sends Firebase ID token to protected backend APIs.
 4. Backend validates token, resolves account/role, and authorizes actions.
-5. Backend reads/writes domain data in MySQL.
+5. Backend reads/writes domain data in PostgreSQL.
 6. For beta videos, backend generates signed upload URLs for Cloud Storage and stores video metadata.
 
 ## Main Subsystems
@@ -29,7 +29,7 @@ This project is a full-stack climbing gym application with:
 - **Authentication and Authorization**
   - Firebase token verification + role/action checks.
 - **Storage and Database**
-  - MySQL for application entities.
+  - PostgreSQL for application entities.
   - GCS for video file objects.
 
 ## Core Functional Areas

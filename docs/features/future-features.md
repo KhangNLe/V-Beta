@@ -221,14 +221,14 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Replace separate anchor tables with a single `discussion_root` model that represents both comment and beta entries, and update managers/repositories/tests to use one shared lifecycle for create/read/delete.
 - **Dependencies:** Finalized shared-PK subtype mapping, service-layer refactor plan, and integration test coverage updates.
 
-### 23) PostgreSQL Migration for Server Database
+### 23) PostgreSQL Migration Completion and Test Alignment
 
 - **Priority:** High
 - **Effort:** Large
 - **Area:** Platform / Database Infrastructure
-- **Current Gap:** Server schema/configuration is currently MySQL-oriented, which limits standardization with PostgreSQL tooling and future operational flexibility.
-- **Potential Work:** Migrate schema, Spring datasource configuration, and integration-test setup from MySQL to PostgreSQL, including DDL updates, dialect/driver changes, seed scripts, and compatibility checks.
-- **Dependencies:** Migration rollout plan, updated local/CI database provisioning, and full regression test pass on PostgreSQL.
+- **Current Gap:** Runtime and integration test datasource paths are PostgreSQL, but CI/local test DB provisioning is not yet fully standardized.
+- **Potential Work:** Finalize PostgreSQL test provisioning automation and CI consistency (schema bootstrap, seed/test fixtures, and environment setup validation).
+- **Dependencies:** Updated local/CI PostgreSQL test provisioning and full regression pass on unified settings.
 
 ### 24) Server-Side Caching for High-Read Endpoints
 

@@ -63,14 +63,9 @@ NEXT_PUBLIC_APP_ORIGIN=http://localhost:3000
 ```bash
 SQL_USERNAME=
 SQL_PASSWORD=
-MYSQL_HOST=localhost
-MYSQL_PORT=3307
-MYSQL_DB=V_Beta
-MYSQL_TEST_DB=V_Beta_Test
-
-# Optional aliases used by some tests (fallback chain)
-MYSQL_USERNAME=
-MYSQL_PASSWORD=
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=v_beta
 
 FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 GCP_PROJECT_ID=
@@ -82,12 +77,9 @@ STORAGE_PUBLIC_BUCKET_NAME=
 
 - `SQL_USERNAME`: primary DB username used by `spring.datasource.username`.
 - `SQL_PASSWORD`: primary DB password used by `spring.datasource.password`.
-- `MYSQL_HOST`: DB host for datasource URL (default `localhost`).
-- `MYSQL_PORT`: DB port for datasource URL (default `3307` in config).
-- `MYSQL_DB`: main database name for app runtime (default `V_Beta`).
-- `MYSQL_TEST_DB`: test database name used by integration tests (default fallback `V_Beta_Test`).
-- `MYSQL_USERNAME`: optional alias used in test fallback chain.
-- `MYSQL_PASSWORD`: optional alias used in test fallback chain.
+- `DB_HOST`: PostgreSQL host for datasource URL (default `127.0.0.1`).
+- `DB_PORT`: PostgreSQL port for datasource URL (default `5432`).
+- `DB_NAME`: main PostgreSQL database name for app runtime (default `v_beta`).
 - `FIREBASE_CREDENTIALS_PATH`: filesystem path to Firebase Admin SDK credentials JSON.
 - `GCP_PROJECT_ID`: Google Cloud project ID.
 - `GOOGLE_SERVICE_CREDENTIALS_PATH`: path to Google Cloud service account JSON.
@@ -97,12 +89,12 @@ STORAGE_PUBLIC_BUCKET_NAME=
 
 - `server/src/main/resources/application.properties` consumes all server env variables listed above.
 - `server/env_example.txt` contains a backend env template.
-- `server/src/test/java/.../Integration_Test/*` uses `MYSQL_*` and `SQL_*` fallback patterns for DB test setup.
+- `server/src/test/java/.../Integration_Test/*` uses PostgreSQL test datasource overrides (default DB name: `v_beta_test`), reusing `DB_HOST`, `DB_PORT`, `DB_NAME`, `SQL_USERNAME`, and `SQL_PASSWORD`.
 
 ## Validation Checklist (Full Stack)
 
 - Frontend starts without Firebase config errors.
-- Backend starts and connects to MySQL.
+- Backend starts and connects to PostgreSQL.
 - Frontend requests hit `NEXT_PUBLIC_API_BASE_URL`.
 - Auth flows work (login/signup/verification).
 - `GET /api/health` returns healthy status from backend.

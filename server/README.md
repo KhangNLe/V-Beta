@@ -5,13 +5,13 @@ Spring Boot REST API for V-Beta. It pairs with the Next.js app in `../v-beta`.
 ## Overview
 
 - Framework: Spring Boot + Spring Security + Spring Data JPA
-- Database: MySQL (runtime), H2 (tests)
+- Database: PostgreSQL (runtime), H2 (tests)
 - Integrations: Firebase Admin SDK and Google Cloud Storage
 
 ## Prerequisites
 
 - **JDK 17+** (JDK 21 is also supported).
-- **MySQL 8** reachable by the backend when running locally.
+- **PostgreSQL 14+** reachable by the backend when running locally.
 - Optional for storage/auth flows: Firebase and Google Cloud credentials.
 
 Use the Maven wrapper (`./mvnw` or `mvnw.cmd`) so no global Maven install is required.
@@ -31,9 +31,9 @@ Key config files:
 
 Minimum DB variables for local boot:
 
-- `MYSQL_HOST` (default fallback: `localhost`)
-- `MYSQL_PORT` (default fallback in properties: `3307`)
-- `MYSQL_DB` (default fallback: `V_Beta`)
+- `DB_HOST` (default fallback: `127.0.0.1`)
+- `DB_PORT` (default fallback in properties: `5432`)
+- `DB_NAME` (default fallback: `v_beta`)
 - `SQL_USERNAME` (**required**, no fallback)
 - `SQL_PASSWORD` (**required**, no fallback)
 
@@ -47,10 +47,10 @@ Additional variables used by Firebase/GCP integrations:
 Example `server/.env`:
 
 ```env
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_DB=V_Beta
-SQL_USERNAME=root
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=v_beta
+SQL_USERNAME=postgres
 SQL_PASSWORD=devpassword
 FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 GCP_PROJECT_ID=your-gcp-project-id
@@ -83,7 +83,7 @@ Main class: `edu.ics499.VBeta.VBetaApplication`
 
 ## Run Tests
 
-Tests use `src/test/resources/application-test.yml` and run against in-memory H2 (not MySQL).
+Tests use `src/test/resources/application-test.yml` and run against in-memory H2 (not PostgreSQL).
 
 ```bash
 ./mvnw test
@@ -104,8 +104,8 @@ java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 
 ## Notes
 
-- `spring.jpa.hibernate.ddl-auto=validate` is enabled in runtime config, so your MySQL schema must already exist and match entity mappings.
-- If you use Cloud SQL Auth Proxy in local setup, point `MYSQL_HOST`/`MYSQL_PORT` to the proxy endpoint (commonly `127.0.0.1:3306`).
+- `spring.jpa.hibernate.ddl-auto=validate` is enabled in runtime config, so your PostgreSQL schema must already exist and match entity mappings.
+- Local PostgreSQL SSL is commonly disabled in JDBC URL for development (`sslmode=disable`) unless your environment requires TLS.
 
 ## Related Docs
 

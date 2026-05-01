@@ -28,9 +28,9 @@ This document reflects the current repository state on `package_sub` and compari
 - Current frontend automated testing is limited only to unit testing, and end-to-end testing is not implemented or supported. Unit testing for signup and login pages do not exist yet either.
 - Impact: higher regression risk in UI behavior and integration points.
 
-### 6) Backend integration tests depend on MySQL environment setup
-- Backend integration test execution requires test DB configuration and environment alignment.
-- Impact: onboarding and CI portability are harder than fully self-contained test setups.
+### 6) Backend integration tests depend on external PostgreSQL test DB provisioning
+- Integration test datasource settings are aligned to PostgreSQL, but tests still depend on externally prepared test DB availability/configuration.
+- Impact: local onboarding and CI reliability still depend on consistent PostgreSQL test DB bootstrap/setup.
 
 ## Operations and Deployment Limitations
 

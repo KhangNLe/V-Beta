@@ -3,7 +3,7 @@
 This guide covers the two Google Cloud pieces used by this project:
 
 1. **Google Cloud Storage bucket** for uploaded media
-2. **Google Cloud SQL (MySQL)** for backend persistence
+2. **Google Cloud SQL (PostgreSQL)** for backend persistence
 
 Use this with:
 
@@ -22,7 +22,7 @@ The backend reads these properties in `server/src/main/resources/application.pro
 - `spring.cloud.gcp.project-id` <- `GCP_PROJECT_ID`
 - `spring.cloud.gcp.credentials.location` <- `GOOGLE_SERVICE_CREDENTIALS_PATH`
 - `app.public-bucket-name` <- `STORAGE_PUBLIC_BUCKET_NAME`
-- datasource URL/user/password <- `MYSQL_*` and `SQL_*`
+- datasource URL/user/password <- `DB_*` and `SQL_*`
 
 ## Part A: Google Cloud Storage Bucket Setup
 
@@ -72,16 +72,16 @@ Expected behavior:
 
 If signed URL generation fails, check project ID, credentials path, and bucket IAM permissions first.
 
-## Part B: Google Cloud SQL (MySQL) Setup
+## Part B: Google Cloud SQL (PostgreSQL) Setup
 
-> Backend connects to Cloud SQL through Cloud SQL Auth Proxy using the existing JDBC host/port env vars (`MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DB`).
+> Backend connects to Cloud SQL through Cloud SQL Auth Proxy using the JDBC host/port/database env vars (`DB_HOST`, `DB_PORT`, `DB_NAME`).
 
 ### 1) Create Cloud SQL instance
 
 1. Open Google Cloud Console -> **SQL**.
-2. Create a **MySQL** instance.
+2. Create a **PostgreSQL** instance.
 3. Choose region and machine size appropriate for expected usage.
-4. Create database (example: `V_Beta`).
+4. Create database (example: `v_beta`).
 5. Create SQL user and password.
 
 ### 2) Use Cloud SQL Auth Proxy (required setup)
@@ -96,31 +96,30 @@ This project should connect to Cloud SQL through **Cloud SQL Auth Proxy**.
 cloud-sql-proxy \
   --credentials-file "./google-account-credential.json" \
   "PROJECT_ID:REGION:INSTANCE_NAME" \
-  --port 3306
+  --port 5432
 ```
 
 Keep this process running while backend is running.
 
-If your environment uses a different port, keep proxy and `MYSQL_PORT` in sync.
+If your environment uses a different port, keep proxy and `DB_PORT` in sync.
 
 Alternative auth method (same result) if you prefer env-based auth:
 
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS="./google-account-credential.json"
-cloud-sql-proxy "PROJECT_ID:REGION:INSTANCE_NAME" --port 3306
+cloud-sql-proxy "PROJECT_ID:REGION:INSTANCE_NAME" --port 5432
 ```
 
 ### 3) Configure backend env vars
 
-Set in `server/.env` (for proxy on local port `3306`):
+Set in `server/.env` (for proxy on local port `5432`):
 
 ```bash
 SQL_USERNAME=your_sql_user
 SQL_PASSWORD=your_sql_password
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_DB=V_Beta
-MYSQL_TEST_DB=V_Beta_Test
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=v_beta
 ```
 
 ### 4) Verify DB connection
@@ -134,7 +133,7 @@ If connection fails:
 
 - confirm SQL user/password
 - confirm the Cloud SQL Auth Proxy process is running
-- confirm proxy port matches `MYSQL_PORT` in `server/.env`
+- confirm proxy port matches `DB_PORT` in `server/.env`
 - confirm database exists and user has privileges
 
 ## Combined `server/.env` Example (GCP + SQL)
@@ -142,12 +141,9 @@ If connection fails:
 ```bash
 SQL_USERNAME=your_sql_user
 SQL_PASSWORD=your_sql_password
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_DB=V_Beta
-MYSQL_TEST_DB=V_Beta_Test
-MYSQL_USERNAME=
-MYSQL_PASSWORD=
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=v_beta
 
 GCP_PROJECT_ID=your-gcp-project-id
 GOOGLE_SERVICE_CREDENTIALS_PATH=./google-account-credential.json
@@ -167,11 +163,11 @@ FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 - **`AccessDenied` or permission errors on bucket**
   - Grant storage roles to the service account used by backend credentials.
 
-- **MySQL connection refused / timeout**
-  - Check Cloud SQL networking, auth proxy status, and `MYSQL_HOST`/`MYSQL_PORT`.
+- **PostgreSQL connection refused / timeout**
+  - Check Cloud SQL networking, auth proxy status, and `DB_HOST`/`DB_PORT`.
 
 - **App starts but writes/queries fail**
-  - Validate DB schema/state and user privileges for `V_Beta`.
+  - Validate DB schema/state and user privileges for `v_beta`.
 
 ## Security notes
 
