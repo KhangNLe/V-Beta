@@ -82,10 +82,9 @@ Create `server/.env` and include at least:
 ```bash
 SQL_USERNAME=
 SQL_PASSWORD=
-MYSQL_HOST=localhost
-MYSQL_PORT=3307
-MYSQL_DB=V_Beta
-MYSQL_TEST_DB=V_Beta_Test
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=v_beta
 FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 ```
 

@@ -4,7 +4,7 @@
 
 The backend data model is relational and centered on climbing content, user roles, and discussion artifacts.
 
-Primary persistence is MySQL via JPA entities in `server/src/main/java/edu/ics499/VBeta/domain/model/`.
+Primary persistence is PostgreSQL via JPA entities in `server/src/main/java/edu/ics499/VBeta/domain/model/`.
 
 ## Core Entity Groups
 
@@ -63,9 +63,8 @@ This model enables action-gated endpoint checks beyond simple authenticated/unau
 ## Schema Management Notes
 
 - Runtime expects an existing schema (`ddl-auto=validate`).
-- Schema SQL references are maintained in:
-  - `server/src/main/resources/db/v-beta.sql` (runtime baseline)
-  - `server/src/test/resources/db/v_beta_test_schema.sql` (test baseline)
+- Runtime schema SQL reference:
+  - `server/src/main/resources/db/pg-v-beta.sql` (runtime baseline)
 
 See setup instructions in:
 

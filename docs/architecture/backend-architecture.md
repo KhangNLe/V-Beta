@@ -5,7 +5,7 @@
 - Spring Boot
 - Spring Web + Spring Security
 - Spring Data JPA (Hibernate)
-- MySQL
+- PostgreSQL
 - Firebase Admin SDK
 - Google Cloud Storage client integration
 
@@ -57,7 +57,7 @@ Access model types:
   - Validates client tokens and provides authenticated principal UID.
 - **Google Cloud Storage**
   - Generates signed upload URLs and manages video object operations.
-- **MySQL**
+- **PostgreSQL**
   - Stores relational domain data for all core features.
 
 ## Configuration and Profiles

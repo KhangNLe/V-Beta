@@ -25,12 +25,12 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/${MYSQL_TEST_DB:V_Beta_Test}",
-        "spring.datasource.username=${MYSQL_USERNAME:${SQL_USERNAME:khang}}",
-        "spring.datasource.password=${MYSQL_PASSWORD:${SQL_PASSWORD:}}",
-        "spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver",
+        "spring.datasource.url=jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:v_beta_test}",
+        "spring.datasource.username=${SQL_USERNAME:khang}",
+        "spring.datasource.password=${SQL_PASSWORD:}",
+        "spring.datasource.driver-class-name=org.postgresql.Driver",
         "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect"
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"
 })
 public class WallSectionModificationTest {
     @Autowired

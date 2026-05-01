@@ -20,13 +20,13 @@ This document lists external technologies, platforms, and official documentation
 - Firebase. (n.d.). _Firebase Authentication documentation_. Google. [https://firebase.google.com/docs/auth](https://firebase.google.com/docs/auth)
 - Firebase. (n.d.). _Firebase Admin SDK documentation_. Google. [https://firebase.google.com/docs/admin/setup](https://firebase.google.com/docs/admin/setup)
 - Google Cloud. (n.d.). _Cloud Storage documentation_. Google. [https://cloud.google.com/storage/docs](https://cloud.google.com/storage/docs)
-- Google Cloud. (n.d.). _Cloud SQL for MySQL documentation_. Google. [https://cloud.google.com/sql/docs/mysql](https://cloud.google.com/sql/docs/mysql)
-- Google Cloud. (n.d.). _Cloud SQL Auth Proxy documentation_. Google. [https://cloud.google.com/sql/docs/mysql/connect-auth-proxy](https://cloud.google.com/sql/docs/mysql/connect-auth-proxy)
+- Google Cloud. (n.d.). _Cloud SQL for PostgreSQL documentation_. Google. [https://cloud.google.com/sql/docs/postgres](https://cloud.google.com/sql/docs/postgres)
+- Google Cloud. (n.d.). _Cloud SQL Auth Proxy documentation (PostgreSQL)_. Google. [https://cloud.google.com/sql/docs/postgres/connect-auth-proxy](https://cloud.google.com/sql/docs/postgres/connect-auth-proxy)
 - Google Cloud. (n.d.). _Spring Cloud GCP documentation_. Google. [https://googlecloudplatform.github.io/spring-cloud-gcp/](https://googlecloudplatform.github.io/spring-cloud-gcp/)
 
 ## Database and Build Tooling
 
-- Oracle. (n.d.). _MySQL 8.0 Reference Manual_. Oracle Corporation. [https://dev.mysql.com/doc/refman/8.0/en/](https://dev.mysql.com/doc/refman/8.0/en/)
+- PostgreSQL Global Development Group. (n.d.). _PostgreSQL Documentation_. [https://www.postgresql.org/docs/](https://www.postgresql.org/docs/)
 - Apache Maven Project. (n.d.). _Maven: The Complete Reference_. Apache Software Foundation. [https://maven.apache.org/guides/index.html](https://maven.apache.org/guides/index.html)
 
 ## Testing and Quality Tooling

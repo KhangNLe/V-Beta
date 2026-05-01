@@ -12,7 +12,7 @@ This document defines testing environments and expected configuration difference
 
 - Frontend: `http://localhost:3000`
 - Backend: `http://localhost:8080`
-- Database: Cloud SQL via proxy (or local MySQL equivalent)
+- Database: Cloud SQL PostgreSQL via proxy (or local PostgreSQL equivalent)
 - Firebase: development/shared project credentials
 
 ### Required Services
@@ -40,7 +40,7 @@ This document defines testing environments and expected configuration difference
 ### Behavior
 
 - Default test profile uses H2 in-memory DB config.
-- Some integration tests override datasource properties to target MySQL test DB.
+- Integration tests under `Integration_Test/*` override datasource settings to PostgreSQL test DB values.
 
 ### Notes
 
@@ -69,7 +69,7 @@ This document defines testing environments and expected configuration difference
 |---|---|---|---|
 | Target | Manual + integration behavior | Automated backend tests | Automated frontend tests |
 | Backend URL | `localhost:8080` | Test runtime context | Mocked/jsdom context |
-| DB | Cloud SQL/MySQL (typical local) | H2 by default; some MySQL overrides | N/A |
+| DB | Cloud SQL/PostgreSQL (typical local) | H2 by default; Integration_Test overrides to PostgreSQL | N/A |
 | Auth | Firebase real tokens (manual flow) | Test setup/mocks/profile-driven | Usually mocked or not full auth e2e |
 | Main Runner | Manual + scripts | `./mvnw test` | `npm test` |
 

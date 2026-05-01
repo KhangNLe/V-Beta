@@ -9,7 +9,7 @@ The system includes:
 - A Next.js frontend in `v-beta/`
 - A Spring Boot backend in `server/`
 - Firebase Authentication integration
-- MySQL persistence
+- PostgreSQL persistence
 - Google Cloud Storage for beta video uploads
 
 Core roles:
