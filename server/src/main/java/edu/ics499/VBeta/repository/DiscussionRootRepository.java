@@ -9,8 +9,8 @@ public interface DiscussionRootRepository extends JpaRepository<DiscussionRoot, 
     List<DiscussionRoot> findByParent_DiscussionId(Long parentDiscussionId);
     List<DiscussionRoot> findByParent_DiscussionIdOrderByCreatedAtDesc(Long parentDiscussionId);
 
-    List<DiscussionRoot> findByProblem_ProblemIdAndParentIsNullOrderByCreatedAtDesc(Long problemId);
+    List<DiscussionRoot> findByProblem_IdAndParentIsNullOrderByCreatedAtDesc(Long problemId);
     List<DiscussionRoot> findByParent_DiscussionIdAndDeletedAtIsNullOrderByCreatedAtAsc(Long parentDiscussionId);
 
-    List<DiscussionRoot> findByProblem_ProblemIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(Long problemId);
+    List<DiscussionRoot> findByProblem_IdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(Long problemId);
 }

@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -33,7 +35,8 @@ public class DiscussionRoot {
     private UserAccount userAccount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "discussion_type", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "discussion_type", nullable = false, columnDefinition = "discussion_kind")
     private DiscussionType discussionType;
 
     @Column(name = "create_at", nullable = false, updatable = false)
