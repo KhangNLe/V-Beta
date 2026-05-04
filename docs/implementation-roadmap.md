@@ -45,6 +45,8 @@ Make PostgreSQL the primary and validated database path for local development an
 
 ## Sprint 2: Discussion Schema Foundation for Future Subthreads
 
+Status: In progress (`DiscussionRoot` model + repository + integration coverage added; API flow bridge still being finalized).
+
 ### Goal
 
 Refactor the discussion data model so it supports future nested replies without requiring immediate UI thread rollout.
@@ -72,6 +74,19 @@ Refactor the discussion data model so it supports future nested replies without 
 - Existing comment and solution beta flows remain functional.
 - New records are persisted in thread-ready discussion schema.
 - Referential integrity prevents invalid parent/child discussion links.
+
+### Current Implementation Notes
+
+- Added unified `DiscussionRoot` entity with nullable `parent_discussion_id` for root/reply structure.
+- Added `DiscussionType` enum mapping backed by PostgreSQL enum `discussion_kind`.
+- Added repository queries for:
+  - root threads per problem (`parent IS NULL`)
+  - child replies per parent (including active-only retrieval)
+- Added integration tests that validate:
+  - root creation, subthread creation
+  - root/reply query behavior
+  - enum persistence
+  - FK rejection for invalid `parent_discussion_id`
 
 ## Sprint 3: Hardening and Contract Lock
 

@@ -30,6 +30,10 @@ Primary persistence is PostgreSQL via JPA entities in `server/src/main/java/edu/
 
 ### User Interaction Content
 
+- `DiscussionRoot`
+  - Unified discussion anchor row for comments and solution betas.
+  - Supports future nested discussion via nullable self-reference (`parent_discussion_id`).
+  - Stores discussion type (`COMMENT` / `BETA`) and soft-delete metadata.
 - `UserComment`
   - User-to-problem comment anchor.
 - `DiscussionComment`
@@ -46,6 +50,8 @@ Primary persistence is PostgreSQL via JPA entities in `server/src/main/java/edu/
 - One `GymRole` can belong to many `UserAccount` records.
 - One `WallSection` has many `ClimbingProblem` records.
 - One `ClimbingProblem` can have many comments and perceived grades.
+- One `ClimbingProblem` can have many `DiscussionRoot` entries.
+- One `DiscussionRoot` can optionally reference another `DiscussionRoot` as its parent.
 - `SolutionBeta` is linked to `UserBeta` for user/problem beta ownership.
 - Role permissions are evaluated through role-action mappings (`RolePermission`).
 - `UserPerceiveGrade` is keyed per user/problem pair to model one effective grade submission per user per problem.
