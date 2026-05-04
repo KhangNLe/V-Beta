@@ -99,6 +99,11 @@ cd server
 - Runtime schema aligns with current entity constraints, including:
   - `Gym_Role.role_type` as `NOT NULL`
   - composite primary key on `Role_Permission (role_id, action_id)`
+  - `Discussion_Root` with:
+    - nullable `parent_discussion_id` (self-FK for future threading)
+    - `discussion_type` backed by PostgreSQL enum `discussion_kind`
+    - `create_at` timestamp used by runtime entity mapping
+    - referential integrity FKs for `problem_id`, `user_id`, and `deleted_by`
 
 ## Notes for future contributors
 

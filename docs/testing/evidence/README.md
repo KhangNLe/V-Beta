@@ -17,6 +17,6 @@ Store committed test evidence files here so reviewers can verify results without
 
 ## Current Committed Evidence
 
-- Backend: `backend/surefire-report-2026-04-25.html`
-- Backend: `backend/maven-test-2026-04-25.png`
+- Backend: `backend/surefire-report-2026-05-04.html`
+- Backend: `backend/maven-test-2026-05-04.png`
 - Frontend: `frontend/npm-test-summary.png`
