@@ -35,7 +35,41 @@ export function SignupForm({ className, ...props }) {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isPopupPending, setIsPopupPending] = useState(false)
   const googleProvider = new GoogleAuthProvider()
+  const isBusy = isLoading || isPopupPending
+  const isPopupDismissedError = (err) =>
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request")
+
+  const startPopupCloseWatcher = () => {
+    if (typeof window === "undefined") return () => {}
+    setIsPopupPending(true)
+    let released = false
+
+    const release = () => {
+      if (released) return
+      released = true
+      setIsPopupPending(false)
+    }
+
+    const onFocus = () => {
+      window.setTimeout(() => {
+        if (!auth.currentUser) {
+          release()
+        }
+      }, 120)
+    }
+
+    window.addEventListener("focus", onFocus, { once: true })
+
+    return () => {
+      window.removeEventListener("focus", onFocus)
+      release()
+    }
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -85,11 +119,13 @@ export function SignupForm({ className, ...props }) {
   }
 
   const handleGoogleSignup = async () => {
-    setIsLoading(true)
     setError("")
+    const stopPopupCloseWatcher = startPopupCloseWatcher()
 
     try {
       await signInWithPopup(auth, googleProvider)
+      stopPopupCloseWatcher()
+      setIsLoading(true)
       try {
         await syncAccountSessionWithBackend(auth.currentUser)
         router.push("/main-page")
@@ -102,6 +138,8 @@ export function SignupForm({ className, ...props }) {
         throw syncErr
       }
     } catch (err) {
+      stopPopupCloseWatcher()
+      if (isPopupDismissedError(err)) return
       console.error(err)
       setError(formatSignupAuthError(err))
     } finally {
@@ -181,8 +219,12 @@ export function SignupForm({ className, ...props }) {
           <FieldDescription className="text-center text-red-600">{error}</FieldDescription>
         ) : null}
         <Field>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Creating account..." : "Create Account"}
+          <Button
+            type="submit"
+            disabled={isBusy}
+            className="bg-white text-primary hover:bg-white/90 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
+          >
+            {isBusy ? "Creating account..." : "Create Account"}
           </Button>
         </Field>
         <FieldSeparator>Or continue with</FieldSeparator>
@@ -192,7 +234,7 @@ export function SignupForm({ className, ...props }) {
             type="button"
             className="!border-primary !bg-background !text-primary hover:!bg-accent hover:!text-primary"
             onClick={handleGoogleSignup}
-            disabled={isLoading}
+            disabled={isBusy}
           >
             <SiGoogle className="size-[.9rem] shrink-0" aria-hidden />
             Sign up with Google
@@ -201,8 +243,8 @@ export function SignupForm({ className, ...props }) {
             Already have an account?{" "}
             <button
               type="button"
-              className="text-muted-foreground hover:text-foreground"
-              disabled={isLoading}
+              className="text-white hover:text-white/85 dark:text-muted-foreground dark:hover:text-foreground"
+              disabled={isBusy}
               onClick={() => router.push("/login")}
             >
               Sign in

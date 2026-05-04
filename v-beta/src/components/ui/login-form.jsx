@@ -32,7 +32,41 @@ export function LoginForm({ className, ...props }) {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isPopupPending, setIsPopupPending] = useState(false)
   const googleProvider = new GoogleAuthProvider()
+  const isBusy = isLoading || isPopupPending
+  const isPopupDismissedError = (err) =>
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request")
+
+  const startPopupCloseWatcher = () => {
+    if (typeof window === "undefined") return () => {}
+    setIsPopupPending(true)
+    let released = false
+
+    const release = () => {
+      if (released) return
+      released = true
+      setIsPopupPending(false)
+    }
+
+    const onFocus = () => {
+      window.setTimeout(() => {
+        if (!auth.currentUser) {
+          release()
+        }
+      }, 120)
+    }
+
+    window.addEventListener("focus", onFocus, { once: true })
+
+    return () => {
+      window.removeEventListener("focus", onFocus)
+      release()
+    }
+  }
 
   const handleEmailLogin = async (event) => {
     event.preventDefault()
@@ -65,11 +99,13 @@ export function LoginForm({ className, ...props }) {
   }
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true)
     setError("")
+    const stopPopupCloseWatcher = startPopupCloseWatcher()
 
     try {
       await signInWithPopup(auth, googleProvider)
+      stopPopupCloseWatcher()
+      setIsLoading(true)
       try {
         await syncAccountSessionWithBackend(auth.currentUser)
         if (needsPasswordProviderEmailVerification(auth.currentUser)) {
@@ -86,6 +122,8 @@ export function LoginForm({ className, ...props }) {
         throw syncErr
       }
     } catch (err) {
+      stopPopupCloseWatcher()
+      if (isPopupDismissedError(err)) return
       console.error(err)
       setError(formatLoginAuthError(err))
     } finally {
@@ -149,8 +187,12 @@ export function LoginForm({ className, ...props }) {
           <FieldDescription className="text-center text-red-600">{error}</FieldDescription>
         ) : null}
         <Field>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Logging in..." : "Login"}
+          <Button
+            type="submit"
+            disabled={isBusy}
+            className="bg-primary/90 !text-white hover:bg-primary/80 disabled:opacity-100 disabled:!text-white dark:bg-primary dark:!text-primary-foreground dark:hover:bg-primary/90 dark:disabled:!text-primary-foreground"
+          >
+            {isBusy ? "Logging in..." : "Login"}
           </Button>
         </Field>
         <FieldSeparator>Or continue with</FieldSeparator>
@@ -160,7 +202,7 @@ export function LoginForm({ className, ...props }) {
             type="button"
             className="!border-primary !bg-background !text-primary hover:!bg-accent hover:!text-primary"
             onClick={handleGoogleLogin}
-            disabled={isLoading}
+            disabled={isBusy}
           >
             <SiGoogle className="size-[.9rem] shrink-0" aria-hidden />
             Login with Google
@@ -169,8 +211,8 @@ export function LoginForm({ className, ...props }) {
             Don&apos;t have an account?{" "}
             <button
               type="button"
-              className="text-muted-foreground hover:text-foreground"
-              disabled={isLoading}
+              className="text-white hover:text-white/85 dark:text-muted-foreground dark:hover:text-foreground"
+              disabled={isBusy}
               onClick={() => router.push("/signup")}
             >
               Sign up
@@ -181,7 +223,7 @@ export function LoginForm({ className, ...props }) {
             <button
               type="button"
               onClick={handleContinueAsGuest}
-              disabled={isLoading}
+              disabled={isBusy}
               className="text-muted-foreground hover:text-foreground"
             >
               Continue as Guest
