@@ -9,10 +9,7 @@ import edu.ics499.VBeta.api.dto.*;
 import edu.ics499.VBeta.application.support.ClimbingProblemDiscussionManager;
 import edu.ics499.VBeta.application.support.ClimbingProblemManager;
 import edu.ics499.VBeta.application.support.SolutionBetaManager;
-import edu.ics499.VBeta.domain.model.ClimbingProblem;
-import edu.ics499.VBeta.domain.model.RoleType;
-import edu.ics499.VBeta.domain.model.SolutionBeta;
-import edu.ics499.VBeta.domain.model.UserAccount;
+import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.application.support.UserAccountManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,12 +88,13 @@ public class ProblemDiscussionService {
     public UserCommentData saveSolutionBeta(SolutionBetaCreateRequest request, String firebaseUid){
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
         UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
-        SolutionBeta solutionBeta = solutionBetaManager.storeUserSolutionBeta(userAccount, problem,
+        SolutionBeta solutionBeta = climbingProblemDiscussionManager.storeSolutionBeta(userAccount, problem,
                 request.objectFileName(), request.videoURL());
         return new UserCommentData(
                 userAccount.getId(),
                 userAccount.getUsername(),
                 null,
+                DiscussionType.BETA,
                 solutionBeta.getVideoURL(),
                 solutionBeta.getCreateDate()
         );
@@ -113,7 +111,7 @@ public class ProblemDiscussionService {
         UserAccount solutionBetaOwner = getUserAccount(request.userId());
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
         validateDeletionOwnerObject(requestUser, request.userId());
-        solutionBetaManager.removeUserSolutionBeta(solutionBetaOwner, problem, request.publicUrl());
+        climbingProblemDiscussionManager.removeUserSolutionBeta(request.discussionId(), request.publicUrl());
     }
 
     private UserAccount getUserAccount(String firebaseUid){

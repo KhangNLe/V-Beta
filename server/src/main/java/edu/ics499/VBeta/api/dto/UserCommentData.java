@@ -1,5 +1,7 @@
 package edu.ics499.VBeta.api.dto;
 
+import edu.ics499.VBeta.domain.model.DiscussionType;
+
 import java.time.LocalDateTime;
 
 /**
@@ -14,8 +16,9 @@ import java.time.LocalDateTime;
 public record UserCommentData(
         Long userId,
         String username,
-        String comment,
-        String videoURL,
+        Long parentCommentId,
+        DiscussionType discussionType,
+        String discussionContent,
         LocalDateTime createdDate
 ) {
 }

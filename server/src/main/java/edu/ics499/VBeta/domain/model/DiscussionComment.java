@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 public class DiscussionComment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "discussion_id")
+    @Column(name = "comment_id")
     private Long id;
 
     @Column(name = "info", length = 250)
@@ -31,6 +31,6 @@ public class DiscussionComment {
     private LocalDateTime createDate;
 
     @OneToOne
-    @JoinColumn(name = "user_comment_id", referencedColumnName = "user_comment_id", nullable = false, unique = true)
-    private UserComment userComment;
+    @JoinColumn(name = "discussion_id", referencedColumnName = "discussion_id", nullable = false, unique = true)
+    private DiscussionRoot discussionRoot;
 }

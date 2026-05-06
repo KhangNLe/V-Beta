@@ -24,8 +24,8 @@ public class SolutionBeta {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_beta_id", referencedColumnName = "user_beta_id", unique = true, nullable = false)
-    private UserBeta userBeta;
+    @JoinColumn(name = "discussion_id", referencedColumnName = "discussion_id", unique = true, nullable = false)
+    private DiscussionRoot discussionRoot;
 
     @Column(name = "beta_name", nullable = false, length = 250)
     private String betaName;

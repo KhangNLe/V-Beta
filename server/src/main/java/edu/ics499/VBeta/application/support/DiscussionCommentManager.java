@@ -8,142 +8,102 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.List;
 
 /**
  * {@code DiscussionCommentManager} manages write/read operations for discussion comments.
- * It persists a {@link UserComment} anchor and the associated {@link DiscussionComment} body
- * to model threaded discussion content per climbing problem.
+ * It persists and resolves {@link DiscussionComment} records keyed by {@link DiscussionRoot}
+ * to model threaded discussion content per discussion item.
  * <p>
- * It also supports targeted deletion by finding the latest matching comment text for a
- * user/problem context.
+ * It also supports targeted and bulk deletion for discussion roots.
  */
 @Service
 public class DiscussionCommentManager {
-    private final UserCommentRepository userCommentRepository;
     private final DiscussionCommentRepository discussionCommentRepository;
 
     /**
-     * Constructs a new {@code DiscussionCommentManager} with comment repositories.
+     * Constructs a new {@code DiscussionCommentManager} with comment repository.
      *
-     * @param userCommentRepository repository for user comment anchors
      * @param discussionCommentRepository repository for discussion comment content
      */
-    public DiscussionCommentManager(UserCommentRepository userCommentRepository,
-                                    DiscussionCommentRepository discussionCommentRepository){
-        this.userCommentRepository = userCommentRepository;
+    public DiscussionCommentManager(DiscussionCommentRepository discussionCommentRepository){
         this.discussionCommentRepository = discussionCommentRepository;
     }
 
     /**
-     * Returns user comments linked to a climbing problem.
+     * Returns the discussion comment associated with a discussion root.
      *
-     * @param problem climbing problem identifier context
-     * @return list of user comments
-     */
-    public List<UserComment> getUserCommentFromClimbingProblem(ClimbingProblem problem){
-        return userCommentRepository.findByClimbingProblem(problem);
-    }
-
-    /**
-     * Returns the discussion comment associated with a user comment.
-     *
-     * @param userComment user comment parent record
+     * @param discussionRoot discussion root parent record
      * @return discussion comment or {@code null} when not found
      */
-    public DiscussionComment getDiscussionCommentByUserComment(UserComment userComment){
-        Optional<DiscussionComment> comment = discussionCommentRepository.findByUserComment(userComment);
+    public DiscussionComment getDiscussionComment(DiscussionRoot discussionRoot){
+        Optional<DiscussionComment> comment = discussionCommentRepository.findByDiscussionRoot(discussionRoot);
         return comment.orElse(null);
     }
 
     /**
-     * Creates and stores a discussion comment authored by a user for a problem.
+     * Creates and stores a discussion comment for a discussion root.
      *
-     * @param user author account
-     * @param problem target climbing problem
+     * @param discussionRoot discussion root parent record
      * @param commentInfo discussion text content
      */
-    public void storeDiscussionComment(UserAccount user, ClimbingProblem problem, String commentInfo){
-        UserComment userComment = createNewUserComment(user, problem);
-        createNewDiscussionComment(userComment, commentInfo);
+    public void storeDiscussionComment(DiscussionRoot discussionRoot, String commentInfo){
+        createNewDiscussionComment(discussionRoot, commentInfo);
     }
 
-    private UserComment createNewUserComment(UserAccount user, ClimbingProblem problem){
-        UserComment userComment = new UserComment();
-        userComment.setUserAccount(user);
-        userComment.setClimbingProblem(problem);
-        return userCommentRepository.save(userComment);
-    }
-
-    private void createNewDiscussionComment(UserComment userComment, String commentInfo){
+    private void createNewDiscussionComment(DiscussionRoot discussionRoot, String commentInfo){
         DiscussionComment comment = new DiscussionComment();
-        comment.setUserComment(userComment);
+        comment.setDiscussionRoot(discussionRoot);
         comment.setCommentInfo(commentInfo);
         comment.setCreateDate(LocalDateTime.now());
         discussionCommentRepository.save(comment);
     }
 
     /**
-     * Removes a user's discussion comment for a problem by matching comment content.
+     * Removes the discussion comment associated with a discussion root.
      *
-     * @param user author account
-     * @param problem climbing problem context
-     * @param commentContent comment text to match for deletion
+     * @param discussionRoot discussion root parent record
      */
-    public void removeUserComment(UserAccount user, ClimbingProblem problem, String commentContent) {
-        List<UserComment> comments = getUserComment(user, problem);
-        DiscussionComment discussionComment = findDiscussionComment(comments, commentContent);
-        UserComment deletingUserComment = discussionComment.getUserComment();
+    public void removeUserComment(DiscussionRoot discussionRoot) {
+        DiscussionComment discussionComment = findDiscussionComment(discussionRoot);
         discussionCommentRepository.delete(discussionComment);
-        userCommentRepository.delete(deletingUserComment);
     }
 
     /**
-     * Removes all discussion-comment rows and user-comment anchors owned by a user.
-     * <p>
-     * This method validates one-to-one row consistency between {@link UserComment}
-     * and {@link DiscussionComment} before deleting either side.
+     * Removes all discussion-comment rows for the provided discussion roots.
      *
-     * @param user account whose comments should be removed
+     * @param discussionRoots discussion roots whose comment rows should be removed
      */
-    public void removeAllUserComments(UserAccount user){
-        List<UserComment> userComments = getAllUserComments(user);
-        if (userComments.isEmpty()) return;
-        List<DiscussionComment> discussionComments = getDiscussionComments(userComments);
+    public void removeAllUserComments(List<DiscussionRoot> discussionRoots){
+        List<DiscussionComment> discussionComments = getDiscussionComments(discussionRoots);
         discussionCommentRepository.deleteAll(discussionComments);
-        userCommentRepository.deleteAll(userComments);
     }
 
-    /**
-     * Returns all user-comment anchors authored by a user.
-     *
-     * @param userAccount comment author account
-     * @return user-comment anchors for that author
-     */
+    // TODO: remove this method if UserCommentRepository is fully retired.
     private List<UserComment> getAllUserComments(UserAccount userAccount){
         return userCommentRepository.findByUserAccount(userAccount);
     }
 
     /**
-     * Resolves discussion comments for a set of user-comment anchors and enforces
+     * Resolves discussion comments for a set of discussion roots and enforces
      * one-to-one mapping cardinality.
      *
-     * @param userComments user-comment anchors expected to have matching discussion rows
+     * @param discussionRoots discussion roots expected to have matching discussion rows
      * @return discussion-comment rows matching each anchor
      * @throws ResponseStatusException with {@link HttpStatus#INTERNAL_SERVER_ERROR}
      * when one or more discussion rows are missing
      */
-    private List<DiscussionComment> getDiscussionComments(List<UserComment> userComments){
-        List<DiscussionComment> discussionComments = discussionCommentRepository.findByUserCommentIn(userComments);
-        if (discussionComments.size() != userComments.size()){
+    private List<DiscussionComment> getDiscussionComments(List<DiscussionRoot> discussionRoots){
+        List<DiscussionComment> discussionComments = discussionCommentRepository.findByDiscussionRootIn(discussionRoots);
+        if (discussionComments.size() != discussionRoots.size()){
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     String.format(
                             "Mismatching size between user comments %d and discussion comment %d for user comment id %s."
                             + " Please contact the developer for this issue",
-                            userComments.size(), discussionComments.size(), userComments.get(0).getUserCommentId()
+                            discussionRoots.size(), discussionComments.size(),
+                            discussionRoots.get(0).getUserAccount().getId()
                     )
             );
         }
@@ -151,46 +111,19 @@ public class DiscussionCommentManager {
     }
 
     /**
-     * Returns user-comment anchors for a specific user/problem pair.
+     * Finds the discussion comment associated with the given discussion root.
      *
-     * @param userAccount author account
-     * @param climbingProblem climbing problem context
-     * @return list of matching user comments
-     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when no comments exist
-     */
-    private List<UserComment> getUserComment(UserAccount userAccount, ClimbingProblem climbingProblem){
-        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(userAccount, climbingProblem);
-        if (userComments.isEmpty()){
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    String.format("Could not find any comment for problem %d from user: %s.",
-                            climbingProblem.getId(), userAccount.getUsername())
-            );
-        }
-        return userComments;
-    }
-
-    /**
-     * Finds the latest discussion comment matching the requested content.
-     *
-     * @param userComments candidate user-comment anchors
-     * @param commentContent comment text to match
-     * @return most recent matching discussion comment
+     * @param discussionRoot discussion root parent record
+     * @return matching discussion comment
      * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when no matching comment is found
      */
-    private DiscussionComment findDiscussionComment(List<UserComment> userComments, String commentContent){
-        List<DiscussionComment> discussionComment = discussionCommentRepository.
-                findByCommentInfoAndUserCommentInOrderByCreateDateDesc(
-                    commentContent, userComments
-        );
-
-        if (discussionComment.isEmpty()){
-            throw new ResponseStatusException(
+    private DiscussionComment findDiscussionComment(DiscussionRoot discussionRoot){
+        Optional<DiscussionComment> discussionComment = discussionCommentRepository.findByDiscussionRoot(discussionRoot);
+        return discussionComment.orElseThrow(()->
+             new ResponseStatusException(
                 HttpStatus.NOT_FOUND,
-                String.format("Could not find comment from user that match %s.", commentContent)
-            );
-        }
-
-        return discussionComment.get(0);
+                String.format("Could not find comment with the discussion id %d", discussionRoot.getDiscussionId())
+            )
+        );
     }
 }

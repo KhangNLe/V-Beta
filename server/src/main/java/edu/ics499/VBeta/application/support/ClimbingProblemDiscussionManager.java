@@ -2,15 +2,13 @@ package edu.ics499.VBeta.application.support;
 
 import edu.ics499.VBeta.api.dto.UserCommentData;
 import edu.ics499.VBeta.domain.model.*;
-import edu.ics499.VBeta.repository.DiscussionCommentRepository;
-import edu.ics499.VBeta.repository.UserCommentRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * {@code ClimbingProblemDiscussionManager} composes a unified discussion timeline for a climbing problem.
@@ -23,6 +21,7 @@ import java.util.Optional;
 public class ClimbingProblemDiscussionManager {
     private final DiscussionCommentManager discussionCommentManager;
     private final SolutionBetaManager solutionBetaManager;
+    private final DiscussionRootManager discussionRootManager;
 
 
     /**
@@ -33,9 +32,11 @@ public class ClimbingProblemDiscussionManager {
      */
     public ClimbingProblemDiscussionManager(
             DiscussionCommentManager discussionCommentManager,
-            SolutionBetaManager solutionBetaManager){
+            SolutionBetaManager solutionBetaManager,
+            DiscussionRootManager discussionRootManager) {
         this.discussionCommentManager = discussionCommentManager;
         this.solutionBetaManager = solutionBetaManager;
+        this.discussionRootManager = discussionRootManager;
     }
 
     /**
@@ -45,50 +46,22 @@ public class ClimbingProblemDiscussionManager {
      * @return sorted discussion timeline entries
      */
     public List<UserCommentData> getCommentsForProblem(ClimbingProblem problem){
-        List<UserCommentData> comments = new ArrayList<>();
-        List<UserComment> commentsSrc = discussionCommentManager.getUserCommentFromClimbingProblem(problem);
-        List<UserBeta> userBetas = solutionBetaManager.getUserBetasForClimbingProblem(problem);
+        List<DiscussionRoot> discussionRoots = discussionRootManager.getDiscussionForProblem(problem);
+        List<UserCommentData> data = new ArrayList<>();
 
-        if (commentsSrc.isEmpty() && userBetas.isEmpty()){
-            return comments;
-        }
-
-        getDiscussionComment(comments, commentsSrc);
-        getSolutionBeta(comments, userBetas);
-
-        return comments.stream().sorted(
-                Comparator.comparing(UserCommentData::createdDate)
-        ).toList();
-    }
-
-    private void getDiscussionComment(List<UserCommentData> comments, List<UserComment> commentsSrc){
-        commentsSrc.forEach(src -> {
-            DiscussionComment comment = discussionCommentManager.getDiscussionCommentByUserComment(src);
-            if (comment != null){
-                comments.add(new UserCommentData(
-                        src.getUserAccount().getId(),
-                        src.getUserAccount().getUsername(),
-                        comment.getCommentInfo(),
-                        null,
-                        comment.getCreateDate()
-                ));
+        discussionRoots.forEach(root -> {
+            UserCommentData dataContent = null;
+            if (root.getDiscussionType().equals(DiscussionType.COMMENT)){
+                dataContent = getCommentDiscussion(root);
+            } else if (root.getDiscussionType().equals(DiscussionType.BETA)){
+                dataContent = getSolutionBeta(root);
+            }
+            if (dataContent != null){
+                data.add(dataContent);
             }
         });
-    }
 
-    private void getSolutionBeta(List<UserCommentData> comments, List<UserBeta> userBetas){
-        userBetas.forEach(src -> {
-            SolutionBeta beta = solutionBetaManager.getSolutionBetaFromUserBeta(src);
-            if (beta != null){
-                comments.add(new UserCommentData(
-                        src.getUser().getId(),
-                        src.getUser().getUsername(),
-                        null,
-                        beta.getVideoURL(),
-                        beta.getCreateDate()
-                ));
-            }
-        });
+        return data.stream().sorted(Comparator.comparing(UserCommentData::createdDate)).toList();
     }
 
     /**
@@ -99,10 +72,78 @@ public class ClimbingProblemDiscussionManager {
      * @param commentInfo comment text content
      */
     public void storeDiscussionComment(UserAccount user, ClimbingProblem problem, String commentInfo){
-        discussionCommentManager.storeDiscussionComment(user, problem,commentInfo);
+        DiscussionRoot discussionRoot = discussionRootManager.createNewDiscussion(user, problem,
+                DiscussionType.COMMENT);
+        discussionCommentManager.storeDiscussionComment(discussionRoot, commentInfo);
+
     }
 
-    public void removeUserComment(UserAccount userAccount, ClimbingProblem problem, String commentContent){
-        discussionCommentManager.removeUserComment(userAccount, problem, commentContent);
+    public void storeReplyComment(UserAccount user, ClimbingProblem problem, String commentContent,
+                                  Long discussionParentId){
+        DiscussionRoot parent = getDiscussionNode(discussionParentId);
+        DiscussionRoot replyDiscussion = discussionRootManager.createReplyDiscussionRoot(user, problem,
+                DiscussionType.COMMENT, parent);
+        discussionCommentManager.storeDiscussionComment(replyDiscussion, commentContent);
+    }
+
+    public SolutionBeta storeSolutionBeta(UserAccount userAccount, ClimbingProblem problem, String objectName, String publicUrl){
+        DiscussionRoot discussion = discussionRootManager.createNewDiscussion(userAccount, problem, DiscussionType.BETA);
+        return solutionBetaManager.storeUserSolutionBeta(discussion, objectName, publicUrl);
+    }
+
+    public SolutionBeta storeReplySolutionBeta(UserAccount userAccount, ClimbingProblem problem,
+                                       String objectName, String publicUrl, Long discussionParentId){
+        DiscussionRoot parent = getDiscussionNode(discussionParentId);
+        DiscussionRoot reply = discussionRootManager.createReplyDiscussionRoot(userAccount, problem,
+                DiscussionType.BETA, parent);
+
+        return solutionBetaManager.storeUserSolutionBeta(reply, objectName, publicUrl);
+    }
+
+    public void removeUserComment(Long discussionId){
+        DiscussionRoot discussion = getDiscussionNode(discussionId);
+        discussionCommentManager.removeUserComment(discussion);
+    }
+
+    public void removeUserSolutionBeta(Long discussionId, String publicUrl){
+        DiscussionRoot discussion = getDiscussionNode(discussionId);
+        solutionBetaManager.removeUserSolutionBeta(discussion, publicUrl);
+    }
+
+    private UserCommentData getCommentDiscussion(DiscussionRoot discussionRoot){
+        DiscussionComment comment = discussionCommentManager.getDiscussionComment(discussionRoot);
+        if (comment == null) return null;
+        return new UserCommentData(
+                discussionRoot.getUserAccount().getId(),
+                discussionRoot.getUserAccount().getUsername(),
+                discussionRoot.getParent().getDiscussionId(),
+                discussionRoot.getDiscussionType(),
+                comment.getCommentInfo(),
+                comment.getCreateDate()
+        );
+    }
+
+    private UserCommentData getSolutionBeta(DiscussionRoot discussionRoot){
+        SolutionBeta beta = solutionBetaManager.getSolutionBetaFromDiscussionRoot(discussionRoot);
+        if (beta == null) return null;
+        return  new UserCommentData(
+                discussionRoot.getUserAccount().getId(),
+                discussionRoot.getUserAccount().getUsername(),
+                discussionRoot.getParent().getDiscussionId(),
+                discussionRoot.getDiscussionType(),
+                beta.getVideoURL(),
+                beta.getCreateDate()
+        );
+    }
+
+    private DiscussionRoot getDiscussionNode(Long discussionParentId){
+        DiscussionRoot parent = discussionRootManager.findDiscussionRootById(discussionParentId);
+        if (parent == null){
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    String.format("Unable to reply to a discussion with id %d", discussionParentId)
+            );
+        }
+        return parent;
     }
 }

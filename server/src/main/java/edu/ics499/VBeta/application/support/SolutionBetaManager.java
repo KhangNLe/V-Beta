@@ -1,7 +1,6 @@
 package edu.ics499.VBeta.application.support;
 
 import com.google.cloud.storage.StorageException;
-import edu.ics499.VBeta.api.dto.ClimbingProblemResponse;
 import edu.ics499.VBeta.api.dto.CloudFileStorageRequest;
 import edu.ics499.VBeta.api.dto.CloudFileStorageResponse;
 import edu.ics499.VBeta.domain.model.*;
@@ -15,10 +14,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * {@code SolutionBetaManager} encapsulates domain operations for solution beta video entries.
- * It manages the relationship between {@link UserBeta} and {@link SolutionBeta}, validates uniqueness,
+ * It manages {@link SolutionBeta} entries keyed by {@link DiscussionRoot}, validates uniqueness,
  * coordinates object-storage cleanup, and prepares signed upload metadata.
  * <p>
  * Storage concerns are delegated to {@link GcpFileStorageAdapter}, while climbing problem validation
@@ -26,7 +26,6 @@ import java.util.*;
  */
 @Service
 public class SolutionBetaManager {
-    private final UserBetaRepository userBetaRepository;
     private final SolutionBetaRepository solutionBetaRepository;
     private final GcpFileStorageAdapter gcpFileStorageAdapter;
     private final ClimbingProblemManager climbingProblemManager;
@@ -34,101 +33,71 @@ public class SolutionBetaManager {
     /**
      * Constructs a new {@code SolutionBetaManager} with repository and storage dependencies.
      *
-     * @param userBetaRepository repository for user/problem beta links
      * @param solutionBetaRepository repository for solution beta entities
      * @param gcpFileStorageAdapter storage adapter used for URL and object deletion
      * @param climbingProblemManager manager used to validate active problem state
      */
-    public SolutionBetaManager(UserBetaRepository userBetaRepository,
-                               SolutionBetaRepository solutionBetaRepository,
+    public SolutionBetaManager(SolutionBetaRepository solutionBetaRepository,
                                GcpFileStorageAdapter gcpFileStorageAdapter,
                                ClimbingProblemManager climbingProblemManager){
-        this.userBetaRepository = userBetaRepository;
         this.solutionBetaRepository = solutionBetaRepository;
         this.gcpFileStorageAdapter = gcpFileStorageAdapter;
         this.climbingProblemManager = climbingProblemManager;
     }
 
     /**
-     * Returns persisted solution beta objects for a climbing problem.
+     * Returns persisted solution beta objects for discussion roots of type {@link DiscussionType#BETA}.
      *
-     * @param problem climbing problem context
-     * @return list of solution betas, or {@code null} when none exist
+     * @param discussionRoots discussion roots to resolve
+     * @return list of matching solution betas (missing rows are skipped)
      */
-    public List<SolutionBeta> getProblemSolutionBeta(ClimbingProblem problem){
-        List<UserBeta> userBetas = getUserBetasForClimbingProblem(problem);
-        if (userBetas.isEmpty()) return null;
-        List<SolutionBeta> betas = new ArrayList<>();
-        userBetas.forEach(ub -> {
-            Optional<SolutionBeta> beta = solutionBetaRepository.findByUserBeta(ub);
-            beta.ifPresent(betas::add);
-        });
-        return betas;
+    public List<SolutionBeta> getProblemSolutionBeta(List<DiscussionRoot> discussionRoots){
+        return discussionRoots.stream()
+                .filter(d -> d.getDiscussionType().equals(DiscussionType.BETA))
+                .map(this::getSolutionBetaFromDiscussionRoot)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     /**
-     * Returns user-beta link rows for a climbing problem.
+     * Returns the solution beta associated with a discussion root.
      *
-     * @param problem climbing problem context
-     * @return matching user-beta rows
-     */
-    public List<UserBeta> getUserBetasForClimbingProblem(ClimbingProblem problem){
-        return userBetaRepository.findByProblem(problem);
-    }
-
-    /**
-     * Returns the solution beta associated with a user-beta row.
-     *
-     * @param userBeta user-beta relationship row
+     * @param discussionRoot discussion root parent record
      * @return solution beta or {@code null} when not found
      */
-    public SolutionBeta getSolutionBetaFromUserBeta(UserBeta userBeta){
-        Optional<SolutionBeta> solutionBeta = solutionBetaRepository.findByUserBeta(userBeta);
+    public SolutionBeta getSolutionBetaFromDiscussionRoot(DiscussionRoot discussionRoot){
+        Optional<SolutionBeta> solutionBeta = solutionBetaRepository.findByDiscussionRoot(discussionRoot);
         return solutionBeta.orElse(null);
     }
 
     /**
-     * Stores a solution beta for a user and climbing problem.
+     * Stores a solution beta for a discussion root.
      *
-     * @param user owner account
-     * @param problem target climbing problem
+     * @param discussionRoot discussion root parent record
      * @param objectFileName storage object key/name
      * @param publicUrl public media URL
      * @return persisted solution beta
      */
-    public SolutionBeta storeUserSolutionBeta(UserAccount user, ClimbingProblem problem,
-                                      String objectFileName, String publicUrl){
-        UserBeta userBeta = createUserBeta(user, problem);
-        return createSolutionBeta(userBeta, objectFileName, publicUrl);
+    public SolutionBeta storeUserSolutionBeta(DiscussionRoot discussionRoot, String objectFileName, String publicUrl){
+        return createSolutionBeta(discussionRoot, objectFileName, publicUrl);
     }
 
     /**
-     * Removes a user's solution beta and its underlying storage object.
+     * Removes a solution beta and its underlying storage object.
      *
-     * @param userAccount owner account
-     * @param problem target climbing problem
+     * @param discussionRoot discussion root parent record
      * @param publicUrl public URL identifying the beta to remove
      */
-    public void removeUserSolutionBeta(UserAccount userAccount, ClimbingProblem problem, String publicUrl){
-        List<UserBeta> userBetas = userBetaRepository.findByUserAndProblem(userAccount, problem);
-        SolutionBeta solutionBeta = findSolutionBeta(userBetas, publicUrl);
+    public void removeUserSolutionBeta(DiscussionRoot discussionRoot, String publicUrl){
+        SolutionBeta solutionBeta = findSolutionBeta(discussionRoot, publicUrl);
         gcpFileStorageAdapter.deleteFile(gcpFileStorageAdapter.getPublicBucketName(), solutionBeta.getBetaName());
-        UserBeta deletingBeta = solutionBeta.getUserBeta();
         solutionBetaRepository.delete(solutionBeta);
-        userBetaRepository.delete(deletingBeta);
     }
 
-    private UserBeta createUserBeta(UserAccount userAccount, ClimbingProblem problem){
-        UserBeta userBeta = new UserBeta();
-        userBeta.setUser(userAccount);
-        userBeta.setProblem(problem);
-        return userBetaRepository.save(userBeta);
-    }
-
-    private SolutionBeta createSolutionBeta(UserBeta userBeta, String objectFileName, String publicURL){
+    private SolutionBeta createSolutionBeta(DiscussionRoot discussionRoot, String objectFileName, String publicURL){
         checkForExistingSolutionBeta(publicURL);
         SolutionBeta solutionBeta = new SolutionBeta();
-        solutionBeta.setUserBeta(userBeta);
+        solutionBeta.setDiscussionRoot(discussionRoot);
         solutionBeta.setBetaName(objectFileName);
         solutionBeta.setVideoURL(publicURL);
         solutionBeta.setCreateDate(LocalDateTime.now());
@@ -145,8 +114,9 @@ public class SolutionBetaManager {
         }
     }
 
-    private SolutionBeta findSolutionBeta(List<UserBeta> betas, String publicUrl){
-        Optional<SolutionBeta> solutionBeta = solutionBetaRepository.findByUserBetaInAndVideoURL(betas, publicUrl);
+    private SolutionBeta findSolutionBeta(DiscussionRoot discussionRoot, String publicUrl){
+        Optional<SolutionBeta> solutionBeta = solutionBetaRepository.findByDiscussionRootAndVideoURL(
+                discussionRoot, publicUrl);
         return solutionBeta.orElseThrow( () ->
             new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
@@ -156,53 +126,41 @@ public class SolutionBetaManager {
     }
 
     /**
-     * Removes every beta/video row associated with a user.
+     * Removes every beta/video row associated with the provided discussion roots.
      * <p>
-     * This bulk flow validates that each {@link UserBeta} has a corresponding
-     * {@link SolutionBeta} before deleting storage objects and database rows.
+     * This bulk flow validates one-to-one row consistency before deleting
+     * storage objects and database rows.
      *
-     * @param userAccount account whose beta entries should be removed
+     * @param discussionRoots discussion roots whose beta entries should be removed
      */
-    public void removeAllUserRelatedSolutionBeta(UserAccount userAccount){
-        List<UserBeta> userBetas = getAllUserBetas(userAccount);
-        if (userBetas.isEmpty()) return;
-        List<SolutionBeta> solutionBetas = getAllUserRelateSolutionBeta(userBetas);
+    public void removeAllUserRelatedSolutionBeta(List<DiscussionRoot> discussionRoots){
+        List<SolutionBeta> solutionBetas = getAllUserRelateSolutionBeta(discussionRoots);
         solutionBetas.forEach(sb ->
                 gcpFileStorageAdapter.deleteFile(gcpFileStorageAdapter.getPublicBucketName(), sb.getBetaName())
         );
         solutionBetaRepository.deleteAll(solutionBetas);
-        userBetaRepository.deleteAll(userBetas);
     }
 
     /**
-     * Returns all user-beta link rows owned by a user.
-     *
-     * @param userAccount owner account
-     * @return user-beta rows for the account
-     */
-    private List<UserBeta> getAllUserBetas(UserAccount userAccount){
-        return userBetaRepository.findByUser(userAccount);
-    }
-
-    /**
-     * Resolves solution-beta rows for a user's user-beta links and checks
+     * Resolves solution-beta rows for discussion roots and checks
      * one-to-one consistency.
      *
-     * @param userBetas user-beta rows expected to have solution-beta rows
+     * @param discussionRoots discussion roots expected to have solution-beta rows
      * @return matching solution-beta rows
      * @throws ResponseStatusException with {@link HttpStatus#INTERNAL_SERVER_ERROR}
      * when one or more solution rows are missing
      */
-    private List<SolutionBeta> getAllUserRelateSolutionBeta(List<UserBeta> userBetas){
-        List<SolutionBeta> solutionBetas = solutionBetaRepository.findByUserBetaIn(userBetas);
+    private List<SolutionBeta> getAllUserRelateSolutionBeta(List<DiscussionRoot> discussionRoots){
+        List<SolutionBeta> solutionBetas = solutionBetaRepository.findByDiscussionRootIn(discussionRoots);
 
-        if (solutionBetas.size() != userBetas.size()){
+        if (solutionBetas.size() != discussionRoots.size()){
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     String.format(
                             "Mismatching size of solution betas %d and user betas %s from user beta id %d. "
                             + "Please report this to the developers.",
-                            solutionBetas.size(), userBetas.size(), userBetas.get(0).getId()
+                            solutionBetas.size(), discussionRoots.size(),
+                            discussionRoots.get(0).getUserAccount().getId()
                     )
             );
         }
