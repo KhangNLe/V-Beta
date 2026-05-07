@@ -9,6 +9,8 @@ public record CommentDeletionRequest(
         Long authorId,
         @NotNull
         Long problemId,
+        @NotNull
+        Long discussionId,
         @NotBlank @Size(max = 250)
         String commentContent
 ) {

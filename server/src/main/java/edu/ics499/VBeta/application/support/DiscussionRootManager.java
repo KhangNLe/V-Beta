@@ -1,15 +1,11 @@
 package edu.ics499.VBeta.application.support;
 
-import edu.ics499.VBeta.api.dto.UserCommentData;
 import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.repository.DiscussionRootRepository;
-import org.aspectj.apache.bcel.generic.InstructionConstants;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,7 +45,7 @@ public class DiscussionRootManager {
     }
 
     public List<DiscussionRoot> getDiscussionForProblem(ClimbingProblem problem){
-        return discussionRootRepository.findByClimbingProblem(problem);
+        return discussionRootRepository.findByProblem(problem);
     }
 
     public DiscussionRoot createReplyDiscussionRoot(UserAccount userAccount, ClimbingProblem problem,
@@ -66,5 +62,21 @@ public class DiscussionRootManager {
     public DiscussionRoot findDiscussionRootById(Long discussionRootId){
         Optional<DiscussionRoot> discussionRoot = discussionRootRepository.findById(discussionRootId);
         return discussionRoot.orElse(null);
+    }
+
+    public List<DiscussionRoot> getUserDiscussionsByType(UserAccount userAccount, DiscussionType discussionType){
+        return discussionRootRepository.findByUserAccount_AndDiscussionType(userAccount, discussionType);
+    }
+
+    public List<DiscussionRoot> getDiscussionsByProblemAndType(ClimbingProblem problem, DiscussionType discussionType){
+        return discussionRootRepository.findByProblem_AndDiscussionType(problem, discussionType);
+    }
+
+    public void removeDiscussion(DiscussionRoot discussionRoot){
+        discussionRootRepository.delete(discussionRoot);
+    }
+
+    public void removeDiscussions(List<DiscussionRoot> discussionRoots){
+        discussionRootRepository.deleteAll(discussionRoots);
     }
 }

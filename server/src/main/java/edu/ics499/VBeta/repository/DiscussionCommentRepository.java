@@ -2,7 +2,6 @@ package edu.ics499.VBeta.repository;
 
 import edu.ics499.VBeta.domain.model.DiscussionComment;
 import edu.ics499.VBeta.domain.model.DiscussionRoot;
-import edu.ics499.VBeta.domain.model.UserComment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

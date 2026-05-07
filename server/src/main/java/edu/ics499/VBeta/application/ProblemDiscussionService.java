@@ -143,11 +143,10 @@ public class ProblemDiscussionService {
      */
     public void removeUserComment(String firebaseUid, CommentDeletionRequest request){
         UserAccount requestUser = userAccountManager.findUserAccount(firebaseUid);
-        UserAccount commentAuthor = userAccountManager.findUserAccountById(request.authorId());
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
         validateDeletionOwnerObject(requestUser, request.authorId());
 
-        climbingProblemDiscussionManager.removeUserComment(commentAuthor, problem, request.commentContent());
+        climbingProblemDiscussionManager.removeUserComment(request.discussionId());
     }
 
     private UserAccount getUserAccount(Long userId){

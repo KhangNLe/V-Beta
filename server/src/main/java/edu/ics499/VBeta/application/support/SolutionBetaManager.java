@@ -4,7 +4,6 @@ import com.google.cloud.storage.StorageException;
 import edu.ics499.VBeta.api.dto.CloudFileStorageRequest;
 import edu.ics499.VBeta.api.dto.CloudFileStorageResponse;
 import edu.ics499.VBeta.domain.model.*;
-import edu.ics499.VBeta.repository.UserBetaRepository;
 import edu.ics499.VBeta.repository.SolutionBetaRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -133,7 +132,7 @@ public class SolutionBetaManager {
      *
      * @param discussionRoots discussion roots whose beta entries should be removed
      */
-    public void removeAllUserRelatedSolutionBeta(List<DiscussionRoot> discussionRoots){
+    public void removeAllDiscussionRelatedSolutionBeta(List<DiscussionRoot> discussionRoots){
         List<SolutionBeta> solutionBetas = getAllUserRelateSolutionBeta(discussionRoots);
         solutionBetas.forEach(sb ->
                 gcpFileStorageAdapter.deleteFile(gcpFileStorageAdapter.getPublicBucketName(), sb.getBetaName())

@@ -104,6 +104,19 @@ public class UserPerceiveGradeManager {
         userPerceiveGradeRepository.deleteAll(userPerceiveGrades);
     }
 
+    public List<UserPerceiveGrade> getPerceiveGradesFromProblem(ClimbingProblem problem){
+        return userPerceiveGradeRepository.findByClimbingProblem(problem);
+    }
+
+    public void removePerceiveGrade(UserPerceiveGrade perceiveGrade){
+        userPerceiveGradeRepository.delete(perceiveGrade);
+    }
+
+    public void removeProblemRelatedPerceiveGrade(ClimbingProblem problem){
+        List<UserPerceiveGrade> perceiveGrades = getPerceiveGradesFromProblem(problem);
+        userPerceiveGradeRepository.deleteAll(perceiveGrades);
+    }
+
     /**
      * Returns all perceived-grade rows created by a user.
      *

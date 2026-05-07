@@ -1,7 +1,6 @@
 package edu.ics499.VBeta.application.support;
 
 import edu.ics499.VBeta.domain.model.*;
-import edu.ics499.VBeta.repository.UserCommentRepository;
 import edu.ics499.VBeta.repository.DiscussionCommentRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -75,15 +74,11 @@ public class DiscussionCommentManager {
      *
      * @param discussionRoots discussion roots whose comment rows should be removed
      */
-    public void removeAllUserComments(List<DiscussionRoot> discussionRoots){
+    public void removeAllDiscussionRelatedComments(List<DiscussionRoot> discussionRoots){
         List<DiscussionComment> discussionComments = getDiscussionComments(discussionRoots);
         discussionCommentRepository.deleteAll(discussionComments);
     }
 
-    // TODO: remove this method if UserCommentRepository is fully retired.
-    private List<UserComment> getAllUserComments(UserAccount userAccount){
-        return userCommentRepository.findByUserAccount(userAccount);
-    }
 
     /**
      * Resolves discussion comments for a set of discussion roots and enforces
