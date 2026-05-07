@@ -1,9 +1,9 @@
 package edu.ics499.VBeta.Integration_Test;
 
 import edu.ics499.VBeta.api.dto.CommentDeletionRequest;
-import edu.ics499.VBeta.api.dto.UserCommentData;
 import edu.ics499.VBeta.application.ProblemDiscussionService;
 import edu.ics499.VBeta.api.dto.DiscussionCommentRequest;
+import edu.ics499.VBeta.api.dto.UserCommentData;
 import edu.ics499.VBeta.application.support.ClimbingProblemDiscussionManager;
 import edu.ics499.VBeta.application.support.ClimbingProblemManager;
 import edu.ics499.VBeta.application.support.UserAccountManager;
@@ -11,7 +11,8 @@ import edu.ics499.VBeta.application.support.WallSectionManager;
 import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.repository.ClimbingGradeRepository;
 import edu.ics499.VBeta.repository.ClimbingProblemRepository;
-import edu.ics499.VBeta.repository.UserCommentRepository;
+import edu.ics499.VBeta.repository.DiscussionCommentRepository;
+import edu.ics499.VBeta.repository.DiscussionRootRepository;
 import edu.ics499.VBeta.repository.WallSectionRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import org.yaml.snakeyaml.events.CommentEvent;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -58,7 +58,10 @@ public class UserCommentTest {
     private ClimbingProblemManager climbingProblemManager;
 
     @Autowired
-    private UserCommentRepository userCommentRepository;
+    private DiscussionRootRepository discussionRootRepository;
+
+    @Autowired
+    private DiscussionCommentRepository discussionCommentRepository;
 
     @Autowired
     private WallSectionRepository wallSectionRepository;
@@ -68,13 +71,13 @@ public class UserCommentTest {
 
     private boolean checkProblemComments(String firebaseUid, DiscussionCommentRequest request){
         UserAccount account = userAccountManager.findUserAccount(firebaseUid);
-        ClimbingProblem problem = climbingProblemManager.getActiveProblem(request.problemId());
-        List<UserCommentData> comments = climbingProblemDiscussionManager.getCommentsForProblem(problem);
+        if (account == null) return false;
 
-        if (account == null || problem == null || comments.isEmpty()) return false;
+        List<DiscussionRoot> userCommentRoots = findUserCommentDiscussions(account, request.problemId());
+        if (userCommentRoots.isEmpty()) return false;
 
-        return comments.stream().anyMatch(data ->
-                data.userId().equals(account.getId()) && data.comment().equals(request.commentInfo()));
+        return discussionCommentRepository.findByDiscussionRootIn(userCommentRoots).stream()
+                .anyMatch(comment -> comment.getCommentInfo().equals(request.commentInfo()));
     }
 
     @Test
@@ -182,6 +185,31 @@ public class UserCommentTest {
     }
 
     @Test
+    @DisplayName("test root discussion comment appears in timeline with null parent id")
+    void testRootCommentTimelineMapping(){
+        String authorUid = "testFirebaseUid";
+        Long problemId = 2L;
+        DiscussionCommentRequest request = new DiscussionCommentRequest(problemId, "timeline root comment");
+
+        assertDoesNotThrow(() -> problemDiscussionService.addComment(authorUid, request));
+
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+        assertNotNull(problem);
+
+        List<UserCommentData> timeline = assertDoesNotThrow(
+                () -> climbingProblemDiscussionManager.getCommentsForProblem(problem)
+        );
+
+        Optional<UserCommentData> created = timeline.stream()
+                .filter(item -> item.discussionType() == DiscussionType.COMMENT)
+                .filter(item -> request.commentInfo().equals(item.discussionContent()))
+                .findFirst();
+
+        assertTrue(created.isPresent());
+        assertNull(created.get().parentCommentId());
+    }
+
+    @Test
     @DisplayName("test successfully removing comment by a user from a climbing problem: Author")
     void testAuthorRemovingComment(){
         String firebaseUid = "testFirebaseUid";
@@ -193,9 +221,7 @@ public class UserCommentTest {
 
         // Check for deleting comment from the user
         assertDoesNotThrow(() -> problemDiscussionService.removeUserComment(firebaseUid, deletionRequest));
-        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
-                userAccount,problem);
-        assertTrue(userComments.isEmpty());
+        assertEquals(0, countVisibleCommentsForUserProblem(userAccount, problem.getId()));
     }
 
     @Test
@@ -211,10 +237,7 @@ public class UserCommentTest {
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
 
         assertDoesNotThrow(() -> problemDiscussionService.removeUserComment(adminFirebaseUid, deletionRequest));
-        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
-                authorUserAccount, problem
-        );
-        assertTrue(userComments.isEmpty());
+        assertEquals(0, countVisibleCommentsForUserProblem(authorUserAccount, problem.getId()));
     }
 
     @Test
@@ -234,10 +257,7 @@ public class UserCommentTest {
 
         assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
 
-        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
-                authorUserAccount, problem);
-        assertFalse(userComments.isEmpty());
-        assertEquals(1, userComments.size());
+        assertEquals(1, countVisibleCommentsForUserProblem(authorUserAccount, problem.getId()));
     }
 
     @Test
@@ -250,17 +270,18 @@ public class UserCommentTest {
         CommentDeletionRequest request = new CommentDeletionRequest(
                 userAccount.getId(),
                 problemId,
+                999999L,
                 "blahblahblahblah"
         );
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> problemDiscussionService.removeUserComment(requestFirebaseUid, request));
 
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
 
     @Test
-    @DisplayName("test failure for requesting an existing comment by changing authorId")
+    @DisplayName("test failure for request deletion from an existing comment by changing authorId")
     void testFailureDeletingExistingCommentByChangingId(){
         String authorUid = "testFirebaseUid";
         Long problemId = 2L;
@@ -276,19 +297,16 @@ public class UserCommentTest {
         CommentDeletionRequest modifiedRequest = new CommentDeletionRequest(
                 threatActor.getId(),
                 realRequest.problemId(),
+                realRequest.discussionId(),
                 realRequest.commentContent()
         );
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> problemDiscussionService.removeUserComment(threatActorUid, modifiedRequest));
 
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
 
-        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
-                author, problem
-        );
-        assertFalse(userComments.isEmpty());
-        assertEquals(1, userComments.size());
+        assertEquals(1, countVisibleCommentsForUserProblem(author, problem.getId()));
     }
 
     @Test
@@ -313,6 +331,7 @@ public class UserCommentTest {
         CommentDeletionRequest deleteFromProblemA = new CommentDeletionRequest(
                 userAccount.getId(),
                 problemIdA,
+                findLatestCommentDiscussionId(userAccount, problemIdA),
                 sameComment
         );
 
@@ -323,12 +342,8 @@ public class UserCommentTest {
         assertNotNull(problemA);
         assertNotNull(problemB);
 
-        List<UserComment> commentsOnA = userCommentRepository.findByUserAccountAndClimbingProblem(userAccount, problemA);
-        List<UserComment> commentsOnB = userCommentRepository.findByUserAccountAndClimbingProblem(userAccount, problemB);
-
-        assertTrue(commentsOnA.isEmpty());
-        assertFalse(commentsOnB.isEmpty());
-        assertEquals(1, commentsOnB.size());
+        assertEquals(0, countVisibleCommentsForUserProblem(userAccount, problemA.getId()));
+        assertEquals(1, countVisibleCommentsForUserProblem(userAccount, problemB.getId()));
     }
 
     @Test
@@ -342,7 +357,7 @@ public class UserCommentTest {
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> problemDiscussionService.removeUserComment(firebaseUid, deletionRequest));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
 
     @Test
@@ -359,17 +374,16 @@ public class UserCommentTest {
         CommentDeletionRequest mismatchedRequest = new CommentDeletionRequest(
                 author.getId(),
                 realRequest.problemId(),
+                realRequest.discussionId(),
                 realRequest.commentContent() + " - modified"
         );
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> problemDiscussionService.removeUserComment(adminUid, mismatchedRequest));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
 
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
-        List<UserComment> comments = userCommentRepository.findByUserAccountAndClimbingProblem(author, problem);
-        assertFalse(comments.isEmpty());
-        assertEquals(1, comments.size());
+        assertEquals(1, countVisibleCommentsForUserProblem(author, problem.getId()));
     }
 
     @Test
@@ -384,15 +398,11 @@ public class UserCommentTest {
         CommentDeletionRequest requestA = generateCommentForDeletion(authorUid, problemId);
         CommentDeletionRequest requestB = generateCommentForDeletion(authorUid, problemId);
 
-        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
-                author, problem
-        );
-        assertEquals(2, userComments.size());
+        assertEquals(2, countVisibleCommentsForUserProblem(author, problem.getId()));
 
         assertDoesNotThrow(() -> problemDiscussionService.removeUserComment(authorUid, requestA));
 
-        userComments = userCommentRepository.findByUserAccountAndClimbingProblem(author, problem);
-        assertEquals(1, userComments.size());
+        assertEquals(1, countVisibleCommentsForUserProblem(author, problem.getId()));
     }
 
     private CommentDeletionRequest generateCommentForDeletion(String firebaseUid, Long problemId){
@@ -409,13 +419,20 @@ public class UserCommentTest {
         assertNotNull(problem);
         assertDoesNotThrow(() -> problemDiscussionService.addComment(firebaseUid, addingRequest));
         assertTrue(checkProblemComments(firebaseUid, addingRequest));
-        List<UserComment> userComments = userCommentRepository.findByUserAccountAndClimbingProblem(
-                userAccount,problem);
-        assertFalse(userComments.isEmpty());
+        List<DiscussionRoot> userCommentRoots = findUserCommentDiscussions(userAccount, problemId);
+        assertFalse(userCommentRoots.isEmpty());
+
+        List<DiscussionComment> comments = discussionCommentRepository.findByDiscussionRootIn(userCommentRoots);
+        Optional<DiscussionComment> comment = comments.stream()
+                .filter(c -> c.getCommentInfo().equals(addingRequest.commentInfo()))
+                .findFirst();
+
+        assertTrue(comment.isPresent());
 
         return new CommentDeletionRequest(
                 userAccount.getId(),
                 problemId,
+                comment.get().getDiscussionRoot().getDiscussionId(),
                 addingRequest.commentInfo()
         );
     }
@@ -438,5 +455,24 @@ public class UserCommentTest {
         problem = climbingProblemRepository.save(problem);
 
         return problem.getId();
+    }
+
+    private List<DiscussionRoot> findUserCommentDiscussions(UserAccount userAccount, Long problemId) {
+        return discussionRootRepository.findByUserAccount_AndDiscussionType(userAccount, DiscussionType.COMMENT)
+                .stream()
+                .filter(root -> root.getProblem().getId().equals(problemId))
+                .toList();
+    }
+
+    private int countVisibleCommentsForUserProblem(UserAccount userAccount, Long problemId) {
+        List<DiscussionRoot> userCommentRoots = findUserCommentDiscussions(userAccount, problemId);
+        return discussionCommentRepository.findByDiscussionRootIn(userCommentRoots).size();
+    }
+
+    private Long findLatestCommentDiscussionId(UserAccount userAccount, Long problemId) {
+        return findUserCommentDiscussions(userAccount, problemId).stream()
+                .map(DiscussionRoot::getDiscussionId)
+                .max(Long::compareTo)
+                .orElseThrow();
     }
 }

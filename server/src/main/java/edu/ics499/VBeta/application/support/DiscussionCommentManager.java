@@ -64,8 +64,14 @@ public class DiscussionCommentManager {
      *
      * @param discussionRoot discussion root parent record
      */
-    public void removeUserComment(DiscussionRoot discussionRoot) {
+    public void removeUserComment(DiscussionRoot discussionRoot, String commentContent) {
         DiscussionComment discussionComment = findDiscussionComment(discussionRoot);
+        if (!discussionComment.getCommentInfo().equals(commentContent)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Mismatching content between discussion id and actual content info"
+            );
+        }
         discussionCommentRepository.delete(discussionComment);
     }
 

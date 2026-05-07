@@ -10,6 +10,12 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code DiscussionRoot} is the anchor row for a discussion item on a climbing problem.
+ * <p>
+ * Each row represents either a comment or a solution beta entry and can optionally
+ * reference a parent discussion to form reply threads.
+ */
 @Entity
 @Table(name = "Discussion_Root")
 @Getter

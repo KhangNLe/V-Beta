@@ -42,13 +42,14 @@ public class ProblemDiscussionController {
      * Adds a text comment to a climbing problem discussion.
      *
      * @param request discussion comment payload
+     * @return created discussion timeline entry, including {@code discussionId}
      */
     @PostMapping("/add-comments")
     @ResponseStatus(HttpStatus.CREATED)
-    public void addUserComment(@Valid @RequestBody DiscussionCommentRequest request) {
+    public UserCommentData addUserComment(@Valid @RequestBody DiscussionCommentRequest request) {
         String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
 
-        problemDiscussionService.addComment(firebaseUid, request);
+        return problemDiscussionService.addComment(firebaseUid, request);
     }
 
     /**

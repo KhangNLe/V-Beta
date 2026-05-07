@@ -31,6 +31,7 @@ public class AccountDeletionManager {
      * @param solutionBetaManager manager for user beta/video cleanup
      * @param userPerceiveGradeManager manager for user perceived-grade cleanup
      * @param userAccountManager manager for deleting the user account row
+     * @param discussionRootManager manager for discussion-root cleanup
      */
     public AccountDeletionManager(DiscussionCommentManager discussionCommentManager,
                                   SolutionBetaManager solutionBetaManager,

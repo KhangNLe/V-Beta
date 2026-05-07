@@ -9,19 +9,18 @@ import edu.ics499.VBeta.application.AccountService;
 import edu.ics499.VBeta.application.ProblemDiscussionService;
 import edu.ics499.VBeta.application.support.GcpFileStorageAdapter;
 import edu.ics499.VBeta.application.support.UserAccountManager;
+import edu.ics499.VBeta.domain.model.DiscussionRoot;
+import edu.ics499.VBeta.domain.model.DiscussionType;
 import edu.ics499.VBeta.domain.model.GradeDefinition;
 import edu.ics499.VBeta.domain.model.GymRole;
 import edu.ics499.VBeta.domain.model.RoleType;
 import edu.ics499.VBeta.domain.model.SolutionBeta;
 import edu.ics499.VBeta.domain.model.UserAccount;
-import edu.ics499.VBeta.domain.model.UserBeta;
-import edu.ics499.VBeta.domain.model.UserComment;
 import edu.ics499.VBeta.repository.DiscussionCommentRepository;
+import edu.ics499.VBeta.repository.DiscussionRootRepository;
 import edu.ics499.VBeta.repository.GymRoleRepository;
 import edu.ics499.VBeta.repository.SolutionBetaRepository;
 import edu.ics499.VBeta.repository.UserAccountRepository;
-import edu.ics499.VBeta.repository.UserBetaRepository;
-import edu.ics499.VBeta.repository.UserCommentRepository;
 import edu.ics499.VBeta.repository.UserPerceiveGradeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,16 +72,13 @@ public class AccountControllerTest {
     private ProblemDiscussionService problemDiscussionService;
 
     @Autowired
-    private UserCommentRepository userCommentRepository;
-
-    @Autowired
     private DiscussionCommentRepository discussionCommentRepository;
 
     @Autowired
     private UserPerceiveGradeRepository userPerceiveGradeRepository;
 
     @Autowired
-    private UserBetaRepository userBetaRepository;
+    private DiscussionRootRepository discussionRootRepository;
 
     @Autowired
     private SolutionBetaRepository solutionBetaRepository;
@@ -177,22 +173,26 @@ public class AccountControllerTest {
                 firebaseUid
         );
 
-        List<UserComment> userComments = userCommentRepository.findByUserAccount(account);
-        assertFalse(userComments.isEmpty());
-        assertFalse(discussionCommentRepository.findByUserCommentIn(userComments).isEmpty());
+        List<DiscussionRoot> commentRoots = discussionRootRepository.findByUserAccount_AndDiscussionType(
+                account, DiscussionType.COMMENT
+        );
+        assertFalse(commentRoots.isEmpty());
+        assertFalse(discussionCommentRepository.findByDiscussionRootIn(commentRoots).isEmpty());
         assertFalse(userPerceiveGradeRepository.findByUserAccount(account).isEmpty());
-        List<UserBeta> userBetas = userBetaRepository.findByUser(account);
+        List<DiscussionRoot> userBetas = discussionRootRepository.findByUserAccount_AndDiscussionType(
+                account, DiscussionType.BETA
+        );
         assertFalse(userBetas.isEmpty());
-        List<SolutionBeta> solutionBetas = solutionBetaRepository.findByUserBetaIn(userBetas);
+        List<SolutionBeta> solutionBetas = solutionBetaRepository.findByDiscussionRootIn(userBetas);
         assertFalse(solutionBetas.isEmpty());
 
         assertDoesNotThrow(() -> accountService.deleteAccount(firebaseUid));
         verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(objectKey));
 
         assertNull(userAccountManager.findUserAccount(firebaseUid));
-        assertTrue(userCommentRepository.findByUserAccount(account).isEmpty());
+        assertTrue(discussionRootRepository.findByUserAccount_AndDiscussionType(account, DiscussionType.COMMENT).isEmpty());
         assertTrue(userPerceiveGradeRepository.findByUserAccount(account).isEmpty());
-        assertTrue(userBetaRepository.findByUser(account).isEmpty());
+        assertTrue(discussionRootRepository.findByUserAccount_AndDiscussionType(account, DiscussionType.BETA).isEmpty());
         assertTrue(accountRepository.findById(account.getId()).isEmpty());
     }
 
@@ -202,9 +202,9 @@ public class AccountControllerTest {
         String firebaseUid = "no-related-data-user";
         UserAccount account = creatFakeAccount("no-data-user", "no-data@gmail.com", firebaseUid);
 
-        assertTrue(userCommentRepository.findByUserAccount(account).isEmpty());
+        assertTrue(discussionRootRepository.findByUserAccount_AndDiscussionType(account, DiscussionType.COMMENT).isEmpty());
         assertTrue(userPerceiveGradeRepository.findByUserAccount(account).isEmpty());
-        assertTrue(userBetaRepository.findByUser(account).isEmpty());
+        assertTrue(discussionRootRepository.findByUserAccount_AndDiscussionType(account, DiscussionType.BETA).isEmpty());
 
         assertDoesNotThrow(() -> accountService.deleteAccount(firebaseUid));
         verify(gcpFileStorageAdapter, never()).deleteFile(anyString(), anyString());
@@ -243,22 +243,26 @@ public class AccountControllerTest {
                 firebaseUid
         );
 
-        List<UserComment> userComments = userCommentRepository.findByUserAccount(account);
+        List<DiscussionRoot> userComments = discussionRootRepository.findByUserAccount_AndDiscussionType(
+                account, DiscussionType.COMMENT
+        );
         assertEquals(2, userComments.size());
-        assertEquals(2, discussionCommentRepository.findByUserCommentIn(userComments).size());
+        assertEquals(2, discussionCommentRepository.findByDiscussionRootIn(userComments).size());
         assertEquals(1, userPerceiveGradeRepository.findByUserAccount(account).size());
-        List<UserBeta> userBetas = userBetaRepository.findByUser(account);
+        List<DiscussionRoot> userBetas = discussionRootRepository.findByUserAccount_AndDiscussionType(
+                account, DiscussionType.BETA
+        );
         assertEquals(2, userBetas.size());
-        assertEquals(2, solutionBetaRepository.findByUserBetaIn(userBetas).size());
+        assertEquals(2, solutionBetaRepository.findByDiscussionRootIn(userBetas).size());
 
         assertDoesNotThrow(() -> accountService.deleteAccount(firebaseUid));
         verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(objectKeyOne));
         verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(objectKeyTwo));
 
         assertNull(userAccountManager.findUserAccount(firebaseUid));
-        assertTrue(userCommentRepository.findByUserAccount(account).isEmpty());
+        assertTrue(discussionRootRepository.findByUserAccount_AndDiscussionType(account, DiscussionType.COMMENT).isEmpty());
         assertTrue(userPerceiveGradeRepository.findByUserAccount(account).isEmpty());
-        assertTrue(userBetaRepository.findByUser(account).isEmpty());
+        assertTrue(discussionRootRepository.findByUserAccount_AndDiscussionType(account, DiscussionType.BETA).isEmpty());
         assertTrue(accountRepository.findById(account.getId()).isEmpty());
     }
 
@@ -274,12 +278,14 @@ public class AccountControllerTest {
                 new DiscussionCommentRequest(problemId, "comment that will lose its discussion row")
         );
 
-        List<UserComment> userComments = userCommentRepository.findByUserAccount(account);
+        List<DiscussionRoot> userComments = discussionRootRepository.findByUserAccount_AndDiscussionType(
+                account, DiscussionType.COMMENT
+        );
         assertEquals(1, userComments.size());
-        UserComment commentAnchor = userComments.get(0);
-        assertTrue(discussionCommentRepository.findByUserComment(commentAnchor).isPresent());
-        discussionCommentRepository.delete(discussionCommentRepository.findByUserComment(commentAnchor).get());
-        assertTrue(discussionCommentRepository.findByUserComment(commentAnchor).isEmpty());
+        DiscussionRoot commentAnchor = userComments.get(0);
+        assertTrue(discussionCommentRepository.findByDiscussionRoot(commentAnchor).isPresent());
+        discussionCommentRepository.delete(discussionCommentRepository.findByDiscussionRoot(commentAnchor).get());
+        assertTrue(discussionCommentRepository.findByDiscussionRoot(commentAnchor).isEmpty());
 
         ResponseStatusException ex = assertThrows(
                 ResponseStatusException.class,
@@ -303,12 +309,14 @@ public class AccountControllerTest {
                 firebaseUid
         );
 
-        List<UserBeta> userBetas = userBetaRepository.findByUser(account);
+        List<DiscussionRoot> userBetas = discussionRootRepository.findByUserAccount_AndDiscussionType(
+                account, DiscussionType.BETA
+        );
         assertEquals(1, userBetas.size());
-        List<SolutionBeta> solutionBetas = solutionBetaRepository.findByUserBetaIn(userBetas);
+        List<SolutionBeta> solutionBetas = solutionBetaRepository.findByDiscussionRootIn(userBetas);
         assertEquals(1, solutionBetas.size());
         solutionBetaRepository.delete(solutionBetas.get(0));
-        assertTrue(solutionBetaRepository.findByUserBetaIn(userBetas).isEmpty());
+        assertTrue(solutionBetaRepository.findByDiscussionRootIn(userBetas).isEmpty());
 
         ResponseStatusException ex = assertThrows(
                 ResponseStatusException.class,

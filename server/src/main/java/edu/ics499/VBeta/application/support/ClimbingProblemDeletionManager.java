@@ -27,7 +27,11 @@ public class ClimbingProblemDeletionManager {
     /**
      * Constructs a new {@code ClimbingProblemDeletionManager} with repositories for all dependent entities.
      *
+     * @param userPerceiveGradeManager manager for perceived-grade cleanup
+     * @param solutionBetaManager manager for solution-beta cleanup
+     * @param discussionCommentManager manager for discussion-comment cleanup
      * @param climbingProblemRepository repository for climbing problem entities
+     * @param discussionRootManager manager for discussion-root cleanup
      */
     public ClimbingProblemDeletionManager(UserPerceiveGradeManager userPerceiveGradeManager,
                                           SolutionBetaManager solutionBetaManager,
