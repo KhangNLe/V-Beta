@@ -9,25 +9,23 @@ import edu.ics499.VBeta.api.dto.*;
 import edu.ics499.VBeta.application.support.ClimbingProblemDiscussionManager;
 import edu.ics499.VBeta.application.support.ClimbingProblemManager;
 import edu.ics499.VBeta.application.support.SolutionBetaManager;
-import edu.ics499.VBeta.domain.model.ClimbingProblem;
-import edu.ics499.VBeta.domain.model.RoleType;
-import edu.ics499.VBeta.domain.model.SolutionBeta;
-import edu.ics499.VBeta.domain.model.UserAccount;
+import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.application.support.UserAccountManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
  * {@code ProblemDiscussionService} is the orchestration layer for discussion-thread interactions
  * around climbing problems, including text comments, beta video uploads, and perceived grade updates.
  * <p>
- * It validates user/problem context and delegates persistence operations to specialized managers such as
- * {@link ClimbingProblemDiscussionManager}, {@link SolutionBetaManager}, and
- * {@link UserPerceiveGradeManager}.
+ * It validates user/problem context and delegates persistence operations to
+ * specialized managers, while enforcing discussion-id-based authorization checks
+ * for deletion operations.
  */
 @Service
 @Transactional
@@ -37,6 +35,7 @@ public class ProblemDiscussionService {
     private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
     private final SolutionBetaManager solutionBetaManager;
     private final UserPerceiveGradeManager userPerceiveGradeManager;
+    private final DiscussionRootManager discussionRootManager;
 
     /**
      * Constructs a new {@code ProblemDiscussionService} with required collaborators.
@@ -46,17 +45,19 @@ public class ProblemDiscussionService {
      * @param climbingProblemDiscussionManager manager for discussion comment persistence
      * @param solutionBetaManager manager for beta storage and uploads
      * @param userPerceiveGradeManager manager for perceived grade writes
+     * @param discussionRootManager manager for discussion-root authorization lookups
      */
     public ProblemDiscussionService(UserAccountManager userAccountManager,
                                     ClimbingProblemManager climbingProblemManager,
                                     ClimbingProblemDiscussionManager climbingProblemDiscussionManager,
                                     SolutionBetaManager solutionBetaManager,
-                                    UserPerceiveGradeManager userPerceiveGradeManager){
+                                    UserPerceiveGradeManager userPerceiveGradeManager, DiscussionRootManager discussionRootManager){
         this.userAccountManager = userAccountManager;
         this.climbingProblemManager = climbingProblemManager;
         this.climbingProblemDiscussionManager = climbingProblemDiscussionManager;
         this.solutionBetaManager = solutionBetaManager;
         this.userPerceiveGradeManager = userPerceiveGradeManager;
+        this.discussionRootManager = discussionRootManager;
     }
 
     /**
@@ -64,11 +65,12 @@ public class ProblemDiscussionService {
      *
      * @param firebaseUid Firebase UID of the authenticated user
      * @param request discussion comment payload
+     * @return created discussion entry including {@code discussionId} for later operations
      */
-    public void addComment(String firebaseUid, DiscussionCommentRequest request){
+    public UserCommentData addComment(String firebaseUid, DiscussionCommentRequest request){
         UserAccount account = getUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
-        climbingProblemDiscussionManager.storeDiscussionComment(account, problem, request.commentInfo());
+        return climbingProblemDiscussionManager.storeDiscussionComment(account, problem, request.commentInfo());
     }
 
     /**
@@ -86,17 +88,19 @@ public class ProblemDiscussionService {
      *
      * @param request solution beta creation payload
      * @param firebaseUid Firebase UID of the authenticated user
-     * @return comment stream entry representing the uploaded video
+     * @return discussion timeline entry for the uploaded beta, including {@code discussionId}
      */
     public UserCommentData saveSolutionBeta(SolutionBetaCreateRequest request, String firebaseUid){
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
         UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
-        SolutionBeta solutionBeta = solutionBetaManager.storeUserSolutionBeta(userAccount, problem,
+        SolutionBeta solutionBeta = climbingProblemDiscussionManager.storeSolutionBeta(userAccount, problem,
                 request.objectFileName(), request.videoURL());
         return new UserCommentData(
+                solutionBeta.getDiscussionRoot().getDiscussionId(),
                 userAccount.getId(),
                 userAccount.getUsername(),
                 null,
+                DiscussionType.BETA,
                 solutionBeta.getVideoURL(),
                 solutionBeta.getCreateDate()
         );
@@ -110,10 +114,10 @@ public class ProblemDiscussionService {
      */
     public void removeUserSolutionBeta(SolutionBetaDeletionRequest request, String firebaseUid){
         UserAccount requestUser = getUserAccount(firebaseUid);
-        UserAccount solutionBetaOwner = getUserAccount(request.userId());
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
         validateDeletionOwnerObject(requestUser, request.userId());
-        solutionBetaManager.removeUserSolutionBeta(solutionBetaOwner, problem, request.publicUrl());
+        validateDiscussionExisting(request.discussionId(), requestUser, problem);
+        climbingProblemDiscussionManager.removeUserSolutionBeta(request.discussionId(), request.publicUrl());
     }
 
     private UserAccount getUserAccount(String firebaseUid){
@@ -145,11 +149,13 @@ public class ProblemDiscussionService {
      */
     public void removeUserComment(String firebaseUid, CommentDeletionRequest request){
         UserAccount requestUser = userAccountManager.findUserAccount(firebaseUid);
-        UserAccount commentAuthor = userAccountManager.findUserAccountById(request.authorId());
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
-        validateDeletionOwnerObject(requestUser, request.authorId());
 
-        climbingProblemDiscussionManager.removeUserComment(commentAuthor, problem, request.commentContent());
+        validateDeletionOwnerObject(requestUser, request.authorId());
+        validateDiscussionExisting(request.discussionId(), requestUser, problem);
+
+
+        climbingProblemDiscussionManager.removeUserComment(request.discussionId(), request.commentContent());
     }
 
     private UserAccount getUserAccount(Long userId){
@@ -183,6 +189,32 @@ public class ProblemDiscussionService {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "Invalid Action. Cannot remove object from different author"
+            );
+        }
+    }
+
+    /**
+     * Validates that a discussion id belongs to the requester on the given problem,
+     * unless requester is an administrator.
+     *
+     * @param requestDiscussionId discussion id to validate
+     * @param requestUser requester account
+     * @param problem climbing problem context
+     * @throws ResponseStatusException with {@link HttpStatus#UNAUTHORIZED} when requester
+     * does not own the discussion and is not admin
+     */
+    private void validateDiscussionExisting(Long requestDiscussionId, UserAccount requestUser,
+                                            ClimbingProblem problem){
+        List<DiscussionRoot> discussionRoots = discussionRootManager.findDiscussionRootByUserAndProblem(requestUser,
+                problem);
+
+        boolean isExist = discussionRoots.stream()
+                .anyMatch(d -> d.getDiscussionId().equals(requestDiscussionId));
+
+        if  (!isExist && !requestUser.getGymRole().getRoleType().equals(RoleType.ADMIN)){
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid action. Cannot remove object from different author"
             );
         }
     }

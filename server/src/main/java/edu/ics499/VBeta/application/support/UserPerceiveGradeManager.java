@@ -105,6 +105,35 @@ public class UserPerceiveGradeManager {
     }
 
     /**
+     * Returns all perceived-grade rows recorded for a climbing problem.
+     *
+     * @param problem climbing problem to query
+     * @return perceived-grade rows for the problem
+     */
+    public List<UserPerceiveGrade> getPerceiveGradesFromProblem(ClimbingProblem problem){
+        return userPerceiveGradeRepository.findByClimbingProblem(problem);
+    }
+
+    /**
+     * Removes a single perceived-grade record.
+     *
+     * @param perceiveGrade perceived-grade row to delete
+     */
+    public void removePerceiveGrade(UserPerceiveGrade perceiveGrade){
+        userPerceiveGradeRepository.delete(perceiveGrade);
+    }
+
+    /**
+     * Removes all perceived-grade rows for a climbing problem.
+     *
+     * @param problem climbing problem whose perceived grades should be removed
+     */
+    public void removeProblemRelatedPerceiveGrade(ClimbingProblem problem){
+        List<UserPerceiveGrade> perceiveGrades = getPerceiveGradesFromProblem(problem);
+        userPerceiveGradeRepository.deleteAll(perceiveGrades);
+    }
+
+    /**
      * Returns all perceived-grade rows created by a user.
      *
      * @param userAccount account to query

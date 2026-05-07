@@ -1,21 +1,27 @@
 package edu.ics499.VBeta.api.dto;
 
+import edu.ics499.VBeta.domain.model.DiscussionType;
+
 import java.time.LocalDateTime;
 
 /**
- * Response DTO describing a user's comment in a problem discussion thread.
+ * Response DTO describing one discussion item (comment or beta) in a problem thread.
  *
+ * @param discussionId identifier of the discussion root row
  * @param userId identifier of the commenting user
  * @param username display name of the commenting user
- * @param comment comment text
- * @param videoURL optional URL to the associated beta video
+ * @param parentCommentId optional parent discussion id for replies
+ * @param discussionType discussion kind (COMMENT or BETA)
+ * @param discussionContent comment text or beta URL
  * @param createdDate timestamp when the comment was created
  */
 public record UserCommentData(
+        Long discussionId,
         Long userId,
         String username,
-        String comment,
-        String videoURL,
+        Long parentCommentId,
+        DiscussionType discussionType,
+        String discussionContent,
         LocalDateTime createdDate
 ) {
 }

@@ -14,8 +14,10 @@ import jakarta.validation.constraints.Size;
 public record SolutionBetaDeletionRequest(
         @NotNull
         Long userId,
-        @NotBlank
+        @NotNull
         Long problemId,
+        @NotNull
+        Long discussionId,
         @NotBlank @Size(max = 250)
         String publicUrl
 ) {
