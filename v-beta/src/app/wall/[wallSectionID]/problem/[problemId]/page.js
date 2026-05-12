@@ -97,6 +97,39 @@ function parsePositiveNumberId(raw) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+/** @param {unknown} discussionItem */
+function getDiscussionId(discussionItem) {
+  if (!discussionItem || typeof discussionItem !== 'object') return null;
+  const discussionRecord = /** @type {Record<string, unknown>} */ (discussionItem);
+  const discussionId =
+    discussionRecord.discussionId ?? discussionRecord.id ?? discussionRecord.commentId;
+  return parsePositiveNumberId(discussionId);
+}
+
+/** @param {unknown} discussionItem */
+function getDiscussionContent(discussionItem) {
+  if (!discussionItem || typeof discussionItem !== 'object') return '';
+  const discussionRecord = /** @type {Record<string, unknown>} */ (discussionItem);
+  const value = discussionRecord.discussionContent ?? discussionRecord.comment ?? '';
+  return typeof value === 'string' ? value : '';
+}
+
+/** @param {unknown} discussionItem */
+function getDiscussionType(discussionItem) {
+  if (!discussionItem || typeof discussionItem !== 'object') return '';
+  const discussionRecord = /** @type {Record<string, unknown>} */ (discussionItem);
+  const value = discussionRecord.discussionType;
+  return typeof value === 'string' ? value.toUpperCase() : '';
+}
+
+/** @param {unknown} discussionItem */
+function getDiscussionMediaUrl(discussionItem) {
+  if (!discussionItem || typeof discussionItem !== 'object') return '';
+  const discussionRecord = /** @type {Record<string, unknown>} */ (discussionItem);
+  const value = discussionRecord.videoURL ?? discussionRecord.discussionContent ?? '';
+  return typeof value === 'string' ? value : '';
+}
+
 function buildShortUploadFileName(originalFileName, problemId) {
   const name = (originalFileName || '').toLowerCase();
   const extension = name.endsWith('.webm') ? 'webm' : 'mp4';
@@ -157,8 +190,9 @@ export default function ProblemPage() {
     }
 
     const payloadAuthorId = parsePositiveNumberId(authorId);
-    const commentContent = targetComment?.comment?.trim();
-    if (!payloadAuthorId || !commentContent) {
+    const discussionId = getDiscussionId(targetComment);
+    const commentContent = getDiscussionContent(targetComment).trim();
+    if (!payloadAuthorId || !discussionId || !commentContent) {
       toast.error("Unable to determine comment payload for deletion.");
       return;
     }
@@ -167,6 +201,7 @@ export default function ProblemPage() {
       await deleteUserComment(user, {
         authorId: payloadAuthorId,
         problemId,
+        discussionId,
         commentContent,
       });
       await refreshProblem();
@@ -177,9 +212,11 @@ export default function ProblemPage() {
   };
 
   const handleDeleteSolutionBeta = async (targetComment) => {
-    if (!targetComment || !targetComment.videoURL || !user || !problemId) {
+    if (!targetComment || !user || !problemId) {
       return;
     }
+    const mediaUrl = getDiscussionMediaUrl(targetComment);
+    if (!mediaUrl) return;
 
     const authorId = getCommentAuthorId(targetComment);
     const canDeleteSolutionBeta =
@@ -189,7 +226,8 @@ export default function ProblemPage() {
     }
 
     const payloadUserId = parsePositiveNumberId(authorId);
-    if (!payloadUserId) {
+    const discussionId = getDiscussionId(targetComment);
+    if (!payloadUserId || !discussionId) {
       toast.error('Unable to determine owner id for solution beta deletion.');
       return;
     }
@@ -198,7 +236,8 @@ export default function ProblemPage() {
       await deleteSolutionBetaFromDatabase(user, {
         userId: payloadUserId,
         problemId,
-        publicUrl: targetComment.videoURL,
+        discussionId,
+        publicUrl: mediaUrl,
       });
       await refreshProblem();
       clearSelectedSolutionFile();
@@ -528,17 +567,23 @@ export default function ProblemPage() {
                   {problem.discussion.map((comment, index) =>
                     (() => {
                       const authorId = getCommentAuthorId(comment);
+                      const discussionType = getDiscussionType(comment);
+                      const discussionContent = getDiscussionContent(comment);
+                      const mediaUrl = getDiscussionMediaUrl(comment);
                       const canDeleteComment =
                         isAdmin ||
                         (!!currentUserId &&
                           !!authorId &&
                           currentUserId === authorId);
                       const isSolutionBeta =
-                        comment.comment == null && !!comment.videoURL;
+                        discussionType === 'BETA' ||
+                        (discussionType !== 'COMMENT' &&
+                          !discussionContent &&
+                          !!mediaUrl);
                       return (
                         <article
                           key={
-                            comment.videoURL ||
+                            mediaUrl ||
                             `${comment.username || 'anonymous'}-${
                               comment.createdDate || index
                             }-${index}`
@@ -612,7 +657,7 @@ export default function ProblemPage() {
                               </DropdownMenu>
                             )}
                           </div>
-                          {comment.comment == null && comment.videoURL ? (
+                          {isSolutionBeta ? (
                             <details>
                               <summary
                                 style={{
@@ -637,8 +682,8 @@ export default function ProblemPage() {
                                   }}
                                 >
                                   <source
-                                    src={comment.videoURL}
-                                    type={inferVideoMimeType(comment.videoURL)}
+                                    src={mediaUrl}
+                                    type={inferVideoMimeType(mediaUrl)}
                                   />
                                   Your browser does not support the video tag.
                                 </video>
@@ -652,7 +697,7 @@ export default function ProblemPage() {
                                 lineHeight: 1.5,
                               }}
                             >
-                              {comment.comment || ''}
+                              {discussionContent}
                             </p>
                           )}
                         </article>

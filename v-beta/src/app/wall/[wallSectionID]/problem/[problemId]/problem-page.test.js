@@ -108,16 +108,22 @@ const baseProblem = {
 };
 
 const commentByOwner = {
+  discussionId: 301,
+  userId: 5,
+  discussionType: "COMMENT",
+  discussionContent: "Try heel hook",
   username: "owner",
   createdDate: "2026-04-26T12:00:00.000Z",
-  authorId: 5,
   comment: "Try heel hook",
 };
 
 const betaByOwner = {
+  discussionId: 302,
+  userId: 5,
+  discussionType: "BETA",
+  discussionContent: "https://example.com/beta.mp4",
   username: "owner",
   createdDate: "2026-04-26T12:01:00.000Z",
-  authorId: 5,
   comment: null,
   videoURL: "https://example.com/beta.mp4",
 };
@@ -262,6 +268,7 @@ describe("ProblemPage coverage", () => {
         expect(deleteUserComment).toHaveBeenCalledWith(user, {
           authorId: 5,
           problemId: 100,
+          discussionId: 301,
           commentContent: "Try heel hook",
         });
       });
@@ -326,7 +333,13 @@ describe("ProblemPage coverage", () => {
         account: adminAccount,
         problem: {
           ...baseProblem,
-          discussion: [{ ...commentByOwner, authorId: "not-a-number" }],
+          discussion: [
+            {
+              ...commentByOwner,
+              authorId: "not-a-number",
+              userId: "not-a-number",
+            },
+          ],
         },
       });
       await screen.findByText("Try heel hook");
