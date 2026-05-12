@@ -45,7 +45,7 @@ Make PostgreSQL the primary and validated database path for local development an
 
 ## Sprint 2: Discussion Schema Foundation for Future Subthreads
 
-Status: In progress (`DiscussionRoot` model + repository + integration coverage added; API flow bridge still being finalized).
+Status: Completed (server + frontend discussion contract aligned on `DiscussionRoot` lifecycle and `discussionId`-based operations).
 
 ### Goal
 
@@ -87,6 +87,14 @@ Refactor the discussion data model so it supports future nested replies without 
   - root/reply query behavior
   - enum persistence
   - FK rejection for invalid `parent_discussion_id`
+- Unified discussion API contract now returns/accepts `discussionId` where lifecycle operations require it:
+  - `POST /discussion/add-comments` returns created `UserCommentData`
+  - comment and beta deletion requests include `discussionId`
+- Frontend problem discussion flow updated to consume:
+  - `discussionId`
+  - `discussionType`
+  - `discussionContent`
+  while preserving backward-compatible fallbacks for legacy discussion shapes.
 
 ## Sprint 3: Hardening and Contract Lock
 

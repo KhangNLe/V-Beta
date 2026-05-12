@@ -45,7 +45,7 @@ If a bearer token is invalid/expired, the backend returns `401` with:
   - Response:
     - `climbingProblem` (problem details),
     - `perceiveGrade` (aggregate/perceived value),
-    - `discussion` (user comments and/or solution beta entries).
+    - `discussion` (ordered `UserCommentData` entries).
 
 ## Authenticated Endpoints (No Action Gate)
 
@@ -73,7 +73,14 @@ If a bearer token is invalid/expired, the backend returns `401` with:
   - Request body:
     - `problemId`
     - `commentInfo`
-  - Response: `201` (empty body).
+  - Response: `201` with created `UserCommentData`:
+    - `discussionId`
+    - `userId`
+    - `username`
+    - `parentCommentId`
+    - `discussionType`
+    - `discussionContent`
+    - `createdDate`
 
 - `POST /discussion/solution-beta/upload-url`
   - Purpose: generate signed upload URL for solution beta video.
@@ -101,6 +108,7 @@ If a bearer token is invalid/expired, the backend returns `401` with:
   - Request body:
     - `userId`
     - `problemId`
+    - `discussionId`
     - `publicUrl`
   - Response: `200` (empty body).
 
@@ -169,6 +177,7 @@ If a bearer token is invalid/expired, the backend returns `401` with:
   - Request body:
     - `authorId`
     - `problemId`
+    - `discussionId`
     - `commentContent`
   - Additional service rule: requester must be comment owner or admin.
   - Response: `200` (empty body).
