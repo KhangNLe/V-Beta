@@ -41,6 +41,11 @@ This section documents wall section and climbing problem features currently avai
 4. User can submit perceived grade.
 5. Comment/solution beta deletion is allowed for owner or admin (when checks pass).
 
+Current discussion payload contract is unified through `DiscussionRoot` metadata:
+
+- Discussion entries include `discussionId`, `discussionType`, and `discussionContent`.
+- Deletion payloads for both comments and solution betas include `discussionId`.
+
 ## Permissions and Visibility
 
 - Guest users can browse wall and problem content.

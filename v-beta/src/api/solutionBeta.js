@@ -105,7 +105,7 @@ export async function saveSolutionBetaToDatabase(user, payload) {
  * Delete solution beta from database.
  *
  * @param {import("firebase/auth").User} user
- * @param {{userId: number, problemId: number, publicUrl: string}} payload
+ * @param {{userId: number, problemId: number, discussionId: number, publicUrl: string}} payload
  */
 export async function deleteSolutionBetaFromDatabase(user, payload) {
     const idToken = await user.getIdToken();

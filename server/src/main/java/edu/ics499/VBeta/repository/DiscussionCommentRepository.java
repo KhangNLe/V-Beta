@@ -1,7 +1,7 @@
 package edu.ics499.VBeta.repository;
 
 import edu.ics499.VBeta.domain.model.DiscussionComment;
-import edu.ics499.VBeta.domain.model.UserComment;
+import edu.ics499.VBeta.domain.model.DiscussionRoot;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -14,28 +14,28 @@ public interface DiscussionCommentRepository extends JpaRepository<DiscussionCom
     /**
      * Finds a discussion comment by its user-comment anchor row.
      *
-     * @param userComment user-comment anchor
+     * @param discussionRoot candidate discussion root anchors
      * @return discussion comment when present
      */
-    Optional<DiscussionComment> findByUserComment (UserComment userComment);
+    Optional<DiscussionComment> findByDiscussionRoot (DiscussionRoot discussionRoot);
 
     /**
      * Finds discussion comments for a batch of user-comment anchors.
      *
-     * @param userComments user-comment anchors
+     * @param discussionRoots candidate discussion root anchors
      * @return matching discussion comments
      */
-    List<DiscussionComment> findByUserCommentIn(List<UserComment> userComments);
+    List<DiscussionComment> findByDiscussionRootIn(List<DiscussionRoot> discussionRoots);
 
     /**
      * Finds matching discussion comments by text and candidate user comments,
      * ordered newest first.
      *
      * @param commentInfo discussion comment text to match
-     * @param comments candidate user-comment anchors
+     * @param discussionRoots candidate discussion root anchors
      * @return matching discussion comments ordered by create date descending
      */
-    List<DiscussionComment> findByCommentInfoAndUserCommentInOrderByCreateDateDesc(
-            String commentInfo, List<UserComment> comments
+    List<DiscussionComment> findByCommentInfoAndDiscussionRootInOrderByCreateDateDesc(
+            String commentInfo, List<DiscussionRoot> discussionRoots
     );
 }

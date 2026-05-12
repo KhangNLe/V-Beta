@@ -1,7 +1,7 @@
 package edu.ics499.VBeta.repository;
 
+import edu.ics499.VBeta.domain.model.DiscussionRoot;
 import edu.ics499.VBeta.domain.model.SolutionBeta;
-import edu.ics499.VBeta.domain.model.UserBeta;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -14,10 +14,10 @@ public interface SolutionBetaRepository extends JpaRepository<SolutionBeta, Long
     /**
      * Finds a solution beta by its user-beta association row.
      *
-     * @param userBeta user-beta association
+     * @param discussionRoot candidate discussion root anchors
      * @return matching solution beta when present
      */
-    Optional<SolutionBeta> findByUserBeta(UserBeta userBeta);
+    Optional<SolutionBeta> findByDiscussionRoot(DiscussionRoot discussionRoot);
 
     /**
      * Finds a solution beta by public video URL.
@@ -30,17 +30,17 @@ public interface SolutionBetaRepository extends JpaRepository<SolutionBeta, Long
     /**
      * Finds a solution beta by candidate user-beta rows and video URL.
      *
-     * @param userBetas candidate user-beta rows
      * @param videoUrl target video URL
+     * @param discussionRoot candidate discussion root anchors
      * @return matching solution beta when present
      */
-    Optional<SolutionBeta> findByUserBetaInAndVideoURL(List<UserBeta> userBetas, String videoUrl);
+    Optional<SolutionBeta> findByDiscussionRootAndVideoURL(DiscussionRoot discussionRoot, String videoUrl);
 
     /**
      * Finds solution betas for a batch of user-beta association rows.
      *
-     * @param userBetas user-beta association rows
+     * @param discussionRoots candidate discussion root anchors
      * @return matching solution beta rows
      */
-    List<SolutionBeta> findByUserBetaIn(List<UserBeta> userBetas);
+    List<SolutionBeta> findByDiscussionRootIn(List<DiscussionRoot> discussionRoots);
 }

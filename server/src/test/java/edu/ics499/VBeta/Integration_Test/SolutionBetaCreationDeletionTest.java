@@ -8,11 +8,12 @@ import edu.ics499.VBeta.application.support.ClimbingProblemManager;
 import edu.ics499.VBeta.application.support.GcpFileStorageAdapter;
 import edu.ics499.VBeta.application.support.UserAccountManager;
 import edu.ics499.VBeta.domain.model.ClimbingProblem;
+import edu.ics499.VBeta.domain.model.DiscussionRoot;
+import edu.ics499.VBeta.domain.model.DiscussionType;
 import edu.ics499.VBeta.domain.model.SolutionBeta;
 import edu.ics499.VBeta.domain.model.UserAccount;
-import edu.ics499.VBeta.domain.model.UserBeta;
+import edu.ics499.VBeta.repository.DiscussionRootRepository;
 import edu.ics499.VBeta.repository.SolutionBetaRepository;
-import edu.ics499.VBeta.repository.UserBetaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -59,7 +59,7 @@ public class SolutionBetaCreationDeletionTest {
     private SolutionBetaRepository solutionBetaRepository;
 
     @Autowired
-    private UserBetaRepository userBetaRepository;
+    private DiscussionRootRepository discussionRootRepository;
 
     @Autowired
     private UserAccountManager userAccountManager;
@@ -84,10 +84,10 @@ public class SolutionBetaCreationDeletionTest {
         UserAccount user = userAccountManager.findUserAccount(testFirebaseUid);
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(testRequest.problemId());
 
-        List<UserBeta> userBetas = userBetaRepository.findByUserAndProblem(user, problem);
+        List<DiscussionRoot> userBetas = findDiscussionsForUserProblem(user, problem, DiscussionType.BETA);
 
         assertFalse(userBetas.isEmpty());
-        assertEquals(testRequest.videoURL(), newDataResponse.videoURL());
+        assertEquals(testRequest.videoURL(), newDataResponse.discussionContent());
         assertTrue(checkForSolutionBetaExist(userBetas, testRequest.objectFileName(), testRequest.videoURL()));
     }
 
@@ -124,8 +124,8 @@ public class SolutionBetaCreationDeletionTest {
         verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(objectKey));
         assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isEmpty());
 
-        List<UserBeta> deletedBeta = userBetaRepository.findByUserAndProblem(userAccount, climbingProblem);
-        assertTrue(deletedBeta.isEmpty());
+        List<DiscussionRoot> deletedBeta = findDiscussionsForUserProblem(userAccount, climbingProblem, DiscussionType.BETA);
+        assertTrue(solutionBetaRepository.findByDiscussionRootIn(deletedBeta).isEmpty());
     }
 
     @Test
@@ -134,24 +134,24 @@ public class SolutionBetaCreationDeletionTest {
         SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
                 1L,
                 1L,
+                1L,
                 "testSolutionBeta.mp4"
         );
 
         String firebaseUid = "testFirebaseUid";
-        Long problemId = 1L;
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
                 problemDiscussionService.removeUserSolutionBeta(request, firebaseUid)
         );
 
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-        assertNotEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
 
     @Test
     @DisplayName("test for fail delete solution beta due to wrong owner/authorization")
     void testFailDeletionForWrongAuthor(){
         SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
+                1L,
                 1L,
                 1L,
                 "testSolutionBeta.mp4"
@@ -189,6 +189,7 @@ public class SolutionBetaCreationDeletionTest {
         SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
                 123454L,
                 1L,
+                1L,
                 "testSolutionBeta.mp4"
         );
         String adminFirebaseUid = "testFirebaseUid3";
@@ -206,17 +207,20 @@ public class SolutionBetaCreationDeletionTest {
 
         SolutionBetaCreateRequest createRequest = new SolutionBetaCreateRequest(problemId, objectKey, publicUrl);
         UserCommentData saved = problemDiscussionService.saveSolutionBeta(createRequest, firebaseUid);
+        SolutionBeta solutionBeta = solutionBetaRepository.findByVideoURL(publicUrl).orElseThrow();
+        Long discussionId = solutionBeta.getDiscussionRoot().getDiscussionId();
 
         return new SolutionBetaDeletionRequest(
                 saved.userId(),
                 problemId,
-                saved.videoURL()
+                discussionId,
+                saved.discussionContent()
         );
     }
 
-    private boolean checkForSolutionBetaExist(List<UserBeta> betas, String objectFileName, String publicUrl){
-        for(UserBeta b : betas){
-            Optional<SolutionBeta> sol = solutionBetaRepository.findByUserBeta(b);
+    private boolean checkForSolutionBetaExist(List<DiscussionRoot> betas, String objectFileName, String publicUrl){
+        for(DiscussionRoot b : betas){
+            Optional<SolutionBeta> sol = solutionBetaRepository.findByDiscussionRoot(b);
             if (sol.isEmpty()) continue;
             SolutionBeta solBeta = sol.get();
             if (solBeta.getVideoURL().equals(publicUrl) && solBeta.getBetaName().equals(objectFileName)){
@@ -224,5 +228,13 @@ public class SolutionBetaCreationDeletionTest {
             }
         }
         return false;
+    }
+
+    private List<DiscussionRoot> findDiscussionsForUserProblem(
+            UserAccount user, ClimbingProblem problem, DiscussionType discussionType
+    ) {
+        return discussionRootRepository.findByUserAccount_AndDiscussionType(user, discussionType).stream()
+                .filter(discussionRoot -> discussionRoot.getProblem().getId().equals(problem.getId()))
+                .toList();
     }
 }

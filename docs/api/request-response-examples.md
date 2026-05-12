@@ -130,11 +130,22 @@ GET /home/wall-sections/1/problems/22
   "perceiveGrade": "V5",
   "discussion": [
     {
+      "discussionId": 301,
       "userId": 7,
       "username": "climber01",
-      "comment": "Fun movement.",
-      "videoURL": null,
+      "parentCommentId": null,
+      "discussionType": "COMMENT",
+      "discussionContent": "Fun movement.",
       "createdDate": "2026-04-20T19:00:00"
+    },
+    {
+      "discussionId": 302,
+      "userId": 7,
+      "username": "climber01",
+      "parentCommentId": null,
+      "discussionType": "BETA",
+      "discussionContent": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
+      "createdDate": "2026-04-20T20:02:00"
     }
   ]
 }
@@ -159,7 +170,17 @@ Authorization: Bearer <firebase_id_token>
 
 ### Response (201)
 
-No body.
+```json
+{
+  "discussionId": 401,
+  "userId": 7,
+  "username": "climber01",
+  "parentCommentId": null,
+  "discussionType": "COMMENT",
+  "discussionContent": "Felt like soft V5.",
+  "createdDate": "2026-04-21T09:11:00"
+}
+```
 
 ## 7) Request Signed Upload URL for Solution Beta
 
@@ -213,10 +234,12 @@ Authorization: Bearer <firebase_id_token>
 
 ```json
 {
+  "discussionId": 402,
   "userId": 7,
   "username": "climber01",
-  "comment": null,
-  "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
+  "parentCommentId": null,
+  "discussionType": "BETA",
+  "discussionContent": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
   "createdDate": "2026-04-20T20:02:00"
 }
 ```

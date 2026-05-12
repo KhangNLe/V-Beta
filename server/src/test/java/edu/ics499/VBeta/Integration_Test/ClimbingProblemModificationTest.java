@@ -45,7 +45,7 @@ public class ClimbingProblemModificationTest {
     private DiscussionCommentManager discussionCommentManager;
 
     @Autowired
-    private UserCommentRepository userCommentRepository;
+    private DiscussionRootManager discussionRootManager;
 
     @Autowired
     private UserAccountRepository userAccountRepository;
@@ -124,7 +124,9 @@ public class ClimbingProblemModificationTest {
         ClimbingProblem problem = climbingProblemManager.getAllProblemsFromWallSection(wall).get(0);
         addCommentsToProblem(problem.getId());
 
-        List<UserComment> comments = discussionCommentManager.getUserCommentFromClimbingProblem(problem);
+        List<DiscussionRoot> comments = discussionRootManager.getDiscussionsByProblemAndType(
+                problem, DiscussionType.COMMENT
+        );
         assertFalse(comments.isEmpty());
 
         climbingWallService.deleteClimbingProblem(problem.getId());
@@ -132,10 +134,9 @@ public class ClimbingProblemModificationTest {
         Optional<ClimbingProblem> deletedProblem = climbingProblemRepository.findById(problem.getId());
         assertTrue(deletedProblem.isEmpty());
         comments.forEach(c -> {
-            Optional<DiscussionComment> dc = discussionCommentRepository.findByUserComment(c);
+            Optional<DiscussionComment> dc = discussionCommentRepository.findByDiscussionRoot(c);
             assertTrue(dc.isEmpty());
-            Optional<UserComment> deletedUserComment = userCommentRepository.findById(c.getUserCommentId());
-            assertTrue(deletedUserComment.isEmpty());
+            assertNull(discussionRootManager.findDiscussionRootById(c.getDiscussionId()));
         });
 
         List<ClimbingProblem> problems = climbingProblemManager.getAllProblemsFromWallSection(wall);

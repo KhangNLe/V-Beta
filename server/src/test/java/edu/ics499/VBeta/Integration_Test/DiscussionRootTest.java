@@ -126,7 +126,7 @@ public class DiscussionRootTest {
     }
 
     @Test
-    @DisplayName("Test for active replies query excludes soft deleted rows")
+    @DisplayName("Test for finding replies by parent discussion id")
     void testFindActiveRepliesByParentId() {
         String fakeFirebaseID = "testFirebaseUid";
         long problemId = 1L;
@@ -138,21 +138,15 @@ public class DiscussionRootTest {
         DiscussionRoot activeReply = discussionRootManager.createSubDiscussionThread(
                 testUser, problem, DiscussionType.COMMENT, parent
         );
-        DiscussionRoot deletedReply = discussionRootManager.createSubDiscussionThread(
+        DiscussionRoot secondReply = discussionRootManager.createSubDiscussionThread(
                 testUser, problem, DiscussionType.BETA, parent
         );
 
-        deletedReply.setDeletedAt(LocalDateTime.now());
-        deletedReply.setDeletedBy(testUser);
-        deletedReply.setDeletedReason("integration test soft delete");
-        deletedReply = discussionRootRepository.saveAndFlush(deletedReply);
-        Long deletedReplyId = deletedReply.getDiscussionId();
-
         List<DiscussionRoot> replies = discussionRootRepository
-                .findByParent_DiscussionIdAndDeletedAtIsNullOrderByCreatedAtAsc(parent.getDiscussionId());
+                .findByParent_DiscussionIdOrderByCreatedAtDesc(parent.getDiscussionId());
 
         assertTrue(replies.stream().anyMatch(r -> r.getDiscussionId().equals(activeReply.getDiscussionId())));
-        assertFalse(replies.stream().anyMatch(r -> r.getDiscussionId().equals(deletedReplyId)));
+        assertTrue(replies.stream().anyMatch(r -> r.getDiscussionId().equals(secondReply.getDiscussionId())));
     }
 
     @Test
@@ -190,6 +184,60 @@ public class DiscussionRootTest {
         invalidDiscussion.setParent(createMissingParentReference());
 
         assertThrows(DataIntegrityViolationException.class, () -> discussionRootRepository.saveAndFlush(invalidDiscussion));
+    }
+
+    @Test
+    @DisplayName("Test reply query returns newest first")
+    void testFindRepliesByParentIdOrderByCreatedAtDesc() {
+        String fakeFirebaseID = "testFirebaseUid";
+        long problemId = 1L;
+
+        UserAccount testUser = getTestUser(fakeFirebaseID);
+        ClimbingProblem problem = getTestClimbingProblem(problemId);
+        DiscussionRoot parent = discussionRootManager.createNewDiscussion(testUser, problem, DiscussionType.COMMENT);
+
+        DiscussionRoot oldest = discussionRootManager.createSubDiscussionThread(
+                testUser, problem, DiscussionType.COMMENT, parent
+        );
+        DiscussionRoot newest = discussionRootManager.createSubDiscussionThread(
+                testUser, problem, DiscussionType.BETA, parent
+        );
+
+        oldest.setCreatedAt(LocalDateTime.now().minusMinutes(2));
+        newest.setCreatedAt(LocalDateTime.now());
+        discussionRootRepository.saveAndFlush(oldest);
+        discussionRootRepository.saveAndFlush(newest);
+
+        List<DiscussionRoot> replies = discussionRootRepository
+                .findByParent_DiscussionIdOrderByCreatedAtDesc(parent.getDiscussionId());
+
+        assertFalse(replies.isEmpty());
+        assertEquals(newest.getDiscussionId(), replies.get(0).getDiscussionId());
+        assertEquals(oldest.getDiscussionId(), replies.get(replies.size() - 1).getDiscussionId());
+    }
+
+    @Test
+    @DisplayName("Test finding discussions by user and problem")
+    void testFindDiscussionsByUserAndProblem() {
+        UserAccount userOne = getTestUser("testFirebaseUid");
+        UserAccount userTwo = getTestUser("testFirebaseUid2");
+        ClimbingProblem problemOne = getTestClimbingProblem(1L);
+        ClimbingProblem problemTwo = getTestClimbingProblem(2L);
+
+        DiscussionRoot matchA = discussionRootManager.createNewDiscussion(userOne, problemOne, DiscussionType.COMMENT);
+        DiscussionRoot matchB = discussionRootManager.createNewDiscussion(userOne, problemOne, DiscussionType.BETA);
+        discussionRootManager.createNewDiscussion(userOne, problemTwo, DiscussionType.COMMENT);
+        discussionRootManager.createNewDiscussion(userTwo, problemOne, DiscussionType.COMMENT);
+
+        List<DiscussionRoot> matches = discussionRootRepository.findByUserAccount_AndProblem(userOne, problemOne);
+
+        assertEquals(2, matches.size());
+        assertTrue(matches.stream().anyMatch(d -> d.getDiscussionId().equals(matchA.getDiscussionId())));
+        assertTrue(matches.stream().anyMatch(d -> d.getDiscussionId().equals(matchB.getDiscussionId())));
+        assertTrue(matches.stream().allMatch(d ->
+                d.getUserAccount().getId().equals(userOne.getId()) &&
+                        d.getProblem().getId().equals(problemOne.getId())
+        ));
     }
 
     private DiscussionRoot createMissingParentReference() {
