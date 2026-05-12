@@ -7,9 +7,11 @@ import edu.ics499.VBeta.application.support.*;
 import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.repository.*;
 import org.junit.jupiter.api.*;
+import edu.ics499.VBeta.config.TestGcpStorageConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -20,6 +22,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Import(TestGcpStorageConfig.class)
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")

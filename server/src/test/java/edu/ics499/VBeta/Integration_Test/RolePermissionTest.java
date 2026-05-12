@@ -4,11 +4,13 @@ import edu.ics499.VBeta.application.support.RoleBasedAuthenticationManager;
 import edu.ics499.VBeta.domain.model.ActionDefinition;
 import edu.ics499.VBeta.domain.model.RoleType;
 import edu.ics499.VBeta.repository.RolePermissionRepository;
+import edu.ics499.VBeta.config.TestGcpStorageConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -16,6 +18,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Import(TestGcpStorageConfig.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
