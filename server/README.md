@@ -13,6 +13,7 @@ Spring Boot REST API for V-Beta. It pairs with the Next.js app in `../v-beta`.
 - **JDK 17+** (JDK 21 is also supported).
 - **PostgreSQL 14+** reachable by the backend when running locally.
 - Optional for storage/auth flows: Firebase and Google Cloud credentials.
+- Optional for one-command backend PostgreSQL test runs: **Docker** (used by `scripts/test-with-postgres.sh`).
 
 Use the Maven wrapper (`./mvnw` or `mvnw.cmd`) so no global Maven install is required.
 
@@ -83,16 +84,26 @@ Main class: `edu.ics499.VBeta.VBetaApplication`
 
 ## Run Tests
 
-Tests use `src/test/resources/application-test.yml` and run against in-memory H2 (not PostgreSQL).
+The backend test suite includes integration tests that use PostgreSQL datasource overrides.
+
+For consistent local runs without manual DB setup, use:
 
 ```bash
-./mvnw test
+./scripts/test-with-postgres.sh
 ```
 
-Windows:
+What this command does:
+
+- starts/reuses local Docker PostgreSQL (`vbeta-test-postgres` on `127.0.0.1:55432`)
+- recreates `v_beta_test`
+- applies `src/test/resources/db/v_beta_test_schema.sql` (schema + seed data)
+- runs `./mvnw test` with PostgreSQL test env wiring
+
+Alternative (if you already have PostgreSQL running and configured):
 
 ```bash
-mvnw.cmd test
+./scripts/reset-test-db.sh
+./mvnw test
 ```
 
 ## Build a Runnable JAR

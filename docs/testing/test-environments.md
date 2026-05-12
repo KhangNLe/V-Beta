@@ -41,6 +41,8 @@ This document defines testing environments and expected configuration difference
 
 - Default test profile uses H2 in-memory DB config.
 - Integration tests under `Integration_Test/*` override datasource settings to PostgreSQL test DB values.
+- Standard bootstrap script: `server/scripts/reset-test-db.sh` (recreates `v_beta_test` and applies schema/seed).
+- One-command local backend run: `server/scripts/test-with-postgres.sh`.
 
 ### Notes
 
@@ -69,9 +71,9 @@ This document defines testing environments and expected configuration difference
 |---|---|---|---|
 | Target | Manual + integration behavior | Automated backend tests | Automated frontend tests |
 | Backend URL | `localhost:8080` | Test runtime context | Mocked/jsdom context |
-| DB | Cloud SQL/PostgreSQL (typical local) | H2 by default; Integration_Test overrides to PostgreSQL | N/A |
+| DB | Cloud SQL/PostgreSQL (typical local) | H2 by default; Integration_Test overrides to PostgreSQL with scripted `v_beta_test` bootstrap | N/A |
 | Auth | Firebase real tokens (manual flow) | Test setup/mocks/profile-driven | Usually mocked or not full auth e2e |
-| Main Runner | Manual + scripts | `./mvnw test` | `npm test` |
+| Main Runner | Manual + scripts | `./scripts/test-with-postgres.sh` | `npm test` |
 
 ## 5) Environment Validation Checklist
 

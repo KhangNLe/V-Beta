@@ -25,7 +25,7 @@ Run command:
 
 ```bash
 cd server
-./mvnw test
+./scripts/test-with-postgres.sh
 ```
 
 ### Frontend (`v-beta/`)
@@ -117,9 +117,10 @@ These areas should always be included in release smoke testing.
 ## Environment Strategy
 
 - Local development test baseline:
-  - backend: `./mvnw test`
+  - backend: `./scripts/test-with-postgres.sh`
   - frontend: `npm test`
-- Integration tests that require external DB should use an isolated PostgreSQL test DB and never run against shared production-like data.
+- PostgreSQL test DB bootstrap is automated via `server/scripts/reset-test-db.sh` (used by local and CI runs).
+- Integration tests must always run against isolated PostgreSQL test DB (`v_beta_test`), never shared production-like data.
 - Cloud dependencies should be mocked or isolated in automated tests when possible.
 
 ## Entry and Exit Criteria

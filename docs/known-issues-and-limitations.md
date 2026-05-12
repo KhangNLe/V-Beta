@@ -28,15 +28,15 @@ This document reflects the current repository state on `package_sub` and compari
 - Current frontend automated testing is limited only to unit testing, and end-to-end testing is not implemented or supported. Unit testing for signup and login pages do not exist yet either.
 - Impact: higher regression risk in UI behavior and integration points.
 
-### 6) Backend integration tests depend on external PostgreSQL test DB provisioning
-- Integration test datasource settings are aligned to PostgreSQL, but tests still depend on externally prepared test DB availability/configuration.
-- Impact: local onboarding and CI reliability still depend on consistent PostgreSQL test DB bootstrap/setup.
+### 6) Backend integration tests still require PostgreSQL runtime availability
+- PostgreSQL test DB bootstrap is scripted (`server/scripts/reset-test-db.sh`) and CI now provisions a consistent PostgreSQL service for backend tests.
+- Remaining limitation: local runs still require Docker or an existing PostgreSQL instance reachable by test env vars.
 
 ## Operations and Deployment Limitations
 
-### 7) CI workflow automation is not fully established in-repo
-- No complete PR pipeline is established in the repository for automatic quality gates.
-- Impact: test and verification quality relies more heavily on manual process discipline.
+### 7) CI workflow automation is partial
+- Backend and frontend CI are in-repo via `.github/workflows/backend-ci.yml` and `.github/workflows/frontend-ci.yml`.
+- Remaining limitation: full multi-stage CI quality gates (frontend, lint, docs checks, deployment gates) are not yet fully standardized.
 
 ### 8) Generated report artifacts are local by default
 - Maven/Jest generated outputs are under build directories and are not automatically retained in Git.
