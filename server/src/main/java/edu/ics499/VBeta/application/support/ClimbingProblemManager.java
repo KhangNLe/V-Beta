@@ -121,4 +121,8 @@ public class ClimbingProblemManager {
         problems.forEach(p -> p.setProblemStatus(LifecycleStatus.ARCHIVE));
         climbingProblemRepository.saveAll(problems);
     }
+
+    public List<ClimbingProblem> getProblemFromWallFilterByGrade(WallSection wallSection, ClimbingGrade climbingGrade){
+        return climbingProblemRepository.findByWallSection_AndClimbingGrade(wallSection, climbingGrade);
+    }
 }
