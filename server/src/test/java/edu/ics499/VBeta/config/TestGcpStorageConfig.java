@@ -1,5 +1,7 @@
 package edu.ics499.VBeta.config;
 
+import com.google.api.gax.core.CredentialsProvider;
+import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.cloud.storage.Storage;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +15,11 @@ import org.springframework.context.annotation.Profile;
 @Configuration
 @Profile("test")
 public class TestGcpStorageConfig {
+
+    @Bean
+    public CredentialsProvider googleCredentials() {
+        return NoCredentialsProvider.create();
+    }
 
     @Bean
     public Storage storage() {
