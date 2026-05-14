@@ -5,11 +5,13 @@ import edu.ics499.VBeta.application.support.DiscussionRootManager;
 import edu.ics499.VBeta.application.support.UserAccountManager;
 import edu.ics499.VBeta.domain.model.*;
 import edu.ics499.VBeta.repository.DiscussionRootRepository;
+import edu.ics499.VBeta.config.TestGcpStorageConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -21,14 +23,15 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Import(TestGcpStorageConfig.class)
 @Transactional
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestPropertySource(
         properties = {
                 "spring.datasource.url=jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:v_beta_test}",
-                "spring.datasource.username=${SQL_USERNAME:khang}",
-                "spring.datasource.password=${SQL_PASSWORD:}",
+                "spring.datasource.username=${SQL_USERNAME:postgres}",
+                "spring.datasource.password=${SQL_PASSWORD:postgres}",
                 "spring.datasource.driver-class-name=org.postgresql.Driver",
                 "spring.jpa.hibernate.ddl-auto=validate",
                 "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect",

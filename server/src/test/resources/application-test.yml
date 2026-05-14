@@ -3,6 +3,8 @@ spring:
     banner-mode: "off"
   cloud:
     gcp:
+      firestore:
+        enabled: false
       sql:
         enabled: false
       storage:
