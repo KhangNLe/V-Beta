@@ -43,10 +43,12 @@ This document defines testing environments and expected configuration difference
 - Integration tests under `Integration_Test/*` override datasource settings to PostgreSQL test DB values.
 - Standard bootstrap script: `server/scripts/reset-test-db.sh` (recreates `v_beta_test` and applies schema/seed).
 - One-command local backend run: `server/scripts/test-with-postgres.sh`.
+- Local Docker bootstrap helper: `server/scripts/start-local-test-db.sh` (default `DB_PORT=55432`).
+- GitHub backend CI provisions PostgreSQL service on `127.0.0.1:5432`.
 
 ### Notes
 
-- Do not assume all tests are fully isolated from external DB unless validated per test class.
+- Integration tests are expected to run against isolated PostgreSQL test DB (`v_beta_test`) with scripted reset.
 
 ## 3) Frontend Test Environment
 
@@ -71,7 +73,7 @@ This document defines testing environments and expected configuration difference
 |---|---|---|---|
 | Target | Manual + integration behavior | Automated backend tests | Automated frontend tests |
 | Backend URL | `localhost:8080` | Test runtime context | Mocked/jsdom context |
-| DB | Cloud SQL/PostgreSQL (typical local) | H2 by default; Integration_Test overrides to PostgreSQL with scripted `v_beta_test` bootstrap | N/A |
+| DB | Cloud SQL/PostgreSQL (typical local) | H2 by default; Integration_Test overrides to PostgreSQL with scripted `v_beta_test` bootstrap (`55432` local Docker default, `5432` in CI) | N/A |
 | Auth | Firebase real tokens (manual flow) | Test setup/mocks/profile-driven | Usually mocked or not full auth e2e |
 | Main Runner | Manual + scripts | `./scripts/test-with-postgres.sh` | `npm test` |
 

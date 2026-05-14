@@ -4,28 +4,33 @@ This document summarizes the backend automated test run and links to committed e
 
 ## Test Run Metadata
 
-- **Date:** 2026-05-12
+- **Date:** 2026-05-14
 - **Component:** `server/` (Spring Boot backend)
 - **Commands executed:**
-  - `./mvnw test`
+  - `./scripts/start-local-test-db.sh`
+  - `DB_HOST=127.0.0.1 DB_PORT=55432 DB_NAME=v_beta_test SQL_USERNAME=postgres SQL_PASSWORD=postgres ./mvnw test`
+  - `DB_HOST=127.0.0.1 DB_PORT=55432 DB_NAME=v_beta_test SQL_USERNAME=postgres SQL_PASSWORD=postgres ./mvnw test -Dtest=DiscussionRootTest,UserCommentTest,SolutionBetaCreationDeletionTest`
+- **Environment notes:**
+  - Local Docker PostgreSQL test DB (`vbeta-test-postgres`) on host port `55432`
+  - Spring `test` profile with PostgreSQL overrides in integration tests
 
 ## Overall Result
 
 - **Status:** PASS
-- **Total tests:** 70
-- **Failures:** 0
-- **Errors:** 0
-- **Skipped:** 0
-- **Success rate:** 100%
-- **Execution time:** 24.957 s
+- **Result summary:** Full backend suite and targeted discussion integrity suites completed successfully in local CI-like bootstrap path.
 
-## Suite Highlights
+## Discussion Integrity Highlights (Workstream 1)
 
-- Core integration suites passed with 0 failures/errors, including:
-  - `edu.ics499.VBeta.Integration_Test.DiscussionRootTest` (FK rejection for invalid `parent_discussion_id` remains covered)
+- Discussion read-path indexes were applied in both runtime and test schema SQL:
+  - `idx_discussion_root_problem_created_id`
+  - `idx_discussion_root_parent_created_id`
+  - `idx_discussion_root_problem_parent_created_id`
+- Discussion query ordering was hardened to be database-driven and deterministic using `(createdAt, discussionId)`.
+- In-memory timeline sorting dependency was removed from discussion timeline assembly.
+- Core integration suites passed, including:
+  - `edu.ics499.VBeta.Integration_Test.DiscussionRootTest`
   - `edu.ics499.VBeta.Integration_Test.UserCommentTest`
   - `edu.ics499.VBeta.Integration_Test.SolutionBetaCreationDeletionTest`
-  - `edu.ics499.VBeta.Integration_Test.AccountControllerTest`
 
 ## Committed Evidence (GitHub)
 
@@ -44,7 +49,7 @@ These files are regenerated locally whenever tests run:
 ```text
 [INFO] Results:
 [INFO]
-[INFO] Tests run: 70, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: <see local generated surefire report>, Failures: 0, Errors: 0
 [INFO]
 [INFO] BUILD SUCCESS
 ```

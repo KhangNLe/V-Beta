@@ -120,7 +120,8 @@ public class DiscussionRootTest {
                 testUser, problem, DiscussionType.COMMENT, rootA
         );
 
-        List<DiscussionRoot> roots = discussionRootRepository.findByProblem_IdAndParentIsNullOrderByCreatedAtDesc(problemId);
+        List<DiscussionRoot> roots = discussionRootRepository
+                .findByProblem_IdAndParentIsNullOrderByCreatedAtDescDiscussionIdDesc(problemId);
 
         assertTrue(roots.stream().anyMatch(r -> r.getDiscussionId().equals(rootA.getDiscussionId())));
         assertTrue(roots.stream().anyMatch(r -> r.getDiscussionId().equals(rootB.getDiscussionId())));
@@ -146,7 +147,7 @@ public class DiscussionRootTest {
         );
 
         List<DiscussionRoot> replies = discussionRootRepository
-                .findByParent_DiscussionIdOrderByCreatedAtDesc(parent.getDiscussionId());
+                .findByParent_DiscussionIdOrderByCreatedAtDescDiscussionIdDesc(parent.getDiscussionId());
 
         assertTrue(replies.stream().anyMatch(r -> r.getDiscussionId().equals(activeReply.getDiscussionId())));
         assertTrue(replies.stream().anyMatch(r -> r.getDiscussionId().equals(secondReply.getDiscussionId())));
@@ -212,7 +213,7 @@ public class DiscussionRootTest {
         discussionRootRepository.saveAndFlush(newest);
 
         List<DiscussionRoot> replies = discussionRootRepository
-                .findByParent_DiscussionIdOrderByCreatedAtDesc(parent.getDiscussionId());
+                .findByParent_DiscussionIdOrderByCreatedAtDescDiscussionIdDesc(parent.getDiscussionId());
 
         assertFalse(replies.isEmpty());
         assertEquals(newest.getDiscussionId(), replies.get(0).getDiscussionId());

@@ -141,7 +141,27 @@ Frontend should be available at `http://localhost:3000`.
 
 ## Optional test commands
 
-Backend tests:
+Backend tests (CI-like PostgreSQL bootstrap, recommended):
+
+```bash
+cd server
+./scripts/test-with-postgres.sh
+```
+
+Manual two-step backend test path:
+
+```bash
+cd server
+./scripts/start-local-test-db.sh
+DB_HOST=127.0.0.1 DB_PORT=55432 DB_NAME=v_beta_test SQL_USERNAME=postgres SQL_PASSWORD=postgres ./mvnw test
+```
+
+Notes:
+
+- `start-local-test-db.sh` defaults to Docker Postgres on host port `55432`.
+- GitHub backend CI uses service Postgres on `5432`; this local path is functionally equivalent.
+
+Backend tests (without bootstrap, only when DB is already prepared):
 
 ```bash
 cd server

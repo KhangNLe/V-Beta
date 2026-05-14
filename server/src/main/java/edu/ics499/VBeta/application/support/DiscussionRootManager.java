@@ -76,13 +76,13 @@ public class DiscussionRootManager {
     }
 
     /**
-     * Returns all discussion roots attached to a climbing problem.
+     * Returns all discussion roots attached to a climbing problem in timeline order.
      *
      * @param problem climbing problem context
-     * @return discussion roots for the problem
+     * @return discussion roots ordered by create date ascending, then id ascending
      */
     public List<DiscussionRoot> getDiscussionForProblem(ClimbingProblem problem){
-        return discussionRootRepository.findByProblem(problem);
+        return discussionRootRepository.findByProblem_IdOrderByCreatedAtAscDiscussionIdAsc(problem.getId());
     }
 
     /**

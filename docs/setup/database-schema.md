@@ -79,6 +79,55 @@ cd server
 3. Confirm no Hibernate schema validation errors.
 4. Hit `GET http://localhost:8080/api/health`.
 
+## Discussion Index Verification (Sprint 3)
+
+Discussion timeline/read-path hardening added the following PostgreSQL indexes:
+
+- `idx_discussion_root_problem_created_id`
+- `idx_discussion_root_parent_created_id`
+- `idx_discussion_root_problem_parent_created_id`
+
+Verify they exist:
+
+```sql
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE schemaname = 'public'
+  AND tablename = 'discussion_root'
+  AND indexname IN (
+    'idx_discussion_root_problem_created_id',
+    'idx_discussion_root_parent_created_id',
+    'idx_discussion_root_problem_parent_created_id'
+  )
+ORDER BY indexname;
+```
+
+Optional plan check (example):
+
+```sql
+EXPLAIN ANALYZE
+SELECT discussion_id, parent_discussion_id, problem_id, create_at
+FROM discussion_root
+WHERE problem_id = 1
+ORDER BY create_at ASC, discussion_id ASC;
+```
+
+## Rollback Guidance (Schema/Index)
+
+If discussion index changes must be rolled back, run:
+
+```sql
+DROP INDEX IF EXISTS idx_discussion_root_problem_created_id;
+DROP INDEX IF EXISTS idx_discussion_root_parent_created_id;
+DROP INDEX IF EXISTS idx_discussion_root_problem_parent_created_id;
+```
+
+Notes:
+
+- These rollback statements are idempotent (`IF EXISTS`).
+- Keep `server/src/main/resources/db/pg-v-beta.sql` and
+  `server/src/test/resources/db/v_beta_test_schema.sql` aligned when reverting.
+
 ## Common issues
 
 - **Table not found / schema validation failed**
