@@ -106,6 +106,15 @@ CREATE TABLE IF NOT EXISTS Discussion_Root(
 		CHECK (parent_discussion_id IS NULL OR parent_discussion_id <> discussion_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_discussion_root_problem_created_id
+	ON Discussion_Root (problem_id, create_at ASC, discussion_id ASC);
+
+CREATE INDEX IF NOT EXISTS idx_discussion_root_parent_created_id
+	ON Discussion_Root (parent_discussion_id, create_at DESC, discussion_id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_discussion_root_problem_parent_created_id
+	ON Discussion_Root (problem_id, parent_discussion_id, create_at DESC, discussion_id DESC);
+
 
 INSERT INTO Gym_Role(role_type)
 	VALUES ('CLIMBER'), ('SETTER'), ('ADMIN');

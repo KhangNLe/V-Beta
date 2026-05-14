@@ -2,6 +2,7 @@ package edu.ics499.VBeta;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import edu.ics499.VBeta.config.TestGcpStorageConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -9,11 +10,13 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
         classes = VBetaApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Import(TestGcpStorageConfig.class)
 @ActiveProfiles("test")
 class VBetaApplicationTests {
 

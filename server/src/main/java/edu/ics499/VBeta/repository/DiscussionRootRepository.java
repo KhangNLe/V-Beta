@@ -22,19 +22,23 @@ public interface DiscussionRootRepository extends JpaRepository<DiscussionRoot, 
 
     /**
      * Returns child discussion rows for a parent discussion id, newest first.
+     * <p>
+     * Uses {@code discussionId} as a deterministic tie-breaker for equal timestamps.
      *
      * @param parentDiscussionId parent discussion id
-     * @return child discussion rows ordered by create date descending
+     * @return child discussion rows ordered by create date descending then discussion id descending
      */
-    List<DiscussionRoot> findByParent_DiscussionIdOrderByCreatedAtDesc(Long parentDiscussionId);
+    List<DiscussionRoot> findByParent_DiscussionIdOrderByCreatedAtDescDiscussionIdDesc(Long parentDiscussionId);
 
     /**
-     * Returns all discussion rows for a climbing problem.
+     * Returns all discussion rows for a climbing problem in timeline order.
+     * <p>
+     * Uses {@code discussionId} as a deterministic tie-breaker for equal timestamps.
      *
-     * @param problem climbing problem
-     * @return discussion rows for the problem
+     * @param problemId climbing problem id
+     * @return discussion rows ordered by create date ascending then discussion id ascending
      */
-    List<DiscussionRoot> findByProblem(ClimbingProblem problem);
+    List<DiscussionRoot> findByProblem_IdOrderByCreatedAtAscDiscussionIdAsc(Long problemId);
 
     /**
      * Returns discussion rows authored by a user for a specific discussion type.
@@ -65,25 +69,31 @@ public interface DiscussionRootRepository extends JpaRepository<DiscussionRoot, 
 
     /**
      * Returns top-level discussion rows for a problem, newest first.
+     * <p>
+     * Uses {@code discussionId} as a deterministic tie-breaker for equal timestamps.
      *
      * @param problemId climbing problem id
-     * @return top-level discussion rows ordered by create date descending
+     * @return top-level discussion rows ordered by create date descending then discussion id descending
      */
-    List<DiscussionRoot> findByProblem_IdAndParentIsNullOrderByCreatedAtDesc(Long problemId);
+    List<DiscussionRoot> findByProblem_IdAndParentIsNullOrderByCreatedAtDescDiscussionIdDesc(Long problemId);
 
     /**
      * Returns non-deleted child discussion rows for a parent, oldest first.
+     * <p>
+     * Uses {@code discussionId} as a deterministic tie-breaker for equal timestamps.
      *
      * @param parentDiscussionId parent discussion id
-     * @return child rows with null deleted-at ordered by create date ascending
+     * @return child rows with null deleted-at ordered by create date ascending then discussion id ascending
      */
-    List<DiscussionRoot> findByParent_DiscussionIdAndDeletedAtIsNullOrderByCreatedAtAsc(Long parentDiscussionId);
+    List<DiscussionRoot> findByParent_DiscussionIdAndDeletedAtIsNullOrderByCreatedAtAscDiscussionIdAsc(Long parentDiscussionId);
 
     /**
      * Returns non-deleted top-level discussion rows for a problem, newest first.
+     * <p>
+     * Uses {@code discussionId} as a deterministic tie-breaker for equal timestamps.
      *
      * @param problemId climbing problem id
-     * @return top-level rows with null deleted-at ordered by create date descending
+     * @return top-level rows with null deleted-at ordered by create date descending then discussion id descending
      */
-    List<DiscussionRoot> findByProblem_IdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(Long problemId);
+    List<DiscussionRoot> findByProblem_IdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDescDiscussionIdDesc(Long problemId);
 }

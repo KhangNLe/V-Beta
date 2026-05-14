@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -44,7 +43,7 @@ public class ClimbingProblemDiscussionManager {
      * Returns merged comment and beta entries for a climbing problem in chronological order.
      *
      * @param problem climbing problem context
-     * @return sorted discussion timeline entries
+     * @return discussion timeline entries in database order
      */
     public List<UserCommentData> getCommentsForProblem(ClimbingProblem problem){
         List<DiscussionRoot> discussionRoots = discussionRootManager.getDiscussionForProblem(problem);
@@ -62,7 +61,7 @@ public class ClimbingProblemDiscussionManager {
             }
         });
 
-        return data.stream().sorted(Comparator.comparing(UserCommentData::createdDate)).toList();
+        return data;
     }
 
     /**

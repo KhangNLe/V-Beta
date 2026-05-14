@@ -25,7 +25,7 @@ Run command:
 
 ```bash
 cd server
-./mvnw test
+./scripts/test-with-postgres.sh
 ```
 
 ### Frontend (`v-beta/`)
@@ -74,6 +74,7 @@ Focus:
 - wall/problem lifecycle operations
 - comment creation/deletion behavior
 - solution beta metadata creation/deletion behavior
+- discussion timeline/read ordering and deterministic retrieval semantics
 
 Target outcomes:
 
@@ -117,9 +118,11 @@ These areas should always be included in release smoke testing.
 ## Environment Strategy
 
 - Local development test baseline:
-  - backend: `./mvnw test`
+  - backend: `./scripts/test-with-postgres.sh`
   - frontend: `npm test`
-- Integration tests that require external DB should use an isolated PostgreSQL test DB and never run against shared production-like data.
+- PostgreSQL test DB bootstrap is automated via `server/scripts/reset-test-db.sh` (used by local and CI runs).
+- Local Docker-backed bootstrap path is `server/scripts/start-local-test-db.sh` (default host port `55432`).
+- Integration tests must always run against isolated PostgreSQL test DB (`v_beta_test`), never shared production-like data.
 - Cloud dependencies should be mocked or isolated in automated tests when possible.
 
 ## Entry and Exit Criteria
@@ -144,4 +147,3 @@ These areas should always be included in release smoke testing.
 - Expand frontend automation from page-level behavior tests into auth-form coverage and end-to-end testing.
 - Increase contract-style tests for critical API responses and error behavior.
 - Introduce standardized test-data fixtures for repeatable integration tests.
-- Add CI gating so tests run automatically on pull requests.
