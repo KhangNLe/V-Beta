@@ -8,6 +8,7 @@ This document tracks ideas that are not fully implemented in the current release
 - Add only future/potential work here.
 - Mark status clearly so readers do not confuse planned work with shipped work.
 - For each feature, include both a **Priority** and an **Effort** estimate.
+- Move completed backlog items to `docs/features/completed-features-archive.md`.
 
 ## Priority Legend
 
@@ -154,9 +155,9 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** High
 - **Effort:** Large
 - **Area:** Discussion Architecture / User Experience
-- **Current Gap:** Discussion entries are effectively flat; users cannot create structured reply chains.
-- **Potential Work:** Add optional `parent_discussion_id` on `discussion_root` and enable reply creation, retrieval, and display with depth limits.
-- **Dependencies:** Thread query strategy (recursive CTE or iterative API), API contract updates, and frontend threaded rendering.
+- **Current Gap:** Data model foundation exists, but full user-facing threaded reply UX and pagination are not shipped.
+- **Potential Work:** Build reply creation/retrieval UX with depth rules and moderation controls on top of existing `discussion_root` parent linkage.
+- **Dependencies:** Thread query strategy (recursive CTE or iterative API), frontend threaded rendering, and cursor pagination contract.
 
 ### 16) DB-Enforced XOR Integrity for `discussion_root` Children
 
@@ -199,9 +200,9 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** High
 - **Effort:** Large
 - **Area:** API Performance / Scalability
-- **Current Gap:** Timeline retrieval currently relies on full-list loading and in-memory sorting patterns that do not scale.
-- **Potential Work:** Implement cursor-based pagination on `discussion_root` (for example by `created_at` + `id`) and use indexed queries that return mixed comment/beta items efficiently.
-- **Dependencies:** Index design (`problem_id`, `created_at`, `id`), pagination API contract, and frontend infinite-scroll support.
+- **Current Gap:** Cursor pagination API/UX is not implemented yet.
+- **Potential Work:** Implement cursor-based pagination on `discussion_root` (for example by `created_at` + `id`) and extend mixed comment/beta feed retrieval for infinite-scroll UX.
+- **Dependencies:** Pagination API contract, frontend infinite-scroll support, and continuation-token semantics.
 
 ### 21) Edit History for Discussion Content
 
@@ -212,25 +213,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Add immutable edit history records for `discussion_comment` text changes and `solution_beta` metadata updates, including editor identity and timestamps.
 - **Dependencies:** History tables, policy decisions on visible history, and API/UI support for "edited" indicators.
 
-### 22) Merge `User_Comment` and `User_Beta` into Unified Discussion Flow
-
-- **Priority:** High
-- **Effort:** Large
-- **Area:** Data Model Refactor / Maintainability
-- **Current Gap:** Discussion comments and solution betas are currently modeled through separate anchor tables (`User_Comment`, `User_Beta`) with duplicated service/repository logic.
-- **Potential Work:** Replace separate anchor tables with a single `discussion_root` model that represents both comment and beta entries, and update managers/repositories/tests to use one shared lifecycle for create/read/delete.
-- **Dependencies:** Finalized shared-PK subtype mapping, service-layer refactor plan, and integration test coverage updates.
-
-### 23) PostgreSQL Migration Completion and Test Alignment
-
-- **Priority:** High
-- **Effort:** Large
-- **Area:** Platform / Database Infrastructure
-- **Current Gap:** Runtime and integration test datasource paths are PostgreSQL, but CI/local test DB provisioning is not yet fully standardized.
-- **Potential Work:** Finalize PostgreSQL test provisioning automation and CI consistency (schema bootstrap, seed/test fixtures, and environment setup validation).
-- **Dependencies:** Updated local/CI PostgreSQL test provisioning and full regression pass on unified settings.
-
-### 24) Server-Side Caching for High-Read Endpoints
+### 22) Server-Side Caching for High-Read Endpoints
 
 - **Priority:** High
 - **Effort:** Medium

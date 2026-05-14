@@ -40,6 +40,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 - [`features/wall-and-problems.md`](./features/wall-and-problems.md)
 - [`features/account-page.md`](./features/account-page.md)
 - [`features/future-features.md`](./features/future-features.md)
+- [`features/completed-features-archive.md`](./features/completed-features-archive.md)
 - [`features/implemented-feature-template.md`](./features/implemented-feature-template.md)
 
 ## API
