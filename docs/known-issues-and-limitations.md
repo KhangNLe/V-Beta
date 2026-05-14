@@ -29,14 +29,14 @@ This document reflects the current repository state on `package_sub` and compari
 - Impact: higher regression risk in UI behavior and integration points.
 
 ### 6) Backend integration tests still require PostgreSQL runtime availability
-- PostgreSQL test DB bootstrap is scripted (`server/scripts/reset-test-db.sh`) and CI now provisions a consistent PostgreSQL service for backend tests.
+- Resolved gap: deterministic bootstrap is now scripted (`server/scripts/reset-test-db.sh`) and used by local/CI flows.
 - Remaining limitation: local runs still require Docker or an existing PostgreSQL instance reachable by test env vars.
 
 ## Operations and Deployment Limitations
 
-### 7) CI workflow automation is partial
-- Backend and frontend CI are in-repo via `.github/workflows/backend-ci.yml` and `.github/workflows/frontend-ci.yml`.
-- Remaining limitation: full multi-stage CI quality gates (frontend, lint, docs checks, deployment gates) are not yet fully standardized.
+### 7) CI workflow automation is still maturing
+- Resolved gap: backend and frontend PR workflows are in-repo via `.github/workflows/backend-ci.yml` and `.github/workflows/frontend-ci.yml`.
+- Remaining limitation: full multi-stage quality gates (lint/docs/deploy checks) are not yet fully standardized.
 
 ### 8) Generated report artifacts are local by default
 - Maven/Jest generated outputs are under build directories and are not automatically retained in Git.
@@ -48,6 +48,7 @@ This document reflects the current repository state on `package_sub` and compari
 
 ## Planned Follow-up Areas
 
+- Add automated explain/plan sampling for high-traffic discussion queries as dataset size grows.
 - Standardize authorization checks for all mutating discussion/beta routes.
 - Add global server error handling contract and document response schema.
 - Expand frontend automated tests for core role-based and wall/problem flows.
