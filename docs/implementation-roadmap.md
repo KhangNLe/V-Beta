@@ -1,142 +1,83 @@
 # Implementation Roadmap
 
-This roadmap prioritizes foundation work first, then product features. It is designed to reduce migration risk and keep feature delivery predictable.
+This roadmap tracks only active and upcoming work. Completed foundation delivery is documented in release/readiness docs and sprint reports.
 
 ## Planning Principles
 
-- Prioritize platform foundations before major UX expansion.
+- Prioritize user-visible value on top of the stabilized platform foundation.
 - Keep each sprint reviewable with measurable acceptance criteria.
-- Maintain backward compatibility for existing user flows during internal refactors.
-- Update testing and documentation in the same sprint as implementation.
+- Preserve backward compatibility unless a contract change is explicitly planned.
+- Update tests and docs in the same sprint as implementation.
 
-## Sprint 1: PostgreSQL Migration Foundation
+## Current Sprint
 
-Status: Completed (runtime, integration-test paths, and docs aligned to PostgreSQL).
+## Sprint 4: Discovery Improvements for Wall Sections and Problems
 
-### Goal
+Status: In Progress
 
-Make PostgreSQL the primary and validated database path for local development and backend test execution.
+### Summary
 
-### Estimated Duration
-
-2-3 weeks
-
-### Scope
-
-- Switch server datasource defaults/configuration to PostgreSQL.
-- Convert active schema and seed scripts from MySQL-specific syntax to PostgreSQL-compatible SQL.
-- Update test DB setup for PostgreSQL-backed integration tests.
-- Resolve dialect and query differences surfaced by backend regression tests.
-- Defer CI test DB provisioning automation to a later hardening sprint.
-
-### Deliverables
-
-- PostgreSQL-ready Spring configuration and environment examples.
-- PostgreSQL-compatible schema and seed scripts.
-- Updated backend test setup with passing test suite.
-- Updated setup docs in server and project docs.
-
-### Acceptance Criteria
-
-- Backend runtime startup and core health checks pass against PostgreSQL.
-- Core backend startup and API health checks succeed with PostgreSQL.
-- No MySQL-only SQL remains in active runtime paths.
-- CI/local PostgreSQL test provisioning automation is tracked separately in a later sprint.
-
-## Sprint 2: Discussion Schema Foundation for Future Subthreads
-
-Status: Completed (server + frontend discussion contract aligned on `DiscussionRoot` lifecycle and `discussionId`-based operations).
-
-### Goal
-
-Refactor the discussion data model so it supports future nested replies without requiring immediate UI thread rollout.
+Deliver discovery improvements for wall sections and climbing problems.
 
 ### Estimated Duration
 
-2-3 weeks
+2 weeks
 
 ### Scope
 
-- Introduce a unified discussion root model to anchor both comments and solution betas.
-- Add nullable `parent_discussion_id` for future reply chains.
-- Bridge existing `User_Comment` and `User_Beta` paths to the new unified discussion structure.
-- Preserve current API behavior for existing frontend flows.
-
-### Deliverables
-
-- New schema and migration scripts for discussion root structure.
-- Updated backend entities, repositories, and service mappings.
-- Data migration/backfill for existing discussion records.
-- Integration test coverage for create/read/delete discussion operations.
+- Search
+- Grade-range filters
+- Asc/desc sorting
+- Supporting API + UI state
 
 ### Acceptance Criteria
 
-- Existing comment and solution beta flows remain functional.
-- New records are persisted in thread-ready discussion schema.
-- Referential integrity prevents invalid parent/child discussion links.
+- [ ] API supports search/filter/sort queries
+- [ ] UI exposes filters/sort with stable state handling
+- [ ] End-to-end discovery flow tested
 
-### Current Implementation Notes
+## Upcoming Sprints
 
-- Added unified `DiscussionRoot` entity with nullable `parent_discussion_id` for root/reply structure.
-- Added `DiscussionType` enum mapping backed by PostgreSQL enum `discussion_kind`.
-- Added repository queries for:
-  - root threads per problem (`parent IS NULL`)
-  - child replies per parent (including active-only retrieval)
-- Added integration tests that validate:
-  - root creation, subthread creation
-  - root/reply query behavior
-  - enum persistence
-  - FK rejection for invalid `parent_discussion_id`
-- Unified discussion API contract now returns/accepts `discussionId` where lifecycle operations require it:
-  - `POST /discussion/add-comments` returns created `UserCommentData`
-  - comment and beta deletion requests include `discussionId`
-- Frontend problem discussion flow updated to consume:
-  - `discussionId`
-  - `discussionType`
-  - `discussionContent`
-  while preserving backward-compatible fallbacks for legacy discussion shapes.
+### Sprint 5: Moderation MVP
 
-## Sprint 3: Hardening and Contract Lock
+Estimated Duration: 2 weeks
 
-### Goal
+Focus:
 
-Stabilize and optimize the new database and discussion foundation before additional feature acceleration.
+- Reporting workflow for comments/solution betas
+- Admin report queue/history basics
+- Initial moderation action audit trail
 
-### Estimated Duration
+### Sprint 6: API Reliability
 
-1-2 weeks
+Estimated Duration: 2 weeks
 
-### Scope
+Focus:
 
-- Add constraints and indexes for discussion integrity and query performance.
-- Add pagination-ready ordering/index strategy for future threaded feed retrieval.
-- Update API and testing documentation for schema changes.
-- Define migration rollback notes and operational validation checklist.
-- Standardize CI/local PostgreSQL test DB provisioning and bootstrap automation.
+- Centralized server error handling with `@RestControllerAdvice`
+- Standardized error payload contract (`code`, `message`, `status`, `path`, `timestamp`)
+- Frontend/API client parsing alignment
 
-### Deliverables
+### Sprint 7: Discussion Scalability
 
-- Performance and integrity indexes for discussion queries.
-- Updated docs and regression matrix references.
-- Migration verification and rollback guidance.
-- CI-ready PostgreSQL test bootstrap flow (schema + seed + env wiring).
+Estimated Duration: 2 weeks
 
-### Acceptance Criteria
+Focus:
 
-- No regressions in core discussion endpoints.
-- Discussion queries remain performant on larger datasets.
-- Documentation reflects implemented database and schema behavior.
-- CI executes backend tests against consistent PostgreSQL test provisioning.
+- Cursor pagination for problem discussions
+- Continuation-token contract and deterministic feed retrieval
+- Performance verification on larger datasets
 
-## Next Feature Sprints (After Foundation)
+### Sprint 8: UX Enhancements
 
-Each feature sprint is estimated at approximately 2 weeks.
+Estimated Duration: 2 weeks
 
-1. Discovery UX (2 weeks): search, grade-range filter, and sorting for problems.
-2. Moderation MVP (2 weeks): reporting and admin report queue workflow.
-3. API reliability (2 weeks): global error handling contract and auth consistency.
-4. Discussion scalability (2 weeks): cursor pagination for problem discussions.
-5. UX enhancements (2 weeks): profile images, wall/problem images, account activity history, and perceived-grade detail views.
+Focus:
+
+- Profile images
+- Wall/problem images
+- Account activity history
+- Perceived-grade detail views
 
 ## Definition of Done (Applies to Every Sprint)
 
