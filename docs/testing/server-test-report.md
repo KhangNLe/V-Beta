@@ -28,9 +28,9 @@ This document summarizes the backend automated test run and links to committed e
 - Discussion query ordering was hardened to be database-driven and deterministic using `(createdAt, discussionId)`.
 - In-memory timeline sorting dependency was removed from discussion timeline assembly.
 - Core integration suites passed, including:
-  - `edu.ics499.VBeta.Integration_Test.DiscussionRootTest`
-  - `edu.ics499.VBeta.Integration_Test.UserCommentTest`
-  - `edu.ics499.VBeta.Integration_Test.SolutionBetaCreationDeletionTest`
+  - `Integration_Test.app.VBeta.DiscussionRootTest`
+  - `Integration_Test.app.VBeta.UserCommentTest`
+  - `Integration_Test.app.VBeta.SolutionBetaCreationDeletionTest`
 
 ## Committed Evidence (GitHub)
 
