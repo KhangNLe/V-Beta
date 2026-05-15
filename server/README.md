@@ -80,7 +80,7 @@ Quick checks:
 - `GET http://localhost:8080/api/health`
 - `GET http://localhost:8080/api/v1/meta`
 
-Main class: `edu.ics499.VBeta.VBetaApplication`
+Main class: `app.VBeta.VBetaApplication`
 
 ## Run Tests
 
