@@ -1,19 +1,11 @@
 package app.VBeta.application;
 
-<<<<<<< Updated upstream:server/src/main/java/app/VBeta/application/ProblemFilteringService.java
 import app.VBeta.api.dto.ClimbingProblemResponse;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.wall.WallSectionManager;
 import app.VBeta.domain.model.GradeDefinition;
 import app.VBeta.domain.model.WallSection;
-=======
-import edu.ics499.VBeta.api.dto.ClimbingProblemResponse;
-import edu.ics499.VBeta.application.support.ClimbingGradeManager;
-import edu.ics499.VBeta.application.support.ClimbingProblemManager;
-import edu.ics499.VBeta.application.support.WallSectionManager;
-import edu.ics499.VBeta.domain.model.GradeDefinition;
-import edu.ics499.VBeta.domain.model.WallSection;
->>>>>>> Stashed changes:server/src/main/java/edu/ics499/VBeta/application/ProblemFilteringService.java
+import app.VBeta.application.support.grade.ClimbingGradeManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;

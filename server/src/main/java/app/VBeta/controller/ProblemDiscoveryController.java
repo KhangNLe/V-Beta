@@ -4,6 +4,7 @@ import app.VBeta.api.dto.ClimbingProblemResponse;
 import app.VBeta.application.ProblemFilteringService;
 import app.VBeta.domain.model.GradeDefinition;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
@@ -19,23 +20,23 @@ public class ProblemDiscoveryController {
     }
 
     @GetMapping("/{wallSectionId}/{grade}")
-    public List<ClimbingProblemResponse> filterProblemByGrade(@PathVariable Long wallSectionId,
-                                                        @PathVariable GradeDefinition grade){
+    public ResponseEntity<List<ClimbingProblemResponse>> filterProblemByGrade(@PathVariable Long wallSectionId,
+                                                                              @PathVariable GradeDefinition grade){
         return null;
     }
 
     @GetMapping("/{wallSectionId}/asc")
-    public List<ClimbingProblemResponse> filterProblemByGradeAsc(@PathVariable Long wallSectionId){
+    public ResponseEntity<List<ClimbingProblemResponse>> filterProblemByGradeAsc(@PathVariable Long wallSectionId){
         return null;
     }
 
     @GetMapping("/{wallSectionId}/desc")
-    public List<ClimbingProblemResponse> filterProblemByGradeDesc(@PathVariable Long wallSectionId){
+    public ResponseEntity<List<ClimbingProblemResponse>> filterProblemByGradeDesc(@PathVariable Long wallSectionId){
         return null;
     }
 
     @GetMapping("/{wallSectionId}/range/{lowestGrade}/{highestGrade}")
-    public List<ClimbingProblemResponse> filterProblemByGradeRange(@PathVariable Long wallSectionId,
+    public ResponseEntity<List<ClimbingProblemResponse>> filterProblemByGradeRange(@PathVariable Long wallSectionId,
                                                                    @PathVariable GradeDefinition lowestGrade,
                                                                    @PathVariable GradeDefinition highestGrade){
         return null;
