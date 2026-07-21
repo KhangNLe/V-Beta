@@ -57,6 +57,7 @@ public class ProblemFilteringService {
      */
     public List<ClimbingProblemResponse> findProblemsByRange(Long wallSectionId, GradeDefinition lowestGrade,
                                                              GradeDefinition highestGrade){
+        verifyGradeRange(lowestGrade, highestGrade);
         WallSection wall = getAndValidateWallSection(wallSectionId);
         ClimbingGrade minGrade = climbingGradeManager.getClimbingGradeByDefinition(lowestGrade);
         ClimbingGrade maxGrade = climbingGradeManager.getClimbingGradeByDefinition(highestGrade);
@@ -77,6 +78,7 @@ public class ProblemFilteringService {
      */
     public List<ClimbingProblemResponse> findProblemBetweenRangeAsc(Long wallSectionId, GradeDefinition lowestGrade,
                                                                     GradeDefinition highestGrade){
+        verifyGradeRange(lowestGrade, highestGrade);
         WallSection wall = getAndValidateWallSection(wallSectionId);
         ClimbingGrade minGrade =  climbingGradeManager.getClimbingGradeByDefinition(lowestGrade);
         ClimbingGrade maxGrade = climbingGradeManager.getClimbingGradeByDefinition(highestGrade);
@@ -97,6 +99,7 @@ public class ProblemFilteringService {
      */
     public List<ClimbingProblemResponse> findProblemBetweenRangeDesc(Long wallSectionId, GradeDefinition lowestGrade,
                                                                      GradeDefinition highestGrade){
+        verifyGradeRange(lowestGrade, highestGrade);
         WallSection wall = getAndValidateWallSection(wallSectionId);
         ClimbingGrade minGrade = climbingGradeManager.getClimbingGradeByDefinition(lowestGrade);
         ClimbingGrade maxGrade = climbingGradeManager.getClimbingGradeByDefinition(highestGrade);
@@ -138,5 +141,13 @@ public class ProblemFilteringService {
                         problem.getCreatedDate().toString(),
                         problem.getClimbingGrade().getGradeDefinition())
         ).toList();
+    }
+
+    private void verifyGradeRange(GradeDefinition lowerGrade,  GradeDefinition upperGrade){
+        if (lowerGrade.compareTo(upperGrade) > 0){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "The lower grade range cannot be higher than the upper grade.");
+        }
+
     }
 }

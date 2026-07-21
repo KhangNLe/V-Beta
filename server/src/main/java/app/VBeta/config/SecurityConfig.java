@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/home/wall-sections").permitAll()
                         .requestMatchers("/home/wall-sections/*/problems").permitAll()
                         .requestMatchers("/home/wall-sections/*/problems/*").permitAll()
+                        .requestMatchers("/search/**").permitAll()
 
                         // Everything else requires authentication
                         .anyRequest().authenticated())
