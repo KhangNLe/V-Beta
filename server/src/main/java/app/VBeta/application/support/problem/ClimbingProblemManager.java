@@ -117,7 +117,49 @@ public class ClimbingProblemManager {
         climbingProblemRepository.saveAll(problems);
     }
 
-    public List<ClimbingProblem> getProblemFromWallFilterByGrade(WallSection wallSection, ClimbingGrade climbingGrade){
-        return climbingProblemRepository.findByWallSection_AndClimbingGrade(wallSection, climbingGrade);
+    /**
+     * Returns active problems in a wall section whose assigned grade is inclusively
+     * between {@code minGrade} and {@code maxGrade}, unsorted.
+     *
+     * @param wall wall section context
+     * @param minGrade inclusive lower bound grade
+     * @param maxGrade inclusive upper bound grade
+     * @return matching active climbing problems
+     */
+    public List<ClimbingProblem> getActiveProblemBetweenGrade(WallSection wall, ClimbingGrade minGrade,
+                                                           ClimbingGrade maxGrade){
+        return climbingProblemRepository.findByWallSectionAndProblemStatusAndClimbingGradeBetween(
+                wall, LifecycleStatus.ACTIVE, minGrade, maxGrade
+        );
+    }
+
+    /**
+     * Returns active problems in a wall section within an inclusive grade range,
+     * ordered by assigned grade ascending.
+     *
+     * @param wall wall section context
+     * @param minGrade inclusive lower bound grade
+     * @param maxGrade inclusive upper bound grade
+     * @return matching active climbing problems sorted ascending by grade
+     */
+    public List<ClimbingProblem> getActiveProblemBetweenAsc(WallSection wall, ClimbingGrade minGrade,
+                                                            ClimbingGrade maxGrade){
+        return climbingProblemRepository.findByWallSectionAndProblemStatusAndClimbingGradeBetweenOrderByClimbingGradeAsc
+                (wall, LifecycleStatus.ACTIVE, minGrade, maxGrade);
+    }
+
+    /**
+     * Returns active problems in a wall section within an inclusive grade range,
+     * ordered by assigned grade descending.
+     *
+     * @param wall wall section context
+     * @param minGrade inclusive lower bound grade
+     * @param maxGrade inclusive upper bound grade
+     * @return matching active climbing problems sorted descending by grade
+     */
+    public List<ClimbingProblem> getActiveProblemBetweenDesc(WallSection wall, ClimbingGrade minGrade,
+                                                             ClimbingGrade maxGrade){
+        return climbingProblemRepository.findByWallSectionAndProblemStatusAndClimbingGradeBetweenOrderByClimbingGradeDesc
+                (wall, LifecycleStatus.ACTIVE, minGrade, maxGrade);
     }
 }

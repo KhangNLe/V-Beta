@@ -1,7 +1,9 @@
 package app.VBeta.repository;
 
 import app.VBeta.domain.model.ClimbingProblem;
+import app.VBeta.domain.model.LifecycleStatus;
 import app.VBeta.domain.model.WallSection;
+import app.VBeta.domain.model.ClimbingGrade;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -18,5 +20,55 @@ public interface ClimbingProblemRepository extends JpaRepository<ClimbingProblem
      */
     List<ClimbingProblem> findByWallSection(WallSection wallSection);
 
-    List<ClimbingProblem> findByWallSection_AndClimbingGrade(WallSection wallSection, ClimbingGrade climbingGrade);
+    /**
+     * Returns problems for a wall section matching an exact assigned grade and lifecycle status.
+     *
+     * @param wallSection wall section
+     * @param climbingGrade assigned climbing grade
+     * @param status lifecycle status filter
+     * @return matching climbing problems
+     */
+    List<ClimbingProblem> findByWallSectionAndClimbingGradeAndProblemStatus(
+            WallSection wallSection, ClimbingGrade climbingGrade, LifecycleStatus status);
+
+    /**
+     * Returns problems for a wall section with the given status whose assigned grade is
+     * inclusively between {@code minGrade} and {@code maxGrade}, unsorted.
+     *
+     * @param wallSection wall section
+     * @param status lifecycle status filter
+     * @param minGrade inclusive lower bound grade
+     * @param maxGrade inclusive upper bound grade
+     * @return matching climbing problems
+     */
+    List<ClimbingProblem> findByWallSectionAndProblemStatusAndClimbingGradeBetween(WallSection wallSection,
+                                                                   LifecycleStatus status,
+                                                                   ClimbingGrade minGrade,
+                                                                   ClimbingGrade maxGrade);
+
+    /**
+     * Returns problems for a wall section with the given status whose assigned grade is
+     * inclusively between {@code minGrade} and {@code maxGrade}, ordered by grade ascending.
+     *
+     * @param wallSection wall section
+     * @param status lifecycle status filter
+     * @param minGrade inclusive lower bound grade
+     * @param maxGrade inclusive upper bound grade
+     * @return matching climbing problems sorted ascending by assigned grade
+     */
+    List<ClimbingProblem> findByWallSectionAndProblemStatusAndClimbingGradeBetweenOrderByClimbingGradeAsc(
+            WallSection wallSection, LifecycleStatus status, ClimbingGrade minGrade, ClimbingGrade maxGrade);
+
+    /**
+     * Returns problems for a wall section with the given status whose assigned grade is
+     * inclusively between {@code minGrade} and {@code maxGrade}, ordered by grade descending.
+     *
+     * @param wallSection wall section
+     * @param status lifecycle status filter
+     * @param minGrade inclusive lower bound grade
+     * @param maxGrade inclusive upper bound grade
+     * @return matching climbing problems sorted descending by assigned grade
+     */
+    List<ClimbingProblem> findByWallSectionAndProblemStatusAndClimbingGradeBetweenOrderByClimbingGradeDesc(
+            WallSection wallSection, LifecycleStatus status, ClimbingGrade minGrade, ClimbingGrade maxGrade);
 }
