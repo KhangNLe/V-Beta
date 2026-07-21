@@ -2,18 +2,15 @@ package app.VBeta.controller;
 
 import app.VBeta.api.dto.ClimbingProblemResponse;
 import app.VBeta.application.ProblemFilteringService;
-import app.VBeta.domain.model.ClimbingProblem;
 import app.VBeta.domain.model.GradeDefinition;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
 
 import java.util.List;
 
 /**
- * {@code ProblemDiscoveryController} exposes search and grade-range discovery endpoints
- * under {@code /search}.
+ * {@code ProblemDiscoveryController} exposes grade-range discovery endpoints under {@code /search}.
  * <p>
  * It delegates filtering and sorting to {@link ProblemFilteringService} and returns
  * active climbing problems as {@link ClimbingProblemResponse} lists.
@@ -33,59 +30,30 @@ public class ProblemDiscoveryController {
     }
 
     /**
-     * Returns active problems in a wall section within an inclusive grade range, unsorted.
+     * Returns active problems in a wall section within an inclusive grade range.
+     * <p>
+     * Optional {@code sort} values: {@code asc}, {@code desc}. When omitted, results are unsorted.
      *
      * @param wallSectionId wall section identifier
-     * @param lowestGrade inclusive lower bound grade
-     * @param highestGrade inclusive upper bound grade
+     * @param min inclusive lower bound grade
+     * @param max inclusive upper bound grade
+     * @param sort optional sort direction ({@code asc} or {@code desc})
      * @return {@code 200 OK} with matching problem responses
      */
-    @GetMapping("/{wallSectionId}/range={lowestGrade}-{highestGrade}")
-    public ResponseEntity<List<ClimbingProblemResponse>> filterProblemByGradeRange(@PathVariable Long wallSectionId,
-                                                                                   @PathVariable GradeDefinition lowestGrade,
-                                                                                   @PathVariable GradeDefinition highestGrade) {
-        List<ClimbingProblemResponse> responses = problemFilteringService.findProblemsByRange(wallSectionId,
-                lowestGrade, highestGrade);
-
+    @GetMapping("/{wallSectionId}")
+    public ResponseEntity<List<ClimbingProblemResponse>> filterProblemByGradeRange(
+            @PathVariable Long wallSectionId,
+            @RequestParam GradeDefinition min,
+            @RequestParam GradeDefinition max,
+            @RequestParam(required = false) String sort) {
+        List<ClimbingProblemResponse> responses;
+        if ("asc".equalsIgnoreCase(sort)) {
+            responses = problemFilteringService.findProblemBetweenRangeAsc(wallSectionId, min, max);
+        } else if ("desc".equalsIgnoreCase(sort)) {
+            responses = problemFilteringService.findProblemBetweenRangeDesc(wallSectionId, min, max);
+        } else {
+            responses = problemFilteringService.findProblemsByRange(wallSectionId, min, max);
+        }
         return new ResponseEntity<>(responses, HttpStatus.OK);
     }
-
-    /**
-     * Returns active problems in a wall section within an inclusive grade range,
-     * sorted by assigned grade ascending.
-     *
-     * @param wallSectionId wall section identifier
-     * @param lowest inclusive lower bound grade
-     * @param highest inclusive upper bound grade
-     * @return {@code 200 OK} with matching problem responses ordered ascending by grade
-     */
-    @GetMapping("/{wallSectionId}/range={lowest}-{highest}&sort=asc")
-    public ResponseEntity<List<ClimbingProblemResponse>> filterProblemByGradeAsc(@PathVariable Long wallSectionId,
-                                                                                 @PathVariable GradeDefinition lowest,
-                                                                                 @PathVariable GradeDefinition highest) {
-        List<ClimbingProblemResponse> problemResponses = problemFilteringService.findProblemBetweenRangeAsc(
-                wallSectionId, lowest, highest);
-
-        return new ResponseEntity<>(problemResponses, HttpStatus.OK);
-    }
-
-    /**
-     * Returns active problems in a wall section within an inclusive grade range,
-     * sorted by assigned grade descending.
-     *
-     * @param wallSectionId wall section identifier
-     * @param lowest inclusive lower bound grade
-     * @param highest inclusive upper bound grade
-     * @return {@code 200 OK} with matching problem responses ordered descending by grade
-     */
-    @GetMapping("/{wallSectionId}/range={lowest}-{highest}&sort=desc")
-    public ResponseEntity<List<ClimbingProblemResponse>> filterProblemByGradeDesc(@PathVariable Long wallSectionId,
-                                                                                  @PathVariable GradeDefinition lowest,
-                                                                                  @PathVariable GradeDefinition highest){
-        List<ClimbingProblemResponse> problemResponses = problemFilteringService.findProblemBetweenRangeDesc(
-                wallSectionId, lowest, highest);
-
-        return new  ResponseEntity<>(problemResponses, HttpStatus.OK);
-    }
-
 }

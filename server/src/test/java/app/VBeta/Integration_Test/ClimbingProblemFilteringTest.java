@@ -327,7 +327,7 @@ public class ClimbingProblemFilteringTest {
     }
 
     private String searchRangePath(Long wallSectionId, GradeDefinition lowest, GradeDefinition highest) {
-        return "/search/" + wallSectionId + "/range=" + lowest.name() + "-" + highest.name();
+        return "/search/" + wallSectionId + "?min=" + lowest.name() + "&max=" + highest.name();
     }
 
     private String searchRangeSortPath(Long wallSectionId, GradeDefinition lowest, GradeDefinition highest, String sort) {
@@ -394,9 +394,9 @@ public class ClimbingProblemFilteringTest {
     }
 
     @Test
-    @DisplayName("GET /search returns client error for invalid grade path value")
+    @DisplayName("GET /search returns client error for invalid grade query value")
     void controllerReturnsClientErrorForInvalidGrade() throws Exception {
-        mockMvc.perform(get(URI.create("/search/1/range=V99-V5"))
+        mockMvc.perform(get(URI.create("/search/1?min=V99&max=V5"))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().is4xxClientError());
     }
