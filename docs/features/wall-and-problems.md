@@ -15,6 +15,8 @@ This section documents wall section and climbing problem features currently avai
 - Authenticated discussion actions (comments, beta upload, grade suggestion)
 - Guest browsing mode with read-only wall/problem access and banner messaging
 - Owner/admin deletion behavior for comments and solution betas
+- Backend discovery: filter active problems by inclusive grade range within a wall section
+- Backend discovery: sort filtered problems by assigned grade ascending or descending
 
 ## User Flows
 
@@ -25,6 +27,15 @@ This section documents wall section and climbing problem features currently avai
 3. App loads problems for that section.
 4. If a wall section is invalid or missing, user is redirected back to `/main-page`.
 5. User opens an individual problem page.
+
+### Problem Discovery by Grade (API)
+
+1. Client requests active problems for a wall section within `lowestGrade`–`highestGrade`.
+2. Optional sort selects ascending or descending grade order.
+3. API returns matching active problems only (archived problems are excluded).
+4. Invalid ranges (`lowest > highest`) fail with `400`; unknown wall sections fail with `404`.
+
+Frontend filter/sort controls and text/keyword search are not shipped yet.
 
 ### Setter Management Flow
 
@@ -61,18 +72,22 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
     - `v-beta/src/app/wall/[wallSectionID]/problem/[problemId]/page.js`
 - Frontend API modules: 
     - `v-beta/src/api/wallSections.js`
-    - `v-beta/src/api/comments.js`,-
+    - `v-beta/src/api/comments.js`
     - `v-beta/src/api/solutionBeta.js`
 - Backend controllers/services:
-    - `server/src/main/java/edu/ics499/VBeta/controller/WallSectionController.java`
-    - `server/src/main/java/edu/ics499/VBeta/controller/ProblemDiscussionController.java`
-    - `server/src/main/java/edu/ics499/VBeta/application/ClimbingWallService.java`
-    - `server/src/main/java/edu/ics499/VBeta/application/ProblemDiscussionService.java`
+    - `server/src/main/java/app/VBeta/controller/WallSectionController.java`
+    - `server/src/main/java/app/VBeta/controller/ProblemDiscussionController.java`
+    - `server/src/main/java/app/VBeta/controller/ProblemDiscoveryController.java`
+    - `server/src/main/java/app/VBeta/application/ClimbingWallService.java`
+    - `server/src/main/java/app/VBeta/application/ProblemDiscussionService.java`
+    - `server/src/main/java/app/VBeta/application/ProblemFilteringService.java`
 
 ## Limitations and Notes
 
 - Some endpoint semantics are legacy (for example, delete problem is currently exposed as a GET route in backend controller).
 - UI gating and backend authorization should both be revalidated when role logic changes.
+- Discovery grade-range endpoints use query params (`?min=&max=&sort=`).
+- Keyword/text search is deferred (frontend-side filtering of loaded results or a future API).
 
 ## Future Enhancements
 

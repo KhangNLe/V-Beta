@@ -4,9 +4,10 @@ This document reflects the current repository state on `package_sub` and compari
 
 ## Functional Limitations
 
-### 1) Search/filter/sort for climbing problems is not implemented
-- Current flows support listing sections and section-specific problems, but there is no shipped search, grade-range filter, or sorting experience.
-- Impact: scalability/usability degrades as the number of problems grows.
+### 1) Text search and discovery UI are incomplete
+- Backend grade-range filtering and asc/desc grade sorting are available under `/search`.
+- Remaining gap: no shipped keyword/text search API, and the frontend filter/sort UI is not wired yet.
+- Impact: users still rely on full wall-section problem lists until the UI (and optional text search) lands.
 
 ### 2) Comment model is problem-level, not beta-level
 - Discussion comments are attached to climbing problems (with user-comment linkage), not directly to a specific beta submission.

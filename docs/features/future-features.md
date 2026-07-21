@@ -38,9 +38,9 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** Wall/Problems
-- **Current Gap:** Basic CRUD is present, but limited filtering/sorting and workflow support.
-- **Potential Work:** Add filtering, search, and bulk/problem lifecycle utilities.
-- **Dependencies:** API additions and UI controls.
+- **Current Gap:** Grade-range filter/sort API exists; broader workflow utilities and discovery UI remain limited.
+- **Potential Work:** Complete frontend discovery controls, optional text search, and bulk/problem lifecycle utilities.
+- **Dependencies:** API client + UI controls; optional search endpoint later.
 
 ### 3) Better Content Moderation and Auditability
 
@@ -87,14 +87,14 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Add image support for each wall section and each climbing problem (upload, storage, display).
 - **Dependencies:** Media storage integration, schema/API extensions, frontend image components and fallbacks.
 
-### 8) Search, Grade-Range Filtering, and Sorting for Problems
+### 8) Text Search and Discovery UI for Problems
 
 - **Priority:** High
-- **Effort:** Large
+- **Effort:** Medium
 - **Area:** Wall/Problem Discovery
-- **Current Gap:** Users have limited options to quickly find wall sections/problems by search criteria and grade range.
-- **Potential Work:** Add search for wall sections and climbing problems, grade-range filters (minimum/maximum grade), and sort controls for ascending or descending problem order.
-- **Dependencies:** Query/filter API support, frontend filter UI state, consistent grade ordering logic across backend/frontend.
+- **Current Gap:** Backend grade-range filter and asc/desc sort APIs exist under `/search`, but there is no keyword/text search API and no shipped frontend filter/sort UI.
+- **Potential Work:** Wire UI controls to the existing grade-range/sort endpoints; optionally add client-side text filtering on loaded results, or a later backend text-search endpoint if lists grow.
+- **Dependencies:** Frontend filter UI state, API client for `/search`, consistent grade ordering display.
 
 ### 9) Multi-Gym Support with Per-Gym Roles
 

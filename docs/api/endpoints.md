@@ -47,6 +47,28 @@ If a bearer token is invalid/expired, the backend returns `401` with:
     - `perceiveGrade` (aggregate/perceived value),
     - `discussion` (ordered `UserCommentData` entries).
 
+### Problem Discovery (Grade Range / Sort)
+
+Public guest-readable endpoints. Returns only **active** problems. Grade bounds are inclusive. Keyword/text search is not provided by these endpoints.
+
+- `GET /search/{wallSectionId}?min={lowestGrade}&max={highestGrade}`
+  - Purpose: list active problems in a wall section within an inclusive grade range (unsorted).
+  - Path params:
+    - `wallSectionId`
+  - Query params:
+    - `min` / `max` (`GradeDefinition`, e.g. `V0`, `V5`)
+    - `sort` (optional): `asc` or `desc`
+  - Response: array of `ClimbingProblemResponse` (`problemId`, `holdColor`, `info`, `createdDate`, `assignedGrade`).
+  - Errors:
+    - `400` when `min` is harder than `max`
+    - `404` when the wall section does not exist
+
+- `GET /search/{wallSectionId}?min={lowest}&max={highest}&sort=asc`
+  - Purpose: same filter as above, ordered by assigned grade ascending (easier → harder).
+
+- `GET /search/{wallSectionId}?min={lowest}&max={highest}&sort=desc`
+  - Purpose: same filter as above, ordered by assigned grade descending (harder → easier).
+
 ## Authenticated Endpoints (No Action Gate)
 
 ### Account Session and Current Account

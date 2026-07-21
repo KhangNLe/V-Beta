@@ -19,6 +19,7 @@ Use this together with:
 | Discussion Comments | post comment, delete as owner/admin, block unauthorized delete | DISC-01 | High |
 | Solution Beta | signed URL request, upload, save metadata, delete beta | DISC-02 | High |
 | Perceived Grade | submit perceived grade and verify reflected result | DISC-03 | Medium |
+| Problem Discovery | grade-range filter, asc/desc sort, invalid range/missing wall behavior | DISC-04 | High |
 | API Reliability | health/meta, unauthorized/invalid token behavior | API-01, API-02 | Medium |
 | Theming and UX Stability | critical page render in light/dark mode, key nav interactions | visual sanity pass during smoke | Medium |
 
@@ -32,6 +33,8 @@ When code changes in these areas, minimum regression scope should include:
   - Re-run account role changes + setter/admin/guest restricted actions.
 - **Wall/problem controllers or APIs changed**:
   - Re-run WALL-01/02/03 and DISC-03.
+- **Discovery/filter APIs changed** (`/search`, `ProblemFilteringService`):
+  - Re-run DISC-04 and related integration tests in `ClimbingProblemFilteringTest`.
 - **Discussion/beta APIs changed**:
   - Re-run DISC-01/02 fully.
 - **Routing/navigation/layout changed**:

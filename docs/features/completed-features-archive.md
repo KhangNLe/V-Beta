@@ -54,6 +54,23 @@ Related docs:
 - `docs/testing/test-strategy.md`
 - `docs/testing/server-test-report.md`
 
+### D) Backend Grade-Range Discovery API
+
+Status: Completed (backend slice)
+
+Highlights:
+
+- Public `/search` endpoints filter active problems by inclusive grade range within a wall section.
+- Ascending and descending grade sort variants are supported.
+- Invalid range and missing-wall error behavior covered by integration tests.
+- Keyword/text search intentionally deferred; frontend discovery UI remains pending for Sprint 4.
+
+Related docs:
+
+- `docs/api/endpoints.md`
+- `docs/features/wall-and-problems.md`
+- `docs/implementation-roadmap.md`
+
 ## Moved Out of Future Queue
 
 The following future backlog topics were completed and removed from `future-features.md`:
