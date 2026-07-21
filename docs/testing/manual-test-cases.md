@@ -125,6 +125,20 @@ This document defines the manual regression checklist for validating core user f
   - request succeeds
   - perceived grade display updates
 
+### DISC-04: Problem Discovery by Grade Range
+
+- Steps:
+  1. Call `GET /search/{wallSectionId}?min={lowest}&max={highest}` for a known wall
+  2. Call the same range with `&sort=asc` and `&sort=desc`
+  3. Retry with `lowest > highest`
+  4. Retry with a non-existent wall section id
+- Expected:
+  - valid ranges return only active problems within the inclusive grade bounds
+  - ascending/descending responses are ordered by assigned grade
+  - invalid range returns `400`
+  - missing wall returns `404`
+  - keyword/text search is not required for this case
+
 ### ACCOUNT-01: View Account Profile
 
 - Steps:

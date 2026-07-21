@@ -291,3 +291,54 @@ Authorization: Bearer <firebase_id_token>
   "roleName": "SETTER"
 }
 ```
+
+## 12) Filter Problems by Grade Range (Public)
+
+### Request
+
+```http
+GET /search/1?min=V0&max=V5
+```
+
+### Response (200)
+
+```json
+[
+  {
+    "problemId": 2,
+    "holdColor": "RED",
+    "info": "RED V0-V1",
+    "createdDate": "2026-07-21T12:00:00",
+    "assignedGrade": "V0"
+  }
+]
+```
+
+## 13) Filter Problems by Grade Range Ascending (Public)
+
+### Request
+
+```http
+GET /search/1?min=V0&max=V5&sort=asc
+```
+
+### Response (200)
+
+Same `ClimbingProblemResponse` array shape as above, ordered easier → harder by `assignedGrade`.
+
+## 14) Filter Problems by Grade Range Descending (Public)
+
+### Request
+
+```http
+GET /search/1?min=V0&max=V5&sort=desc
+```
+
+### Response (200)
+
+Same array shape, ordered harder → easier by `assignedGrade`.
+
+### Error examples
+
+- `400` when lowest grade is harder than highest (`/search/1?min=V10&max=V2`)
+- `404` when wall section does not exist

@@ -25,16 +25,22 @@ Deliver discovery improvements for wall sections and climbing problems.
 
 ### Scope
 
-- Search
-- Grade-range filters
-- Asc/desc sorting
-- Supporting API + UI state
+- Grade-range filters (backend API shipped)
+- Asc/desc sorting by grade (backend API shipped)
+- Supporting UI filter/sort state (pending)
+- Text search deferred for now (optional later; prefer frontend filter on loaded results or a future backend endpoint)
 
 ### Acceptance Criteria
 
-- [ ] API supports search/filter/sort queries
+- [x] API supports grade-range filter and asc/desc sort queries
 - [ ] UI exposes filters/sort with stable state handling
 - [ ] End-to-end discovery flow tested
+
+### Backend Notes
+
+- Public endpoints under `/search/{wallSectionId}/...` return active problems in an inclusive grade range.
+- Invalid ranges (`lowest > highest`) return `400`; missing wall sections return `404`.
+- Full-text / keyword search is intentionally out of scope for this backend slice.
 
 ## Upcoming Sprints
 
