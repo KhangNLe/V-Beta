@@ -25,16 +25,24 @@ Deliver discovery improvements for wall sections and climbing problems.
 
 ### Scope
 
-- Search
-- Grade-range filters
-- Asc/desc sorting
-- Supporting API + UI state
+- Grade-range filters (backend API + wall-page UI shipped)
+- Sort by most recent, easiest, or hardest (UI; easiest/hardest via `/search` sort; most recent client-side by `createdDate`)
+
+### Explicitly out of scope (later sprint)
+
+- Keyword / free-text search for problems (not required for Sprint 4 discovery)
 
 ### Acceptance Criteria
 
-- [ ] API supports search/filter/sort queries
-- [ ] UI exposes filters/sort with stable state handling
+- [x] API supports grade-range filter and asc/desc sort queries
+- [x] UI exposes filters/sort with stable state handling
 - [ ] End-to-end discovery flow tested
+
+### Backend / Frontend Notes
+
+- Public endpoints: `GET /search/{wallSectionId}?min=&max=&sort=asc|desc` (omit `sort` for unsorted / most-recent client sort).
+- Invalid ranges (`min > max`) return `400`; missing wall sections return `404`; `/search/**` is guest-readable and CORS-enabled.
+- Wall section page Filter dialog: grade range (min–max), sort radios, Apply / Clear; Apply dimmed when min is harder than max.
 
 ## Upcoming Sprints
 
@@ -78,6 +86,16 @@ Focus:
 - Wall/problem images
 - Account activity history
 - Perceived-grade detail views
+
+### Sprint 9: Problem Text Search (Later)
+
+Estimated Duration: 1–2 weeks
+
+Focus:
+
+- Keyword / free-text search for climbing problems (and optionally wall sections)
+- Prefer client-side filtering first if lists stay small; add a backend search query only if needed
+- Not part of Sprint 4 discovery (grade filter/sort already covers current discovery needs)
 
 ## Definition of Done (Applies to Every Sprint)
 

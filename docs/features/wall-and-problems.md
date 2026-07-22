@@ -15,6 +15,10 @@ This section documents wall section and climbing problem features currently avai
 - Authenticated discussion actions (comments, beta upload, grade suggestion)
 - Guest browsing mode with read-only wall/problem access and banner messaging
 - Owner/admin deletion behavior for comments and solution betas
+- Backend discovery: filter active problems by inclusive grade range within a wall section
+- Backend discovery: sort filtered problems by assigned grade ascending or descending
+- Wall section Filter UI: grade range (min–max), sort by most recent / easiest / hardest, Apply / Clear
+- Add Problem grade picker uses a grade dropdown (`VB`–`V17`)
 
 ## User Flows
 
@@ -22,9 +26,22 @@ This section documents wall section and climbing problem features currently avai
 
 1. User opens `/main-page`.
 2. User selects a wall section.
-3. App loads problems for that section.
+3. App loads problems for that section (default list order from the wall problems endpoint).
 4. If a wall section is invalid or missing, user is redirected back to `/main-page`.
 5. User opens an individual problem page.
+
+### Problem Discovery by Grade (UI + API)
+
+1. On a wall section page, user opens **Filter**.
+2. User selects inclusive min/max grades and a sort mode:
+   - **Most Recent** — grade filter via `/search` without `sort`, then client sorts by `createdDate` descending
+   - **Easiest** — `/search?...&sort=asc`
+   - **Hardest** — `/search?...&sort=desc`
+3. **Apply** loads matching active problems; Apply is disabled when min is harder than max.
+4. **Clear filters** restores the default wall-section problem list.
+5. Guests and signed-in users can use Filter; invalid API ranges still return `400`, missing walls `404`.
+
+Keyword/text search is deferred to a later sprint (not Sprint 4).
 
 ### Setter Management Flow
 
@@ -61,18 +78,23 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
     - `v-beta/src/app/wall/[wallSectionID]/problem/[problemId]/page.js`
 - Frontend API modules: 
     - `v-beta/src/api/wallSections.js`
-    - `v-beta/src/api/comments.js`,-
+    - `v-beta/src/api/comments.js`
     - `v-beta/src/api/solutionBeta.js`
 - Backend controllers/services:
-    - `server/src/main/java/edu/ics499/VBeta/controller/WallSectionController.java`
-    - `server/src/main/java/edu/ics499/VBeta/controller/ProblemDiscussionController.java`
-    - `server/src/main/java/edu/ics499/VBeta/application/ClimbingWallService.java`
-    - `server/src/main/java/edu/ics499/VBeta/application/ProblemDiscussionService.java`
+    - `server/src/main/java/app/VBeta/controller/WallSectionController.java`
+    - `server/src/main/java/app/VBeta/controller/ProblemDiscussionController.java`
+    - `server/src/main/java/app/VBeta/controller/ProblemDiscoveryController.java`
+    - `server/src/main/java/app/VBeta/application/ClimbingWallService.java`
+    - `server/src/main/java/app/VBeta/application/ProblemDiscussionService.java`
+    - `server/src/main/java/app/VBeta/application/ProblemFilteringService.java`
 
 ## Limitations and Notes
 
 - Some endpoint semantics are legacy (for example, delete problem is currently exposed as a GET route in backend controller).
 - UI gating and backend authorization should both be revalidated when role logic changes.
+- Discovery grade-range endpoints use query params (`?min=&max=&sort=`).
+- CORS allows `/search/**` for the frontend origin (same pattern as `/home/**`).
+- Keyword/text search is deferred to a later sprint (roadmap Sprint 9), not Sprint 4.
 
 ## Future Enhancements
 

@@ -4,9 +4,10 @@ This document reflects the current repository state on `package_sub` and compari
 
 ## Functional Limitations
 
-### 1) Search/filter/sort for climbing problems is not implemented
-- Current flows support listing sections and section-specific problems, but there is no shipped search, grade-range filter, or sorting experience.
-- Impact: scalability/usability degrades as the number of problems grows.
+### 1) Keyword/text search for problems is deferred to a later sprint
+- Grade-range filtering and sort (most recent / easiest / hardest) ship in Sprint 4 discovery.
+- Text/keyword search is intentionally not in Sprint 4; tracked for a later sprint (see roadmap Sprint 9).
+- Impact: users filter by grade/sort only until that later sprint.
 
 ### 2) Comment model is problem-level, not beta-level
 - Discussion comments are attached to climbing problems (with user-comment linkage), not directly to a specific beta submission.
