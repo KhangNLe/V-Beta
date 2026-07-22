@@ -53,6 +53,44 @@ export async function fetchWallSectionProblemsForUser(user, sectionId) {
 }
 
 /**
+ * Active problems in a wall section filtered by inclusive grade range and optional sort.
+ * Maps to `GET /search/{sectionId}?min=&max=&sort=`.
+ *
+ * @param {import("firebase/auth").User | null} user
+ * @param {number} sectionId
+ * @param {{ min: string, max: string, sort?: "asc" | "desc" }} options
+ * @returns {Promise<import("@/types/climbingProblem").ClimbingProblem[]>}
+ */
+export async function fetchFilteredWallSectionProblems(user, sectionId, options) {
+  const headers = {};
+
+  if (user) {
+    const idToken = await user.getIdToken();
+    headers.Authorization = `Bearer ${idToken}`;
+  }
+
+  const params = new URLSearchParams({
+    min: options.min,
+    max: options.max,
+  });
+  if (options.sort === "asc" || options.sort === "desc") {
+    params.set("sort", options.sort);
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/search/${sectionId}?${params.toString()}`,
+    { headers },
+  );
+  if (!response.ok) {
+    throw new Error(
+      `Failed to filter wall section problems: ${response.status}`,
+    );
+  }
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
+}
+
+/**
  * Fetch a single problem by ID within a wall section.
  *
  * @param {import("firebase/auth").User} user
