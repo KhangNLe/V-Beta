@@ -38,9 +38,9 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** Wall/Problems
-- **Current Gap:** Grade-range filter/sort API exists; broader workflow utilities and discovery UI remain limited.
-- **Potential Work:** Complete frontend discovery controls, optional text search, and bulk/problem lifecycle utilities.
-- **Dependencies:** API client + UI controls; optional search endpoint later.
+- **Current Gap:** Grade-range filter/sort UI and API exist; broader workflow utilities remain limited.
+- **Potential Work:** Bulk/problem lifecycle utilities (text search is tracked separately for a later sprint).
+- **Dependencies:** Existing wall/problem APIs and UI patterns.
 
 ### 3) Better Content Moderation and Auditability
 
@@ -87,14 +87,15 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Add image support for each wall section and each climbing problem (upload, storage, display).
 - **Dependencies:** Media storage integration, schema/API extensions, frontend image components and fallbacks.
 
-### 8) Text Search and Discovery UI for Problems
+### 8) Text Search for Problems
 
-- **Priority:** High
+- **Priority:** Low
 - **Effort:** Medium
 - **Area:** Wall/Problem Discovery
-- **Current Gap:** Backend grade-range filter and asc/desc sort APIs exist under `/search`, but there is no keyword/text search API and no shipped frontend filter/sort UI.
-- **Potential Work:** Wire UI controls to the existing grade-range/sort endpoints; optionally add client-side text filtering on loaded results, or a later backend text-search endpoint if lists grow.
-- **Dependencies:** Frontend filter UI state, API client for `/search`, consistent grade ordering display.
+- **Target sprint:** Later (roadmap Sprint 9) — **not** Sprint 4
+- **Current Gap:** Sprint 4 ships grade-range filter and most recent / easiest / hardest sort; free-text search is intentionally deferred.
+- **Potential Work:** Add client-side text filtering on loaded results first; add a backend text-search endpoint only if lists grow.
+- **Dependencies:** UX for search input; optional API contract if server-side search is required.
 
 ### 9) Multi-Gym Support with Per-Gym Roles
 

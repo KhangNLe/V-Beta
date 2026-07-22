@@ -125,12 +125,12 @@ This document defines the manual regression checklist for validating core user f
   - request succeeds
   - perceived grade display updates
 
-### DISC-04: Problem Discovery by Grade Range
+### DISC-04: Problem Discovery by Grade Range (API)
 
 - Steps:
   1. Call `GET /search/{wallSectionId}?min={lowest}&max={highest}` for a known wall
   2. Call the same range with `&sort=asc` and `&sort=desc`
-  3. Retry with `lowest > highest`
+  3. Retry with `min > max`
   4. Retry with a non-existent wall section id
 - Expected:
   - valid ranges return only active problems within the inclusive grade bounds
@@ -138,6 +138,20 @@ This document defines the manual regression checklist for validating core user f
   - invalid range returns `400`
   - missing wall returns `404`
   - keyword/text search is not required for this case
+
+### DISC-05: Wall Section Filter UI
+
+- Steps:
+  1. Open a wall section as guest or signed-in user
+  2. Open **Filter**, choose min–max grades and Most Recent / Easiest / Hardest
+  3. Apply and confirm the problem list and filter hint update
+  4. Select min harder than max and confirm Apply is disabled/dimmed
+  5. Clear filters and confirm the default list is restored
+- Expected:
+  - Filter is available without setter role
+  - Easiest/Hardest use `/search` with `sort=asc|desc`
+  - Most Recent uses `/search` without sort and orders by newest `createdDate`
+  - Clear returns to the default wall problems fetch
 
 ### ACCOUNT-01: View Account Profile
 

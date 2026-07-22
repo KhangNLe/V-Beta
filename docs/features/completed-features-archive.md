@@ -63,12 +63,31 @@ Highlights:
 - Public `/search` endpoints filter active problems by inclusive grade range within a wall section.
 - Ascending and descending grade sort variants are supported.
 - Invalid range and missing-wall error behavior covered by integration tests.
-- Keyword/text search intentionally deferred; frontend discovery UI remains pending for Sprint 4.
+- CORS mapping added for `/search/**`.
 
 Related docs:
 
 - `docs/api/endpoints.md`
 - `docs/features/wall-and-problems.md`
+- `docs/implementation-roadmap.md`
+
+### E) Wall Section Filter UI for Grade Range and Sort
+
+Status: Completed (frontend slice)
+
+Highlights:
+
+- Filter button/dialog on the wall section page for guests and signed-in users.
+- Inclusive min–max grade range with Apply disabled when min is harder than max.
+- Sort modes: Most Recent (client `createdDate` desc after `/search`), Easiest (`sort=asc`), Hardest (`sort=desc`).
+- Clear restores the default wall problems list; active filter hint shown while applied.
+- Add Problem assigned grade uses a `VB`–`V17` dropdown.
+- Covered by `wall-page.test.js` filter cases.
+
+Related docs:
+
+- `docs/features/wall-and-problems.md`
+- `docs/testing/manual-test-cases.md` (DISC-04 / DISC-05)
 - `docs/implementation-roadmap.md`
 
 ## Moved Out of Future Queue
