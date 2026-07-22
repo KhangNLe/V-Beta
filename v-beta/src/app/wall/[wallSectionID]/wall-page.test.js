@@ -4,6 +4,7 @@ import WallSectionPage from "./page";
 import {
   createWallSectionProblem,
   deleteWallSectionProblem,
+  fetchFilteredWallSectionProblems,
   fetchWallSectionProblemsForUser,
   fetchWallSectionsForUser,
   resetWallSection,
@@ -15,6 +16,7 @@ import { toast } from "react-toastify";
 jest.mock("@/api/wallSections", () => ({
   createWallSectionProblem: jest.fn(),
   deleteWallSectionProblem: jest.fn(),
+  fetchFilteredWallSectionProblems: jest.fn(),
   fetchWallSectionProblemsForUser: jest.fn(),
   fetchWallSectionsForUser: jest.fn(),
   resetWallSection: jest.fn(),
@@ -39,6 +41,7 @@ jest.mock("react-toastify", () => ({
 jest.mock("lucide-react", () => ({
   ArrowLeftIcon: () => <span>Back icon</span>,
   MoreVertical: () => <span>More</span>,
+  SlidersHorizontal: () => <span>Filter icon</span>,
 }));
 
 jest.mock("@/components/GuestBanner", () => ({
@@ -166,6 +169,7 @@ function renderWall({
   useRequireAuth.mockReturnValue({ ready, user, account });
   fetchWallSectionsForUser.mockResolvedValue(sections);
   fetchWallSectionProblemsForUser.mockResolvedValue(problems);
+  fetchFilteredWallSectionProblems.mockResolvedValue(problems);
   return render(<WallSectionPage />);
 }
 
@@ -214,6 +218,15 @@ describe("WallSectionPage coverage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Back icon" }));
       expect(mockPush).toHaveBeenCalledWith("/main-page");
     });
+
+    it("shows filter button for guests and opens filter dialog", async () => {
+      renderWall({ user: null, account: null });
+      expect(await screen.findByRole("button", { name: /Filter/i })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /Filter/i }));
+      expect(screen.getByText("Filter Problems")).toBeInTheDocument();
+      expect(screen.getByLabelText("Minimum grade")).toBeInTheDocument();
+      expect(screen.getByLabelText("Maximum grade")).toBeInTheDocument();
+    });
   });
 
   describe("Boundaries and Interfaces", () => {
@@ -240,25 +253,66 @@ describe("WallSectionPage coverage", () => {
       expect(screen.queryByLabelText("Problem actions")).not.toBeInTheDocument();
     });
 
-    it("rejects invalid add problem grade", async () => {
+    it("dims apply when min grade is harder than max", async () => {
       renderWall();
       await screen.findByText("Blue");
-      fireEvent.click(screen.getByRole("button", { name: "Add New Problem" }));
-      fireEvent.change(screen.getByLabelText("Hold Color"), { target: { value: "Green" } });
-      fireEvent.change(screen.getByLabelText("Assigned Grade"), { target: { value: "V99" } });
-      fireEvent.change(screen.getByLabelText("Notes"), { target: { value: "Hard crux" } });
-      fireEvent.click(screen.getByRole("button", { name: "Add problem" }));
-      expect(createWallSectionProblem).not.toHaveBeenCalled();
-      expect(toast.error).toHaveBeenCalledWith("Enter a valid grade: VB or V0 through V17.");
+      fireEvent.click(screen.getByRole("button", { name: /Filter/i }));
+      fireEvent.change(screen.getByLabelText("Minimum grade"), { target: { value: "V10" } });
+      fireEvent.change(screen.getByLabelText("Maximum grade"), { target: { value: "V2" } });
+      expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
+      expect(fetchFilteredWallSectionProblems).not.toHaveBeenCalled();
     });
 
-    it("submits add problem with normalized grade and closes dialog", async () => {
+    it("applies grade filter with default most-recent sort", async () => {
+      renderWall();
+      await screen.findByText("Blue");
+      fetchFilteredWallSectionProblems.mockResolvedValue([
+        { problemId: 3, holdColor: "Yellow", info: "Crimpy", assignedGrade: "V3", createdDate: "2026-01-01" },
+        { problemId: 4, holdColor: "Orange", info: "Slopey", assignedGrade: "V4", createdDate: "2026-06-01" },
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: /Filter/i }));
+      fireEvent.change(screen.getByLabelText("Minimum grade"), { target: { value: "V2" } });
+      fireEvent.change(screen.getByLabelText("Maximum grade"), { target: { value: "V5" } });
+      fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+      await waitFor(() => {
+        expect(fetchFilteredWallSectionProblems).toHaveBeenCalledWith(setterUser, 10, {
+          min: "V2",
+          max: "V5",
+        });
+      });
+      expect(await screen.findByText("Orange")).toBeInTheDocument();
+      expect(screen.getByText("V2–V5 · Most Recent")).toBeInTheDocument();
+    });
+
+    it("applies grade filter and easiest sort via search API", async () => {
+      renderWall();
+      await screen.findByText("Blue");
+      fetchFilteredWallSectionProblems.mockResolvedValue([
+        { problemId: 3, holdColor: "Yellow", info: "Crimpy", assignedGrade: "V3" },
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: /Filter/i }));
+      fireEvent.change(screen.getByLabelText("Minimum grade"), { target: { value: "V2" } });
+      fireEvent.change(screen.getByLabelText("Maximum grade"), { target: { value: "V5" } });
+      fireEvent.click(screen.getByLabelText("Easiest"));
+      fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+      await waitFor(() => {
+        expect(fetchFilteredWallSectionProblems).toHaveBeenCalledWith(setterUser, 10, {
+          min: "V2",
+          max: "V5",
+          sort: "asc",
+        });
+      });
+      expect(await screen.findByText("Yellow")).toBeInTheDocument();
+      expect(screen.getByText("V2–V5 · Easiest")).toBeInTheDocument();
+    });
+
+    it("submits add problem with selected grade and closes dialog", async () => {
       createWallSectionProblem.mockResolvedValue({});
       renderWall();
       await screen.findByText("Blue");
       fireEvent.click(screen.getByRole("button", { name: "Add New Problem" }));
       fireEvent.change(screen.getByLabelText("Hold Color"), { target: { value: "Green" } });
-      fireEvent.change(screen.getByLabelText("Assigned Grade"), { target: { value: "v4" } });
+      fireEvent.change(screen.getByLabelText("Assigned Grade"), { target: { value: "V4" } });
       fireEvent.change(screen.getByLabelText("Notes"), { target: { value: "Hard crux" } });
       fireEvent.click(screen.getByRole("button", { name: "Add problem" }));
       await waitFor(() => {
