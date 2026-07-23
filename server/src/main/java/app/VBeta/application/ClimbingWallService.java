@@ -1,5 +1,6 @@
 package app.VBeta.application;
 
+import app.VBeta.api.dto.discussions.comment.UserCommentData;
 import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;
 import app.VBeta.api.dto.problems.ClimbingProblemDetailResponse;
 import app.VBeta.api.dto.problems.ClimbingProblemResponse;
