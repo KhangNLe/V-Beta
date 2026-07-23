@@ -1,6 +1,6 @@
 package app.VBeta.repository;
 
-import app.VBeta.domain.model.WallSection;
+import app.VBeta.domain.model.climb.WallSection;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**

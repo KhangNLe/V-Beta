@@ -1,7 +1,7 @@
 package app.VBeta.repository;
 
-import app.VBeta.domain.model.RolePermission;
-import app.VBeta.domain.model.RolePermissionId;
+import app.VBeta.domain.model.actions.RolePermission;
+import app.VBeta.domain.model.actions.RolePermissionId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

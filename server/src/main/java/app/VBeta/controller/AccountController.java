@@ -1,11 +1,11 @@
 package app.VBeta.controller;
 
-import app.VBeta.api.dto.AccountRequest;
-import app.VBeta.api.dto.AccountResponse;
-import app.VBeta.api.dto.AccountRoleChangeRequest;
+import app.VBeta.api.dto.account.AccountRequest;
+import app.VBeta.api.dto.account.AccountResponse;
+import app.VBeta.api.dto.account.AccountRoleChangeRequest;
 import app.VBeta.application.AccountService;
 import app.VBeta.application.AuthorizationService;
-import app.VBeta.domain.model.ActionDefinition;
+import app.VBeta.domain.model.actions.ActionDefinition;
 import jakarta.validation.Valid;
 import java.util.Map;
 import org.springframework.http.HttpStatus;

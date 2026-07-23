@@ -76,8 +76,8 @@ This section documents the authentication and authorization features that are cu
    - `v-beta/src/lib/accountSession.js`
    - `v-beta/src/lib/emailVerification.js`
 - Backend auth filter and authorization:
-  - `server/src/main/java/edu/ics499/VBeta/config/security/FirebaseAuthFilter.java`
-  - `server/src/main/java/edu/ics499/VBeta/application/AuthorizationService.java`
+  - `server/src/main/java/app/VBeta/config/security/FirebaseAuthFilter.java`
+  - `server/src/main/java/app/VBeta/application/AuthorizationService.java`
 
 ## Limitations and Notes
 

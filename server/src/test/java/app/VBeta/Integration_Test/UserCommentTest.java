@@ -1,13 +1,20 @@
 package app.VBeta.Integration_Test;
 
-import app.VBeta.api.dto.CommentDeletionRequest;
+import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
 import app.VBeta.application.ProblemDiscussionService;
-import app.VBeta.api.dto.DiscussionCommentRequest;
-import app.VBeta.api.dto.UserCommentData;
+import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
+import app.VBeta.api.dto.discussions.comment.UserCommentData;
 import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.account.UserAccountManager;
-import app.VBeta.domain.model.*;
+import app.VBeta.domain.model.climb.ClimbingGrade;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.climb.LifecycleStatus;
+import app.VBeta.domain.model.climb.WallSection;
+import app.VBeta.domain.model.discussions.DiscussionComment;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
+import app.VBeta.domain.model.discussions.DiscussionType;
+import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.ClimbingGradeRepository;
 import app.VBeta.repository.ClimbingProblemRepository;
 import app.VBeta.repository.DiscussionCommentRepository;

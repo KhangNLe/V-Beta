@@ -1,10 +1,14 @@
 package app.VBeta.application.support.discussion;
 
-import app.VBeta.api.dto.UserCommentData;
+import app.VBeta.api.dto.discussions.comment.UserCommentData;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
 import app.VBeta.application.support.discussion.comment.DiscussionCommentManager;
-import app.VBeta.domain.model.*;
-import app.VBeta.domain.model.*;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.discussions.DiscussionComment;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
+import app.VBeta.domain.model.discussions.DiscussionType;
+import app.VBeta.domain.model.discussions.SolutionBeta;
+import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;

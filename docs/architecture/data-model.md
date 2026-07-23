@@ -4,11 +4,18 @@
 
 The backend data model is relational and centered on climbing content, user roles, and discussion artifacts.
 
-Primary persistence is PostgreSQL via JPA entities in `server/src/main/java/edu/ics499/VBeta/domain/model/`.
+Primary persistence is PostgreSQL via JPA entities under `server/src/main/java/app/VBeta/domain/model/`, grouped by domain:
+
+- `actions/` — roles, actions, and permissions
+- `climb/` — wall sections, problems, grades, lifecycle
+- `discussions/` — discussion roots, comments, solution betas
+- `user/` — accounts and perceived grades
 
 ## Core Entity Groups
 
 ### Identity and Access
+
+Located in `domain/model/user/` and `domain/model/actions/`:
 
 - `UserAccount`
   - Core account record, keyed by Firebase UID.
@@ -21,6 +28,8 @@ Primary persistence is PostgreSQL via JPA entities in `server/src/main/java/edu/
 
 ### Climbing Content
 
+Located in `domain/model/climb/`:
+
 - `WallSection`
   - Logical wall area/group.
 - `ClimbingProblem`
@@ -29,6 +38,8 @@ Primary persistence is PostgreSQL via JPA entities in `server/src/main/java/edu/
   - Grade lookup values (VB..V17 model).
 
 ### User Interaction Content
+
+Located in `domain/model/discussions/` and `domain/model/user/`:
 
 - `DiscussionRoot`
   - Unified discussion anchor row for comments and solution betas.

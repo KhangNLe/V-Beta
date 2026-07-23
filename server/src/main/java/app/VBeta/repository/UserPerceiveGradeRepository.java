@@ -1,9 +1,9 @@
 package app.VBeta.repository;
 
-import app.VBeta.domain.model.ClimbingProblem;
-import app.VBeta.domain.model.UserAccount;
-import app.VBeta.domain.model.UserPerceiveGrade;
-import app.VBeta.domain.model.UserPerceiveGradeId;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.user.UserAccount;
+import app.VBeta.domain.model.user.UserPerceiveGrade;
+import app.VBeta.domain.model.user.UserPerceiveGradeId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

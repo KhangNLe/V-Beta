@@ -1,13 +1,13 @@
 package app.VBeta;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import app.VBeta.api.dto.DiscussionCommentRequest;
-import app.VBeta.api.dto.UserCommentData;
+import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
+import app.VBeta.api.dto.discussions.comment.UserCommentData;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ClimbingWallService;
 import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.controller.ProblemDiscussionController;
-import app.VBeta.domain.model.DiscussionType;
+import app.VBeta.domain.model.discussions.DiscussionType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

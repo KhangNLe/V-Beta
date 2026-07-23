@@ -1,7 +1,7 @@
 package app.VBeta.repository;
 
-import app.VBeta.domain.model.DiscussionRoot;
-import app.VBeta.domain.model.SolutionBeta;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
+import app.VBeta.domain.model.discussions.SolutionBeta;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

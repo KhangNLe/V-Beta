@@ -1,8 +1,7 @@
 package app.VBeta.application.support.discussion.comment;
 
-import app.VBeta.domain.model.DiscussionComment;
-import app.VBeta.domain.model.DiscussionRoot;
-import app.VBeta.domain.model.*;
+import app.VBeta.domain.model.discussions.DiscussionComment;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.repository.DiscussionCommentRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

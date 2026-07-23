@@ -2,8 +2,8 @@ package app.VBeta.repository;
 
 import java.util.Optional;
 
-import app.VBeta.domain.model.GymRole;
-import app.VBeta.domain.model.RoleType;
+import app.VBeta.domain.model.actions.GymRole;
+import app.VBeta.domain.model.actions.RoleType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**

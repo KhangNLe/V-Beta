@@ -1,17 +1,16 @@
 package app.VBeta.application.support.discussion.beta;
 
-import app.VBeta.domain.model.DiscussionRoot;
-import app.VBeta.domain.model.DiscussionType;
-import app.VBeta.domain.model.SolutionBeta;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
+import app.VBeta.domain.model.discussions.DiscussionType;
+import app.VBeta.domain.model.discussions.SolutionBeta;
 import com.google.cloud.storage.StorageException;
-import app.VBeta.api.dto.CloudFileStorageRequest;
-import app.VBeta.api.dto.CloudFileStorageResponse;
+import app.VBeta.api.dto.discussions.video.CloudFileStorageRequest;
+import app.VBeta.api.dto.discussions.video.CloudFileStorageResponse;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
-import app.VBeta.domain.model.*;
 import app.VBeta.repository.SolutionBetaRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import app.VBeta.domain.model.ClimbingProblem;
+import app.VBeta.domain.model.climb.ClimbingProblem;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URL;

@@ -2,13 +2,13 @@ package app.VBeta.Integration_Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import app.VBeta.api.dto.AccountResponse;
+import app.VBeta.api.dto.account.AccountResponse;
 import app.VBeta.application.AccountService;
 import app.VBeta.application.AuthorizationService;
-import app.VBeta.domain.model.ActionDefinition;
-import app.VBeta.domain.model.GymRole;
-import app.VBeta.domain.model.RoleType;
-import app.VBeta.domain.model.UserAccount;
+import app.VBeta.domain.model.actions.ActionDefinition;
+import app.VBeta.domain.model.actions.GymRole;
+import app.VBeta.domain.model.actions.RoleType;
+import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.GymRoleRepository;
 import app.VBeta.repository.UserAccountRepository;
 import org.junit.jupiter.api.DisplayName;

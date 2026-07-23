@@ -118,6 +118,16 @@ When adding a new feature, prefer extending existing project patterns over intro
 - Put use-case logic in services/application layer.
 - Keep repository usage in service/support layers (avoid unnecessary direct controller-to-repo calls).
 
+### Package Organization
+
+Place new types in the matching domain subpackage under `app.VBeta` (do not leave them in the layer root):
+
+- **DTOs** (`api/dto/`): `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`)
+- **Domain** (`domain/model/`): `actions/`, `climb/`, `discussions/`, `user/`
+- **Support** (`application/support/`): `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`
+
+See [`docs/architecture/backend-architecture.md`](../architecture/backend-architecture.md) for the full layout.
+
 ### API and DTOs
 
 - Use DTOs for request/response contracts.

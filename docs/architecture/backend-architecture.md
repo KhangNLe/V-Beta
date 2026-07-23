@@ -11,18 +11,28 @@
 
 ## Layered Design
 
-The backend follows a layered architecture:
+The backend follows a layered architecture under `server/src/main/java/app/VBeta/`:
 
 1. **Controllers** (`controller/`)
    - Define REST endpoints and request mapping.
 2. **Application Services** (`application/`)
    - Coordinate use cases and transaction boundaries.
 3. **Support Managers/Adapters** (`application/support/`)
-   - Domain-specific orchestration and integration helpers.
+   - Domain-specific orchestration and integration helpers, grouped by concern:
+     - `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`
 4. **Repositories** (`repository/`)
    - Data access through Spring Data JPA.
 5. **Domain Model** (`domain/model/`)
-   - Entities, enums, and role/action concepts.
+   - Entities, enums, and role/action concepts, grouped by domain:
+     - `actions/` — roles, actions, permissions (`ActionDefinition`, `GymRole`, `RolePermission`, …)
+     - `climb/` — walls, problems, grades, lifecycle
+     - `discussions/` — discussion roots, comments, solution betas
+     - `user/` — accounts and perceived grades
+6. **API DTOs** (`api/dto/`)
+   - Request/response contracts, grouped by feature area:
+     - `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`)
+
+Place new types in the matching domain subpackage rather than the layer root.
 
 ## Request Lifecycle
 

@@ -2,9 +2,9 @@ package app.VBeta.application;
 
 import app.VBeta.application.support.account.RoleBasedAuthenticationManager;
 import app.VBeta.application.support.account.UserAccountManager;
-import app.VBeta.domain.model.ActionDefinition;
-import app.VBeta.domain.model.RoleType;
-import app.VBeta.domain.model.UserAccount;
+import app.VBeta.domain.model.actions.ActionDefinition;
+import app.VBeta.domain.model.actions.RoleType;
+import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

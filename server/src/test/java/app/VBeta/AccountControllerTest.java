@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import app.VBeta.api.dto.AccountRequest;
+import app.VBeta.api.dto.account.AccountRequest;
 import app.VBeta.application.AccountService;
 import app.VBeta.controller.AccountController;
 import jakarta.servlet.ServletException;

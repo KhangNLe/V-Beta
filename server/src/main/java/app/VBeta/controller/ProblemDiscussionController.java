@@ -1,10 +1,18 @@
 package app.VBeta.controller;
 
-import app.VBeta.api.dto.*;
+import app.VBeta.api.dto.discussions.*;
+import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
+import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
+import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.video.CloudFileStorageRequest;
+import app.VBeta.api.dto.discussions.video.CloudFileStorageResponse;
+import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
+import app.VBeta.api.dto.discussions.video.SolutionBetaDeletionRequest;
+import app.VBeta.api.dto.problems.ClimbingProblemDetailResponse;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ClimbingWallService;
 import app.VBeta.application.ProblemDiscussionService;
-import app.VBeta.domain.model.ActionDefinition;
+import app.VBeta.domain.model.actions.ActionDefinition;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;

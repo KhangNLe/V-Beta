@@ -1,13 +1,13 @@
 package app.VBeta.Integration_Test;
 
-import app.VBeta.api.dto.WallSectionCreationRequest;
+import app.VBeta.api.dto.walls.WallSectionCreationRequest;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ClimbingWallService;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.wall.WallSectionManager;
-import app.VBeta.domain.model.ActionDefinition;
-import app.VBeta.domain.model.ClimbingProblem;
-import app.VBeta.domain.model.WallSection;
+import app.VBeta.domain.model.actions.ActionDefinition;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.config.TestGcpStorageConfig;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;

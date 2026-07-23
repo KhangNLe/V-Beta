@@ -1,12 +1,16 @@
 package app.VBeta.Integration_Test;
 
-import app.VBeta.api.dto.*;
+import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;
+import app.VBeta.api.dto.problems.ClimbingProblemResponse;
+import app.VBeta.api.dto.walls.WallSectionCreationRequest;
 import app.VBeta.application.ClimbingWallService;
 import app.VBeta.application.ProblemFilteringService;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.wall.WallSectionManager;
-import app.VBeta.domain.model.*;
 import app.VBeta.config.TestGcpStorageConfig;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.climb.GradeDefinition;
+import app.VBeta.domain.model.climb.WallSection;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
