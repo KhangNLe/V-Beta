@@ -1,8 +1,8 @@
 package app.VBeta.controller;
 
-import app.VBeta.api.dto.ClimbingProblemResponse;
+import app.VBeta.api.dto.problems.ClimbingProblemResponse;
 import app.VBeta.application.ProblemFilteringService;
-import app.VBeta.domain.model.GradeDefinition;
+import app.VBeta.domain.model.climb.GradeDefinition;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

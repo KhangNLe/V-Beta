@@ -1,9 +1,9 @@
 package app.VBeta.controller;
 
-import app.VBeta.api.dto.AccountMeResponse;
+import app.VBeta.api.dto.account.AccountMeResponse;
 import app.VBeta.application.AccountService;
 import app.VBeta.application.AuthorizationService;
-import app.VBeta.domain.model.UserAccount;
+import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.UserAccountRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

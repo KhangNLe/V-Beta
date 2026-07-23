@@ -1,9 +1,9 @@
 package app.VBeta.repository;
 
-import app.VBeta.domain.model.ClimbingProblem;
-import app.VBeta.domain.model.DiscussionRoot;
-import app.VBeta.domain.model.DiscussionType;
-import app.VBeta.domain.model.UserAccount;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
+import app.VBeta.domain.model.discussions.DiscussionType;
+import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

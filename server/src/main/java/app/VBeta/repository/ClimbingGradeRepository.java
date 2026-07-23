@@ -1,7 +1,7 @@
 package app.VBeta.repository;
 
-import app.VBeta.domain.model.ClimbingGrade;
-import app.VBeta.domain.model.GradeDefinition;
+import app.VBeta.domain.model.climb.ClimbingGrade;
+import app.VBeta.domain.model.climb.GradeDefinition;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

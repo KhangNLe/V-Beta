@@ -1,11 +1,11 @@
 package app.VBeta.application;
 
-import app.VBeta.api.dto.AccountResponse;
+import app.VBeta.api.dto.account.AccountResponse;
 import app.VBeta.application.support.account.AccountDeletionManager;
 import app.VBeta.application.support.account.UserAccountManager;
-import app.VBeta.domain.model.GymRole;
-import app.VBeta.domain.model.RoleType;
-import app.VBeta.domain.model.UserAccount;
+import app.VBeta.domain.model.actions.GymRole;
+import app.VBeta.domain.model.actions.RoleType;
+import app.VBeta.domain.model.user.UserAccount;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

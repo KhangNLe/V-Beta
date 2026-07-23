@@ -1,12 +1,12 @@
 package app.VBeta.application;
 
-import app.VBeta.api.dto.ClimbingProblemResponse;
+import app.VBeta.api.dto.problems.ClimbingProblemResponse;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.wall.WallSectionManager;
-import app.VBeta.domain.model.ClimbingGrade;
-import app.VBeta.domain.model.ClimbingProblem;
-import app.VBeta.domain.model.GradeDefinition;
-import app.VBeta.domain.model.WallSection;
+import app.VBeta.domain.model.climb.ClimbingGrade;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.climb.GradeDefinition;
+import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.application.support.grade.ClimbingGradeManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;

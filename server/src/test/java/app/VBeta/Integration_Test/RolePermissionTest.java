@@ -1,8 +1,8 @@
 package app.VBeta.Integration_Test;
 
 import app.VBeta.application.support.account.RoleBasedAuthenticationManager;
-import app.VBeta.domain.model.ActionDefinition;
-import app.VBeta.domain.model.RoleType;
+import app.VBeta.domain.model.actions.ActionDefinition;
+import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.repository.RolePermissionRepository;
 import app.VBeta.config.TestGcpStorageConfig;
 import org.junit.jupiter.api.DisplayName;

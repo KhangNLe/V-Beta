@@ -1,7 +1,7 @@
 package app.VBeta.application.support.grade;
 
-import app.VBeta.domain.model.ClimbingGrade;
-import app.VBeta.domain.model.GradeDefinition;
+import app.VBeta.domain.model.climb.ClimbingGrade;
+import app.VBeta.domain.model.climb.GradeDefinition;
 import app.VBeta.repository.ClimbingGradeRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;

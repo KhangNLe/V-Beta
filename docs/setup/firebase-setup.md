@@ -73,7 +73,7 @@ Example in `server/.env`:
 FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 ```
 
-The backend uses this in `server/src/main/java/edu/ics499/VBeta/config/FirebaseConfig.java` to initialize Firebase Admin, then validates frontend ID tokens in `FirebaseAuthFilter`.
+The backend uses this in `server/src/main/java/app/VBeta/config/FirebaseConfig.java` to initialize Firebase Admin, then validates frontend ID tokens in `FirebaseAuthFilter`.
 
 ## 6) Configure backend environment
 

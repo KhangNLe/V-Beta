@@ -4,9 +4,9 @@ import app.VBeta.application.support.discussion.comment.DiscussionCommentManager
 import app.VBeta.application.support.discussion.DiscussionRootManager;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
 import app.VBeta.application.support.grade.UserPerceiveGradeManager;
-import app.VBeta.domain.model.ClimbingProblem;
-import app.VBeta.domain.model.DiscussionRoot;
-import app.VBeta.domain.model.DiscussionType;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
+import app.VBeta.domain.model.discussions.DiscussionType;
 import app.VBeta.repository.ClimbingProblemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

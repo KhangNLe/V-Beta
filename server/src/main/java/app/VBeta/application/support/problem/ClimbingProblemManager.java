@@ -1,7 +1,7 @@
 package app.VBeta.application.support.problem;
 
-import app.VBeta.api.dto.ClimbingProblemCreationRequest;
-import app.VBeta.domain.model.*;
+import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;
+import app.VBeta.domain.model.climb.*;
 import app.VBeta.repository.ClimbingGradeRepository;
 import app.VBeta.repository.ClimbingProblemRepository;
 import org.springframework.http.HttpStatus;

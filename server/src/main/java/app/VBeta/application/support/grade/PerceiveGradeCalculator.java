@@ -1,8 +1,8 @@
 package app.VBeta.application.support.grade;
 
-import app.VBeta.domain.model.ClimbingGrade;
-import app.VBeta.domain.model.ClimbingProblem;
-import app.VBeta.domain.model.UserPerceiveGrade;
+import app.VBeta.domain.model.climb.ClimbingGrade;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.user.UserPerceiveGrade;
 import app.VBeta.repository.UserPerceiveGradeRepository;
 import org.springframework.stereotype.Service;
 

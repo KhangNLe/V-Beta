@@ -1,9 +1,8 @@
 package app.VBeta.application.support.account;
 
-import app.VBeta.domain.model.ActionDefinition;
-import app.VBeta.domain.model.RolePermission;
-import app.VBeta.domain.model.RoleType;
-import app.VBeta.domain.model.*;
+import app.VBeta.domain.model.actions.ActionDefinition;
+import app.VBeta.domain.model.actions.RolePermission;
+import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.repository.RolePermissionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

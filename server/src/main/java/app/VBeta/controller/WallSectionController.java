@@ -1,9 +1,13 @@
 package app.VBeta.controller;
 
-import app.VBeta.api.dto.*;
+import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;
+import app.VBeta.api.dto.problems.ClimbingProblemDetailResponse;
+import app.VBeta.api.dto.problems.ClimbingProblemResponse;
+import app.VBeta.api.dto.walls.WallSectionCreationRequest;
+import app.VBeta.api.dto.walls.WallSectionResponse;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ClimbingWallService;
-import app.VBeta.domain.model.ActionDefinition;
+import app.VBeta.domain.model.actions.ActionDefinition;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;

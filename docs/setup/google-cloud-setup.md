@@ -58,11 +58,11 @@ STORAGE_PUBLIC_BUCKET_NAME=your-bucket-name
 
 The backend creates a GCS `Storage` client in:
 
-- `server/src/main/java/edu/ics499/VBeta/config/GcpConfig.java`
+- `server/src/main/java/app/VBeta/config/GcpConfig.java`
 
 Storage operations are implemented in:
 
-- `server/src/main/java/edu/ics499/VBeta/application/support/GcpFileStorageAdapter.java`
+- `server/src/main/java/app/VBeta/application/support/discussion/beta/GcpFileStorageAdapter.java`
 
 Expected behavior:
 

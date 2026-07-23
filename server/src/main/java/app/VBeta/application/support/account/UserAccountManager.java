@@ -1,8 +1,8 @@
 package app.VBeta.application.support.account;
 
-import app.VBeta.domain.model.GymRole;
-import app.VBeta.domain.model.RoleType;
-import app.VBeta.domain.model.UserAccount;
+import app.VBeta.domain.model.actions.GymRole;
+import app.VBeta.domain.model.actions.RoleType;
+import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.GymRoleRepository;
 import app.VBeta.repository.UserAccountRepository;
 import org.springframework.http.HttpStatus;

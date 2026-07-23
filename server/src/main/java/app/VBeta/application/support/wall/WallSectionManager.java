@@ -1,7 +1,7 @@
 package app.VBeta.application.support.wall;
 
-import app.VBeta.api.dto.WallSectionCreationRequest;
-import app.VBeta.domain.model.WallSection;
+import app.VBeta.api.dto.walls.WallSectionCreationRequest;
+import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.repository.WallSectionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

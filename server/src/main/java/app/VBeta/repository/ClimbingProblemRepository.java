@@ -1,9 +1,9 @@
 package app.VBeta.repository;
 
-import app.VBeta.domain.model.ClimbingProblem;
-import app.VBeta.domain.model.LifecycleStatus;
-import app.VBeta.domain.model.WallSection;
-import app.VBeta.domain.model.ClimbingGrade;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.climb.LifecycleStatus;
+import app.VBeta.domain.model.climb.WallSection;
+import app.VBeta.domain.model.climb.ClimbingGrade;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
