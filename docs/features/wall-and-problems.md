@@ -41,7 +41,7 @@ This section documents wall section and climbing problem features currently avai
 4. **Clear filters** restores the default wall-section problem list.
 5. Guests and signed-in users can use Filter; invalid API ranges still return `400`, missing walls `404`.
 
-Keyword/text search is deferred to a later sprint (not Sprint 4).
+Keyword/text search is deferred to a later sprint (completed Sprint 4 delivered grade filter/sort only).
 
 ### Setter Management Flow
 
@@ -94,7 +94,7 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 - UI gating and backend authorization should both be revalidated when role logic changes.
 - Discovery grade-range endpoints use query params (`?min=&max=&sort=`).
 - CORS allows `/search/**` for the frontend origin (same pattern as `/home/**`).
-- Keyword/text search is deferred to a later sprint (roadmap Sprint 9), not Sprint 4.
+- Keyword/text search is deferred to a later sprint (roadmap Sprint 9); Sprint 4 discovery (grade filter/sort) is complete.
 
 ## Future Enhancements
 

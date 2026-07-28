@@ -44,12 +44,13 @@ This document tracks ideas that are not fully implemented in the current release
 
 ### 3) Better Content Moderation and Auditability
 
-- **Priority:** Medium
+- **Priority:** High
 - **Effort:** Medium
 - **Area:** Discussion/Beta
+- **Target sprint:** Sprint 5 (in progress)
 - **Current Gap:** Deletion and ownership rules exist but limited moderation workflow/audit history.
-- **Potential Work:** Add moderation queue, reason codes, and event logs.
-- **Dependencies:** Backend audit model and admin UI.
+- **Potential Work:** Add moderation queue, reason codes, notifications, logbook, and appeal/restore.
+- **Dependencies:** Backend audit/report model and admin UI.
 
 ### 4) Observability and Operational Hardening
 
@@ -74,6 +75,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** High
 - **Effort:** Medium
 - **Area:** Trust and Safety
+- **Target sprint:** Sprint 5 (in progress)
 - **Current Gap:** Users cannot flag inappropriate comments or beta content in the current UI.
 - **Potential Work:** Add report actions on comments and solution betas, including reason selection and moderation review workflow.
 - **Dependencies:** Report data model, report API endpoints, moderation/admin handling flow.
@@ -92,8 +94,8 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Low
 - **Effort:** Medium
 - **Area:** Wall/Problem Discovery
-- **Target sprint:** Later (roadmap Sprint 9) — **not** Sprint 4
-- **Current Gap:** Sprint 4 ships grade-range filter and most recent / easiest / hardest sort; free-text search is intentionally deferred.
+- **Target sprint:** Later (roadmap Sprint 9) — **not** part of completed Sprint 4
+- **Current Gap:** Sprint 4 shipped grade-range filter and most recent / easiest / hardest sort; free-text search is intentionally deferred.
 - **Potential Work:** Add client-side text filtering on loaded results first; add a backend text-search endpoint only if lists grow.
 - **Dependencies:** UX for search input; optional API contract if server-side search is required.
 
@@ -129,6 +131,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** High
 - **Effort:** Large
 - **Area:** Moderation / Reliability
+- **Target sprint:** Sprint 5 (in progress) for admin reports/logbook; developer event log may follow later
 - **Current Gap:** There is no dedicated admin report log for flagged comments/solution betas and no centralized event/error log for developer debugging.
 - **Potential Work:** Add an admin-facing reports queue/history for inappropriate content, plus a structured application event log (errors and important events) for developers to diagnose unexpected bugs.
 - **Dependencies:** Report/audit data model, admin review UI, event ingestion pipeline, and log retention/access policy.

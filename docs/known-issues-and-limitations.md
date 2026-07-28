@@ -5,8 +5,8 @@ This document reflects the current repository state on `package_sub` and compari
 ## Functional Limitations
 
 ### 1) Keyword/text search for problems is deferred to a later sprint
-- Grade-range filtering and sort (most recent / easiest / hardest) ship in Sprint 4 discovery.
-- Text/keyword search is intentionally not in Sprint 4; tracked for a later sprint (see roadmap Sprint 9).
+- Grade-range filtering and sort (most recent / easiest / hardest) shipped in completed Sprint 4 discovery.
+- Text/keyword search was intentionally not in Sprint 4; tracked for a later sprint (see roadmap Sprint 9).
 - Impact: users filter by grade/sort only until that later sprint.
 
 ### 2) Comment model is problem-level, not beta-level

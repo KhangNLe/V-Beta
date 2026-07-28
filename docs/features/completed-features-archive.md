@@ -83,6 +83,7 @@ Highlights:
 - Clear restores the default wall problems list; active filter hint shown while applied.
 - Add Problem assigned grade uses a `VB`–`V17` dropdown.
 - Covered by `wall-page.test.js` filter cases.
+- Sprint 4 discovery improvements marked completed on the implementation roadmap.
 
 Related docs:
 
