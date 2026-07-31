@@ -18,8 +18,10 @@ Primary runtime schema SQL:
 `pg-v-beta.sql` includes:
 
 - core table definitions
-- baseline seed data for roles/actions/grades/permissions
-- sample wall/problem/user/comment records for local validation
+- discussion model (`Discussion_Root`, comments, solution betas)
+- Sprint 5 moderation/reporting model (reports, appeals, moderation actions, events, notifications)
+- baseline seed data for roles/actions/grades/permissions, report categories, and event types
+- sample wall/problem/user records for local validation
 
 ## Recommended local setup
 
@@ -63,8 +65,9 @@ SELECT COUNT(*) FROM climbing_grade;
 
 Expected:
 
-- core tables exist (for example `User_Account`, `Climbing_Problem`, `Wall_Section`)
-- seed rows exist in `Gym_Role` and `Climbing_Grade`
+- core tables exist (for example `User_Account`, `Climbing_Problem`, `Wall_Section`, `Discussion_Root`)
+- moderation tables exist (`Report`, `Report_Category`, `Appeal`, `Moderation_Action`, `Event_Type`, `Events`, `Notification`)
+- seed rows exist in `Gym_Role`, `Climbing_Grade`, `Report_Category`, and `Event_Type`
 
 ## 5) Validate with app startup
 
@@ -128,6 +131,157 @@ Notes:
 - Keep `server/src/main/resources/db/pg-v-beta.sql` and
   `server/src/test/resources/db/v_beta_test_schema.sql` aligned when reverting.
 
+## Moderation Schema (Sprint 5)
+
+Sprint 5 adds reporting, appeals, moderation audit actions, domain events, and in-app notifications.
+
+Keep `pg-v-beta.sql` and `server/src/test/resources/db/v_beta_test_schema.sql` aligned when changing this model.
+
+### Enums vs lookup tables
+
+Closed workflow / target sets use PostgreSQL enums:
+
+| Enum | Values |
+|------|--------|
+| `report_status` | `OPEN`, `DISMISSED`, `CONTENT_REMOVED`, `APPEAL_PENDING`, `CONTENT_RESTORED`, `APPEAL_DENIED` |
+| `report_target_type` | `DISCUSSION`, `WALL_SECTION`, `CLIMBING_PROBLEM`, `USER_ACCOUNT` |
+| `moderate_action_type` | `REPORT_DISMISSED`, `CONTENT_REMOVED`, `APPEAL_APPROVED`, `APPEAL_DENIED` |
+| `appeal_status` | `OPEN`, `APPROVED`, `DENIED` |
+| `event_target_type` | `REPORT`, `DISCUSSION`, `CLIMBING_PROBLEM`, `WALL_SECTION`, `USER_ACCOUNT` |
+
+Extensible labeled sets use lookup tables:
+
+- `Report_Category` — category name + queue `priority`
+- `Event_Type` — event name + description
+
+### Core tables
+
+| Table | Purpose |
+|-------|---------|
+| `Report` | User-submitted report against one typed target |
+| `Report_Category` | Report reason categories ranked for admin queue |
+| `Appeal` | One appeal path for content owners after removal |
+| `Moderation_Action` | Admin decision / logbook row for a report |
+| `Event_Type` | Catalog of notifiable event kinds |
+| `Events` | Happened-fact row (who/what/when) |
+| `Notification` | Per-recipient inbox row pointing at an event |
+
+### Polymorphic targets (typed FKs)
+
+`Report` and `Events` use `target_type` plus nullable typed FK columns, with a CHECK so exactly one target is set:
+
+- Report targets: `discussion_id`, `problem_id`, `wall_section_id`, `user_id`
+- Event targets: `report_id`, `discussion_id`, `problem_id`, `wall_section_id`, `user_id`
+
+Sprint 5 product scope reports discussion content only (`target_type = DISCUSSION`). Wall/problem/user target columns are reserved for later expansion.
+
+`Events.actor_user_id` is nullable so system-generated events do not require a human actor.
+
+There is no JSON `payload` on `Events`; notification UI joins live related rows.
+
+### Indexes
+
+```sql
+-- one open report per reporter per concrete target
+uq_one_open_report_per_user_target
+
+-- admin queue / inbox reads
+idx_report_queue
+idx_notification_recipient
+```
+
+Verify:
+
+```sql
+SELECT indexname
+FROM pg_indexes
+WHERE schemaname = 'public'
+  AND indexname IN (
+    'uq_one_open_report_per_user_target',
+    'idx_report_queue',
+    'idx_notification_recipient'
+  )
+ORDER BY indexname;
+```
+
+### Seed data
+
+Report categories (priority ascending = higher queue rank):
+
+```sql
+SELECT category_name, priority
+FROM report_category
+ORDER BY priority;
+```
+
+Expected:
+
+- `INAPPROPRIATE_CONTENT` (1)
+- `HARASSMENT_BULLYING` (2)
+- `SPAM` (3)
+- `OFF_TOPIC` (4)
+
+Event types:
+
+```sql
+SELECT event_type_name
+FROM event_type
+ORDER BY event_type_id;
+```
+
+Expected:
+
+- `REPORT_CREATED`
+- `REPORT_DISMISSED`
+- `CONTENT_REMOVED`
+- `APPEAL_SUBMITTED`
+- `CONTENT_RESTORED`
+- `APPEAL_DENIED`
+
+### Relationship summary
+
+```text
+User_Account ──reports──► Report ──category──► Report_Category
+                              │
+                              ├──► Appeal
+                              ├──► Moderation_Action
+                              └──► Events (often target_type = REPORT)
+                                        │
+                                        └──► Notification (recipient)
+```
+
+### Fresh DB vs existing DB
+
+- Fresh local/bootstrap: re-run `pg-v-beta.sql` on an empty `v_beta`.
+- Existing DB: bare `CREATE TYPE ...` is not idempotent; add enums/tables/indexes carefully (or rebuild from empty schema in local/dev).
+- After schema changes, confirm Hibernate validate still passes on startup.
+
+### Rollback guidance (moderation)
+
+Only for local/dev rebuilds. Drop dependents first:
+
+```sql
+DROP INDEX IF EXISTS idx_notification_recipient;
+DROP INDEX IF EXISTS idx_report_queue;
+DROP INDEX IF EXISTS uq_one_open_report_per_user_target;
+
+DROP TABLE IF EXISTS Notification;
+DROP TABLE IF EXISTS Events;
+DROP TABLE IF EXISTS Event_Type;
+DROP TABLE IF EXISTS Moderation_Action;
+DROP TABLE IF EXISTS Appeal;
+DROP TABLE IF EXISTS Report;
+DROP TABLE IF EXISTS Report_Category;
+
+DROP TYPE IF EXISTS event_target_type;
+DROP TYPE IF EXISTS appeal_status;
+DROP TYPE IF EXISTS moderate_action_type;
+DROP TYPE IF EXISTS report_target_type;
+DROP TYPE IF EXISTS report_status;
+```
+
+Keep test schema SQL aligned if you roll back.
+
 ## Common issues
 
 - **Table not found / schema validation failed**
@@ -153,9 +307,17 @@ Notes:
     - `discussion_type` backed by PostgreSQL enum `discussion_kind`
     - `create_at` timestamp used by runtime entity mapping
     - referential integrity FKs for `problem_id`, `user_id`, and `deleted_by`
+  - Sprint 5 moderation tables with:
+    - enum-backed statuses / target / action types
+    - lookup tables for `Report_Category` and `Event_Type`
+    - typed polymorphic FKs + CHECK constraints on `Report` and `Events`
+    - partial unique index preventing duplicate open reports per user/target
+    - notification uniqueness on `(event_id, recipient_user_id)`
 
 ## Notes for future contributors
 
 - Keep schema updates versioned in SQL files and documented in `docs/`.
 - If entity models change, update bootstrap SQL and this document together.
+- Keep `pg-v-beta.sql` and `v_beta_test_schema.sql` synchronized for moderation changes.
+- Prefer lookup-table inserts for new categories/event kinds; prefer enum migrations only for closed workflow states.
 - Avoid relying on manual memory for schema changes during team transitions.
