@@ -2,10 +2,7 @@ package app.VBeta.domain.model.notification;
 
 import app.VBeta.domain.model.user.UserAccount;
 import jakarta.persistence.*;
-import lombok.Setter;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +12,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

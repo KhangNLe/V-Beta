@@ -133,4 +133,7 @@ public class UserAccountManager {
         return result.orElse(null);
     }
 
+    public List<UserAccount> findUsersOfRole(RoleType roleType) {
+        return userAccountRepository.findByGymRole_RoleType(roleType);
+    }
 }

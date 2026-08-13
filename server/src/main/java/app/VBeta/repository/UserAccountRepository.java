@@ -1,8 +1,13 @@
 package app.VBeta.repository;
 
+import app.VBeta.domain.model.actions.GymRole;
+import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -41,4 +46,6 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long>{
      */
     @Query("select ua from UserAccount ua left join fetch ua.gymRole where ua.firebaseUid = :firebaseUid")
     Optional<UserAccount> findByFirebaseUidWithRole(String firebaseUid);
+
+    List<UserAccount> findByGymRole_RoleType(RoleType roleType);
 }

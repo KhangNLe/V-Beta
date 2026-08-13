@@ -34,10 +34,14 @@ public class Report {
     @Column(name = "report_reason", nullable = false, length = 250)
     private String reportReason;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", referencedColumnName = "category_id")
+    private ReportCategory category;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "target_type", nullable = false)
-    private TargetType targetType;
+    private ReportTargetType targetType;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

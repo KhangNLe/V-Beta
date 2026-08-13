@@ -5,10 +5,7 @@ import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.report.Report;
 import app.VBeta.domain.model.user.UserAccount;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -20,6 +17,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Events {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,6 +32,8 @@ public class Events {
     @JoinColumn(name = "actor_user_id", referencedColumnName = "user_id")
     private UserAccount actorUser;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "target_type", nullable = false)
     private EventTargetType targetType;
 
