@@ -13,14 +13,11 @@ import org.springframework.web.bind.annotation.*;
 public class ContentReportController {
     private final AuthorizationService authorizationService;
     private final ModerationService moderationService;
-    private final NotificationService notificationService;
 
     public ContentReportController(AuthorizationService authorizationService,
-                                   ModerationService moderationService,
-                                   NotificationService notificationService) {
+                                   ModerationService moderationService) {
         this.authorizationService = authorizationService;
         this.moderationService = moderationService;
-        this.notificationService = notificationService;
     }
 
     @PostMapping("/create")

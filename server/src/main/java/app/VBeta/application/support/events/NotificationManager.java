@@ -7,6 +7,8 @@ import app.VBeta.repository.NotificationRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @Transactional
 public class NotificationManager {
@@ -22,5 +24,9 @@ public class NotificationManager {
                 .recipient(recipient)
                 .build()
         );
+    }
+
+    public List<Notification> getUserUnreadNotifications(UserAccount user) {
+        return notificationRepository.findAllUnreadByRecipientUser(user);
     }
 }

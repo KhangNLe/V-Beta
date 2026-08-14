@@ -22,7 +22,7 @@ public class EventsManager {
         this.eventTypeRepository = eventTypeRepository;
     }
 
-    public Events createReportEvent(Report report){
+    public Events createReportEvent(Report report) {
         return eventsRepository.save(Events.builder()
                 .eventType(
                         eventTypeRepository.findByEventTypeName(EventTypeName.REPORT_CREATED)
@@ -32,6 +32,6 @@ public class EventsManager {
                 .targetType(EventTargetType.REPORT)
                 .report(report)
                 .build()
-    );
+        );
     }
 }

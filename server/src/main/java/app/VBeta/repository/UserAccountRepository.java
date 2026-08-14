@@ -48,4 +48,8 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long>{
     Optional<UserAccount> findByFirebaseUidWithRole(String firebaseUid);
 
     List<UserAccount> findByGymRole_RoleType(RoleType roleType);
+
+    @Query("SELECT ua from UserAccount  ua WHERE ua.id = :targetId AND ua.firebaseUid <> :requesterId")
+    Optional<UserAccount> findByIdAndNotFirebaseUid(@Param("targetId") Long targetId,
+                                                    @Param("requesterId") String requesterId);
 }

@@ -5,10 +5,7 @@ import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.user.UserAccount;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate. annotations.JdbcTypeCode;
 import org.hibernate.tool.schema.TargetType;
 import org.hibernate.type.SqlTypes;
@@ -22,6 +19,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Report {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

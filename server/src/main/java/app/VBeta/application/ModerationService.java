@@ -30,7 +30,12 @@ public class ModerationService {
         if (reporter == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
+
+        if (reportManager.checkForDuplicateReport(reportRequest,  reporter)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Report already exists");
+        }
+
         Report report = reportManager.createReport(reporter, reportRequest);
-        notificationService.sendReportNotification(report);
+        notificationService.saveReportNotification(report);
     }
 }

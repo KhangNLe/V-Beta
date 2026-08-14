@@ -1,17 +1,7 @@
 package app.VBeta.application.support.report;
 
 import app.VBeta.api.dto.report.ReportRequest;
-import app.VBeta.application.support.account.UserAccountManager;
-import app.VBeta.application.support.discussion.DiscussionRootManager;
-import app.VBeta.application.support.problem.ClimbingProblemManager;
-import app.VBeta.application.support.wall.WallSectionManager;
-import app.VBeta.domain.model.climb.ClimbingProblem;
-import app.VBeta.domain.model.climb.WallSection;
-import app.VBeta.domain.model.discussions.DiscussionRoot;
-import app.VBeta.domain.model.report.Report;
-import app.VBeta.domain.model.report.ReportCategory;
-import app.VBeta.domain.model.report.ReportCategoryName;
-import app.VBeta.domain.model.report.ReportTargetType;
+import app.VBeta.domain.model.report.*;
 import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.*;
 import com.google.firebase.internal.NonNull;
@@ -20,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -61,9 +50,33 @@ public class ReportManager {
         report.setReporter(reporter);
         report.setCategory(getReportCategory(reportRequest.reportCategoryName()));
         report.setTargetType(reportRequest.reportTargetType());
-        setTarget(report, reportRequest);
+        setTarget(report, reportRequest, reporter);
         report.setReportReason(reportRequest.reportReason());
         return save(report);
+    }
+
+    public boolean checkForDuplicateReport(ReportRequest request, UserAccount user){
+        ReportCategory category = getReportCategory(request.reportCategoryName());
+        List<Report> reports = reportRepository.findByReporterAndCategory(user, category);
+
+        if (reports.isEmpty()) return false;
+
+        boolean isIdentical = false;
+        for (Report report : reports){
+            switch (report.getTargetType()){
+                case DISCUSSION -> isIdentical = Objects.equals(
+                        report.getDiscussion().getDiscussionId(), request.targetId());
+                case USER_ACCOUNT -> isIdentical = Objects.equals(
+                        report.getUser().getId(), request.targetId());
+                case WALL_SECTION -> isIdentical = Objects.equals(
+                        report.getWallSection().getId(), request.targetId());
+                case CLIMBING_PROBLEM -> isIdentical = Objects.equals(
+                        report.getProblem().getId(), request.targetId());
+            }
+            isIdentical = isIdentical && Objects.equals(report.getReportStatus(), ReportStatus.OPEN);
+            if (isIdentical) return true;
+        }
+        return false;
     }
 
     private ReportCategory getReportCategory(ReportCategoryName categoryName) {
@@ -71,7 +84,7 @@ public class ReportManager {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
-    private void setTarget(Report report, ReportRequest request){
+    private void setTarget(Report report, ReportRequest request, UserAccount reporter){
         Long targetId = request.targetId();
         switch(request.reportTargetType()){
             case CLIMBING_PROBLEM -> report.setProblem(
@@ -79,11 +92,11 @@ public class ReportManager {
                         orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
 
             case DISCUSSION -> report.setDiscussion(
-                discussionRootRepository.findById(targetId)
+                discussionRootRepository.findByDiscussionIdAndDeletedByIsNullAndNotFromUser(targetId, reporter)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
 
             case USER_ACCOUNT -> report.setUser(
-                userAccountRepository.findById(targetId)
+                userAccountRepository.findByIdAndNotFirebaseUid(targetId, reporter.getFirebaseUid())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
 
             case WALL_SECTION -> report.setWallSection(

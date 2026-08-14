@@ -5,8 +5,11 @@ import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.discussions.DiscussionType;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository for {@link DiscussionRoot} entities.
@@ -96,4 +99,11 @@ public interface DiscussionRootRepository extends JpaRepository<DiscussionRoot, 
      * @return top-level rows with null deleted-at ordered by create date descending then discussion id descending
      */
     List<DiscussionRoot> findByProblem_IdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDescDiscussionIdDesc(Long problemId);
+
+    @Query("SELECT di FROM DiscussionRoot di WHERE di.discussionId = :discussionId AND di.deletedBy IS NULL "
+            + "AND di.userAccount <> :user"
+    )
+    Optional<DiscussionRoot> findByDiscussionIdAndDeletedByIsNullAndNotFromUser(
+            @Param("discussionId") Long discussionId,
+            @Param("user") UserAccount user);
 }
