@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ArrowLeftIcon, MoreVertical, SlidersHorizontal } from "lucide-react";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { getAccountRole } from "@/lib/accountSession";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
@@ -123,9 +124,9 @@ export default function WallSectionPage() {
 
   const isSignedIn = !!user;
   const canManageWallProblems = useMemo(() => {
-    const roleUpper = (account?.roleName || "").toUpperCase();
+    const roleUpper = getAccountRole(account).toUpperCase();
     return roleUpper.includes("SETTER");
-  }, [account?.roleName]);
+  }, [account]);
 
   const rawWallSectionID = params?.wallSectionID;
   const wallSectionID = useMemo(() => {

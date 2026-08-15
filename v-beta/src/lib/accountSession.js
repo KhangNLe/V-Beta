@@ -13,17 +13,42 @@ const STORAGE_KEY = "accountSession";
  */
 
 /**
+ * @param {unknown} account
+ * @returns {number | null}
+ */
+export function getAccountId(account) {
+  if (!account || typeof account !== "object") return null;
+  const value = /** @type {Record<string, unknown>} */ (account);
+  const parsed = Number(value.userId ?? value.id);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * @param {unknown} account
+ * @returns {string}
+ */
+export function getAccountRole(account) {
+  if (!account || typeof account !== "object") return "";
+  const value = /** @type {Record<string, unknown>} */ (account);
+  const role = value.role ?? value.roleName;
+  return typeof role === "string" ? role : "";
+}
+
+/**
  * @param {unknown} raw
+ * @param {string} [fallbackUid]
  * @returns {AccountSession | null}
  */
-function normalizeAccountSession(raw) {
+function normalizeAccountSession(raw, fallbackUid = "") {
   if (!raw || typeof raw !== "object") return null;
   const value = /** @type {Record<string, unknown>} */ (raw);
-  const parsedId = Number(value.id);
-  const id = Number.isFinite(parsedId) ? parsedId : null;
+  const id = getAccountId(value);
   const username = typeof value.username === "string" ? value.username : "";
-  const roleName = typeof value.roleName === "string" ? value.roleName : "";
-  const firebaseUid = typeof value.firebaseUid === "string" ? value.firebaseUid : "";
+  const roleName = getAccountRole(value);
+  const firebaseUid =
+    typeof value.firebaseUid === "string" && value.firebaseUid
+      ? value.firebaseUid
+      : fallbackUid;
   return { id, username, roleName, firebaseUid };
 }
 
@@ -100,7 +125,7 @@ export async function syncAccountSessionWithBackend(currentUser, options = {}) {
   }
 
   const raw = await response.json();
-  const account = normalizeAccountSession(raw);
+  const account = normalizeAccountSession(raw, currentUser.uid);
   if (!account) {
     throw new Error("Invalid backend account session payload");
   }

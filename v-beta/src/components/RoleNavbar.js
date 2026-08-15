@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { auth } from "@/app/firebase";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { getAccountRole } from "@/lib/accountSession";
 
 function normalizeRole(roleName) {
   const normalized = (roleName || "").toUpperCase();
@@ -56,7 +57,7 @@ export default function RoleNavbar() {
 
   const roleType = useMemo(() => {
     if (!user || !ready) return "guest";
-    return normalizeRole(account?.roleName);
+    return normalizeRole(getAccountRole(account));
   }, [user, account, ready]);
 
   const navItems = useMemo(() => {
