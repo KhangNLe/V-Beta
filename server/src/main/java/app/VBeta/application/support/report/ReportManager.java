@@ -5,6 +5,7 @@ import app.VBeta.domain.model.report.*;
 import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.*;
 import com.google.firebase.internal.NonNull;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,27 +57,35 @@ public class ReportManager {
     }
 
     public boolean checkForDuplicateReport(ReportRequest request, UserAccount user){
-        ReportCategory category = getReportCategory(request.reportCategoryName());
-        List<Report> reports = reportRepository.findByReporterAndCategory(user, category);
+        return checkForDuplicateOpenReport(request, user) ||
+                checkForDuplicateReportCategory(request, user);
+    }
 
-        if (reports.isEmpty()) return false;
+    private boolean checkForDuplicateReportCategory(ReportRequest request, UserAccount user){
+        ReportCategory reportCategory = getReportCategory(request.reportCategoryName());
+        return switch(request.reportTargetType()) {
+            case DISCUSSION -> reportRepository
+                    .existsByReporterAndCategoryAndDiscussion_DiscussionId(user, reportCategory, request.targetId());
+            case WALL_SECTION -> reportRepository
+                    .existsByReporterAndCategoryAndWallSection_Id(user, reportCategory, request.targetId());
+            case CLIMBING_PROBLEM -> reportRepository
+                    .existsByReporterAndCategoryAndProblem_Id(user, reportCategory, request.targetId());
+            case USER_ACCOUNT ->  reportRepository
+                    .existsByReporterAndCategoryAndUser_Id(user, reportCategory, request.targetId());
+        };
+    }
 
-        boolean isIdentical = false;
-        for (Report report : reports){
-            switch (report.getTargetType()){
-                case DISCUSSION -> isIdentical = Objects.equals(
-                        report.getDiscussion().getDiscussionId(), request.targetId());
-                case USER_ACCOUNT -> isIdentical = Objects.equals(
-                        report.getUser().getId(), request.targetId());
-                case WALL_SECTION -> isIdentical = Objects.equals(
-                        report.getWallSection().getId(), request.targetId());
-                case CLIMBING_PROBLEM -> isIdentical = Objects.equals(
-                        report.getProblem().getId(), request.targetId());
-            }
-            isIdentical = isIdentical && Objects.equals(report.getReportStatus(), ReportStatus.OPEN);
-            if (isIdentical) return true;
-        }
-        return false;
+    private boolean checkForDuplicateOpenReport(ReportRequest request, UserAccount user){
+        return switch(request.reportTargetType()) {
+            case DISCUSSION -> reportRepository
+                    .existsByReporterAndReportStatusAndDiscussion_DiscussionId(user, ReportStatus.OPEN, request.targetId());
+            case WALL_SECTION -> reportRepository
+                    .existsByReporterAndReportStatusAndWallSection_Id(user, ReportStatus.OPEN, request.targetId());
+            case CLIMBING_PROBLEM -> reportRepository
+                    .existsByReporterAndReportStatusAndProblem_Id(user, ReportStatus.OPEN, request.targetId());
+            case USER_ACCOUNT ->  reportRepository
+                    .existsByReporterAndReportStatusAndUser_Id(user, ReportStatus.OPEN, request.targetId());
+        };
     }
 
     private ReportCategory getReportCategory(ReportCategoryName categoryName) {

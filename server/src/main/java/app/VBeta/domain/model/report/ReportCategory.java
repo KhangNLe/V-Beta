@@ -18,6 +18,7 @@ import org.hibernate.type.SqlTypes;
 public class ReportCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "category_id")
     private Long id;
 
     @Column(name = "category_name", length = 40)

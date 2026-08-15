@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/report")
+@RequestMapping("/api/report")
 public class ContentReportController {
     private final AuthorizationService authorizationService;
     private final ModerationService moderationService;
