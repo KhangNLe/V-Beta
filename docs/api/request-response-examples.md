@@ -342,3 +342,80 @@ Same array shape, ordered harder → easier by `assignedGrade`.
 
 - `400` when lowest grade is harder than highest (`/search/1?min=V10&max=V2`)
 - `404` when wall section does not exist
+
+## 15) Create Content Report (Authenticated)
+
+Reporter identity is the Firebase UID. Success is `201` with an empty body. There is no `CREATE_REPORT` action gate.
+
+### Request
+
+```http
+POST /api/report/create
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "reportTargetType": "DISCUSSION",
+  "reportReason": "Spammy comment",
+  "reportCategoryName": "SPAM",
+  "targetId": 301
+}
+```
+
+`reportTargetType` values: `DISCUSSION`, `WALL_SECTION`, `CLIMBING_PROBLEM`, `USER_ACCOUNT`.
+
+`reportCategoryName` values: `INAPPROPRIATE_CONTENT`, `HARASSMENT_BULLYING`, `SPAM`, `OFF_TOPIC`.
+
+`reportReason` is required and at most 250 characters.
+
+### Response (201)
+
+Empty body.
+
+### Error examples
+
+- `400` when `reportReason` is blank or required fields/enums are missing
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when the target is missing/deleted, or the reporter owns the discussion / is the reported user
+- `409` when the reporter already has an `OPEN` report on the same target, or already used the same category on that target (any status)
+
+Example `409` reason: `Report already exists`.
+
+## 16) Get Unread Notifications (Authenticated)
+
+Poll unread inbox rows (`readAt` is null). The payload is event type + description + `createdAt`. It does not include the report reason.
+
+Any authenticated role may call this endpoint. `REPORT_CREATED` inbox rows are written for admins only (the reporter is skipped if they are an admin).
+
+### Request
+
+```http
+GET /api/notification/short
+Authorization: Bearer <firebase_id_token>
+```
+
+### Response (200) — admin after a new report
+
+```json
+[
+  {
+    "event": {
+      "eventTypeName": "REPORT_CREATED",
+      "description": "A user submitted a content report"
+    },
+    "createdAt": "2026-08-14T19:11:00"
+  }
+]
+```
+
+### Response (200) — climber/setter with no unread admin events
+
+```json
+[]
+```
+
+### Error examples
+
+- `401` when unauthenticated, the Firebase token is invalid, or no account matches the UID

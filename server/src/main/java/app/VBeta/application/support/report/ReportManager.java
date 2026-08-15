@@ -13,6 +13,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
+/**
+ * {@code ReportManager} encapsulates persistence and validation rules for
+ * {@link Report} entities.
+ * <p>
+ * It resolves typed report targets, maps category names to catalog rows, and
+ * exposes duplicate checks used by {@link app.VBeta.application.ModerationService}.
+ */
 @Service
 @Transactional
 public class ReportManager {
@@ -23,6 +30,16 @@ public class ReportManager {
     private final UserAccountRepository userAccountRepository;
     private final DiscussionRootRepository discussionRootRepository;
 
+    /**
+     * Constructs a new {@code ReportManager} with report and target repositories.
+     *
+     * @param reportRepository repository for report entities
+     * @param reportCategoryRepository repository for report category lookups
+     * @param climbingProblemRepository repository for climbing problem targets
+     * @param wallSectionRepository repository for wall section targets
+     * @param userAccountRepository repository for user-account targets
+     * @param discussionRootRepository repository for discussion targets
+     */
     public ReportManager(ReportRepository reportRepository,
                          ReportCategoryRepository reportCategoryRepository,
                          ClimbingProblemRepository climbingProblemRepository,
@@ -37,15 +54,37 @@ public class ReportManager {
         this.discussionRootRepository = discussionRootRepository;
     }
 
+    /**
+     * Finds a report by identifier.
+     *
+     * @param id report identifier
+     * @return matching report
+     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when missing
+     */
     public Report findById(@NonNull Long id) {
         return reportRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
+    /**
+     * Persists report changes to storage.
+     *
+     * @param report report entity to save
+     * @return saved report entity
+     */
     public Report save(Report report) {
         return reportRepository.save(report);
     }
 
+    /**
+     * Creates and stores a new {@code OPEN} report for a typed target.
+     *
+     * @param reporter authenticated reporter account
+     * @param reportRequest report creation payload
+     * @return persisted report
+     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when the category
+     *         or target does not exist, or when the reporter owns the discussion/user target
+     */
     public Report createReport(UserAccount reporter, ReportRequest reportRequest) {
         Report report = new Report();
         report.setReporter(reporter);
@@ -56,11 +95,28 @@ public class ReportManager {
         return save(report);
     }
 
+    /**
+     * Returns whether the reporter already has a conflicting report on the same target.
+     * <p>
+     * A conflict is an {@code OPEN} report on the target, or any prior report with the
+     * same category on that target.
+     *
+     * @param request incoming report payload
+     * @param user reporter account
+     * @return {@code true} when a duplicate exists
+     */
     public boolean checkForDuplicateReport(ReportRequest request, UserAccount user){
         return checkForDuplicateOpenReport(request, user) ||
                 checkForDuplicateReportCategory(request, user);
     }
 
+    /**
+     * Returns whether the reporter already used the same category on this target.
+     *
+     * @param request incoming report payload
+     * @param user reporter account
+     * @return {@code true} when a same-category report exists
+     */
     private boolean checkForDuplicateReportCategory(ReportRequest request, UserAccount user){
         ReportCategory reportCategory = getReportCategory(request.reportCategoryName());
         return switch(request.reportTargetType()) {
@@ -75,6 +131,13 @@ public class ReportManager {
         };
     }
 
+    /**
+     * Returns whether the reporter already has an {@code OPEN} report on this target.
+     *
+     * @param request incoming report payload
+     * @param user reporter account
+     * @return {@code true} when an open report exists
+     */
     private boolean checkForDuplicateOpenReport(ReportRequest request, UserAccount user){
         return switch(request.reportTargetType()) {
             case DISCUSSION -> reportRepository
@@ -88,11 +151,27 @@ public class ReportManager {
         };
     }
 
+    /**
+     * Resolves a report category catalog row by name.
+     *
+     * @param categoryName category enum from the request
+     * @return matching category row
+     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when missing
+     */
     private ReportCategory getReportCategory(ReportCategoryName categoryName) {
         return reportCategoryRepository.findByCategoryName(categoryName)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
+    /**
+     * Sets exactly one typed target FK from {@code request.targetId()}.
+     *
+     * @param report report being populated
+     * @param request report creation payload
+     * @param reporter reporter used to reject self-owned discussion and user targets
+     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when the target
+     *         is missing, deleted, or owned by the reporter
+     */
     private void setTarget(Report report, ReportRequest request, UserAccount reporter){
         Long targetId = request.targetId();
         switch(request.reportTargetType()){

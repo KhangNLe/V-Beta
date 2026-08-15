@@ -12,6 +12,10 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code ModerationAction} is an append-only admin logbook row for a {@link Report}.
+ * Multiple actions per report are allowed.
+ */
 @Entity
 @Table(name = "moderation_action")
 @Getter
@@ -34,7 +38,7 @@ public class ModerationAction {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "action_type", nullable = false)
+    @Column(name = "action_type", nullable = false, columnDefinition = "moderate_action_type")
     private ModerateActionType moderateActionType;
 
     @Column(name = "admin_notes", nullable = false)

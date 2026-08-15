@@ -11,6 +11,12 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code Events} is a happened-fact row for notifiable moderation lifecycle events.
+ * <p>
+ * It stores event type, optional actor, and exactly one typed target. Notification
+ * UI joins related rows; there is no JSON payload.
+ */
 @Entity
 @Table(name = "events")
 @Setter
@@ -34,7 +40,7 @@ public class Events {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "target_type", nullable = false)
+    @Column(name = "target_type", nullable = false, columnDefinition = "event_target_type")
     private EventTargetType targetType;
 
     @Column(name = "created_at", nullable = false)

@@ -133,6 +133,12 @@ public class UserAccountManager {
         return result.orElse(null);
     }
 
+    /**
+     * Returns all accounts assigned the given gym role type.
+     *
+     * @param roleType role type to match
+     * @return accounts with that role
+     */
     public List<UserAccount> findUsersOfRole(RoleType roleType) {
         return userAccountRepository.findByGymRole_RoleType(roleType);
     }

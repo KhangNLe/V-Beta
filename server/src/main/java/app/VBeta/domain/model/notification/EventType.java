@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * {@code EventType} is a catalog row for notifiable event kinds and descriptions.
+ */
 @Entity
 @Table(name = "event_type")
 @Getter

@@ -134,6 +134,44 @@ Public guest-readable endpoints. Returns only **active** problems. Grade bounds 
     - `publicUrl`
   - Response: `200` (empty body).
 
+### Content Reports (Authenticated)
+
+Create-report is **authenticated, not action-gated**. There is no `CREATE_REPORT` value in `ActionDefinition`. Guest callers are rejected by Spring Security (`401`). Reporter identity is taken from the Firebase UID, not the request body.
+
+- `POST /api/report/create`
+  - Purpose: create an `OPEN` content report and notify admins.
+  - Request body (`ReportRequest`):
+    - `reportTargetType` (`DISCUSSION`, `WALL_SECTION`, `CLIMBING_PROBLEM`, `USER_ACCOUNT`)
+    - `reportReason` (required, max 250 characters)
+    - `reportCategoryName` (`INAPPROPRIATE_CONTENT`, `HARASSMENT_BULLYING`, `SPAM`, `OFF_TOPIC`)
+    - `targetId` (id of the typed target row)
+  - Server-owned fields: reporter, `OPEN` status, timestamps.
+  - Response: `201` with empty body.
+  - Side effect: writes a `REPORT_CREATED` event (`target_type = REPORT`, actor = reporter) and unread inbox rows for **admins only**. The reporter is skipped if they are an admin. The content owner is not notified on create.
+  - Duplicate rules (either one is `409`):
+    1. Same reporter + same target with status `OPEN` (category ignored).
+    2. Same reporter + same target + same category, any status (same category cannot be reused after dismiss).
+  - Errors:
+    - `400` when required fields are missing/invalid (blank reason, missing enums/`targetId`)
+    - `401` when unauthenticated or the Firebase token is invalid
+    - `404` when the reporter account is missing, the target is missing/deleted, or the reporter owns the discussion / is the reported user
+    - `409` when a duplicate open or same-category report already exists
+  - Product note: Sprint 5 UI scope is discussion comments/betas (`DISCUSSION`). The API also accepts wall, problem, and user targets.
+
+### Notifications (Authenticated)
+
+Unread inbox read is **authenticated, not action-gated**. Any signed-in role may call it; `REPORT_CREATED` rows are currently fanned out to admins only, so climber/setter inboxes are typically empty for this event.
+
+- `GET /api/notification/short`
+  - Purpose: poll unread inbox summaries for the authenticated user (`readAt IS NULL`).
+  - Response: `200` array of `QuickNotificationDTO`:
+    - `event.eventTypeName` (for example `REPORT_CREATED`)
+    - `event.description` (seeded catalog text; does **not** include the report reason)
+    - `createdAt`
+  - Delivery: client polling is sufficient for Sprint 5 (no WebSocket/SSE/FCM).
+  - Errors:
+    - `401` when unauthenticated, the Firebase token is invalid, or no account matches the UID
+
 ## Action-Gated Endpoints
 
 ### Account Admin
@@ -207,6 +245,8 @@ Public guest-readable endpoints. Returns only **active** problems. Grade bounds 
 
 ## Related Docs
 
+- `docs/api/request-response-examples.md`
+- `docs/api/permissions-matrix.md`
 - `docs/api/error-handling.md`
 - `docs/features/authentication-and-roles.md`
 - `docs/features/wall-and-problems.md`

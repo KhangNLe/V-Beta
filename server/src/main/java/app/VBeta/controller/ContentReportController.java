@@ -8,18 +8,37 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * {@code ContentReportController} accepts authenticated content reports.
+ * <p>
+ * Report creation is delegated to {@link ModerationService}. The reporter identity
+ * is taken from {@link AuthorizationService}, not from the request body.
+ */
 @RestController
 @RequestMapping("/api/report")
 public class ContentReportController {
     private final AuthorizationService authorizationService;
     private final ModerationService moderationService;
 
+    /**
+     * Constructs a new {@code ContentReportController} with required services.
+     *
+     * @param authorizationService service for authentication context
+     * @param moderationService service for report creation and admin notification
+     */
     public ContentReportController(AuthorizationService authorizationService,
                                    ModerationService moderationService) {
         this.authorizationService = authorizationService;
         this.moderationService = moderationService;
     }
 
+    /**
+     * Creates a new content report for the authenticated user.
+     * <p>
+     * On success the response is {@code 201} with an empty body.
+     *
+     * @param request report target, category, and reason payload
+     */
     @PostMapping("/create")
     @ResponseStatus(HttpStatus.CREATED)
     public void createContentReport(@Valid @RequestBody ReportRequest request){

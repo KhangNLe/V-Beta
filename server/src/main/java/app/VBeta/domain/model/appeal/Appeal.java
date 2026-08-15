@@ -12,6 +12,11 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code Appeal} is the one-time appeal path for a content owner after removal.
+ * <p>
+ * At most one appeal exists per {@link Report}. New rows default to {@link AppealStatus#OPEN}.
+ */
 @Entity
 @Table(name = "Appeal")
 @Getter
@@ -37,7 +42,7 @@ public class Appeal {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, columnDefinition = "appeal_status")
     private AppealStatus appealStatus;
 
     @Column(name = "created_at", nullable = false)

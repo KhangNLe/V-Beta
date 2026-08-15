@@ -13,6 +13,12 @@ import org.springframework.beans.factory.parsing.Problem;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code Report} is a user-submitted flag against one typed content target.
+ * <p>
+ * Exactly one of discussion, problem, wall section, or user should be set,
+ * matching {@link ReportTargetType}. New rows default to {@link ReportStatus#OPEN}.
+ */
 @Entity
 @Table(name = "Report")
 @Getter
@@ -39,13 +45,13 @@ public class Report {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "target_type", nullable = false)
+    @Column(name = "target_type", nullable = false, columnDefinition = "report_target_type")
     private ReportTargetType targetType;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "report_status", nullable = false)
+    @Column(name = "report_status", nullable = false, columnDefinition = "report_status")
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private ReportStatus reportStatus;

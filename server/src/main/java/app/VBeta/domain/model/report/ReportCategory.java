@@ -9,6 +9,10 @@ import org.hibernate. annotations.JdbcTypeCode;
 import org.hibernate.tool.schema.TargetType;
 import org.hibernate.type.SqlTypes;
 
+/**
+ * {@code ReportCategory} is a catalog row for report reason categories and
+ * admin-queue priority (lower number is higher rank).
+ */
 @Entity
 @Table(name = "Report_Category")
 @Getter

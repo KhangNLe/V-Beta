@@ -130,6 +130,8 @@ java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 - [Architecture: Backend](../docs/architecture/backend-architecture.md)
 - [Architecture: Data Model](../docs/architecture/data-model.md)
 - [API: Endpoints](../docs/api/endpoints.md)
+- [API: Request/Response Examples](../docs/api/request-response-examples.md)
+- [API: Permissions Matrix](../docs/api/permissions-matrix.md)
 - [API: Error Handling](../docs/api/error-handling.md)
 - [Testing: Strategy](../docs/testing/test-strategy.md)
 - [Testing: Server Test Report](../docs/testing/server-test-report.md)

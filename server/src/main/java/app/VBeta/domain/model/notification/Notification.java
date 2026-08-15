@@ -6,6 +6,10 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code Notification} is a per-recipient inbox row pointing at a domain {@link Events} fact.
+ * {@code readAt} is null until the recipient marks the notification read.
+ */
 @Entity
 @Table(name = "notification")
 @Getter

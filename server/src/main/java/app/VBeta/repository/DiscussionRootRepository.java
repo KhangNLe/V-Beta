@@ -100,6 +100,13 @@ public interface DiscussionRootRepository extends JpaRepository<DiscussionRoot, 
      */
     List<DiscussionRoot> findByProblem_IdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDescDiscussionIdDesc(Long problemId);
 
+    /**
+     * Finds a non-deleted discussion that is not authored by the given user.
+     *
+     * @param discussionId discussion identifier
+     * @param user reporter account to exclude as author
+     * @return matching discussion when present
+     */
     @Query("SELECT di FROM DiscussionRoot di WHERE di.discussionId = :discussionId AND di.deletedBy IS NULL "
             + "AND di.userAccount <> :user"
     )

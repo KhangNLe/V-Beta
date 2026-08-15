@@ -8,7 +8,16 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
+/**
+ * Repository for {@link Notification} entities.
+ */
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
+    /**
+     * Returns unread inbox rows for a recipient ({@code readAt} is null).
+     *
+     * @param user recipient account
+     * @return unread notifications
+     */
     @Query(
             "SELECT noti FROM Notification noti WHERE noti.recipient = :user AND noti.readAt IS NULL"
     )

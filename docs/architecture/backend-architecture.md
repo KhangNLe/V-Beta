@@ -19,7 +19,7 @@ The backend follows a layered architecture under `server/src/main/java/app/VBeta
    - Coordinate use cases and transaction boundaries.
 3. **Support Managers/Adapters** (`application/support/`)
    - Domain-specific orchestration and integration helpers, grouped by concern:
-     - `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`
+     - `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`, `report/`, `events/`
 4. **Repositories** (`repository/`)
    - Data access through Spring Data JPA.
 5. **Domain Model** (`domain/model/`)
@@ -28,9 +28,10 @@ The backend follows a layered architecture under `server/src/main/java/app/VBeta
      - `climb/` — walls, problems, grades, lifecycle
      - `discussions/` — discussion roots, comments, solution betas
      - `user/` — accounts and perceived grades
+     - `report/`, `notification/`, `appeal/`, `moderation/` — Sprint 5 moderation model
 6. **API DTOs** (`api/dto/`)
    - Request/response contracts, grouped by feature area:
-     - `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`)
+     - `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`), `report/`, `notification/`
 
 Place new types in the matching domain subpackage rather than the layer root.
 
@@ -57,7 +58,7 @@ Access model types:
 
 ## Persistence and Domain
 
-- Main entities include user accounts, roles, wall sections, climbing problems, discussion comments, solution betas, and perceived grades.
+- Main entities include user accounts, roles, wall sections, climbing problems, discussion comments, solution betas, perceived grades, reports, events, and notifications.
 - JPA schema mode in runtime is `ddl-auto=validate`, so schema must exist and match.
 - Role permission evaluation is data-driven from role/action tables.
 
@@ -95,6 +96,7 @@ Access model types:
   - action-gated (`ActionDefinition` checks)
 - Role permissions are loaded from DB mappings (`RolePermission`) through authorization support services.
 - Some discussion endpoints are authenticated without full action-gating; enforceable behavior is partly service-rule based.
+- Content report create and unread notification poll are authenticated only (no `CREATE_REPORT` / `VIEW_REPORTS` action).
 
 ## Constraints and Technical Debt Notes
 
