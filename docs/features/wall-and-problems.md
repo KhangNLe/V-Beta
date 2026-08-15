@@ -34,9 +34,9 @@ This section documents wall section and climbing problem features currently avai
 
 1. On a wall section page, user opens **Filter**.
 2. User selects inclusive min/max grades and a sort mode:
-   - **Most Recent** — grade filter via `/search` without `sort`, then client sorts by `createdDate` descending
-   - **Easiest** — `/search?...&sort=asc`
-   - **Hardest** — `/search?...&sort=desc`
+   - **Most Recent** — grade filter via `/api/search` without `sort`, then client sorts by `createdDate` descending
+   - **Easiest** — `/api/search?...&sort=asc`
+   - **Hardest** — `/api/search?...&sort=desc`
 3. **Apply** loads matching active problems; Apply is disabled when min is harder than max.
 4. **Clear filters** restores the default wall-section problem list.
 5. Guests and signed-in users can use Filter; invalid API ranges still return `400`, missing walls `404`.
@@ -90,10 +90,11 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 
 ## Limitations and Notes
 
-- Some endpoint semantics are legacy (for example, delete problem is currently exposed as a GET route in backend controller).
+- Problem delete is `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`.
+- Wall reset is `PATCH /api/home/wall-section/{wallSectionId}/reset`.
 - UI gating and backend authorization should both be revalidated when role logic changes.
-- Discovery grade-range endpoints use query params (`?min=&max=&sort=`).
-- CORS allows `/search/**` for the frontend origin (same pattern as `/home/**`).
+- Discovery grade-range endpoints use `/api/search/{wallSectionId}?min=&max=&sort=`.
+- CORS allows `/api/**` for the frontend origin (covers `/api/home/**` and `/api/search/**`).
 - Keyword/text search is deferred to a later sprint (roadmap Sprint 9); Sprint 4 discovery (grade filter/sort) is complete.
 
 ## Future Enhancements

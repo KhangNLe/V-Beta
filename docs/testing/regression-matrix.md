@@ -34,7 +34,8 @@ When code changes in these areas, minimum regression scope should include:
   - Re-run account role changes + setter/admin/guest restricted actions.
 - **Wall/problem controllers or APIs changed**:
   - Re-run WALL-01/02/03 and DISC-03.
-- **Discovery/filter APIs changed** (`/search`, `ProblemFilteringService`):
+  - Confirm `/api/home/...` paths and `PATCH` for wall reset / problem delete.
+- **Discovery/filter APIs changed** (`/api/search`, `ProblemFilteringService`):
   - Re-run DISC-04 and related integration tests in `ClimbingProblemFilteringTest`.
 - **Wall filter UI changed** (`wall/[wallSectionID]/page.js`, `fetchFilteredWallSectionProblems`):
   - Re-run DISC-05 and `wall-page.test.js` filter cases.

@@ -82,11 +82,13 @@ Access model types:
 - **Security filter chain**
   - Firebase token verification runs in `FirebaseAuthFilter`.
 - **CORS**
-  - Configured via `WebConfig` for API route groups.
+  - Configured via `WebConfig` for `/api/**` (GET, POST, PUT, PATCH, DELETE, OPTIONS).
 - **Transactions**
   - Service-layer transaction boundaries coordinate multi-step operations.
 - **Error handling**
-  - Mixed approach: `ResponseStatusException`, explicit filter responses, and default Spring exception mapping.
+  - Controllers catch `RuntimeException` and return a mapped status with a plain-text message (typically 404; wall writes 400; notification GET 401).
+  - `FirebaseAuthFilter` returns JSON `401` for invalid tokens.
+  - `POST /api/accounts/session` still uses `ResponseStatusException` for missing auth.
 
 ## Request/Permission Patterns
 

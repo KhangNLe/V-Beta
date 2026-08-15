@@ -15,7 +15,7 @@ This strategy defines how we validate correctness, authorization behavior, and r
 - Framework: JUnit 5 + Spring Boot Test
 - Test styles in repo:
   - application/context smoke tests
-  - controller/service tests with MockMvc and mocked dependencies
+  - `@WebMvcTest` Mockito controller tests (MockMvc, filters off, mocked services) covering `/api/...` routes
   - integration-style tests under `Integration_Test/*`
 - Profiles/config:
   - `application-test.yml` uses H2 by default
@@ -110,8 +110,8 @@ Highest regression risk areas:
 
 - authentication/session sync (`/api/accounts/session`)
 - authorization and role enforcement (`CHANGE_ROLE`, `VIEW_ACCOUNTS`, `DELETE_COMMENT`, etc.)
-- wall/problem modification endpoints
-- solution beta upload flow (signed URL -> upload -> metadata save)
+- wall/problem modification endpoints (`/api/home/...`, including `PATCH` reset and problem delete)
+- solution beta upload flow (`GET /api/discussion/solution-beta/upload-url` → GCS PUT → `POST .../save`)
 
 These areas should always be included in release smoke testing.
 

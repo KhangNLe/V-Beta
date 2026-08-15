@@ -60,10 +60,10 @@ Status: Completed (backend slice)
 
 Highlights:
 
-- Public `/search` endpoints filter active problems by inclusive grade range within a wall section.
+- Public `/api/search` endpoints filter active problems by inclusive grade range within a wall section.
 - Ascending and descending grade sort variants are supported.
 - Invalid range and missing-wall error behavior covered by integration tests.
-- CORS mapping added for `/search/**`.
+- CORS mapping is `/api/**` (includes `/api/search/**`).
 
 Related docs:
 
@@ -79,7 +79,7 @@ Highlights:
 
 - Filter button/dialog on the wall section page for guests and signed-in users.
 - Inclusive min–max grade range with Apply disabled when min is harder than max.
-- Sort modes: Most Recent (client `createdDate` desc after `/search`), Easiest (`sort=asc`), Hardest (`sort=desc`).
+- Sort modes: Most Recent (client `createdDate` desc after `/api/search`), Easiest (`sort=asc`), Hardest (`sort=desc`).
 - Clear restores the default wall problems list; active filter hint shown while applied.
 - Add Problem assigned grade uses a `VB`–`V17` dropdown.
 - Covered by `wall-page.test.js` filter cases.
