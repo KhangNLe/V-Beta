@@ -139,7 +139,7 @@ Action-level authorization uses:
 
 This model enables action-gated endpoint checks beyond simple authenticated/unauthenticated access.
 
-Dedicated moderation permission seeds (for example `VIEW_REPORTS`, `RESOLVE_REPORT`) are not required for the schema slice; add them when report/admin APIs enforce action checks.
+Dedicated moderation permission seeds (for example `VIEW_REPORTS`, `RESOLVE_REPORT`) are not used by the current create-report and unread-notification APIs. Those routes are authenticated only (no `CREATE_REPORT` in `ActionDefinition`). Add action seeds when queue/resolve APIs enforce action checks.
 
 ## Schema Management Notes
 

@@ -40,15 +40,17 @@ This section documents the authentication and authorization features that are cu
 
 - **Guest**
   - Can browse core wall/problem pages.
-  - Cannot perform authenticated actions (comment, beta upload, account-only actions).
+  - Cannot perform authenticated actions (comment, beta upload, content report, notifications, account-only actions).
 - **Climber**
-  - Authenticated features such as comments, beta uploads, and grade suggestions.
+  - Authenticated features such as comments, beta uploads, grade suggestions, and content reports.
+  - Can poll `GET /api/notification/short`; `REPORT_CREATED` inbox rows are not written for this role.
   - Can access own account page and self-service account actions.
 - **Setter**
   - Includes climber capabilities.
   - Can create/delete climbing problems and reset wall sections (where role checks are enforced).
 - **Admin**
-  - Includes climber capabilities.
+  - Includes climber capabilities, including creating content reports.
+  - Receives `REPORT_CREATED` unread inbox rows (unless they are the reporter).
   - Can view all accounts and promote/demote account roles.
   - Can manage wall sections (create/delete).
   - Can perform moderation-style actions such as deleting comments/betas where admin checks are enforced.
@@ -64,6 +66,12 @@ This section documents the authentication and authorization features that are cu
 - The frontend exposes admin navigation for account-management workflow.
 - Admin role changes should be validated end-to-end (UI + API + permission checks) whenever role logic changes.
 
+## Content Reports and Notifications
+
+- Create report: `POST /api/report/create` (authenticated; not action-gated; no `CREATE_REPORT`).
+- Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated).
+- See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.
+
 ## Key Files
 
 - Frontend auth forms and flows:
@@ -78,6 +86,9 @@ This section documents the authentication and authorization features that are cu
 - Backend auth filter and authorization:
   - `server/src/main/java/app/VBeta/config/security/FirebaseAuthFilter.java`
   - `server/src/main/java/app/VBeta/application/AuthorizationService.java`
+- Content report and notification APIs:
+  - `server/src/main/java/app/VBeta/controller/ContentReportController.java`
+  - `server/src/main/java/app/VBeta/controller/EvenNotificationController.java`
 
 ## Limitations and Notes
 
