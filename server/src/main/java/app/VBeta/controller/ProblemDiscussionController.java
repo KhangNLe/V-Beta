@@ -13,8 +13,10 @@ import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ClimbingWallService;
 import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.domain.model.actions.ActionDefinition;
+import com.google.api.Http;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -25,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
  * Authorization checks are performed via {@link AuthorizationService} for privileged actions.
  */
 @RestController
-@RequestMapping("/discussion")
+@RequestMapping("/api/discussion")
 public class ProblemDiscussionController {
     private final ProblemDiscussionService problemDiscussionService;
     private final AuthorizationService authorizationService;
@@ -54,10 +56,17 @@ public class ProblemDiscussionController {
      */
     @PostMapping("/add-comments")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserCommentData addUserComment(@Valid @RequestBody DiscussionCommentRequest request) {
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+    public ResponseEntity<?> addUserComment(@Valid @RequestBody DiscussionCommentRequest request) {
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
 
-        return problemDiscussionService.addComment(firebaseUid, request);
+            UserCommentData response =  problemDiscussionService.addComment(firebaseUid, request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -66,9 +75,16 @@ public class ProblemDiscussionController {
      * @param body cloud file storage request payload
      * @return signed upload URL and related storage metadata
      */
-    @PostMapping("/solution-beta/upload-url")
-    public CloudFileStorageResponse getSignedURL(@RequestBody CloudFileStorageRequest body){
-        return problemDiscussionService.getSignedUrl(body);
+    @GetMapping("/solution-beta/upload-url")
+    public ResponseEntity<?> getSignedURL(@RequestBody CloudFileStorageRequest body){
+        try {
+            CloudFileStorageResponse response = problemDiscussionService.getSignedUrl(body);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -79,12 +95,20 @@ public class ProblemDiscussionController {
      * @return updated climbing problem detail response
      */
     @PostMapping("/problems/{problemId}/suggest-grade")
-    public ClimbingProblemDetailResponse givePerceiveGrade(@PathVariable Long problemId,
+    public ResponseEntity<?> givePerceiveGrade(@PathVariable Long problemId,
                                                            @Valid @RequestBody PerceiveGradeRequest request){
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        authorizationService.authorize(firebaseUid, ActionDefinition.GRADE_PROBLEM);
-        problemDiscussionService.addClimbingProblemPerceiveGrade(firebaseUid, problemId, request);
-        return climbingWallService.getClimbingProblem(problemId);
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            authorizationService.authorize(firebaseUid, ActionDefinition.GRADE_PROBLEM);
+            problemDiscussionService.addClimbingProblemPerceiveGrade(firebaseUid, problemId, request);
+            ClimbingProblemDetailResponse response = climbingWallService.getClimbingProblem(problemId);
+
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -94,9 +118,16 @@ public class ProblemDiscussionController {
      * @return discussion timeline item representing the uploaded beta
      */
     @PostMapping("solution-beta/save")
-    public UserCommentData storeUserSolutionBeta(@Valid @RequestBody SolutionBetaCreateRequest request) {
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        return problemDiscussionService.saveSolutionBeta(request, firebaseUid);
+    public ResponseEntity<?> storeUserSolutionBeta(@Valid @RequestBody SolutionBetaCreateRequest request) {
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            UserCommentData response =  problemDiscussionService.saveSolutionBeta(request, firebaseUid);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (RuntimeException e){
+            return  new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -105,10 +136,16 @@ public class ProblemDiscussionController {
      * @param request solution beta deletion payload
      */
     @DeleteMapping("/solution-beta")
-    @ResponseStatus(HttpStatus.OK)
-    public void deleteUserSolutionBeta(@RequestBody SolutionBetaDeletionRequest request){
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        problemDiscussionService.removeUserSolutionBeta(request, firebaseUid);
+    public ResponseEntity<?> deleteUserSolutionBeta(@RequestBody SolutionBetaDeletionRequest request){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            problemDiscussionService.removeUserSolutionBeta(request, firebaseUid);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -120,10 +157,16 @@ public class ProblemDiscussionController {
      * @param request comment deletion payload containing author/problem/content identifiers
      */
     @DeleteMapping("/comment/delete")
-    @ResponseStatus(HttpStatus.OK)
-    public void deleteComment(@Valid @RequestBody CommentDeletionRequest request){
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_COMMENT);
-        problemDiscussionService.removeUserComment(firebaseUid, request);
+    public ResponseEntity<?> deleteComment(@Valid @RequestBody CommentDeletionRequest request){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_COMMENT);
+            problemDiscussionService.removeUserComment(firebaseUid, request);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

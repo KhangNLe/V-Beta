@@ -8,28 +8,26 @@ Errors come from three main layers:
 
 - **Auth filter layer** (`FirebaseAuthFilter`) for invalid Firebase bearer tokens
 - **Authorization layer** (`AuthorizationService`) for role/permission checks
-- **Service/controller layer** (`ResponseStatusException`, validation, and runtime exceptions)
+- **Controller catch mapping** plus Spring validation (`@Valid`) and a few remaining `ResponseStatusException` paths (account session)
 
 ## Common HTTP Status Codes
 
 - **400 Bad Request**
-  - Invalid request payloads
-  - Invalid role value on role update
-  - Invalid perceived grade input
+  - Invalid request payloads (`@Valid`)
+  - Invalid perceived grade / role enum values
   - Blank or over-length report reason / missing report enums
+  - Wall/problem write `RuntimeException`s (create/delete/reset), including authorization failures on those routes
 - **401 Unauthorized**
-  - Missing/invalid bearer token for protected routes
-  - Authenticated token exists but no matching account in DB
-- **403 Forbidden**
-  - Authenticated user lacks required role/action permission
-  - User has no valid role assigned
+  - Missing/invalid bearer token for protected routes (Spring Security or `FirebaseAuthFilter`)
+  - Missing auth context on `POST /api/accounts/session`
+  - `GET /api/notification/short` when auth/account lookup throws `RuntimeException`
 - **404 Not Found**
   - Referenced resource not found (wall/problem/comment/beta/account/report targets)
-- **409 Conflict** (route-dependent)
-  - Duplicate or conflicting state in create/save operations (if thrown by service logic)
-  - Duplicate content report: same reporter already has an `OPEN` report on the target, or already used the same category on that target
+  - Most other controller `RuntimeException`s, including action-gated authorization failures and duplicate report creates
 - **500 Internal Server Error**
   - Unhandled exceptions or infrastructure failures (storage/DB/internal service issues)
+
+Controllers return the exception message as a **plain-text** body for caught `RuntimeException` / `Exception`. They do not use a shared JSON error envelope.
 
 ## Authentication Error Behavior
 
@@ -45,31 +43,33 @@ Status: `401`
 
 ### Missing/Invalid Auth Context
 
-Authorization failures from `AuthorizationService` can return:
+`AuthorizationService` throws `RuntimeException` with messages such as:
 
-- `401 Missing or invalid authentication token`
-- `401 Missing Firebase UID in authentication token`
-- `401 Authenticated user account does not exist`
+- `Missing or invalid authentication token`
+- `Missing Firebase UID in authentication token`
+- `Authenticated user account does not exist`
+
+How that surfaces depends on the controller:
+
+- most routes → **404** with that message
+- wall/problem writes → **400**
+- `GET /api/notification/short` → **401**
+- `POST /api/accounts/session` with no security context → **401** (`ResponseStatusException`)
 
 ## Authorization Error Behavior
 
-When user is authenticated but not allowed:
-
-- `403 User does not have a valid role assigned`
-- `403 Role <ROLE> is not allowed to perform action <ACTION>`
+When the user is authenticated but not allowed, `AuthorizationService` throws `RuntimeException` (`Role <ROLE> is not allowed to perform action <ACTION>` or no valid role). Controllers currently map those to **404** or **400**, not 403.
 
 This applies to action-gated endpoints (for example account list/role-change, wall/problem management, grade suggestion, and comment delete).
 
 ## Validation and Domain Errors
 
-Validation/domain errors are typically returned as `400`, `404`, `409`, or `500` depending on failure point:
-
-- Invalid payload fields/enums: usually `400`
+- Invalid payload fields/enums: usually `400` (Spring validation)
 - Missing domain resource: usually `404`
-- Duplicate report create: `409` (`Report already exists`)
+- Duplicate report create: currently `404` (`Report already exists`) because the report controller maps all `RuntimeException`s to not-found
 - Storage/generation/internal failure: usually `500`
 
-Because there is no custom global error envelope documented yet, clients should not hardcode one exact shape for all non-auth errors.
+Clients should not hardcode one exact JSON shape for all non-auth errors.
 
 ## Content Report and Notification Errors
 
@@ -78,12 +78,11 @@ Because there is no custom global error envelope documented yet, clients should 
 Create-report domain errors:
 
 - `400` — blank `reportReason`, missing `reportTargetType` / `reportCategoryName` / `targetId`
-- `404` — reporter account missing, target missing/deleted, reporter owns the discussion, or reporter is the reported user
-- `409` — duplicate `OPEN` report on the same target, or same category already used on that target
+- `404` — reporter account missing, target missing/deleted, reporter owns the discussion, reporter is the reported user, or a duplicate report already exists
 
 Unread notification errors:
 
-- `401` — missing/invalid auth, or no account matches the Firebase UID (current controller maps lookup failure to `401`)
+- `401` — missing/invalid auth, or no account matches the Firebase UID (controller maps lookup failure to `401`)
 
 Create-report does not return `403` for climber/setter: any authenticated role may submit a report. Admin inbox fan-out is a side effect, not an access check on these two routes.
 
@@ -91,8 +90,8 @@ Create-report does not return `403` for climber/setter: any authenticated role m
 
 - **Guaranteed stable auth payload** for invalid token:
   - `{"error":"Invalid or expired Firebase token"}`
-- **Other errors** usually come from Spring default handling of `ResponseStatusException` / validation exceptions.
-  - Treat message/body as informative but not guaranteed stable across framework changes.
+- **Controller-caught errors** are typically the raw exception message as text.
+- **Validation errors** use Spring's default `MethodArgumentNotValidException` JSON.
 
 ## Client Handling Guidance
 
@@ -101,14 +100,10 @@ Frontend/API client should handle by status class first:
 - **401**
   - Clear local session
   - Redirect to login or prompt re-authentication
-- **403**
-  - Show permission-denied message
-  - Keep user on current page where possible
 - **404**
-  - Show not-found message and offer navigation fallback
+  - Show not-found or permission-denied message (action-gated failures currently use this status)
+  - Offer navigation fallback where appropriate
 - **400**
   - Show field-specific or action-specific validation message
-- **409**
-  - Show conflict message (for example an existing report on that content)
 - **500**
   - Show generic retry/support message and log details client-side

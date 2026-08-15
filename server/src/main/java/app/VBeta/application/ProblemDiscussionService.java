@@ -20,10 +20,8 @@ import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.discussions.DiscussionType;
 import app.VBeta.domain.model.discussions.SolutionBeta;
 import app.VBeta.domain.model.user.UserAccount;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Objects;
@@ -132,8 +130,7 @@ public class ProblemDiscussionService {
     private UserAccount getUserAccount(String firebaseUid){
         UserAccount account =  userAccountManager.findUserAccount(firebaseUid);
         if (account == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "User Account with the unique firebase ID does not exist. Please log in and try again.");
+            throw new RuntimeException("User Account with the unique firebase ID does not exist. Please log in and try again.");
         }
         return account;
     }
@@ -170,8 +167,7 @@ public class ProblemDiscussionService {
     private UserAccount getUserAccount(Long userId){
         UserAccount account =  userAccountManager.findUserAccountById(userId);
         if (account == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "User Account with the unique firebase ID does not exist. Please log in and try again.");
+            throw new RuntimeException("User Account with the unique firebase ID does not exist. Please log in and try again.");
         }
         return account;
     }
@@ -179,8 +175,7 @@ public class ProblemDiscussionService {
     private ClimbingProblem getActiveClimbingProblem(Long problemId){
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
         if (problem == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    String.format("The problem with ID %d does not exist or no longer active.", problemId));
+            throw new RuntimeException(String.format("The problem with ID %d does not exist or no longer active.", problemId));
         }
         return problem;
     }
@@ -190,15 +185,12 @@ public class ProblemDiscussionService {
      *
      * @param user requester account
      * @param authorId author user ID associated with the target content
-     * @throws ResponseStatusException with {@link HttpStatus#UNAUTHORIZED} when deletion is not permitted
+     * @throws RuntimeException when deletion is not permitted
      */
     private void validateDeletionOwnerObject(UserAccount user, Long authorId){
         if (!Objects.equals(user.getId(), authorId) &&
                 !user.getGymRole().getRoleType().equals(RoleType.ADMIN)){
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Invalid Action. Cannot remove object from different author"
-            );
+            throw new RuntimeException("Invalid Action. Cannot remove object from different author");
         }
     }
 
@@ -209,7 +201,7 @@ public class ProblemDiscussionService {
      * @param requestDiscussionId discussion id to validate
      * @param requestUser requester account
      * @param problem climbing problem context
-     * @throws ResponseStatusException with {@link HttpStatus#UNAUTHORIZED} when requester
+     * @throws RuntimeException when requester
      * does not own the discussion and is not admin
      */
     private void validateDiscussionExisting(Long requestDiscussionId, UserAccount requestUser,
@@ -221,10 +213,7 @@ public class ProblemDiscussionService {
                 .anyMatch(d -> d.getDiscussionId().equals(requestDiscussionId));
 
         if  (!isExist && !requestUser.getGymRole().getRoleType().equals(RoleType.ADMIN)){
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Invalid action. Cannot remove object from different author"
-            );
+            throw new RuntimeException("Invalid action. Cannot remove object from different author");
         }
     }
 }

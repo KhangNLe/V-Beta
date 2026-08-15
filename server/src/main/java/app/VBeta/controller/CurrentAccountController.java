@@ -1,6 +1,6 @@
 package app.VBeta.controller;
 
-import app.VBeta.api.dto.account.AccountMeResponse;
+import app.VBeta.api.dto.account.UserAccountDTO;
 import app.VBeta.application.AccountService;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.domain.model.user.UserAccount;
@@ -47,19 +47,25 @@ public class CurrentAccountController {
      * @return current account payload including role information
      */
     @GetMapping("/account")
-    public ResponseEntity<AccountMeResponse> currentAccount(Authentication authentication) {
-        String firebaseUid = (String) authentication.getPrincipal();
-        UserAccount account = userAccountRepository.findByFirebaseUidWithRole(firebaseUid)
-                .orElseThrow(() -> new IllegalStateException("Account not found for UID " + firebaseUid));
+    public ResponseEntity<?> currentAccount(Authentication authentication) {
+        try {
+            String firebaseUid = (String) authentication.getPrincipal();
+            UserAccount account = userAccountRepository.findByFirebaseUidWithRole(firebaseUid)
+                    .orElseThrow(() -> new IllegalStateException("Account not found for UID " + firebaseUid));
 
-        String role = account.getGymRole() != null ? account.getGymRole().getRoleType().name() : null;
-        AccountMeResponse response = new AccountMeResponse(
-                account.getId(),
-                account.getUsername(),
-                account.getEmail(),
-                role
-        );
-        return ResponseEntity.ok(response);
+            String role = account.getGymRole() != null ? account.getGymRole().getRoleType().name() : null;
+            UserAccountDTO response = new UserAccountDTO(
+                    account.getId(),
+                    account.getUsername(),
+                    account.getEmail(),
+                    role
+            );
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**

@@ -6,6 +6,8 @@ Base URL (local):
 
 - `http://localhost:8080`
 
+All application routes are under `/api`. CORS is configured for `/api/**`.
+
 Auth header for protected routes:
 
 ```http
@@ -29,15 +31,14 @@ Authorization: Bearer <firebase_id_token>
 }
 ```
 
-### Response (200)
+### Response (201)
 
 ```json
 {
-  "id": 7,
+  "userId": 7,
   "username": "climber01",
   "email": "climber01@example.com",
-  "firebaseUid": "firebase-uid-123",
-  "roleName": "CLIMBER"
+  "role": "CLIMBER"
 }
 ```
 
@@ -66,7 +67,7 @@ Authorization: Bearer <firebase_id_token>
 ### Request
 
 ```http
-GET /home/wall-sections
+GET /api/home/wall-sections
 ```
 
 ### Response (200)
@@ -86,7 +87,7 @@ GET /home/wall-sections
 ### Request
 
 ```http
-POST /home/wall-section/creation
+POST /api/home/wall-section/creation
 Content-Type: application/json
 Authorization: Bearer <firebase_id_token>
 ```
@@ -113,7 +114,7 @@ Authorization: Bearer <firebase_id_token>
 ### Request
 
 ```http
-GET /home/wall-sections/1/problems/22
+GET /api/home/wall-sections/1/problems/22
 ```
 
 ### Response (200)
@@ -156,7 +157,7 @@ GET /home/wall-sections/1/problems/22
 ### Request
 
 ```http
-POST /discussion/add-comments
+POST /api/discussion/add-comments
 Content-Type: application/json
 Authorization: Bearer <firebase_id_token>
 ```
@@ -184,10 +185,12 @@ Authorization: Bearer <firebase_id_token>
 
 ## 7) Request Signed Upload URL for Solution Beta
 
+This is a `GET` with a JSON body (`CloudFileStorageRequest`), not query parameters.
+
 ### Request
 
 ```http
-POST /discussion/solution-beta/upload-url
+GET /api/discussion/solution-beta/upload-url
 Content-Type: application/json
 Authorization: Bearer <firebase_id_token>
 ```
@@ -217,7 +220,7 @@ Authorization: Bearer <firebase_id_token>
 ### Request
 
 ```http
-POST /discussion/solution-beta/save
+POST /api/discussion/solution-beta/save
 Content-Type: application/json
 Authorization: Bearer <firebase_id_token>
 ```
@@ -230,7 +233,7 @@ Authorization: Bearer <firebase_id_token>
 }
 ```
 
-### Response (200)
+### Response (201)
 
 ```json
 {
@@ -249,7 +252,7 @@ Authorization: Bearer <firebase_id_token>
 ### Request
 
 ```http
-POST /discussion/problems/22/suggest-grade
+POST /api/discussion/problems/22/suggest-grade
 Content-Type: application/json
 Authorization: Bearer <firebase_id_token>
 ```
@@ -260,7 +263,7 @@ Authorization: Bearer <firebase_id_token>
 }
 ```
 
-### Response (200)
+### Response (201)
 
 Returns updated problem-detail payload (same shape as problem detail endpoint).
 
@@ -284,20 +287,39 @@ Authorization: Bearer <firebase_id_token>
 
 ```json
 {
-  "id": 7,
+  "userId": 7,
   "username": "climber01",
   "email": "climber01@example.com",
-  "firebaseUid": "firebase-uid-123",
-  "roleName": "SETTER"
+  "role": "SETTER"
 }
 ```
+
+## 11) Reset Wall / Delete Problem (Setter Action)
+
+### Reset wall section
+
+```http
+PATCH /api/home/wall-section/1/reset
+Authorization: Bearer <firebase_id_token>
+```
+
+Response: `200` empty body.
+
+### Delete climbing problem
+
+```http
+PATCH /api/home/wall-sections/1/problems/22/delete
+Authorization: Bearer <firebase_id_token>
+```
+
+Response: `200` array of remaining `ClimbingProblemResponse` records for that wall section.
 
 ## 12) Filter Problems by Grade Range (Public)
 
 ### Request
 
 ```http
-GET /search/1?min=V0&max=V5
+GET /api/search/1?min=V0&max=V5
 ```
 
 ### Response (200)
@@ -319,7 +341,7 @@ GET /search/1?min=V0&max=V5
 ### Request
 
 ```http
-GET /search/1?min=V0&max=V5&sort=asc
+GET /api/search/1?min=V0&max=V5&sort=asc
 ```
 
 ### Response (200)
@@ -331,7 +353,7 @@ Same `ClimbingProblemResponse` array shape as above, ordered easier → harder b
 ### Request
 
 ```http
-GET /search/1?min=V0&max=V5&sort=desc
+GET /api/search/1?min=V0&max=V5&sort=desc
 ```
 
 ### Response (200)
@@ -340,12 +362,12 @@ Same array shape, ordered harder → easier by `assignedGrade`.
 
 ### Error examples
 
-- `400` when lowest grade is harder than highest (`/search/1?min=V10&max=V2`)
+- `400` when lowest grade is harder than highest (`/api/search/1?min=V10&max=V2`)
 - `404` when wall section does not exist
 
 ## 15) Create Content Report (Authenticated)
 
-Reporter identity is the Firebase UID. Success is `201` with an empty body. There is no `CREATE_REPORT` action gate.
+Reporter identity is the Firebase UID. Success is `200` with an empty body. There is no `CREATE_REPORT` action gate.
 
 ### Request
 
@@ -370,7 +392,7 @@ Authorization: Bearer <firebase_id_token>
 
 `reportReason` is required and at most 250 characters.
 
-### Response (201)
+### Response (200)
 
 Empty body.
 
@@ -378,10 +400,9 @@ Empty body.
 
 - `400` when `reportReason` is blank or required fields/enums are missing
 - `401` when the caller is a guest or the Firebase token is invalid
-- `404` when the target is missing/deleted, or the reporter owns the discussion / is the reported user
-- `409` when the reporter already has an `OPEN` report on the same target, or already used the same category on that target (any status)
+- `404` when the target is missing/deleted, the reporter owns the discussion / is the reported user, or a duplicate report already exists
 
-Example `409` reason: `Report already exists`.
+Example duplicate reason: `Report already exists`.
 
 ## 16) Get Unread Notifications (Authenticated)
 

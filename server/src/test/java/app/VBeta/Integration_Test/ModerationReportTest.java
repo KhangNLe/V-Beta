@@ -24,11 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -138,10 +136,8 @@ public class ModerationReportTest {
                 ReportCategoryName.SPAM,
                 discussionRoot.getDiscussionId()
         );
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class, () -> reportManager.createReport(user, request));
-
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        RuntimeException exception = assertThrows(
+                RuntimeException.class, () -> reportManager.createReport(user, request));
     }
 
     @Test
@@ -161,12 +157,10 @@ public class ModerationReportTest {
                 discussionRoot.getDiscussionId()
         );
 
-        ResponseStatusException ex = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
                 () -> reportManager.createReport(user, badRequest)
         );
-
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
     @Test
@@ -193,11 +187,9 @@ public class ModerationReportTest {
                 discussionRoot.getDiscussionId()
         );
 
-        ResponseStatusException ex = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
                 () -> moderationService.createNewReport(request2, user.getFirebaseUid()));
-
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
 
         ReportRequest request3 = new ReportRequest(
                 ReportTargetType.DISCUSSION,
@@ -207,10 +199,8 @@ public class ModerationReportTest {
         );
 
         ex = assertThrows(
-                ResponseStatusException.class,
+                RuntimeException.class,
                 () -> moderationService.createNewReport(request3, user.getFirebaseUid()));
-
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
     }
 
     @Test
@@ -226,12 +216,10 @@ public class ModerationReportTest {
                 discussionRoot.getDiscussionId()
         );
 
-        ResponseStatusException ex = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
                 () -> moderationService.createNewReport(request, "12345")
         );
-
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
     @Test
@@ -244,11 +232,10 @@ public class ModerationReportTest {
                 123L
         );
 
-        ResponseStatusException ex = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
                 () -> moderationService.createNewReport(badRequest, "testFirebaseUid")
         );
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
     @Test
@@ -388,12 +375,10 @@ public class ModerationReportTest {
         assertTrue(reportTest.isPresent());
         assertEquals(ReportStatus.DISMISSED, reportTest.get().getReportStatus());
 
-        ResponseStatusException ex = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
                 () -> moderationService.createNewReport(request2, user.getFirebaseUid())
         );
-
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
 
     }
 
@@ -491,11 +476,10 @@ public class ModerationReportTest {
                 ReportCategoryName.SPAM,
                 user.getId()
         );
-        ResponseStatusException ex = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
                 () -> reportManager.createReport(user, request)
         );
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
     @Test
@@ -503,34 +487,30 @@ public class ModerationReportTest {
     void testMissingNonDiscussionTargetsReturnNotFound(){
         UserAccount user = getUserAccount("testFirebaseUid");
 
-        ResponseStatusException problemEx = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException problemEx = assertThrows(
+                RuntimeException.class,
                 () -> reportManager.createReport(user, new ReportRequest(
                         ReportTargetType.CLIMBING_PROBLEM,
                         "missing problem",
                         ReportCategoryName.SPAM,
                         999_999L))
         );
-        ResponseStatusException wallEx = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException wallEx = assertThrows(
+                RuntimeException.class,
                 () -> reportManager.createReport(user, new ReportRequest(
                         ReportTargetType.WALL_SECTION,
                         "missing wall",
                         ReportCategoryName.SPAM,
                         999_999L))
         );
-        ResponseStatusException userEx = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException userEx = assertThrows(
+                RuntimeException.class,
                 () -> reportManager.createReport(user, new ReportRequest(
                         ReportTargetType.USER_ACCOUNT,
                         "missing user",
                         ReportCategoryName.SPAM,
                         999_999L))
         );
-
-        assertEquals(HttpStatus.NOT_FOUND, problemEx.getStatusCode());
-        assertEquals(HttpStatus.NOT_FOUND, wallEx.getStatusCode());
-        assertEquals(HttpStatus.NOT_FOUND, userEx.getStatusCode());
     }
 
     private void validateTypedReport(Report report, ReportRequest request, UserAccount reporter){

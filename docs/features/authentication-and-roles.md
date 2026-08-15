@@ -10,7 +10,7 @@ This section documents the authentication and authorization features that are cu
 - Google sign-in and signup via popup
 - Email verification flow for password-provider users
 - Forgot-password email reset flow
-- Backend account session sync after successful Firebase auth
+- Backend account session sync after successful Firebase auth (`POST /api/accounts/session` → `UserAccountDTO`)
 - Role-aware navigation and role-gated UI actions
 - Admin account-management capabilities (view accounts, promote/demote roles)
 
@@ -68,7 +68,7 @@ This section documents the authentication and authorization features that are cu
 
 ## Content Reports and Notifications
 
-- Create report: `POST /api/report/create` (authenticated; not action-gated; no `CREATE_REPORT`).
+- Create report: `POST /api/report/create` (authenticated; not action-gated; no `CREATE_REPORT`; success `200`).
 - Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated).
 - See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.
 

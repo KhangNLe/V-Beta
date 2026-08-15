@@ -121,7 +121,7 @@ Delivered discovery improvements for wall sections and climbing problems via gra
 ### Scope delivered
 
 - Grade-range filters (backend API + wall-page UI)
-- Sort by most recent, easiest, or hardest (easiest/hardest via `/search` sort; most recent client-side by `createdDate`)
+- Sort by most recent, easiest, or hardest (easiest/hardest via `/api/search` sort; most recent client-side by `createdDate`)
 
 ### Explicitly out of scope (deferred)
 
@@ -135,8 +135,8 @@ Delivered discovery improvements for wall sections and climbing problems via gra
 
 ### Notes
 
-- Public endpoints: `GET /search/{wallSectionId}?min=&max=&sort=asc|desc`
-- Invalid ranges (`min > max`) return `400`; missing walls return `404`; `/search/**` is guest-readable and CORS-enabled
+- Public endpoints: `GET /api/search/{wallSectionId}?min=&max=&sort=asc|desc`
+- Invalid ranges (`min > max`) return `400`; missing walls return `404`; `/api/search/**` is guest-readable and CORS-enabled via `/api/**`
 - Wall Filter dialog: grade range, sort radios, Apply / Clear; Apply dimmed when min is harder than max
 - Related issues: #10 (parent), #31 (backend), #32 (frontend)
 - Feature docs: `docs/features/wall-and-problems.md`, completed archive D/E

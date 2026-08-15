@@ -44,8 +44,10 @@ public class EvenNotificationController {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
             List<QuickNotificationDTO> response = notificationService.getQuickNotifications(firebaseUid);
             return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch  (Exception e) {
+        } catch  (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

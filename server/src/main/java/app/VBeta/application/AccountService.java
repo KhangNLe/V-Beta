@@ -1,16 +1,14 @@
 package app.VBeta.application;
 
-import app.VBeta.api.dto.account.AccountResponse;
+import app.VBeta.api.dto.account.UserAccountDTO;
 import app.VBeta.application.support.account.AccountDeletionManager;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.domain.model.actions.GymRole;
 import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.domain.model.user.UserAccount;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,7 +18,7 @@ import java.util.stream.Collectors;
  * account deletion and role-change workflows.
  * <p>
  * This service delegates persistence concerns to {@link UserAccountManager} and returns API-facing
- * data using {@link AccountResponse}.
+ * data using {@link UserAccountDTO}.
  */
 @Service
 @Transactional
@@ -45,7 +43,7 @@ public class AccountService {
      *
      * @return list of all account responses
      */
-    public List<AccountResponse> getAllAccounts() {
+    public List<UserAccountDTO> getAllAccounts() {
         List<UserAccount> accounts = userAccountManager.findAllUserAccounts();
         return accounts.stream()
                 .map(this::responseInfo)
@@ -60,7 +58,7 @@ public class AccountService {
      * @param firebaseUid Firebase UID from authenticated identity token
      * @return normalized account response payload
      */
-    public AccountResponse loginAccount(String username, String email, String firebaseUid) {
+    public UserAccountDTO loginAccount(String username, String email, String firebaseUid) {
         UserAccount account = getUserInfo(username, email, firebaseUid);
         return responseInfo(account);
     }
@@ -69,15 +67,12 @@ public class AccountService {
      * Deletes an account by Firebase UID when the account exists.
      *
      * @param firebaseUid Firebase UID of the account to delete
-     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when no account matches the UID
+     * @throws RuntimeException when no account matches the UID
      */
     public void deleteAccount(String firebaseUid){
         UserAccount account = userAccountManager.findUserAccount(firebaseUid);
         if (account == null){
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "The request account is currently does not exist within the database."
-            );
+            throw new RuntimeException("The request account is currently does not exist within the database.");
         }
         accountDeletionManager.deleteAllUserRelatedDiscussion(account);
     }
@@ -88,19 +83,19 @@ public class AccountService {
      * @param userId identifier of the user account to update
      * @param roleType target role type to assign
      * @return account response containing the updated role information
-     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when the user account does not exist
-     * @throws ResponseStatusException with {@link HttpStatus#BAD_REQUEST} when the requested role type is unknown
+     * @throws RuntimeException when the user account does not exist
+     * @throws RuntimeException when the requested role type is unknown
      */
-    public AccountResponse changeUserRole(Long userId, RoleType roleType) {
+    public UserAccountDTO changeUserRole(Long userId, RoleType roleType) {
         UserAccount account = userAccountManager.findUserAccountById(userId);
 
         if (account == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User account not found with ID: " + userId);
+            throw new RuntimeException("User account not found with ID: " + userId);
         }
 
         GymRole role = userAccountManager.findGymRole(roleType);
         if (role == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role type not found: " + roleType);
+            throw new RuntimeException("Role type not found: " + roleType);
         }
         account.setGymRole(role);
 
@@ -115,8 +110,8 @@ public class AccountService {
                 : account;
     }
 
-    private AccountResponse responseInfo(UserAccount u) {
+    private UserAccountDTO responseInfo(UserAccount u) {
         String roleName = u.getGymRole() != null ? u.getGymRole().getRoleType().name() : null;
-        return new AccountResponse(u.getId(), u.getUsername(), u.getEmail(), u.getFirebaseUid(), roleName);
+        return new UserAccountDTO(u.getId(), u.getUsername(), u.getEmail(), roleName);
     }
 }

@@ -15,17 +15,17 @@ This project is a full-stack climbing gym application with:
 1. User interacts with frontend pages in `v-beta/src/app/*`.
 2. Frontend authenticates user through Firebase Auth.
 3. Frontend syncs app account session with backend (`POST /api/accounts/session`).
-4. Frontend sends Firebase ID token to protected backend APIs.
-4. Backend validates token, resolves account/role, and authorizes actions.
-5. Backend reads/writes domain data in PostgreSQL.
-6. For beta videos, backend generates signed upload URLs for Cloud Storage and stores video metadata.
+4. Frontend sends Firebase ID token to protected backend APIs under `/api/**`.
+5. Backend validates token, resolves account/role, and authorizes actions.
+6. Backend reads/writes domain data in PostgreSQL.
+7. For beta videos, backend generates signed upload URLs for Cloud Storage and stores video metadata.
 
 ## Main Subsystems
 
 - **Frontend App (`v-beta/`)**
   - App Router pages, role-aware navigation, guest/authorized UX.
 - **Backend API (`server/`)**
-  - REST controllers for account, wall/problem, discussion, and health/meta.
+  - REST controllers under `/api` for account, wall/problem, search, discussion, reports, notifications, and health/meta.
 - **Authentication and Authorization**
   - Firebase token verification + role/action checks.
 - **Storage and Database**

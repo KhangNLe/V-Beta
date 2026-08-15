@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { getAccountId, getAccountRole } from '@/lib/accountSession';
 import { buttons, card, colors, layout, fontFamily } from '@/ui/appTheme';
 import { ArrowLeftIcon, MoreVertical } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
@@ -152,9 +153,10 @@ export default function ProblemPage() {
   const [perceivedGrade, setPerceivedGrade] = useState('VB');
   const [entryMode, setEntryMode] = useState('comment'); // "comment" | "file"
   const [solutionFile, setSolutionFile] = useState(null);
-  const isAdmin = (account?.roleName || '').toUpperCase().includes('ADMIN');
+  const isAdmin = getAccountRole(account).toUpperCase().includes('ADMIN');
   const currentUserId = useMemo(() => {
-    if (account?.id != null) return String(account.id);
+    const accountId = getAccountId(account);
+    if (accountId != null) return String(accountId);
     return getCurrentUserId(user);
   }, [account, user]);
   const [uploadingSolution, setUploadingSolution] = useState(false);

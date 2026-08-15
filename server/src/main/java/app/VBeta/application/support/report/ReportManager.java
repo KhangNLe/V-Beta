@@ -5,11 +5,8 @@ import app.VBeta.domain.model.report.*;
 import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.*;
 import com.google.firebase.internal.NonNull;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
@@ -59,11 +56,11 @@ public class ReportManager {
      *
      * @param id report identifier
      * @return matching report
-     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when missing
+     * @throws RuntimeException when missing
      */
     public Report findById(@NonNull Long id) {
         return reportRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new RuntimeException("Report not found"));
     }
 
     /**
@@ -82,7 +79,7 @@ public class ReportManager {
      * @param reporter authenticated reporter account
      * @param reportRequest report creation payload
      * @return persisted report
-     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when the category
+     * @throws RuntimeException when the category
      *         or target does not exist, or when the reporter owns the discussion/user target
      */
     public Report createReport(UserAccount reporter, ReportRequest reportRequest) {
@@ -156,11 +153,11 @@ public class ReportManager {
      *
      * @param categoryName category enum from the request
      * @return matching category row
-     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when missing
+     * @throws RuntimeException when missing
      */
     private ReportCategory getReportCategory(ReportCategoryName categoryName) {
         return reportCategoryRepository.findByCategoryName(categoryName)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new RuntimeException("Report category not found"));
     }
 
     /**
@@ -169,7 +166,7 @@ public class ReportManager {
      * @param report report being populated
      * @param request report creation payload
      * @param reporter reporter used to reject self-owned discussion and user targets
-     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when the target
+     * @throws RuntimeException when the target
      *         is missing, deleted, or owned by the reporter
      */
     private void setTarget(Report report, ReportRequest request, UserAccount reporter){
@@ -177,19 +174,19 @@ public class ReportManager {
         switch(request.reportTargetType()){
             case CLIMBING_PROBLEM -> report.setProblem(
                 climbingProblemRepository.findById(targetId).
-                        orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
+                        orElseThrow(() -> new RuntimeException("Climbing problem not found")));
 
             case DISCUSSION -> report.setDiscussion(
                 discussionRootRepository.findByDiscussionIdAndDeletedByIsNullAndNotFromUser(targetId, reporter)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
+                        .orElseThrow(() -> new RuntimeException("Discussion not found")));
 
             case USER_ACCOUNT -> report.setUser(
                 userAccountRepository.findByIdAndNotFirebaseUid(targetId, reporter.getFirebaseUid())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
+                        .orElseThrow(() -> new RuntimeException("User account not found")));
 
             case WALL_SECTION -> report.setWallSection(
                 wallSectionRepository.findById(targetId)
-                        .orElseThrow(() ->  new ResponseStatusException(HttpStatus.NOT_FOUND)));
+                        .orElseThrow(() ->  new RuntimeException("Wall section not found")));
         }
     }
 }

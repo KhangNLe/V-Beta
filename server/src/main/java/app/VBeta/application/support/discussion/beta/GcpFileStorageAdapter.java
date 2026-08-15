@@ -3,9 +3,7 @@ package app.VBeta.application.support.discussion.beta;
 import com.google.cloud.storage.*;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URL;
 import java.util.Map;
@@ -77,9 +75,7 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
         Blob blob = storage.get(bucketName, fileName);
 
         if (blob == null){
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    String.format("Unable to find file %s inside the cloud storage. The object may already be deleted.",
+            throw new RuntimeException(String.format("Unable to find file %s inside the cloud storage. The object may already be deleted.",
                             fileName)
             );
         }

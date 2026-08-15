@@ -41,7 +41,7 @@ class WallSectionsPerformanceTest {
                 .connectTimeout(Duration.ofSeconds(2))
                 .build();
 
-        URI uri = URI.create("http://localhost:" + port + "/home/wall-sections");
+        URI uri = URI.create("http://localhost:" + port + "/api/home/wall-sections");
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(Duration.ofSeconds(2))
                 .GET()

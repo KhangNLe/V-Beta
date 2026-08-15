@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { getAccountId, getAccountRole } from "@/lib/accountSession";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { changeAccountRole } from "@/api/promoteOrDemote";
@@ -47,7 +48,7 @@ export default function AccountsPage() {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [selectedRole, setSelectedRole] = useState("");
 
-  const isAdmin = (account?.roleName || "").toUpperCase().includes("ADMIN");
+  const isAdmin = getAccountRole(account).toUpperCase().includes("ADMIN");
 
   useEffect(() => {
     if (!ready) return;
@@ -83,14 +84,16 @@ export default function AccountsPage() {
 
     setSavingRoles((prev) => ({ ...prev, [accountId]: true }));
     setAccounts((prev) =>
-      prev.map((account) =>
-        account.id === accountId ? { ...account, roleName: newRole.toUpperCase() } : account
+      prev.map((listedAccount) =>
+        getAccountId(listedAccount) === accountId
+          ? { ...listedAccount, role: newRole.toUpperCase(), roleName: newRole.toUpperCase() }
+          : listedAccount
       )
     );
 
     try {
       await updateAccountRole(user, accountId, newRole);
-      if (account?.id === accountId && newRole.toUpperCase() !== "ADMIN") {
+      if (getAccountId(account) === accountId && newRole.toUpperCase() !== "ADMIN") {
         router.replace("/main-page");
         return;
       }
@@ -103,7 +106,7 @@ export default function AccountsPage() {
 
   const openRoleDialog = (account) => {
     setSelectedAccount(account);
-    setSelectedRole(account.roleName?.toUpperCase() ?? ROLES[0]);
+    setSelectedRole(getAccountRole(account).toUpperCase() || ROLES[0]);
     setRoleDialogOpen(true);
   };
 
@@ -115,8 +118,8 @@ export default function AccountsPage() {
 
   const handleRoleSubmit = async () => {
     if (!selectedAccount || !selectedRole) return;
-    const currentRole = selectedAccount.roleName?.toUpperCase();
-    await handleRoleSelect(selectedAccount.id, currentRole, selectedRole.toUpperCase());
+    const currentRole = getAccountRole(selectedAccount).toUpperCase();
+    await handleRoleSelect(getAccountId(selectedAccount), currentRole, selectedRole.toUpperCase());
     closeRoleDialog();
   };
 
@@ -150,11 +153,12 @@ export default function AccountsPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {accounts.map((account) => {
-          const currentRole = account.roleName?.toUpperCase();
-          const isSaving = !!savingRoles[account.id];
+          const currentRole = getAccountRole(account).toUpperCase();
+          const accountId = getAccountId(account);
+          const isSaving = !!savingRoles[accountId];
 
           return (
-            <Card key={account.id} className="border border-border hover:shadow-lg transition-shadow">
+            <Card key={accountId} className="border border-border hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle className="text-lg">{account.username}</CardTitle>
                 <CardDescription>
@@ -185,11 +189,7 @@ export default function AccountsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground">User ID</label>
-                  <p className="mt-1 text-sm font-mono">{account.id}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground">Firebase UID</label>
-                  <p className="mt-1 text-sm font-mono break-all">{account.firebaseUid}</p>
+                  <p className="mt-1 text-sm font-mono">{accountId}</p>
                 </div>
               </CardContent>
             </Card>
@@ -236,7 +236,7 @@ export default function AccountsPage() {
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               value={selectedRole}
               onChange={(event) => setSelectedRole(event.target.value)}
-              disabled={selectedAccount ? !!savingRoles[selectedAccount.id] : false}
+              disabled={selectedAccount ? !!savingRoles[getAccountId(selectedAccount)] : false}
             >
               {ROLES.map((role) => (
                 <option key={role} value={role}>
@@ -255,11 +255,11 @@ export default function AccountsPage() {
               onClick={handleRoleSubmit}
               disabled={
                 !selectedAccount ||
-                (selectedAccount.roleName?.toUpperCase() ?? "") === selectedRole ||
-                !!savingRoles[selectedAccount?.id]
+                (getAccountRole(selectedAccount).toUpperCase() || "") === selectedRole ||
+                !!savingRoles[getAccountId(selectedAccount)]
               }
             >
-              {selectedAccount && savingRoles[selectedAccount.id] ? "Submitting..." : "Submit"}
+              {selectedAccount && savingRoles[getAccountId(selectedAccount)] ? "Submitting..." : "Submit"}
             </Button>
           </DialogFooter>
         </DialogContent>
