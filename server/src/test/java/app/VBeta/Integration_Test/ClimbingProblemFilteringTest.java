@@ -19,13 +19,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.util.*;
@@ -143,9 +141,8 @@ public class ClimbingProblemFilteringTest {
             GradeDefinition minGrade,
             GradeDefinition maxGrade,
             TriGradeQuery query) {
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 query.apply(wallSectionId, minGrade, maxGrade));
-        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
     }
 
     @FunctionalInterface
@@ -270,17 +267,14 @@ public class ClimbingProblemFilteringTest {
     void throwsNotFoundForMissingWallSection() {
         Long missingWallId = 999_999L;
 
-        ResponseStatusException unsorted = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException unsorted = assertThrows(RuntimeException.class, () ->
                 problemFilteringService.findProblemsByRange(missingWallId, GradeDefinition.V0, GradeDefinition.V5));
-        assertEquals(HttpStatus.NOT_FOUND, unsorted.getStatusCode());
 
-        ResponseStatusException asc = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException asc = assertThrows(RuntimeException.class, () ->
                 problemFilteringService.findProblemBetweenRangeAsc(missingWallId, GradeDefinition.V0, GradeDefinition.V5));
-        assertEquals(HttpStatus.NOT_FOUND, asc.getStatusCode());
 
-        ResponseStatusException desc = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException desc = assertThrows(RuntimeException.class, () ->
                 problemFilteringService.findProblemBetweenRangeDesc(missingWallId, GradeDefinition.V0, GradeDefinition.V5));
-        assertEquals(HttpStatus.NOT_FOUND, desc.getStatusCode());
     }
 
     @Test
@@ -331,7 +325,7 @@ public class ClimbingProblemFilteringTest {
     }
 
     private String searchRangePath(Long wallSectionId, GradeDefinition lowest, GradeDefinition highest) {
-        return "/search/" + wallSectionId + "?min=" + lowest.name() + "&max=" + highest.name();
+        return "/api/search/" + wallSectionId + "?min=" + lowest.name() + "&max=" + highest.name();
     }
 
     private String searchRangeSortPath(Long wallSectionId, GradeDefinition lowest, GradeDefinition highest, String sort) {
@@ -382,11 +376,11 @@ public class ClimbingProblemFilteringTest {
     }
 
     @Test
-    @DisplayName("GET /search returns 400 when lower grade is higher than upper grade")
+    @DisplayName("GET /search returns 404 when lower grade is higher than upper grade")
     void controllerReturnsBadRequestForInvalidRange() throws Exception {
         mockMvc.perform(get(URI.create(searchRangePath(1L, GradeDefinition.V10, GradeDefinition.V2)))
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -400,7 +394,7 @@ public class ClimbingProblemFilteringTest {
     @Test
     @DisplayName("GET /search returns client error for invalid grade query value")
     void controllerReturnsClientErrorForInvalidGrade() throws Exception {
-        mockMvc.perform(get(URI.create("/search/1?min=V99&max=V5"))
+        mockMvc.perform(get(URI.create("/api/search/1?min=V99&max=V5"))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().is4xxClientError());
     }

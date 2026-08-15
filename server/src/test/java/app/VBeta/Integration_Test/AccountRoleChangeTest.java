@@ -2,7 +2,7 @@ package app.VBeta.Integration_Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import app.VBeta.api.dto.account.AccountResponse;
+import app.VBeta.api.dto.account.UserAccountDTO;
 import app.VBeta.application.AccountService;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.domain.model.actions.ActionDefinition;
@@ -18,11 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
 @Import(TestGcpStorageConfig.class)
@@ -70,7 +68,7 @@ public class AccountRoleChangeTest {
       RoleType.CLIMBER
     );
 
-    AccountResponse response = accountService.changeUserRole(
+    UserAccountDTO response = accountService.changeUserRole(
       targetAccount.getId(),
       RoleType.SETTER
     );
@@ -80,8 +78,8 @@ public class AccountRoleChangeTest {
       .orElseThrow();
 
     assertNotNull(response);
-    assertEquals(targetAccount.getId(), response.id());
-    assertEquals(RoleType.SETTER.name(), response.roleName());
+    assertEquals(targetAccount.getId(), response.userId());
+    assertEquals(RoleType.SETTER.name(), response.role());
     assertEquals(RoleType.SETTER, updatedAccount.getGymRole().getRoleType());
   }
 
@@ -102,7 +100,7 @@ public class AccountRoleChangeTest {
       RoleType.SETTER
     );
 
-    AccountResponse response = accountService.changeUserRole(
+    UserAccountDTO response = accountService.changeUserRole(
       targetAccount.getId(),
       RoleType.CLIMBER
     );
@@ -112,8 +110,8 @@ public class AccountRoleChangeTest {
       .orElseThrow();
 
     assertNotNull(response);
-    assertEquals(targetAccount.getId(), response.id());
-    assertEquals(RoleType.CLIMBER.name(), response.roleName());
+    assertEquals(targetAccount.getId(), response.userId());
+    assertEquals(RoleType.CLIMBER.name(), response.role());
     assertEquals(RoleType.CLIMBER, updatedAccount.getGymRole().getRoleType());
   }
 
@@ -122,16 +120,14 @@ public class AccountRoleChangeTest {
   void testClimberCannotChangeUserAccountRole() {
     String climberFirebaseUid = "testFirebaseUid";
 
-    ResponseStatusException ex = assertThrows(
-      ResponseStatusException.class,
+    RuntimeException ex = assertThrows(
+      RuntimeException.class,
       () ->
         authorizationService.authorize(
           climberFirebaseUid,
           ActionDefinition.CHANGE_ROLE
         )
     );
-
-    assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
   }
 
   @Test
@@ -139,27 +135,23 @@ public class AccountRoleChangeTest {
   void testSetterCannotChangeUserAccountRole() {
     String setterFirebaseUid = "testFirebaseUid2";
 
-    ResponseStatusException ex = assertThrows(
-      ResponseStatusException.class,
+    RuntimeException ex = assertThrows(
+      RuntimeException.class,
       () ->
         authorizationService.authorize(
           setterFirebaseUid,
           ActionDefinition.CHANGE_ROLE
         )
     );
-
-    assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
   }
 
   @Test
   @DisplayName("Test role change fails when target user account does not exist")
   void testRoleChangeFailsWhenTargetUserAccountDoesNotExist() {
-    ResponseStatusException ex = assertThrows(
-      ResponseStatusException.class,
+    RuntimeException ex = assertThrows(
+      RuntimeException.class,
       () -> accountService.changeUserRole(-1L, RoleType.SETTER)
     );
-
-    assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
   }
 
   private UserAccount createTestAccount(

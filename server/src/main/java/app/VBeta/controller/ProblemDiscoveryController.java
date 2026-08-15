@@ -16,7 +16,7 @@ import java.util.List;
  * active climbing problems as {@link ClimbingProblemResponse} lists.
  */
 @RestController
-@RequestMapping("/search")
+@RequestMapping("/api/search")
 public class ProblemDiscoveryController {
     private final ProblemFilteringService problemFilteringService;
 
@@ -41,19 +41,25 @@ public class ProblemDiscoveryController {
      * @return {@code 200 OK} with matching problem responses
      */
     @GetMapping("/{wallSectionId}")
-    public ResponseEntity<List<ClimbingProblemResponse>> filterProblemByGradeRange(
+    public ResponseEntity<?> filterProblemByGradeRange(
             @PathVariable Long wallSectionId,
             @RequestParam GradeDefinition min,
             @RequestParam GradeDefinition max,
             @RequestParam(required = false) String sort) {
-        List<ClimbingProblemResponse> responses;
-        if ("asc".equalsIgnoreCase(sort)) {
-            responses = problemFilteringService.findProblemBetweenRangeAsc(wallSectionId, min, max);
-        } else if ("desc".equalsIgnoreCase(sort)) {
-            responses = problemFilteringService.findProblemBetweenRangeDesc(wallSectionId, min, max);
-        } else {
-            responses = problemFilteringService.findProblemsByRange(wallSectionId, min, max);
+        try {
+            List<ClimbingProblemResponse> responses;
+            if ("asc".equalsIgnoreCase(sort)) {
+                responses = problemFilteringService.findProblemBetweenRangeAsc(wallSectionId, min, max);
+            } else if ("desc".equalsIgnoreCase(sort)) {
+                responses = problemFilteringService.findProblemBetweenRangeDesc(wallSectionId, min, max);
+            } else {
+                responses = problemFilteringService.findProblemsByRange(wallSectionId, min, max);
+            }
+            return new ResponseEntity<>(responses, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return new ResponseEntity<>(responses, HttpStatus.OK);
     }
 }

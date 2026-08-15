@@ -3,9 +3,7 @@ package app.VBeta.application.support.discussion.comment;
 import app.VBeta.domain.model.discussions.DiscussionComment;
 import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.repository.DiscussionCommentRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -68,10 +66,7 @@ public class DiscussionCommentManager {
     public void removeUserComment(DiscussionRoot discussionRoot, String commentContent) {
         DiscussionComment discussionComment = findDiscussionComment(discussionRoot);
         if (!discussionComment.getCommentInfo().equals(commentContent)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Mismatching content between discussion id and actual content info"
-            );
+            throw new RuntimeException("Mismatching content between discussion id and actual content info");
         }
         discussionCommentRepository.delete(discussionComment);
     }
@@ -93,15 +88,13 @@ public class DiscussionCommentManager {
      *
      * @param discussionRoots discussion roots expected to have matching discussion rows
      * @return discussion-comment rows matching each anchor
-     * @throws ResponseStatusException with {@link HttpStatus#INTERNAL_SERVER_ERROR}
+     * @throws RuntimeException
      * when one or more discussion rows are missing
      */
     private List<DiscussionComment> getDiscussionComments(List<DiscussionRoot> discussionRoots){
         List<DiscussionComment> discussionComments = discussionCommentRepository.findByDiscussionRootIn(discussionRoots);
         if (discussionComments.size() != discussionRoots.size()){
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    String.format(
+            throw new RuntimeException(String.format(
                             "Mismatching size between user comments %d and discussion comment %d for user comment id %s."
                             + " Please contact the developer for this issue",
                             discussionRoots.size(), discussionComments.size(),
@@ -117,14 +110,12 @@ public class DiscussionCommentManager {
      *
      * @param discussionRoot discussion root parent record
      * @return matching discussion comment
-     * @throws ResponseStatusException with {@link HttpStatus#NOT_FOUND} when no matching comment is found
+     * @throws RuntimeException when no matching comment is found
      */
     private DiscussionComment findDiscussionComment(DiscussionRoot discussionRoot){
         Optional<DiscussionComment> discussionComment = discussionCommentRepository.findByDiscussionRoot(discussionRoot);
         return discussionComment.orElseThrow(()->
-             new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                String.format("Could not find comment with the discussion id %d", discussionRoot.getDiscussionId())
+             new RuntimeException(String.format("Could not find comment with the discussion id %d", discussionRoot.getDiscussionId())
             )
         );
     }

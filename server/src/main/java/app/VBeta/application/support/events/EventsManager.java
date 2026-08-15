@@ -6,10 +6,8 @@ import app.VBeta.domain.model.notification.Events;
 import app.VBeta.domain.model.report.Report;
 import app.VBeta.repository.EventTypeRepository;
 import app.VBeta.repository.EventsRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * {@code EventsManager} persists domain event rows used by in-app notifications.
@@ -41,14 +39,14 @@ public class EventsManager {
      *
      * @param report persisted report
      * @return saved event
-     * @throws ResponseStatusException with {@link HttpStatus#INTERNAL_SERVER_ERROR}
+     * @throws RuntimeException
      *         when the {@code REPORT_CREATED} event type is missing
      */
     public Events createReportEvent(Report report) {
         return eventsRepository.save(Events.builder()
                 .eventType(
                         eventTypeRepository.findByEventTypeName(EventTypeName.REPORT_CREATED)
-                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR))
+                                .orElseThrow(() -> new RuntimeException("REPORT_CREATED event type is missing"))
                 )
                 .actorUser(report.getReporter())
                 .targetType(EventTargetType.REPORT)

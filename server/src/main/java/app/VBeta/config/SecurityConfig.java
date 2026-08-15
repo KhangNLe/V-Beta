@@ -39,10 +39,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/health").permitAll() // Allow unauthenticated access to the health endpoint for monitoring tools like Heroku and uptime robots to check if the server is running
                         .requestMatchers("/api/v1/meta").permitAll()
                         // guest or public read only browsing
-                        .requestMatchers("/home/wall-sections").permitAll()
-                        .requestMatchers("/home/wall-sections/*/problems").permitAll()
-                        .requestMatchers("/home/wall-sections/*/problems/*").permitAll()
-                        .requestMatchers("/search/**").permitAll()
+                        .requestMatchers("/api/home/wall-sections").permitAll()
+                        .requestMatchers("/api/home/wall-sections/*/problems").permitAll()
+                        .requestMatchers("/api/home/wall-sections/*/problems/*").permitAll()
+                        .requestMatchers("/api/search/**").permitAll()
 
                         // Everything else requires authentication
                         .anyRequest().authenticated())

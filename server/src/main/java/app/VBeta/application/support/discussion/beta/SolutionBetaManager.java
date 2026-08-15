@@ -8,10 +8,8 @@ import app.VBeta.api.dto.discussions.video.CloudFileStorageRequest;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageResponse;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.repository.SolutionBetaRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import app.VBeta.domain.model.climb.ClimbingProblem;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -109,10 +107,7 @@ public class SolutionBetaManager {
     private void checkForExistingSolutionBeta(String publicUrl){
         Optional<SolutionBeta> beta = solutionBetaRepository.findByVideoURL(publicUrl);
         if (beta.isPresent()){
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Cannot submit the same solution beta video twice."
-            );
+            throw new RuntimeException("Cannot submit the same solution beta video twice.");
         }
     }
 
@@ -120,10 +115,7 @@ public class SolutionBetaManager {
         Optional<SolutionBeta> solutionBeta = solutionBetaRepository.findByDiscussionRootAndVideoURL(
                 discussionRoot, publicUrl);
         return solutionBeta.orElseThrow( () ->
-            new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Unable to find any solution beta for climbing problem from user."
-            )
+            new RuntimeException("Unable to find any solution beta for climbing problem from user.")
         );
     }
 
@@ -149,16 +141,14 @@ public class SolutionBetaManager {
      *
      * @param discussionRoots discussion roots expected to have solution-beta rows
      * @return matching solution-beta rows
-     * @throws ResponseStatusException with {@link HttpStatus#INTERNAL_SERVER_ERROR}
+     * @throws RuntimeException
      * when one or more solution rows are missing
      */
     private List<SolutionBeta> getAllUserRelateSolutionBeta(List<DiscussionRoot> discussionRoots){
         List<SolutionBeta> solutionBetas = solutionBetaRepository.findByDiscussionRootIn(discussionRoots);
 
         if (solutionBetas.size() != discussionRoots.size()){
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    String.format(
+            throw new RuntimeException(String.format(
                             "Mismatching size of solution betas %d and user betas %s from user beta id %d. "
                             + "Please report this to the developers.",
                             solutionBetas.size(), discussionRoots.size(),
@@ -205,9 +195,7 @@ public class SolutionBetaManager {
     private boolean checkForActiveClimbingProblem(Long problemId){
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
         if (problem == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "The problem id does not exist or the problem is longer active"
-            );
+            throw new RuntimeException("The problem id does not exist or the problem is longer active");
         }
         return true;
     }

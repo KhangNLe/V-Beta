@@ -8,10 +8,8 @@ import app.VBeta.domain.model.climb.ClimbingProblem;
 import app.VBeta.domain.model.climb.GradeDefinition;
 import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.application.support.grade.ClimbingGradeManager;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -53,7 +51,7 @@ public class ProblemFilteringService {
      * @param lowestGrade inclusive lower bound grade definition
      * @param highestGrade inclusive upper bound grade definition
      * @return matching problems as API response DTOs
-     * @throws ResponseStatusException when the wall section does not exist
+     * @throws RuntimeException when the wall section does not exist
      */
     public List<ClimbingProblemResponse> findProblemsByRange(Long wallSectionId, GradeDefinition lowestGrade,
                                                              GradeDefinition highestGrade){
@@ -74,7 +72,7 @@ public class ProblemFilteringService {
      * @param lowestGrade inclusive lower bound grade definition
      * @param highestGrade inclusive upper bound grade definition
      * @return matching problems as API response DTOs, sorted ascending by grade
-     * @throws ResponseStatusException when the wall section does not exist
+     * @throws RuntimeException when the wall section does not exist
      */
     public List<ClimbingProblemResponse> findProblemBetweenRangeAsc(Long wallSectionId, GradeDefinition lowestGrade,
                                                                     GradeDefinition highestGrade){
@@ -95,7 +93,7 @@ public class ProblemFilteringService {
      * @param lowestGrade inclusive lower bound grade definition
      * @param highestGrade inclusive upper bound grade definition
      * @return matching problems as API response DTOs, sorted descending by grade
-     * @throws ResponseStatusException when the wall section does not exist
+     * @throws RuntimeException when the wall section does not exist
      */
     public List<ClimbingProblemResponse> findProblemBetweenRangeDesc(Long wallSectionId, GradeDefinition lowestGrade,
                                                                      GradeDefinition highestGrade){
@@ -113,15 +111,12 @@ public class ProblemFilteringService {
      *
      * @param wallSectionId wall section identifier
      * @return persisted wall section
-     * @throws ResponseStatusException with {@code 404} when the wall section is missing
+     * @throws RuntimeException when the wall section is missing
      */
     private WallSection getAndValidateWallSection(Long wallSectionId){
         WallSection wall = wallSectionManager.findWallSection(wallSectionId);
         if (wall == null){
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Unable to find the wall section"
-            );
+            throw new RuntimeException("Unable to find the wall section");
         }
         return wall;
     }
@@ -145,8 +140,7 @@ public class ProblemFilteringService {
 
     private void verifyGradeRange(GradeDefinition lowerGrade,  GradeDefinition upperGrade){
         if (lowerGrade.compareTo(upperGrade) > 0){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "The lower grade range cannot be higher than the upper grade.");
+            throw new RuntimeException("The lower grade range cannot be higher than the upper grade.");
         }
 
     }

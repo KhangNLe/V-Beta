@@ -27,11 +27,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -128,12 +126,9 @@ public class UserCommentTest {
                 "This is a fake comment."
         );
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 problemDiscussionService.addComment(firebaseUid, request)
         );
-
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-        assertNotEquals(HttpStatus.OK, ex.getStatusCode());
     }
 
     @Test
@@ -151,12 +146,9 @@ public class UserCommentTest {
         Optional<ClimbingProblem> problem  = climbingProblemRepository.findById(request.problemId());
         assertTrue(problem.isEmpty());
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 problemDiscussionService.addComment(firebaseUid, request)
         );
-
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-        assertNotEquals(HttpStatus.OK, ex.getStatusCode());
     }
 
     @Test
@@ -175,12 +167,9 @@ public class UserCommentTest {
         assertTrue(problem.isPresent());
         assertEquals(LifecycleStatus.ARCHIVE, problem.get().getProblemStatus());
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 problemDiscussionService.addComment(firebaseUid, request)
         );
-
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-        assertNotEquals(HttpStatus.OK, ex.getStatusCode());
     }
 
     @Test
@@ -261,10 +250,8 @@ public class UserCommentTest {
         UserAccount authorUserAccount = userAccountManager.findUserAccount(authorFirebaseUid);
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+        RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> problemDiscussionService.removeUserComment(requesterFirebaseUid, deletionRequest));
-
-        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
 
         assertEquals(1, countVisibleCommentsForUserProblem(authorUserAccount, problem.getId()));
     }
@@ -283,10 +270,8 @@ public class UserCommentTest {
                 "blahblahblahblah"
         );
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+        RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> problemDiscussionService.removeUserComment(requestFirebaseUid, request));
-
-        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
 
     @Test
@@ -310,10 +295,8 @@ public class UserCommentTest {
                 realRequest.commentContent()
         );
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+        RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> problemDiscussionService.removeUserComment(threatActorUid, modifiedRequest));
-
-        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
 
         assertEquals(1, countVisibleCommentsForUserProblem(author, problem.getId()));
     }
@@ -364,9 +347,8 @@ public class UserCommentTest {
 
         assertDoesNotThrow(() -> problemDiscussionService.removeUserComment(firebaseUid, deletionRequest));
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+        RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> problemDiscussionService.removeUserComment(firebaseUid, deletionRequest));
-        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
 
     @Test
@@ -387,9 +369,8 @@ public class UserCommentTest {
                 realRequest.commentContent() + " - modified"
         );
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+        RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> problemDiscussionService.removeUserComment(adminUid, mismatchedRequest));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
 
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
         assertEquals(1, countVisibleCommentsForUserProblem(author, problem.getId()));

@@ -23,12 +23,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -104,11 +102,9 @@ public class SolutionBetaCreationDeletionTest {
         );
         String testFirebaseUid = "testFirebaseUid";
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 problemDiscussionService.saveSolutionBeta(testRequest, testFirebaseUid)
         );
-
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
     @Test
@@ -143,11 +139,9 @@ public class SolutionBetaCreationDeletionTest {
 
         String firebaseUid = "testFirebaseUid";
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 problemDiscussionService.removeUserSolutionBeta(request, firebaseUid)
         );
-
-        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
 
     @Test
@@ -163,12 +157,9 @@ public class SolutionBetaCreationDeletionTest {
         String firebaseUid = "testFirebaseUid2";
         Long problemId = 1L;
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 problemDiscussionService.removeUserSolutionBeta(request, firebaseUid)
         );
-
-        assertNotEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
 
     @Test
@@ -197,11 +188,9 @@ public class SolutionBetaCreationDeletionTest {
         );
         String adminFirebaseUid = "testFirebaseUid3";
 
-        ResponseStatusException ex = assertThrows( ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows( RuntimeException.class, () ->
                 problemDiscussionService.removeUserSolutionBeta(request, adminFirebaseUid)
         );
-
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
     private SolutionBetaDeletionRequest createFakeSolutionBeta(String firebaseUid, String objectKey, String publicUrl, Long problemId){

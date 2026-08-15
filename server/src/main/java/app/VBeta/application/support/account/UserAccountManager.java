@@ -5,10 +5,8 @@ import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.GymRoleRepository;
 import app.VBeta.repository.UserAccountRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 import java.util.List;
@@ -91,8 +89,7 @@ public class UserAccountManager {
     public UserAccount createNewAccount(String userName, String email, String firebaseUid){
         Optional<GymRole> role = gymRoleRepository.findByRoleType(RoleType.CLIMBER);
         if (role.isEmpty()){
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Service error while creating new account, please contact the developer for this.");
+            throw new RuntimeException("Service error while creating new account, please contact the developer for this.");
         }
         UserAccount newAccount = new UserAccount();
         newAccount.setGymRole(role.get());

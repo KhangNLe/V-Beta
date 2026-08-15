@@ -3,10 +3,8 @@ package app.VBeta.application.support.wall;
 import app.VBeta.api.dto.walls.WallSectionCreationRequest;
 import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.repository.WallSectionRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 import java.util.List;
@@ -41,8 +39,7 @@ public class WallSectionManager {
     public WallSection findWallSection(Long wallSectionId){
         Optional<WallSection> result = wallSectionRepository.findById(wallSectionId);
         if (result.isEmpty()){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    String.format("Wall Section with id %d does not exist.", wallSectionId));
+            throw new RuntimeException(String.format("Wall Section with id %d does not exist.", wallSectionId));
         }
         return result.get();
     }

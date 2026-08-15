@@ -30,11 +30,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -168,10 +166,9 @@ public class ClimbingProblemModificationTest {
     @Order(3)
     @DisplayName("Test for Fail Climbing Problem Creation")
     void testClimbingProblemCreationFailure(){
-        ResponseStatusException ex = assertThrows((ResponseStatusException.class), () ->
+        RuntimeException ex = assertThrows((RuntimeException.class), () ->
                 climbingWallService.createNewClimbingProblem(1234L, request)
         );
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
     @Test

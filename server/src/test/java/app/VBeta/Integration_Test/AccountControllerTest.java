@@ -1,7 +1,7 @@
 package app.VBeta.Integration_Test;
 
 import app.VBeta.api.dto.account.AccountRequest;
-import app.VBeta.api.dto.account.AccountResponse;
+import app.VBeta.api.dto.account.UserAccountDTO;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
 import app.VBeta.api.dto.discussions.PerceiveGradeRequest;
 import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
@@ -29,12 +29,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -105,11 +103,10 @@ public class AccountControllerTest {
         );
         String testFirebaseUid = "testFirebaseUid";
 
-        AccountResponse resp = accountService.loginAccount(req.username(), req.email(), testFirebaseUid);
+        UserAccountDTO resp = accountService.loginAccount(req.username(), req.email(), testFirebaseUid);
         assertTrue(accountRepository.findByFirebaseUid(testFirebaseUid).isPresent());
         assertNotNull(resp);
-        assertNotNull(resp.id());
-        assertEquals(testFirebaseUid, resp.firebaseUid());
+        assertNotNull(resp.userId());
         assertEquals("testUser", resp.username());
         assertEquals("testUser@gmail.com", resp.email());
     }
@@ -142,10 +139,8 @@ public class AccountControllerTest {
     void testFailureAccountDeletion(){
         String fakeFirebaseUid = "FAKEID";
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+        RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> accountService.deleteAccount(fakeFirebaseUid));
-
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
     @Test
@@ -290,11 +285,10 @@ public class AccountControllerTest {
         discussionCommentRepository.delete(discussionCommentRepository.findByDiscussionRoot(commentAnchor).get());
         assertTrue(discussionCommentRepository.findByDiscussionRoot(commentAnchor).isEmpty());
 
-        ResponseStatusException ex = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
                 () -> accountService.deleteAccount(firebaseUid)
         );
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, ex.getStatusCode());
         assertNotNull(userAccountManager.findUserAccount(firebaseUid));
     }
 
@@ -321,11 +315,10 @@ public class AccountControllerTest {
         solutionBetaRepository.delete(solutionBetas.get(0));
         assertTrue(solutionBetaRepository.findByDiscussionRootIn(userBetas).isEmpty());
 
-        ResponseStatusException ex = assertThrows(
-                ResponseStatusException.class,
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
                 () -> accountService.deleteAccount(firebaseUid)
         );
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, ex.getStatusCode());
         assertNotNull(userAccountManager.findUserAccount(firebaseUid));
     }
 

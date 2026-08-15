@@ -6,6 +6,7 @@ import app.VBeta.application.ModerationService;
 import app.VBeta.application.NotificationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -40,9 +41,15 @@ public class ContentReportController {
      * @param request report target, category, and reason payload
      */
     @PostMapping("/create")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void createContentReport(@Valid @RequestBody ReportRequest request){
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        moderationService.createNewReport(request, firebaseUid);
+    public ResponseEntity<?> createContentReport(@Valid @RequestBody ReportRequest request){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            moderationService.createNewReport(request, firebaseUid);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

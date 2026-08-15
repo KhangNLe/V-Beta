@@ -8,4 +8,6 @@ package app.VBeta.api.dto.account;
  * @param email email address of the authenticated user
  * @param role role name assigned to the user, when available
  */
-public record AccountMeResponse(Long userId, String username, String email, String role) {}
+public record UserAccountDTO(
+        Long userId, String username, String email, String role
+) {}

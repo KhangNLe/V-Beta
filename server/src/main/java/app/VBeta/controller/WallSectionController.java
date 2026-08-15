@@ -8,8 +8,12 @@ import app.VBeta.api.dto.walls.WallSectionResponse;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ClimbingWallService;
 import app.VBeta.domain.model.actions.ActionDefinition;
+import app.VBeta.domain.model.climb.WallSection;
+import app.VBeta.repository.ClimbingProblemRepository;
 import jakarta.validation.Valid;
+import org.aspectj.apache.bcel.classfile.annotation.RuntimeTypeAnnos;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +26,7 @@ import java.util.List;
  * authorization checks through {@link AuthorizationService}.
  */
 @RestController
-@RequestMapping("/home")
+@RequestMapping("/api/home")
 public class WallSectionController {
     private final ClimbingWallService climbingWallService;
     private final AuthorizationService authorizationService;
@@ -46,8 +50,15 @@ public class WallSectionController {
      */
     @GetMapping("/wall-sections")
     @Transactional(readOnly = true)
-    public List<WallSectionResponse> wallSections() {
-        return climbingWallService.getWallSections();
+    public ResponseEntity<?> wallSections() {
+        try {
+            List<WallSectionResponse> response = climbingWallService.getWallSections();
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -58,8 +69,15 @@ public class WallSectionController {
      */
     @GetMapping("/wall-sections/{wallSectionId}/problems")
     @Transactional(readOnly = true)
-    public List<ClimbingProblemResponse> problemsForWallSection(@PathVariable Long wallSectionId) {
-        return climbingWallService.getClimbingProblemsByWallSectionId(wallSectionId);
+    public ResponseEntity<?> problemsForWallSection(@PathVariable Long wallSectionId) {
+        try {
+            List<ClimbingProblemResponse> responses = climbingWallService.getClimbingProblemsByWallSectionId(wallSectionId);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -71,8 +89,15 @@ public class WallSectionController {
      */
     @GetMapping("wall-sections/{wallSectionId}/problems/{problemID}")
     @Transactional(readOnly = true)
-    public ClimbingProblemDetailResponse getProblemDetail(@PathVariable Long wallSectionId, @PathVariable Long problemID){
-        return climbingWallService.getClimbingProblem(problemID);
+    public ResponseEntity<?> getProblemDetail(@PathVariable Long wallSectionId, @PathVariable Long problemID){
+        try {
+            ClimbingProblemDetailResponse response = climbingWallService.getClimbingProblem(problemID);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -83,11 +108,19 @@ public class WallSectionController {
      */
     @PostMapping("/wall-section/creation")
     @ResponseStatus(HttpStatus.CREATED)
-    public WallSectionResponse createWallSection(@Valid @RequestBody WallSectionCreationRequest body){
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        authorizationService.authorize(firebaseUid, ActionDefinition.CREATE_WALL);
+    public ResponseEntity<?> createWallSection(@Valid @RequestBody WallSectionCreationRequest body){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            authorizationService.authorize(firebaseUid, ActionDefinition.CREATE_WALL);
 
-         return climbingWallService.createNewWallSection(body);
+            WallSectionResponse response =  climbingWallService.createNewWallSection(body);
+
+            return new  ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -96,12 +129,18 @@ public class WallSectionController {
      * @param wallSectionId wall section identifier
      */
     @DeleteMapping("wall-section/{wallSectionId}/delete")
-    @ResponseStatus(HttpStatus.OK)
-    public void deleteWallSection(@PathVariable Long wallSectionId){
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_WALL);
+    public ResponseEntity<?> deleteWallSection(@PathVariable Long wallSectionId){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_WALL);
 
-        climbingWallService.deleteWallSection(wallSectionId);
+            climbingWallService.deleteWallSection(wallSectionId);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -109,13 +148,20 @@ public class WallSectionController {
      *
      * @param wallSectionId wall section identifier
      */
-    @PostMapping("/wall-section/{wallSectionId}/reset")
+    @PatchMapping("/wall-section/{wallSectionId}/reset")
     @ResponseStatus(HttpStatus.OK)
-    public void resetWallSection(@PathVariable Long wallSectionId){
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        authorizationService.authorize(firebaseUid, ActionDefinition.RESET_WALL);
+    public ResponseEntity<?> resetWallSection(@PathVariable Long wallSectionId){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            authorizationService.authorize(firebaseUid, ActionDefinition.RESET_WALL);
+            climbingWallService.resetWallSection(wallSectionId);
 
-        climbingWallService.resetWallSection(wallSectionId);
+            return new ResponseEntity<>( HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -126,12 +172,19 @@ public class WallSectionController {
      * @return created climbing problem response
      */
     @PostMapping("/wall-sections/{wallSectionId}/problems/create")
-    public ClimbingProblemResponse createClimbingProblem(@Valid @RequestBody ClimbingProblemCreationRequest request,
+    public ResponseEntity<?> createClimbingProblem(@Valid @RequestBody ClimbingProblemCreationRequest request,
                                                          @PathVariable Long wallSectionId){
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        authorizationService.authorize(firebaseUid, ActionDefinition.CREATE_PROBLEM);
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            authorizationService.authorize(firebaseUid, ActionDefinition.CREATE_PROBLEM);
 
-        return climbingWallService.createNewClimbingProblem(wallSectionId, request);
+            ClimbingProblemResponse response =  climbingWallService.createNewClimbingProblem(wallSectionId, request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -141,13 +194,20 @@ public class WallSectionController {
      * @param problemId climbing problem identifier
      * @return updated list of climbing problem summaries
      */
-    @DeleteMapping("/wall-sections/{wallSectionId}/problems/{problemId}/delete")
-    public List<ClimbingProblemResponse> deleteClimbingProblem(@PathVariable Long wallSectionId,
+    @PatchMapping("/wall-sections/{wallSectionId}/problems/{problemId}/delete")
+    public ResponseEntity<?> deleteClimbingProblem(@PathVariable Long wallSectionId,
                                                                @PathVariable Long problemId){
-        String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-        authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_PROBLEM);
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_PROBLEM);
 
-        climbingWallService.deleteClimbingProblem(problemId);
-        return climbingWallService.getClimbingProblemsByWallSectionId(wallSectionId);
+            climbingWallService.deleteClimbingProblem(problemId);
+            List<ClimbingProblemResponse> response =  climbingWallService.getClimbingProblemsByWallSectionId(wallSectionId);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e){
+            return  new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

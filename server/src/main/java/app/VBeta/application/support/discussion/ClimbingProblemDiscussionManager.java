@@ -9,9 +9,7 @@ import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.discussions.DiscussionType;
 import app.VBeta.domain.model.discussions.SolutionBeta;
 import app.VBeta.domain.model.user.UserAccount;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -192,9 +190,7 @@ public class ClimbingProblemDiscussionManager {
     private DiscussionRoot getDiscussionNode(Long discussionParentId){
         DiscussionRoot parent = discussionRootManager.findDiscussionRootById(discussionParentId);
         if (parent == null){
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    String.format("Unable to reply to a discussion with id %d", discussionParentId)
+            throw new RuntimeException(String.format("Unable to reply to a discussion with id %d", discussionParentId)
             );
         }
         return parent;
