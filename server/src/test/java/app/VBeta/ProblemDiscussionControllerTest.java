@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import app.VBeta.api.dto.discussions.PerceiveGradeRequest;
 import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageRequest;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageResponse;
 import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
@@ -65,8 +65,8 @@ public class ProblemDiscussionControllerTest {
     @MockitoBean
     private ClimbingWallService climbingWallService;
 
-    private UserCommentData sampleComment() {
-        return new UserCommentData(
+    private UserDiscussionData sampleComment() {
+        return new UserDiscussionData(
                 101L,
                 1L,
                 "test-user",
@@ -173,7 +173,7 @@ public class ProblemDiscussionControllerTest {
     void returns201_whenSavingSolutionBeta() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         when(problemDiscussionService.saveSolutionBeta(any(SolutionBetaCreateRequest.class), eq("testFirebaseUid")))
-                .thenReturn(new UserCommentData(
+                .thenReturn(new UserDiscussionData(
                         402L, 1L, "test-user", null, DiscussionType.BETA,
                         "https://storage.googleapis.com/bucket/video.mp4",
                         LocalDateTime.of(2026, 4, 20, 20, 2)

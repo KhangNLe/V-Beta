@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * {@code ReportManager} encapsulates persistence and validation rules for
@@ -105,6 +106,26 @@ public class ReportManager {
     public boolean checkForDuplicateReport(ReportRequest request, UserAccount user){
         return checkForDuplicateOpenReport(request, user) ||
                 checkForDuplicateReportCategory(request, user);
+    }
+
+    public List<Report> getActiveReports(UserAccount user){
+        List<Report> reports = reportRepository.findAllByReportStatus(ReportStatus.OPEN);
+        return reports.stream().filter(report ->
+                !(report.getTargetType().equals(ReportTargetType.DISCUSSION) &&
+                    report.getDiscussion().getUserAccount().equals(user)) &&
+                        !(report.getTargetType().equals(ReportTargetType.USER_ACCOUNT) &&
+                                report.getUser().equals(user))
+        ).toList();
+    }
+
+    public List<Report> findOpenByTarget(Report report, UserAccount user){
+        if (!(report.getTargetType().equals(ReportTargetType.USER_ACCOUNT) && report.getUser().equals(user))
+        && !(report.getTargetType().equals(ReportTargetType.DISCUSSION) && report.getUser().equals(user))){
+            return null;
+        }
+
+        return reportRepository.findAllByCategoryAndTarget(ReportStatus.OPEN, report.getCategory(),
+            report.getWallSection(), report.getDiscussion(), report.getProblem(), report.getUser());
     }
 
     /**

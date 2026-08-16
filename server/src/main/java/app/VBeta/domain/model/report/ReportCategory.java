@@ -29,6 +29,6 @@ public class ReportCategory {
     @Enumerated(EnumType.STRING)
     private ReportCategoryName categoryName;
 
-    @Column(name = "priority", nullable = false, unique = true)
-    private Integer priority;
+    @Column(name = "weight", nullable = false, unique = true)
+    private Integer weight;
 }

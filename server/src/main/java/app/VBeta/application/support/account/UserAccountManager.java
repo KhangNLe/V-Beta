@@ -1,5 +1,6 @@
 package app.VBeta.application.support.account;
 
+import app.VBeta.api.dto.account.UserAccountDTO;
 import app.VBeta.domain.model.actions.GymRole;
 import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.domain.model.user.UserAccount;
@@ -138,5 +139,14 @@ public class UserAccountManager {
      */
     public List<UserAccount> findUsersOfRole(RoleType roleType) {
         return userAccountRepository.findByGymRole_RoleType(roleType);
+    }
+
+    public UserAccountDTO getUserAccountDTO(UserAccount userAccount){
+        return new UserAccountDTO(
+                userAccount.getId(),
+                userAccount.getUsername(),
+                userAccount.getEmail(),
+                userAccount.getGymRole().getRoleType().name()
+        );
     }
 }

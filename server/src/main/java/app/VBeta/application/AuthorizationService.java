@@ -97,4 +97,10 @@ public class AuthorizationService {
             );
         }
     }
+
+    public void authorize(UserAccount user,  ActionDefinition action) {
+        if (roleBasedAuthenticationManager.isPermit(user.getGymRole().getRoleType(), action)) {
+            throw new RuntimeException("Role " + user.getGymRole().getRoleType() + " is not allowed to perform action ");
+        }
+    }
 }

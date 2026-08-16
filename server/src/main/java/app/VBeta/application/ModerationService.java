@@ -1,18 +1,34 @@
 package app.VBeta.application;
 
+import app.VBeta.api.dto.report.CategoryTallyDTO;
+import app.VBeta.api.dto.report.ReportDTO;
+import app.VBeta.api.dto.report.ReportPriorityDTO;
 import app.VBeta.api.dto.report.ReportRequest;
+import app.VBeta.api.dto.report.ReportUserDTO;
+import app.VBeta.api.dto.report.ReportsPayload;
 import app.VBeta.application.support.account.UserAccountManager;
+import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.report.ReportManager;
+import app.VBeta.domain.model.actions.ActionDefinition;
 import app.VBeta.domain.model.report.Report;
+import app.VBeta.domain.model.report.ReportTargetType;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 /**
- * {@code ModerationService} is the orchestration layer for content-report creation.
+ * {@code ModerationService} is the orchestration layer for content-report creation
+ * and the admin report queue.
  * <p>
  * It resolves the reporter, enforces duplicate rules, persists the report through
- * {@link ReportManager}, and asks {@link NotificationService} to notify admins.
+ * {@link ReportManager}, asks {@link NotificationService} to notify admins, and
+ * groups open reports into ranked queue cases.
  */
 @Service
 @Transactional
@@ -20,6 +36,9 @@ public class ModerationService {
     private final ReportManager reportManager;
     private final UserAccountManager userAccountManager;
     private final NotificationService notificationService;
+    private final AuthorizationService authorizationService;
+    private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
+    private final ClimbingWallService climbingWallService;
 
     /**
      * Constructs a new {@code ModerationService} with required collaborators.
@@ -30,10 +49,16 @@ public class ModerationService {
      */
     public ModerationService(ReportManager reportManager,
                              UserAccountManager userAccountManager,
-                             NotificationService notificationService) {
+                             NotificationService notificationService,
+                             AuthorizationService authorizationService,
+                             ClimbingProblemDiscussionManager climbingProblemDiscussionManager,
+                             ClimbingWallService climbingWallService) {
         this.reportManager = reportManager;
         this.userAccountManager = userAccountManager;
         this.notificationService = notificationService;
+        this.authorizationService = authorizationService;
+        this.climbingProblemDiscussionManager = climbingProblemDiscussionManager;
+        this.climbingWallService = climbingWallService;
     }
 
     /**
@@ -58,5 +83,120 @@ public class ModerationService {
 
         Report report = reportManager.createReport(reporter, reportRequest);
         notificationService.saveReportNotification(report);
+    }
+
+    public ReportsPayload getReport(String firebaseUid, Long reportId){
+        UserAccount user = userAccountManager.findUserAccount(firebaseUid);
+        if (user == null) {
+            throw new  RuntimeException("User not found");
+        }
+
+        authorizationService.authorize(user, ActionDefinition.VIEW_REPORTS);
+        Report report = reportManager.findById(reportId);
+        List<Report> sameTarget = reportManager.findOpenByTarget(report, user);
+        return new ReportsPayload(List.of(toReportPriorityDTO(sameTarget)));
+    }
+
+    /**
+     * Returns open reports grouped by target and ranked by category weight × count.
+     *
+     * @param firebaseUid Firebase UID of the requesting admin
+     * @return ranked queue payload
+     * @throws RuntimeException when the account is missing or unauthorized
+     */
+    public ReportsPayload getReportQueue(String firebaseUid){
+        UserAccount user = userAccountManager.findUserAccount(firebaseUid);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        authorizationService.authorize(user, ActionDefinition.VIEW_REPORTS);
+        List<Report> reports = reportManager.getActiveReports(user);
+        return new ReportsPayload(createReportPriorityDTOs(reports));
+    }
+
+    private List<ReportPriorityDTO> createReportPriorityDTOs(List<Report> reports) {
+        Map<TargetKey, List<Report>> byTarget = reports.stream()
+                .collect(Collectors.groupingBy(this::targetKey, LinkedHashMap::new, Collectors.toList()));
+
+        return byTarget.values().stream()
+                .map(this::toReportPriorityDTO)
+                .sorted(Comparator.comparingInt(ReportPriorityDTO::queueScore).reversed())
+                .toList();
+    }
+
+    private ReportPriorityDTO toReportPriorityDTO(List<Report> reportsOnTarget) {
+        ReportDTO report = toReportDTO(reportsOnTarget);
+        List<CategoryTallyDTO> categories = toCategoryTallies(reportsOnTarget);
+        int queueScore = categories.stream()
+                .mapToInt(CategoryTallyDTO::categoryScore)
+                .sum();
+        return new ReportPriorityDTO(report, categories, queueScore);
+    }
+
+    private ReportDTO toReportDTO(List<Report> reportsOnTarget) {
+        Report first = reportsOnTarget.get(0);
+        List<ReportUserDTO> reporters = reportsOnTarget.stream()
+                .map(this::toReportUserDTO)
+                .toList();
+        return new ReportDTO(
+                first.getTargetType(),
+                first.getTargetType() == ReportTargetType.DISCUSSION
+                        ? climbingProblemDiscussionManager.getDiscussionData(first.getDiscussion())
+                        : null,
+                first.getTargetType() == ReportTargetType.CLIMBING_PROBLEM
+                        ? climbingWallService.getClimbingProblemResponse(first.getProblem())
+                        : null,
+                first.getTargetType() == ReportTargetType.WALL_SECTION
+                        ? climbingWallService.getWallSectionResponse(first.getWallSection())
+                        : null,
+                first.getTargetType() == ReportTargetType.USER_ACCOUNT
+                        ? userAccountManager.getUserAccountDTO(first.getUser())
+                        : null,
+                reporters
+        );
+    }
+
+    private ReportUserDTO toReportUserDTO(Report report) {
+        return new ReportUserDTO(
+                report.getReportId(),
+                userAccountManager.getUserAccountDTO(report.getReporter()),
+                report.getCategory().getCategoryName(),
+                report.getReportReason(),
+                report.getCreatedAt()
+        );
+    }
+
+    private List<CategoryTallyDTO> toCategoryTallies(List<Report> reportsOnTarget) {
+        return reportsOnTarget.stream()
+                .collect(Collectors.groupingBy(
+                        report -> report.getCategory().getCategoryName(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ))
+                .values()
+                .stream()
+                .map(group -> {
+                    int count = group.size();
+                    int weight = group.get(0).getCategory().getWeight();
+                    return new CategoryTallyDTO(
+                            group.get(0).getCategory().getCategoryName(),
+                            count,
+                            weight * count
+                    );
+                })
+                .toList();
+    }
+
+    private record TargetKey(ReportTargetType reportTargetType, Long targetId) {}
+
+    private TargetKey targetKey(Report report) {
+        Long targetId = switch (report.getTargetType()) {
+            case CLIMBING_PROBLEM -> report.getProblem().getId();
+            case WALL_SECTION -> report.getWallSection().getId();
+            case DISCUSSION -> report.getDiscussion().getDiscussionId();
+            case USER_ACCOUNT -> report.getUser().getId();
+        };
+        return new TargetKey(report.getTargetType(), targetId);
     }
 }

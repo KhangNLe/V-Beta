@@ -3,7 +3,7 @@ package app.VBeta.controller;
 import app.VBeta.api.dto.discussions.*;
 import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageRequest;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageResponse;
 import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
@@ -13,7 +13,6 @@ import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ClimbingWallService;
 import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.domain.model.actions.ActionDefinition;
-import com.google.api.Http;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,7 +59,7 @@ public class ProblemDiscussionController {
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
 
-            UserCommentData response =  problemDiscussionService.addComment(firebaseUid, request);
+            UserDiscussionData response =  problemDiscussionService.addComment(firebaseUid, request);
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (RuntimeException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -121,7 +120,7 @@ public class ProblemDiscussionController {
     public ResponseEntity<?> storeUserSolutionBeta(@Valid @RequestBody SolutionBetaCreateRequest request) {
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-            UserCommentData response =  problemDiscussionService.saveSolutionBeta(request, firebaseUid);
+            UserDiscussionData response =  problemDiscussionService.saveSolutionBeta(request, firebaseUid);
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (RuntimeException e){
             return  new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);

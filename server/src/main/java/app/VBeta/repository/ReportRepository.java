@@ -1,10 +1,17 @@
 package app.VBeta.repository;
 
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.climb.WallSection;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.report.Report;
 import app.VBeta.domain.model.report.ReportCategory;
 import app.VBeta.domain.model.report.ReportStatus;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
 
 /**
  * Repository for {@link Report} entities.
@@ -102,5 +109,20 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     boolean existsByReporterAndCategoryAndDiscussion_DiscussionId(
             UserAccount reporter, ReportCategory category, Long discussionId
     );
+
+    @Query("SELECT re FROM Report re WHERE re.reportStatus = :status")
+    List<Report> findAllByReportStatus(@Param("status") ReportStatus status);
+
+    @Query("SELECT re FROM Report  re WHERE re.reportStatus = :status AND re.category = :category " +
+            "AND " +
+            "(re.wallSection = :wallSection OR re.discussion = :dicussion OR re.problem = :problem OR re.user = :user)"
+    )
+    List<Report> findAllByCategoryAndTarget(@Param("status") ReportStatus status,
+                                            @Param("category") ReportCategory category,
+                                            @Param("wallSection") WallSection wallSection,
+                                            @Param("discussion")DiscussionRoot discussion,
+                                            @Param("problem")ClimbingProblem problem,
+                                            @Param("user") UserAccount user
+                                             );
 
 }

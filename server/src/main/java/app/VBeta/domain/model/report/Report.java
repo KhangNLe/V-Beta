@@ -11,6 +11,7 @@ import org.hibernate.tool.schema.TargetType;
 import org.hibernate.type.SqlTypes;
 import org.springframework.beans.factory.parsing.Problem;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 /**
@@ -49,7 +50,7 @@ public class Report {
     private ReportTargetType targetType;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "report_status", nullable = false, columnDefinition = "report_status")
     @Enumerated(EnumType.STRING)
@@ -57,7 +58,7 @@ public class Report {
     private ReportStatus reportStatus;
 
     @Column(name = "resolved_at")
-    private LocalDateTime resolvedAt;
+    private Instant resolvedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "discussion_id", referencedColumnName = "discussion_id")
@@ -78,7 +79,7 @@ public class Report {
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = Instant.now();
         }
         if (reportStatus == null) {
             reportStatus = ReportStatus.OPEN;

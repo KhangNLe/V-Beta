@@ -61,7 +61,7 @@ Account session (`POST /api/accounts/session`) still throws `ResponseStatusExcep
   - Response:
     - `climbingProblem` (problem details),
     - `perceiveGrade` (aggregate/perceived value),
-    - `discussion` (ordered `UserCommentData` entries).
+    - `discussion` (ordered `UserDiscussionData` entries).
 
 ### Problem Discovery (Grade Range / Sort)
 
@@ -113,7 +113,7 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
   - Request body:
     - `problemId`
     - `commentInfo`
-  - Response: `201` with created `UserCommentData`:
+  - Response: `201` with created `UserDiscussionData`:
     - `discussionId`
     - `userId`
     - `username`
@@ -141,7 +141,7 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
     - `problemId`
     - `objectFileName`
     - `videoURL`
-  - Response: `201` with `UserCommentData` record.
+  - Response: `201` with `UserDiscussionData` record.
 
 - `DELETE /api/discussion/solution-beta`
   - Purpose: delete a solution beta entry.

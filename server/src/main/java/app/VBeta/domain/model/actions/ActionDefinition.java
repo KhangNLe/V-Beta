@@ -27,5 +27,7 @@ public enum ActionDefinition {
     /** Permission to view all user accounts. */
     VIEW_ACCOUNTS,
     /** Permission to submit perceived grades for problems. */
-    GRADE_PROBLEM
+    GRADE_PROBLEM,
+    /** Permission to look at moderation reports from users */
+    VIEW_REPORTS
 }

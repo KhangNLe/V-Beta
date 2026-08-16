@@ -1,6 +1,6 @@
 package app.VBeta.application;
 
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;
 import app.VBeta.api.dto.problems.ClimbingProblemDetailResponse;
 import app.VBeta.api.dto.problems.ClimbingProblemResponse;
@@ -94,7 +94,7 @@ public class ClimbingWallService {
         ClimbingProblem problem = getActiveProblem(problemId);
 
         String perceiveGrade = userPerceiveGradeManager.getPerceiveGrade(problem);
-        List<UserCommentData> comments = climbingProblemDiscussionManager.getCommentsForProblem(problem);
+        List<UserDiscussionData> comments = climbingProblemDiscussionManager.getCommentsForProblem(problem);
         return new ClimbingProblemDetailResponse(
                 new ClimbingProblemResponse(problem.getId(),
                         problem.getHoldColor(),
@@ -222,5 +222,23 @@ public class ClimbingWallService {
             throw new RuntimeException("Problem does not exist or no longer active.");
         }
         return problem;
+    }
+
+    public WallSectionResponse getWallSectionResponse(WallSection wallSection){
+        return new WallSectionResponse(
+                wallSection.getId(),
+                wallSection.getWallSectionName(),
+                wallSection.getWallInfo()
+        );
+    }
+
+    public ClimbingProblemResponse getClimbingProblemResponse(ClimbingProblem problem){
+        return new ClimbingProblemResponse(
+                problem.getId(),
+                problem.getHoldColor(),
+                problem.getProblemInfo(),
+                problem.getCreatedDate().toString().split("T")[0],
+                problem.getClimbingGrade().getGradeDefinition()
+        );
     }
 }

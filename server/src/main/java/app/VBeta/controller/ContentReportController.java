@@ -1,9 +1,9 @@
 package app.VBeta.controller;
 
 import app.VBeta.api.dto.report.ReportRequest;
+import app.VBeta.api.dto.report.ReportsPayload;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ModerationService;
-import app.VBeta.application.NotificationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +50,24 @@ public class ContentReportController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
             return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/reports")
+    public ResponseEntity<?> getReports(@RequestParam(required = false) Long reportId){
+        try{
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            ReportsPayload reports;
+            if (reportId == null){
+                reports = moderationService.getReportQueue(firebaseUid);
+            } else {
+                reports = moderationService.getReport(firebaseUid, reportId);
+            }
+            return new ResponseEntity<>(reports, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
