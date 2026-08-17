@@ -5,6 +5,10 @@ import app.VBeta.domain.model.report.ReportCategory;
 import app.VBeta.domain.model.report.ReportStatus;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
 
 /**
  * Repository for {@link Report} entities.
@@ -103,4 +107,14 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             UserAccount reporter, ReportCategory category, Long discussionId
     );
 
+    @Query("SELECT re FROM Report re WHERE re.reportStatus = :status")
+    List<Report> findAllByReportStatus(@Param("status") ReportStatus status);
+
+    List<Report> findAllByReportStatusAndDiscussion_DiscussionId(ReportStatus status, Long discussionId);
+
+    List<Report> findAllByReportStatusAndProblem_Id(ReportStatus status, Long problemId);
+
+    List<Report> findAllByReportStatusAndWallSection_Id(ReportStatus status, Long wallSectionId);
+
+    List<Report> findAllByReportStatusAndUser_Id(ReportStatus status, Long userId);
 }

@@ -98,7 +98,8 @@ Access model types:
   - action-gated (`ActionDefinition` checks)
 - Role permissions are loaded from DB mappings (`RolePermission`) through authorization support services.
 - Some discussion endpoints are authenticated without full action-gating; enforceable behavior is partly service-rule based.
-- Content report create and unread notification poll are authenticated only (no `CREATE_REPORT` / `VIEW_REPORTS` action).
+- Content report **create** and unread notification poll are authenticated only (no `CREATE_REPORT` action).
+- Admin report **queue/detail** (`GET /api/report/reports`) is action-gated with `VIEW_REPORTS`.
 
 ## Constraints and Technical Debt Notes
 

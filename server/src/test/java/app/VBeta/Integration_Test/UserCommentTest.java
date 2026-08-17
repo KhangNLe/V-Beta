@@ -3,7 +3,7 @@ package app.VBeta.Integration_Test;
 import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
 import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.account.UserAccountManager;
@@ -194,11 +194,11 @@ public class UserCommentTest {
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
         assertNotNull(problem);
 
-        List<UserCommentData> timeline = assertDoesNotThrow(
+        List<UserDiscussionData> timeline = assertDoesNotThrow(
                 () -> climbingProblemDiscussionManager.getCommentsForProblem(problem)
         );
 
-        Optional<UserCommentData> created = timeline.stream()
+        Optional<UserDiscussionData> created = timeline.stream()
                 .filter(item -> item.discussionType() == DiscussionType.COMMENT)
                 .filter(item -> request.commentInfo().equals(item.discussionContent()))
                 .findFirst();

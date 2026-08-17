@@ -65,8 +65,9 @@ Defined in runtime/test SQL. Closed workflow values use PostgreSQL enums; extens
 #### Lookup tables
 
 - `Report_Category`
-  - Category name + queue `priority` (lower number = higher rank).
-  - Seeded: `INAPPROPRIATE_CONTENT` (1), `HARASSMENT_BULLYING` (2), `SPAM` (3), `OFF_TOPIC` (4).
+  - Category name + queue `weight` (higher number is more severe).
+  - Seeded: `INAPPROPRIATE_CONTENT` (4), `HARASSMENT_BULLYING` (3), `SPAM` (2), `OFF_TOPIC` (1).
+  - Admin queue score for a target is `Σ (weight × OPEN report count)` per category.
 - `Event_Type`
   - Event name + description for notifiable lifecycle events.
   - Seeded: `REPORT_CREATED`, `REPORT_DISMISSED`, `CONTENT_REMOVED`, `APPEAL_SUBMITTED`, `CONTENT_RESTORED`, `APPEAL_DENIED`.
@@ -139,7 +140,7 @@ Action-level authorization uses:
 
 This model enables action-gated endpoint checks beyond simple authenticated/unauthenticated access.
 
-Dedicated moderation permission seeds (for example `VIEW_REPORTS`, `RESOLVE_REPORT`) are not used by the current create-report and unread-notification APIs. Those routes are authenticated only (no `CREATE_REPORT` in `ActionDefinition`). Add action seeds when queue/resolve APIs enforce action checks.
+Dedicated moderation permission: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. Create-report and unread notification poll stay authenticated only (no `CREATE_REPORT`). `RESOLVE_REPORT` is not seeded yet.
 
 ## Schema Management Notes
 

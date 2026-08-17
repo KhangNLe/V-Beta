@@ -60,7 +60,7 @@ How that surfaces depends on the controller:
 
 When the user is authenticated but not allowed, `AuthorizationService` throws `RuntimeException` (`Role <ROLE> is not allowed to perform action <ACTION>` or no valid role). Controllers currently map those to **404** or **400**, not 403.
 
-This applies to action-gated endpoints (for example account list/role-change, wall/problem management, grade suggestion, and comment delete).
+This applies to action-gated endpoints (for example account list/role-change, wall/problem management, grade suggestion, comment delete, and `GET /api/report/reports`).
 
 ## Validation and Domain Errors
 
@@ -75,16 +75,23 @@ Clients should not hardcode one exact JSON shape for all non-auth errors.
 
 `POST /api/report/create` and `GET /api/notification/short` are authenticated, not action-gated. Missing bearer tokens are rejected by Spring Security (`401`). Invalid/expired tokens still use the filter payload above.
 
+`GET /api/report/reports` is action-gated (`VIEW_REPORTS`). Guest callers are `401`. Climber/setter and other authorization failures currently map to **404**.
+
 Create-report domain errors:
 
 - `400` — blank `reportReason`, missing `reportTargetType` / `reportCategoryName` / `targetId`
 - `404` — reporter account missing, target missing/deleted, reporter owns the discussion, reporter is the reported user, or a duplicate report already exists
 
+Admin queue/detail errors:
+
+- `404` — missing account, missing `VIEW_REPORTS`, or unknown `reportId` (`Report not found`)
+- `200` with `"reports": []` — empty queue, viewer owns the reported discussion, or no OPEN siblings remain on that target
+
 Unread notification errors:
 
 - `401` — missing/invalid auth, or no account matches the Firebase UID (controller maps lookup failure to `401`)
 
-Create-report does not return `403` for climber/setter: any authenticated role may submit a report. Admin inbox fan-out is a side effect, not an access check on these two routes.
+Create-report does not return `403` for climber/setter: any authenticated role may submit a report. Admin inbox fan-out is a side effect, not an access check on create/poll. Queue/detail **does** require admin `VIEW_REPORTS`.
 
 ## Practical Error Payload Notes
 

@@ -3,7 +3,7 @@ package app.VBeta.application;
 import app.VBeta.api.dto.discussions.*;
 import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageRequest;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageResponse;
 import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
@@ -74,7 +74,7 @@ public class ProblemDiscussionService {
      * @param request discussion comment payload
      * @return created discussion entry including {@code discussionId} for later operations
      */
-    public UserCommentData addComment(String firebaseUid, DiscussionCommentRequest request){
+    public UserDiscussionData addComment(String firebaseUid, DiscussionCommentRequest request){
         UserAccount account = getUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
         return climbingProblemDiscussionManager.storeDiscussionComment(account, problem, request.commentInfo());
@@ -97,12 +97,12 @@ public class ProblemDiscussionService {
      * @param firebaseUid Firebase UID of the authenticated user
      * @return discussion timeline entry for the uploaded beta, including {@code discussionId}
      */
-    public UserCommentData saveSolutionBeta(SolutionBetaCreateRequest request, String firebaseUid){
+    public UserDiscussionData saveSolutionBeta(SolutionBetaCreateRequest request, String firebaseUid){
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
         UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
         SolutionBeta solutionBeta = climbingProblemDiscussionManager.storeSolutionBeta(userAccount, problem,
                 request.objectFileName(), request.videoURL());
-        return new UserCommentData(
+        return new UserDiscussionData(
                 solutionBeta.getDiscussionRoot().getDiscussionId(),
                 userAccount.getId(),
                 userAccount.getUsername(),

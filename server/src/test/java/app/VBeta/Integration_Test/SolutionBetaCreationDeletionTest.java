@@ -2,7 +2,7 @@ package app.VBeta.Integration_Test;
 
 import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
 import app.VBeta.api.dto.discussions.video.SolutionBetaDeletionRequest;
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.discussion.beta.GcpFileStorageAdapter;
@@ -80,7 +80,7 @@ public class SolutionBetaCreationDeletionTest {
         );
 
         String testFirebaseUid = "testFirebaseUid";
-        UserCommentData newDataResponse = problemDiscussionService.saveSolutionBeta(testRequest, testFirebaseUid);
+        UserDiscussionData newDataResponse = problemDiscussionService.saveSolutionBeta(testRequest, testFirebaseUid);
 
         UserAccount user = userAccountManager.findUserAccount(testFirebaseUid);
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(testRequest.problemId());
@@ -198,7 +198,7 @@ public class SolutionBetaCreationDeletionTest {
         when(gcpFileStorageAdapter.getPublicBucketName()).thenReturn("test-bucket");
 
         SolutionBetaCreateRequest createRequest = new SolutionBetaCreateRequest(problemId, objectKey, publicUrl);
-        UserCommentData saved = problemDiscussionService.saveSolutionBeta(createRequest, firebaseUid);
+        UserDiscussionData saved = problemDiscussionService.saveSolutionBeta(createRequest, firebaseUid);
         SolutionBeta solutionBeta = solutionBetaRepository.findByVideoURL(publicUrl).orElseThrow();
         Long discussionId = solutionBeta.getDiscussionRoot().getDiscussionId();
 

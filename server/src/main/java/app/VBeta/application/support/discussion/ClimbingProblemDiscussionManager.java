@@ -1,6 +1,6 @@
 package app.VBeta.application.support.discussion;
 
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
 import app.VBeta.application.support.discussion.comment.DiscussionCommentManager;
 import app.VBeta.domain.model.climb.ClimbingProblem;
@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * {@code ClimbingProblemDiscussionManager} composes a unified discussion timeline for a climbing problem.
  * It merges text comments and beta video submissions into a shared
- * {@link UserCommentData} stream ordered by creation time.
+ * {@link UserDiscussionData} stream ordered by creation time.
  * <p>
  * Data is sourced from {@link DiscussionCommentManager} and {@link SolutionBetaManager}.
  */
@@ -50,12 +50,12 @@ public class ClimbingProblemDiscussionManager {
      * @param problem climbing problem context
      * @return discussion timeline entries in database order
      */
-    public List<UserCommentData> getCommentsForProblem(ClimbingProblem problem){
+    public List<UserDiscussionData> getCommentsForProblem(ClimbingProblem problem){
         List<DiscussionRoot> discussionRoots = discussionRootManager.getDiscussionForProblem(problem);
-        List<UserCommentData> data = new ArrayList<>();
+        List<UserDiscussionData> data = new ArrayList<>();
 
         discussionRoots.forEach(root -> {
-            UserCommentData dataContent = null;
+            UserDiscussionData dataContent = null;
             if (root.getDiscussionType().equals(DiscussionType.COMMENT)){
                 dataContent = getCommentDiscussion(root);
             } else if (root.getDiscussionType().equals(DiscussionType.BETA)){
@@ -77,7 +77,7 @@ public class ClimbingProblemDiscussionManager {
      * @param commentInfo comment text content
      * @return created timeline entry including discussion id metadata
      */
-    public UserCommentData storeDiscussionComment(UserAccount user, ClimbingProblem problem, String commentInfo){
+    public UserDiscussionData storeDiscussionComment(UserAccount user, ClimbingProblem problem, String commentInfo){
         DiscussionRoot discussionRoot = discussionRootManager.createNewDiscussion(user, problem,
                 DiscussionType.COMMENT);
         discussionCommentManager.storeDiscussionComment(discussionRoot, commentInfo);
@@ -157,11 +157,21 @@ public class ClimbingProblemDiscussionManager {
         discussionRootManager.removeDiscussion(discussion);
     }
 
-    private UserCommentData getCommentDiscussion(DiscussionRoot discussionRoot){
+    public UserDiscussionData getDiscussionData(DiscussionRoot discussionRoot){
+        UserDiscussionData dataContent = null;
+        if (discussionRoot.getDiscussionType().equals(DiscussionType.COMMENT)){
+            dataContent = getCommentDiscussion(discussionRoot);
+        } else {
+            dataContent = getSolutionBeta(discussionRoot);
+        }
+        return dataContent;
+    }
+
+    private UserDiscussionData getCommentDiscussion(DiscussionRoot discussionRoot){
         DiscussionComment comment = discussionCommentManager.getDiscussionComment(discussionRoot);
         if (comment == null) return null;
         Long parentId = discussionRoot.getParent() == null ? null : discussionRoot.getParent().getDiscussionId();
-        return new UserCommentData(
+        return new UserDiscussionData(
                 discussionRoot.getDiscussionId(),
                 discussionRoot.getUserAccount().getId(),
                 discussionRoot.getUserAccount().getUsername(),
@@ -172,11 +182,11 @@ public class ClimbingProblemDiscussionManager {
         );
     }
 
-    private UserCommentData getSolutionBeta(DiscussionRoot discussionRoot){
+    private UserDiscussionData getSolutionBeta(DiscussionRoot discussionRoot){
         SolutionBeta beta = solutionBetaManager.getSolutionBetaFromDiscussionRoot(discussionRoot);
         if (beta == null) return null;
         Long parentId = discussionRoot.getParent() == null ? null : discussionRoot.getParent().getDiscussionId();
-        return  new UserCommentData(
+        return  new UserDiscussionData(
                 discussionRoot.getDiscussionId(),
                 discussionRoot.getUserAccount().getId(),
                 discussionRoot.getUserAccount().getUsername(),

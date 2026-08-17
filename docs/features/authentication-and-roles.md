@@ -62,13 +62,15 @@ This section documents the authentication and authorization features that are cu
 - Account list and role management are backed by:
   - `GET /api/accounts`
   - `PATCH /api/accounts/{userId}/role`
-- Backend authorization for these actions is enforced through `ActionDefinition.VIEW_ACCOUNTS` and `ActionDefinition.CHANGE_ROLE`.
+- Report queue and detail are backed by `GET /api/report/reports` (`ActionDefinition.VIEW_REPORTS`).
+- Backend authorization for these actions is enforced through `ActionDefinition.VIEW_ACCOUNTS`, `ActionDefinition.CHANGE_ROLE`, and `ActionDefinition.VIEW_REPORTS`.
 - The frontend exposes admin navigation for account-management workflow.
 - Admin role changes should be validated end-to-end (UI + API + permission checks) whenever role logic changes.
 
 ## Content Reports and Notifications
 
 - Create report: `POST /api/report/create` (authenticated; not action-gated; no `CREATE_REPORT`; success `200`).
+- Admin queue/detail: `GET /api/report/reports` (action-gated `VIEW_REPORTS`; admin only). Optional `reportId` returns one OPEN case.
 - Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated).
 - See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.
 

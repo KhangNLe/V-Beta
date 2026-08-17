@@ -1,6 +1,6 @@
 package app.VBeta.api.dto.problems;
 
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 
 import java.util.List;
 
@@ -14,6 +14,6 @@ import java.util.List;
 public record ClimbingProblemDetailResponse(
         ClimbingProblemResponse climbingProblem,
         String perceiveGrade,
-        List<UserCommentData> discussion
+        List<UserDiscussionData> discussion
 ) {
 }
