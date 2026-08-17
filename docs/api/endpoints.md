@@ -175,6 +175,8 @@ Create-report is **authenticated, not action-gated**. There is no `CREATE_REPORT
     - `404` when the reporter account is missing, the target is missing/deleted, the reporter owns the discussion / is the reported user, or a duplicate report already exists
   - Product note: Sprint 5 UI scope is discussion comments/betas (`DISCUSSION`). The API also accepts wall, problem, and user targets.
 
+Admin queue and detail are action-gated (`VIEW_REPORTS`). See Action-Gated Endpoints below.
+
 ### Notifications (Authenticated)
 
 Unread inbox read is **authenticated, not action-gated**. Any signed-in role may call it; `REPORT_CREATED` rows are currently fanned out to admins only, so climber/setter inboxes are typically empty for this event.
@@ -259,6 +261,26 @@ Unread inbox read is **authenticated, not action-gated**. Any signed-in role may
   - Additional service rule: requester must be comment owner or admin.
   - Response: `200` (empty body).
 
+### Content Reports (Admin Queue)
+
+- `GET /api/report/reports`
+  - Required action: `VIEW_REPORTS` (admin)
+  - Purpose: list ranked OPEN report **cases** (grouped by target, not one row per reporter).
+  - Query params:
+    - none — full queue
+    - `reportId` (optional) — one case: all OPEN reports on the same target as that id
+  - Ranking: `queueScore = Σ (category weight × OPEN count)` on that target, highest first. Weights: `INAPPROPRIATE_CONTENT` 4, `HARASSMENT_BULLYING` 3, `SPAM` 2, `OFF_TOPIC` 1.
+  - Visibility: omits discussion cases owned by the viewer and user-account cases targeting the viewer. Dismissed rows are excluded.
+  - Response: `200` `ReportsPayload`:
+    - `reports[]` (`ReportPriorityDTO`)
+      - `report` (`ReportDTO`): `targetType`; exactly one of `discussion` / `climbingProblem` / `wallSection` / `user`; `reporters[]` (`reportId`, `reporter`, `categoryName`, `reportReason`, `createdAt`)
+      - `categories[]`: `categoryName`, `reportCount`, `categoryScore` (`weight × reportCount`)
+      - `queueScore` (sum of `categoryScore`)
+  - Empty `reports` is a valid `200` (nothing visible, or get-by-id hidden / no remaining OPEN siblings).
+  - Errors:
+    - `401` when unauthenticated or the Firebase token is invalid
+    - `404` when the account is missing, the caller lacks `VIEW_REPORTS`, or `reportId` does not exist
+  - Product note: Sprint 5 queue/detail is built for discussion comments and betas. The mapper also serializes problem/wall/user targets if those rows exist.
 
 ## Related Docs
 

@@ -108,6 +108,15 @@ public class ReportManager {
                 checkForDuplicateReportCategory(request, user);
     }
 
+    /**
+     * Returns {@code OPEN} reports visible to {@code user} in the admin queue.
+     * <p>
+     * Omits discussion reports whose author is {@code user} and user-account
+     * reports whose target is {@code user}.
+     *
+     * @param user viewing account
+     * @return visible OPEN reports (ungrouped)
+     */
     public List<Report> getActiveReports(UserAccount user){
         List<Report> reports = reportRepository.findAllByReportStatus(ReportStatus.OPEN);
         return reports.stream().filter(report ->
@@ -118,6 +127,16 @@ public class ReportManager {
         ).toList();
     }
 
+    /**
+     * Returns OPEN reports on the same typed target as {@code report}.
+     * <p>
+     * Returns an empty list when the viewer owns the discussion or is the
+     * reported user.
+     *
+     * @param report any report on the target
+     * @param user viewing account
+     * @return OPEN reports on that target, or empty when hidden from the viewer
+     */
     public List<Report> findOpenByTarget(Report report, UserAccount user){
         if (isHiddenFromViewer(report, user)) {
             return new ArrayList<>();

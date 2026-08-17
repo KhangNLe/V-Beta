@@ -11,7 +11,9 @@ import org.hibernate.type.SqlTypes;
 
 /**
  * {@code ReportCategory} is a catalog row for report reason categories and
- * admin-queue priority (lower number is higher rank).
+ * admin-queue weight (higher number is more severe).
+ * <p>
+ * Queue score for a case is {@code Σ (weight × OPEN report count)} per category.
  */
 @Entity
 @Table(name = "Report_Category")

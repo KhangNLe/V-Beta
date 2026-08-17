@@ -43,6 +43,9 @@ public class ModerationService {
      * @param reportManager manager for report persistence and duplicate checks
      * @param userAccountManager manager for reporter account lookups
      * @param notificationService service for {@code REPORT_CREATED} admin inbox writes
+     * @param authorizationService service for {@code VIEW_REPORTS} checks on queue/detail
+     * @param climbingProblemDiscussionManager manager for discussion snapshots on queue cases
+     * @param climbingWallService service for problem and wall snapshots on queue cases
      */
     public ModerationService(ReportManager reportManager,
                              UserAccountManager userAccountManager,
@@ -82,6 +85,20 @@ public class ModerationService {
         notificationService.saveReportNotification(report);
     }
 
+    /**
+     * Returns the OPEN case for the target of {@code reportId}.
+     * <p>
+     * Requires {@link ActionDefinition#VIEW_REPORTS}. Sibling OPEN reports on the
+     * same target are grouped into one {@link ReportPriorityDTO}. If the viewer
+     * owns the discussion or is the reported user, or no OPEN rows remain, the
+     * payload {@code reports} list is empty.
+     *
+     * @param firebaseUid Firebase UID of the requesting admin
+     * @param reportId identifier of any report on the target
+     * @return one ranked case, or an empty list when hidden or fully dismissed
+     * @throws RuntimeException when the account is missing, unauthorized, or
+     *         {@code reportId} does not exist
+     */
     public ReportsPayload getReport(String firebaseUid, Long reportId){
         UserAccount user = userAccountManager.findUserAccount(firebaseUid);
         if (user == null) {
@@ -98,10 +115,14 @@ public class ModerationService {
     }
 
     /**
-     * Returns open reports grouped by target and ranked by category weight × count.
+     * Returns OPEN reports grouped by target and ranked by
+     * {@code Σ (category weight × count)} descending.
+     * <p>
+     * Requires {@link ActionDefinition#VIEW_REPORTS}. Discussions owned by the
+     * viewer and user-account reports targeting the viewer are omitted.
      *
      * @param firebaseUid Firebase UID of the requesting admin
-     * @return ranked queue payload
+     * @return ranked queue payload (empty list when nothing is visible)
      * @throws RuntimeException when the account is missing or unauthorized
      */
     public ReportsPayload getReportQueue(String firebaseUid){
