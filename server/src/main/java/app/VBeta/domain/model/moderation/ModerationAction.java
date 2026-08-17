@@ -3,10 +3,7 @@ package app.VBeta.domain.model.moderation;
 import app.VBeta.domain.model.report.Report;
 import app.VBeta.domain.model.user.UserAccount;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.Getter;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -23,6 +20,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ModerationAction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

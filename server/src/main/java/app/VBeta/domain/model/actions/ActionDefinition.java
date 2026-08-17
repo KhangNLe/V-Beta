@@ -29,5 +29,7 @@ public enum ActionDefinition {
     /** Permission to submit perceived grades for problems. */
     GRADE_PROBLEM,
     /** Permission to view the admin report queue and report detail. */
-    VIEW_REPORTS
+    VIEW_REPORTS,
+    /** Permission to decide what action to take on a report.*/
+    MODERATE_REPORT
 }

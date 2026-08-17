@@ -6,6 +6,7 @@ import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.events.EventsManager;
 import app.VBeta.application.support.events.NotificationManager;
 import app.VBeta.domain.model.actions.RoleType;
+import app.VBeta.domain.model.moderation.ModerationAction;
 import app.VBeta.domain.model.notification.Events;
 import app.VBeta.domain.model.notification.Notification;
 import app.VBeta.domain.model.report.Report;

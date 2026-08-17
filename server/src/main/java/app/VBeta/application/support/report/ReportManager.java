@@ -1,6 +1,7 @@
 package app.VBeta.application.support.report;
 
 import app.VBeta.api.dto.report.ReportRequest;
+import app.VBeta.application.ReportService;
 import app.VBeta.domain.model.report.*;
 import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.*;
@@ -9,14 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * {@code ReportManager} encapsulates persistence and validation rules for
  * {@link Report} entities.
  * <p>
  * It resolves typed report targets, maps category names to catalog rows, and
- * exposes duplicate checks used by {@link app.VBeta.application.ModerationService}.
+ * exposes duplicate checks used by {@link ReportService}.
  */
 @Service
 @Transactional
@@ -125,6 +125,14 @@ public class ReportManager {
                         !(report.getTargetType().equals(ReportTargetType.USER_ACCOUNT) &&
                                 report.getUser().equals(user))
         ).toList();
+    }
+
+    public Report findReportNotFromUser(UserAccount user, Long reportId){
+        Report report = findById(reportId);
+        if (isHiddenFromViewer(report, user)){
+            throw new RuntimeException("Report not found");
+        }
+        return report;
     }
 
     /**
