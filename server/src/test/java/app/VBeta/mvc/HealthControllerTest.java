@@ -1,4 +1,4 @@
-package app.VBeta;
+package app.VBeta.mvc;
 
 import app.VBeta.application.HealthService;
 import app.VBeta.controller.HealthController;

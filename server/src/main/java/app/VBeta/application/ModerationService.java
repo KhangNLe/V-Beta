@@ -16,10 +16,7 @@ import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -94,6 +91,9 @@ public class ModerationService {
         authorizationService.authorize(user, ActionDefinition.VIEW_REPORTS);
         Report report = reportManager.findById(reportId);
         List<Report> sameTarget = reportManager.findOpenByTarget(report, user);
+        if (sameTarget.isEmpty()){
+            return new ReportsPayload(new ArrayList<>());
+        }
         return new ReportsPayload(List.of(toReportPriorityDTO(sameTarget)));
     }
 

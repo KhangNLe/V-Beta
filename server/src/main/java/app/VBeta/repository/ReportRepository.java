@@ -1,8 +1,5 @@
 package app.VBeta.repository;
 
-import app.VBeta.domain.model.climb.ClimbingProblem;
-import app.VBeta.domain.model.climb.WallSection;
-import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.report.Report;
 import app.VBeta.domain.model.report.ReportCategory;
 import app.VBeta.domain.model.report.ReportStatus;
@@ -113,16 +110,11 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Query("SELECT re FROM Report re WHERE re.reportStatus = :status")
     List<Report> findAllByReportStatus(@Param("status") ReportStatus status);
 
-    @Query("SELECT re FROM Report  re WHERE re.reportStatus = :status AND re.category = :category " +
-            "AND " +
-            "(re.wallSection = :wallSection OR re.discussion = :dicussion OR re.problem = :problem OR re.user = :user)"
-    )
-    List<Report> findAllByCategoryAndTarget(@Param("status") ReportStatus status,
-                                            @Param("category") ReportCategory category,
-                                            @Param("wallSection") WallSection wallSection,
-                                            @Param("discussion")DiscussionRoot discussion,
-                                            @Param("problem")ClimbingProblem problem,
-                                            @Param("user") UserAccount user
-                                             );
+    List<Report> findAllByReportStatusAndDiscussion_DiscussionId(ReportStatus status, Long discussionId);
 
+    List<Report> findAllByReportStatusAndProblem_Id(ReportStatus status, Long problemId);
+
+    List<Report> findAllByReportStatusAndWallSection_Id(ReportStatus status, Long wallSectionId);
+
+    List<Report> findAllByReportStatusAndUser_Id(ReportStatus status, Long userId);
 }

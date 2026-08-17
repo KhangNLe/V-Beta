@@ -1,4 +1,4 @@
-package app.VBeta;
+package app.VBeta.mvc;
 
 import app.VBeta.api.dto.notification.EventTypeDTO;
 import app.VBeta.api.dto.notification.QuickNotificationDTO;

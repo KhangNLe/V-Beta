@@ -119,13 +119,27 @@ public class ReportManager {
     }
 
     public List<Report> findOpenByTarget(Report report, UserAccount user){
-        if (!(report.getTargetType().equals(ReportTargetType.USER_ACCOUNT) && report.getUser().equals(user))
-        && !(report.getTargetType().equals(ReportTargetType.DISCUSSION) && report.getUser().equals(user))){
-            return null;
+        if (isHiddenFromViewer(report, user)) {
+            return new ArrayList<>();
         }
 
-        return reportRepository.findAllByCategoryAndTarget(ReportStatus.OPEN, report.getCategory(),
-            report.getWallSection(), report.getDiscussion(), report.getProblem(), report.getUser());
+        return switch (report.getTargetType()) {
+            case DISCUSSION -> reportRepository.findAllByReportStatusAndDiscussion_DiscussionId(
+                    ReportStatus.OPEN, report.getDiscussion().getDiscussionId());
+            case CLIMBING_PROBLEM -> reportRepository.findAllByReportStatusAndProblem_Id(
+                    ReportStatus.OPEN, report.getProblem().getId());
+            case WALL_SECTION -> reportRepository.findAllByReportStatusAndWallSection_Id(
+                    ReportStatus.OPEN, report.getWallSection().getId());
+            case USER_ACCOUNT -> reportRepository.findAllByReportStatusAndUser_Id(
+                    ReportStatus.OPEN, report.getUser().getId());
+        };
+    }
+
+    private boolean isHiddenFromViewer(Report report, UserAccount user) {
+        return (report.getTargetType() == ReportTargetType.DISCUSSION
+                && report.getDiscussion().getUserAccount().equals(user))
+                || (report.getTargetType() == ReportTargetType.USER_ACCOUNT
+                && report.getUser().equals(user));
     }
 
     /**
