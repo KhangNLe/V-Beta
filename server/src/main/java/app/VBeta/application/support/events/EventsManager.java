@@ -1,9 +1,11 @@
 package app.VBeta.application.support.events;
 
+import app.VBeta.domain.model.moderation.ModerationAction;
 import app.VBeta.domain.model.notification.EventTargetType;
 import app.VBeta.domain.model.notification.EventTypeName;
 import app.VBeta.domain.model.notification.Events;
 import app.VBeta.domain.model.report.Report;
+import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.EventTypeRepository;
 import app.VBeta.repository.EventsRepository;
 import org.springframework.stereotype.Service;
@@ -49,6 +51,20 @@ public class EventsManager {
                                 .orElseThrow(() -> new RuntimeException("REPORT_CREATED event type is missing"))
                 )
                 .actorUser(report.getReporter())
+                .targetType(EventTargetType.REPORT)
+                .report(report)
+                .build()
+        );
+    }
+
+    public Events createModeratedReportEvent(Report report, EventTypeName eventTypeName, ModerationAction decision) {
+        return eventsRepository.save(Events.builder()
+                .eventType(
+                        eventTypeRepository.findByEventTypeName(eventTypeName)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                        String.format("%s event type does not exist", eventTypeName)))
+                )
+                .actorUser(decision.getAdminUser())
                 .targetType(EventTargetType.REPORT)
                 .report(report)
                 .build()

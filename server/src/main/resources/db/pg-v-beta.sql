@@ -335,7 +335,6 @@ INSERT INTO Gym_Action (action_definition)
            ('CREATE_PROBLEM'), ('DELETE_PROBLEM'), ('RESET_WALL'), ('CREATE_WALL'), ('DELETE_WALL'),
            ('CHANGE_ROLE'), ('GRADE_PROBLEM'), ('VIEW_ACCOUNTS'), ('MODERATE_REPORT');
 
-
 INSERT INTO Climbing_Grade(grade)
     VALUES ('VB'), ('V0'), ('V1'), ('V2'), ('V3'), ('V4'),
            ('V5'), ('V6'), ('V7'), ('V8'), ('V9'), ('V10'), ('V11'),
@@ -346,6 +345,7 @@ INSERT INTO Role_Permission (role_id, action_id)
            (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6),
            (2, 7), (2, 11), (3, 1), (3, 2), (3, 3), (3, 4),
            (3, 8), (3, 9), (3, 10), (3, 11), (3, 12), (3, 13), (3, 14);
+
 
 INSERT INTO Wall_Section (info, wall_section_name)
     VALUES ('This is a test wall section', 'Test Wall');
@@ -373,7 +373,8 @@ INSERT INTO User_Perceive_Grade(user_id, grade_id, problem_id)
 INSERT INTO Event_Type (event_type_name, description) VALUES
     ('REPORT_CREATED', 'A user submitted a content report'),
     ('REPORT_DISMISSED', 'An admin dismissed a report you submitted'),
-    ('CONTENT_REMOVED', 'A content that you reported had been removed'),
+    ('REPORT_APPROVED', 'A content that you reported had been removed'),
     ('APPEAL_SUBMITTED', 'A content owner appeal a removal'),
     ('CONTENT_RESTORED', 'An admin restored your content after appeal'),
-    ('APPEAL_DENIED', 'An admin denied the appeal');
+    ('APPEAL_DENIED', 'An admin denied the appeal'),
+	('CONTENT_REMOVED', 'One of your content had been reported and removed.');

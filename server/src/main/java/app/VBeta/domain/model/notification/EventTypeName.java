@@ -15,5 +15,6 @@ public enum EventTypeName {
     /** An admin restored content after appeal. */
     CONTENT_RESTORED,
     /** An admin denied an appeal. */
-    APPEAL_DENIED
+    APPEAL_DENIED,
+    REPORT_APPROVED
 }

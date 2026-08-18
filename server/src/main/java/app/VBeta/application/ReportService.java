@@ -82,7 +82,7 @@ public class ReportService {
         }
 
         Report report = reportManager.createReport(reporter, reportRequest);
-        notificationService.saveReportNotification(report);
+        notificationService.saveNewReportNotification(report);
     }
 
     /**

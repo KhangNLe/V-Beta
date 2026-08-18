@@ -7,6 +7,7 @@ import app.VBeta.application.support.events.EventsManager;
 import app.VBeta.application.support.events.NotificationManager;
 import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.domain.model.moderation.ModerationAction;
+import app.VBeta.domain.model.notification.EventTypeName;
 import app.VBeta.domain.model.notification.Events;
 import app.VBeta.domain.model.notification.Notification;
 import app.VBeta.domain.model.report.Report;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * {@code NotificationService} is the orchestration layer for in-app moderation notifications.
@@ -50,7 +50,7 @@ public class NotificationService {
      *
      * @param report persisted report that triggered the event
      */
-    public void saveReportNotification (Report report) {
+    public void saveNewReportNotification(Report report) {
         Events event = eventManager.createReportEvent(report);
         for (UserAccount admin : userAccountManager.findUsersOfRole(RoleType.ADMIN)) {
             if (Objects.equals(admin.getId(), report.getReporter().getId())) {
@@ -58,6 +58,13 @@ public class NotificationService {
             }
             notificationManager.pushNotification(event, admin);
         }
+    }
+
+    public void sendReportModerationNotification(ModerationAction decision, UserAccount toUser, Report report,
+                                                 EventTypeName eventTypeName) {
+        Events event = eventManager.createModeratedReportEvent(report, eventTypeName, decision);
+        notificationManager.pushNotification(event, toUser);
+
     }
 
     /**

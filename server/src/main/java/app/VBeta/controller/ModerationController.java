@@ -12,14 +12,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/moderate")
 public class ModerationController {
-    private final ReportService reportService;
     private final AuthorizationService authorizationService;
     private final ModerationService moderationService;
 
-    public ModerationController(ReportService reportService,
-                                AuthorizationService authorizationService,
+    public ModerationController(AuthorizationService authorizationService,
                                 ModerationService moderationService) {
-        this.reportService = reportService;
         this.authorizationService = authorizationService;
         this.moderationService = moderationService;
     }
@@ -28,7 +25,7 @@ public class ModerationController {
     public ResponseEntity<?> moderateReport(@Valid @RequestBody ModerationRequest moderationRequest) {
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-            moderationService.createModeration(moderationRequest, firebaseUid);
+            moderationService.createModerationForReportQueue(moderationRequest, firebaseUid);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);

@@ -9,6 +9,7 @@ import com.google.firebase.internal.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -135,6 +136,17 @@ public class ReportManager {
         return report;
     }
 
+    public Report findOpenReportNotOfAdmin(UserAccount admin, Long reportId){
+        Optional<Report> report = reportRepository.findOpenReportNotFromReporter(ReportStatus.OPEN, admin, reportId);
+        if (report.isEmpty()) {
+            throw new RuntimeException("Report not found");
+        }
+        if (isHiddenFromViewer(report.get(), admin)) {
+            throw new RuntimeException("Report not found");
+        }
+        return report.get();
+    }
+
     /**
      * Returns OPEN reports on the same typed target as {@code report}.
      * <p>
@@ -160,6 +172,12 @@ public class ReportManager {
             case USER_ACCOUNT -> reportRepository.findAllByReportStatusAndUser_Id(
                     ReportStatus.OPEN, report.getUser().getId());
         };
+    }
+
+    public void updateReportStatus(Report report, ReportStatus reportStatus){
+        report.setReportStatus(reportStatus);
+        report.setResolvedAt(Instant.now());
+        reportRepository.save(report);
     }
 
     private boolean isHiddenFromViewer(Report report, UserAccount user) {

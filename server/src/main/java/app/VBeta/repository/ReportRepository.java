@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository for {@link Report} entities.
@@ -117,4 +118,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findAllByReportStatusAndWallSection_Id(ReportStatus status, Long wallSectionId);
 
     List<Report> findAllByReportStatusAndUser_Id(ReportStatus status, Long userId);
+
+    @Query("Select re From Report  re Where re.reportStatus = :status And re.reporter <> :reporter AND re.reportId = :id")
+    Optional<Report> findOpenReportNotFromReporter(@Param("status") ReportStatus status,
+                                                   @Param("reporter") UserAccount reporter,
+                                                   @Param("id") Long id);
 }
