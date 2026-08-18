@@ -5,6 +5,11 @@ import app.VBeta.domain.model.report.ReportCategory;
 import app.VBeta.domain.model.report.ReportStatus;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository for {@link Report} entities.
@@ -103,4 +108,62 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             UserAccount reporter, ReportCategory category, Long discussionId
     );
 
+    /**
+     * Returns all reports in the given status.
+     *
+     * @param status report status filter
+     * @return matching reports
+     */
+    @Query("SELECT re FROM Report re WHERE re.reportStatus = :status")
+    List<Report> findAllByReportStatus(@Param("status") ReportStatus status);
+
+    /**
+     * Returns reports in {@code status} on a discussion.
+     *
+     * @param status report status
+     * @param discussionId discussion identifier
+     * @return matching reports
+     */
+    List<Report> findAllByReportStatusAndDiscussion_DiscussionId(ReportStatus status, Long discussionId);
+
+    /**
+     * Returns reports in {@code status} on a climbing problem.
+     *
+     * @param status report status
+     * @param problemId climbing problem identifier
+     * @return matching reports
+     */
+    List<Report> findAllByReportStatusAndProblem_Id(ReportStatus status, Long problemId);
+
+    /**
+     * Returns reports in {@code status} on a wall section.
+     *
+     * @param status report status
+     * @param wallSectionId wall section identifier
+     * @return matching reports
+     */
+    List<Report> findAllByReportStatusAndWallSection_Id(ReportStatus status, Long wallSectionId);
+
+    /**
+     * Returns reports in {@code status} targeting a user account.
+     *
+     * @param status report status
+     * @param userId reported user identifier
+     * @return matching reports
+     */
+    List<Report> findAllByReportStatusAndUser_Id(ReportStatus status, Long userId);
+
+    /**
+     * Returns an OPEN (or other {@code status}) report that was not filed by
+     * {@code reporter}. Used so an acting admin cannot resolve a report they submitted.
+     *
+     * @param status expected status, typically {@code OPEN}
+     * @param reporter acting admin to exclude as reporter
+     * @param id report identifier
+     * @return matching report, or empty when missing, closed, or self-filed
+     */
+    @Query("Select re From Report  re Where re.reportStatus = :status And re.reporter <> :reporter AND re.reportId = :id")
+    Optional<Report> findOpenReportNotFromReporter(@Param("status") ReportStatus status,
+                                                   @Param("reporter") UserAccount reporter,
+                                                   @Param("id") Long id);
 }

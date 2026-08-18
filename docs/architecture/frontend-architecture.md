@@ -78,6 +78,7 @@ Supporting auth/session modules:
   - `src/api/wallSections.js`
   - `src/api/comments.js`
   - `src/api/solutionBeta.js`
+- Comment/beta delete helpers send a reason (`deletedReason` / `deleteReason`) from `src/lib/discussionDeletion.js`.
 - Account list/session helpers map `UserAccountDTO` (`userId`, `role`) onto the existing client session shape (`id`, `roleName`).
 
 ## Constraints and Considerations

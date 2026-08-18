@@ -1,6 +1,7 @@
 package app.VBeta.application.support.report;
 
 import app.VBeta.api.dto.report.ReportRequest;
+import app.VBeta.application.ReportService;
 import app.VBeta.domain.model.report.*;
 import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.*;
@@ -8,14 +9,16 @@ import com.google.firebase.internal.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
  * {@code ReportManager} encapsulates persistence and validation rules for
  * {@link Report} entities.
  * <p>
- * It resolves typed report targets, maps category names to catalog rows, and
- * exposes duplicate checks used by {@link app.VBeta.application.ModerationService}.
+ * It resolves typed report targets, maps category names to catalog rows,
+ * hides self-owned cases from admins, and exposes duplicate checks used by
+ * {@link ReportService}.
  */
 @Service
 @Transactional
@@ -105,6 +108,118 @@ public class ReportManager {
     public boolean checkForDuplicateReport(ReportRequest request, UserAccount user){
         return checkForDuplicateOpenReport(request, user) ||
                 checkForDuplicateReportCategory(request, user);
+    }
+
+    /**
+     * Returns {@code OPEN} reports visible to {@code user} in the admin queue.
+     * <p>
+     * Omits discussion reports whose author is {@code user} and user-account
+     * reports whose target is {@code user}.
+     *
+     * @param user viewing account
+     * @return visible OPEN reports (ungrouped)
+     */
+    public List<Report> getActiveReports(UserAccount user){
+        List<Report> reports = reportRepository.findAllByReportStatus(ReportStatus.OPEN);
+        return reports.stream().filter(report ->
+                !(report.getTargetType().equals(ReportTargetType.DISCUSSION) &&
+                    report.getDiscussion().getUserAccount().equals(user)) &&
+                        !(report.getTargetType().equals(ReportTargetType.USER_ACCOUNT) &&
+                                report.getUser().equals(user))
+        ).toList();
+    }
+
+    /**
+     * Returns a report by id when it is not hidden from {@code user}.
+     *
+     * @param user viewing account
+     * @param reportId report identifier
+     * @return matching report
+     * @throws RuntimeException when missing or hidden from the viewer
+     */
+    public Report findReportNotFromUser(UserAccount user, Long reportId){
+        Report report = findById(reportId);
+        if (isHiddenFromViewer(report, user)){
+            throw new RuntimeException("Report not found");
+        }
+        return report;
+    }
+
+    /**
+     * Returns an {@code OPEN} report the acting admin may resolve.
+     * <p>
+     * Excludes reports filed by {@code admin} and reports hidden because the
+     * admin owns the discussion (or is the reported user).
+     *
+     * @param admin acting admin
+     * @param reportId report identifier
+     * @return matching OPEN report
+     * @throws RuntimeException when missing, already closed, filed by
+     *         {@code admin}, or hidden from {@code admin}
+     */
+    public Report findOpenReportNotOfAdmin(UserAccount admin, Long reportId){
+        Optional<Report> report = reportRepository.findOpenReportNotFromReporter(ReportStatus.OPEN, admin, reportId);
+        if (report.isEmpty()) {
+            throw new RuntimeException("Report not found");
+        }
+        if (isHiddenFromViewer(report.get(), admin)) {
+            throw new RuntimeException("Report not found");
+        }
+        return report.get();
+    }
+
+    /**
+     * Returns OPEN reports on the same typed target as {@code report}.
+     * <p>
+     * Returns an empty list when the viewer owns the discussion or is the
+     * reported user.
+     *
+     * @param report any report on the target
+     * @param user viewing account
+     * @return OPEN reports on that target, or empty when hidden from the viewer
+     */
+    public List<Report> findOpenByTarget(Report report, UserAccount user){
+        if (isHiddenFromViewer(report, user)) {
+            return new ArrayList<>();
+        }
+
+        return switch (report.getTargetType()) {
+            case DISCUSSION -> reportRepository.findAllByReportStatusAndDiscussion_DiscussionId(
+                    ReportStatus.OPEN, report.getDiscussion().getDiscussionId());
+            case CLIMBING_PROBLEM -> reportRepository.findAllByReportStatusAndProblem_Id(
+                    ReportStatus.OPEN, report.getProblem().getId());
+            case WALL_SECTION -> reportRepository.findAllByReportStatusAndWallSection_Id(
+                    ReportStatus.OPEN, report.getWallSection().getId());
+            case USER_ACCOUNT -> reportRepository.findAllByReportStatusAndUser_Id(
+                    ReportStatus.OPEN, report.getUser().getId());
+        };
+    }
+
+    /**
+     * Sets status and {@code resolvedAt} on a report and persists it.
+     *
+     * @param report report to close or update
+     * @param reportStatus new status ({@code DISMISSED} or {@code CONTENT_REMOVED})
+     */
+    public void updateReportStatus(Report report, ReportStatus reportStatus){
+        report.setReportStatus(reportStatus);
+        report.setResolvedAt(Instant.now());
+        reportRepository.save(report);
+    }
+
+    /**
+     * Returns whether {@code user} must not see this report: they own the
+     * reported discussion, or they are the target of a user-account report.
+     *
+     * @param report report being viewed
+     * @param user viewing account
+     * @return {@code true} when the case is hidden from {@code user}
+     */
+    private boolean isHiddenFromViewer(Report report, UserAccount user) {
+        return (report.getTargetType() == ReportTargetType.DISCUSSION
+                && report.getDiscussion().getUserAccount().equals(user))
+                || (report.getTargetType() == ReportTargetType.USER_ACCOUNT
+                && report.getUser().equals(user));
     }
 
     /**

@@ -76,7 +76,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Effort:** Medium
 - **Area:** Trust and Safety
 - **Target sprint:** Sprint 5 (in progress)
-- **Current Gap:** Users cannot flag inappropriate comments or beta content in the current UI. Backend create-report (`POST /api/report/create`) and unread notification poll (`GET /api/notification/short`) are implemented.
+- **Current Gap:** Users cannot flag inappropriate comments or beta content in the current UI. Backend create-report (`POST /api/report/create`), admin queue/detail (`GET /api/report/reports`, `VIEW_REPORTS`), admin resolve (`POST /api/moderate/report`, `MODERATE_REPORT`), and unread notification poll (`GET /api/notification/short`) are implemented. Appeal/restore is not.
 - **Potential Work:** Add report actions on comments and solution betas, including reason selection and moderation review workflow.
 - **Dependencies:** Report data model, report API endpoints, moderation/admin handling flow.
 
@@ -190,14 +190,14 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Allow setters/admins to pin or highlight `discussion_root` entries, with deterministic ordering (pinned first, then chronological).
 - **Dependencies:** Moderation permissions, new pin metadata, and timeline sort contract changes.
 
-### 19) Soft Delete and Restoration for Discussion Items
+### 19) Restore and Delayed Purge for Soft-Deleted Discussions
 
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** Moderation / Safety
-- **Current Gap:** Delete operations are destructive and can remove evidence needed for moderation review or user recovery.
-- **Potential Work:** Introduce soft delete fields (`deleted_at`, `deleted_by`, `delete_reason`) at `discussion_root`, hide from normal feeds, and provide admin restore tooling.
-- **Dependencies:** Updated delete service flow, audit visibility rules, and admin recovery endpoints/UI.
+- **Current Gap:** Comment/beta delete already soft-deletes `discussion_root` (`deleted_at`, `deleted_by`, `deleted_reason`) and hides those rows from problem timelines. There is no admin restore path, and GCS/beta objects are not purged after a retention window.
+- **Potential Work:** Admin-approved restore of soft-deleted discussion content, plus a scheduled 30-day purge of GCS objects keyed off `deleted_at` (not upload time).
+- **Dependencies:** Restore API/UI, idempotent GCS delete, and appeal/moderation decision wiring.
 
 ### 20) Cursor Pagination and Feed Performance for Problem Discussions
 

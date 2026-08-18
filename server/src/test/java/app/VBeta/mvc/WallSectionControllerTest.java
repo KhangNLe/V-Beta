@@ -1,4 +1,4 @@
-package app.VBeta;
+package app.VBeta.mvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;

@@ -151,7 +151,7 @@ Closed workflow / target sets use PostgreSQL enums:
 
 Extensible labeled sets use lookup tables:
 
-- `Report_Category` — category name + queue `priority`
+- `Report_Category` — category name + queue `weight` (higher = more severe)
 - `Event_Type` — event name + description
 
 ### Core tables
@@ -206,20 +206,20 @@ ORDER BY indexname;
 
 ### Seed data
 
-Report categories (priority ascending = higher queue rank):
+Report categories (higher `weight` = more severe; queue score uses `weight × count`):
 
 ```sql
-SELECT category_name, priority
+SELECT category_name, weight
 FROM report_category
-ORDER BY priority;
+ORDER BY weight DESC;
 ```
 
 Expected:
 
-- `INAPPROPRIATE_CONTENT` (1)
-- `HARASSMENT_BULLYING` (2)
-- `SPAM` (3)
-- `OFF_TOPIC` (4)
+- `INAPPROPRIATE_CONTENT` (4)
+- `HARASSMENT_BULLYING` (3)
+- `SPAM` (2)
+- `OFF_TOPIC` (1)
 
 Event types:
 
@@ -306,6 +306,7 @@ Keep test schema SQL aligned if you roll back.
     - nullable `parent_discussion_id` (self-FK for future threading)
     - `discussion_type` backed by PostgreSQL enum `discussion_kind`
     - `create_at` timestamp used by runtime entity mapping
+    - nullable soft-delete columns `deleted_by`, `deleted_reason`, `deleted_at`
     - referential integrity FKs for `problem_id`, `user_id`, and `deleted_by`
   - Sprint 5 moderation tables with:
     - enum-backed statuses / target / action types

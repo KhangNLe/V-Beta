@@ -31,7 +31,7 @@ Deliver an end-to-end moderation loop: signed users report comments and solution
 - In-app notifications (new report for admins; outcome notifications for reporter/owner)
 - Personal notifications page (click notification lands here, then deep-link to queue/detail)
 - Moderation logbook UI/API
-- One-time appeal + admin-approved restore of soft-deleted discussion content
+- One-time appeal + admin-approved restore of soft-deleted discussion content (comment/beta delete already marks `Discussion_Root`; restore/purge still open)
 - Report action in discussion ⋮ menu (alongside owner/admin delete)
 
 ### Category priority (queue ranking)
@@ -63,7 +63,7 @@ Then by report date/time.
 
 - Issue breakdown drafts can follow the Sprint 5 moderation MVP contract (reports, notifications, logbook, appeals).
 - Related backlog: `docs/features/future-features.md` (#3, #6, #12)
-- API contract for the shipped create-report / unread-notification slice: `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, `docs/api/request-response-examples.md`
+- API contract for the shipped create-report / queue / resolve / unread-notification slice: `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, `docs/api/request-response-examples.md`
 
 ## Upcoming Sprints
 

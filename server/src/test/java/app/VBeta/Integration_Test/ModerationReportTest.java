@@ -1,12 +1,17 @@
 package app.VBeta.Integration_Test;
 
-import app.VBeta.api.dto.report.ReportRequest;
-import app.VBeta.application.ModerationService;
+import app.VBeta.api.dto.account.UserAccountDTO;
+import app.VBeta.api.dto.report.*;
+import app.VBeta.application.ReportService;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.discussion.DiscussionRootManager;
+import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
+import app.VBeta.application.support.discussion.comment.DiscussionCommentManager;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.report.ReportManager;
 import app.VBeta.application.support.wall.WallSectionManager;
+import app.VBeta.domain.model.actions.GymRole;
+import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.domain.model.climb.ClimbingProblem;
 import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.domain.model.discussions.DiscussionRoot;
@@ -16,7 +21,10 @@ import app.VBeta.domain.model.report.ReportCategoryName;
 import app.VBeta.domain.model.report.ReportStatus;
 import app.VBeta.domain.model.report.ReportTargetType;
 import app.VBeta.domain.model.user.UserAccount;
+import app.VBeta.repository.DiscussionRootRepository;
+import app.VBeta.repository.GymRoleRepository;
 import app.VBeta.repository.ReportRepository;
+import app.VBeta.repository.UserAccountRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import app.VBeta.config.TestGcpStorageConfig;
@@ -28,7 +36,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -47,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.*;
 })
 public class ModerationReportTest {
     @Autowired
-    private ModerationService moderationService;
+    private ReportService reportService;
 
     @Autowired
     private UserAccountManager userAccountManager;
@@ -62,6 +75,9 @@ public class ModerationReportTest {
     DiscussionRootManager discussionRootManager;
 
     @Autowired
+    DiscussionCommentManager discussionCommentManager;
+
+    @Autowired
     ReportManager reportManager;
 
     @Autowired
@@ -69,6 +85,14 @@ public class ModerationReportTest {
 
     private final DiscussionType COMMENT = DiscussionType.COMMENT;
     private final DiscussionType BETA = DiscussionType.BETA;
+    @Autowired
+    private GymRoleRepository gymRoleRepository;
+    @Autowired
+    private UserAccountRepository userAccountRepository;
+    @Autowired
+    private DiscussionRootRepository discussionRootRepository;
+    @Autowired
+    private SolutionBetaManager solutionBetaManager;
 
     private UserAccount getUserAccount(String firebaseUid){
         UserAccount user = userAccountManager.findUserAccount(firebaseUid);
@@ -89,6 +113,16 @@ public class ModerationReportTest {
         ClimbingProblem problem = getClimbingProblem(problemId);
         DiscussionRoot discussionRoot = discussionRootManager.createNewDiscussion(user, problem, discussionType);
         assertNotNull(discussionRoot);
+        discussionRootRepository.saveAndFlush(discussionRoot);
+        if (discussionType == COMMENT) {
+            discussionCommentManager.storeDiscussionComment(discussionRoot, "test comment");
+        } else {
+            solutionBetaManager.storeUserSolutionBeta(
+                    discussionRoot,
+                    "testFile-" + discussionRoot.getDiscussionId() + ".mp4",
+                    "https://example.test/beta/" + discussionRoot.getDiscussionId()
+            );
+        }
         return discussionRoot;
     }
 
@@ -105,6 +139,38 @@ public class ModerationReportTest {
         assertNotNull(report.getCreatedAt());
         assertNull(report.getResolvedAt());
         assertEquals(ReportStatus.OPEN, report.getReportStatus());
+    }
+
+    private Report createReport(String reporterUid, String commenterUid, Long problemId, DiscussionType discussionType){
+        DiscussionRoot discussion = createDiscussionRoot(commenterUid, problemId, discussionType);
+        UserAccount reporter =  getUserAccount(reporterUid);
+        return createDiscussionReport(reporter, discussion, ReportCategoryName.SPAM, "THIS SPAMMY");
+    }
+
+    private Report createDiscussionReport(UserAccount reporter, DiscussionRoot discussion,
+                                          ReportCategoryName category, String reason) {
+        ReportRequest request = new ReportRequest(
+                ReportTargetType.DISCUSSION,
+                reason,
+                category,
+                discussion.getDiscussionId()
+        );
+        Report report = reportManager.createReport(reporter, request);
+        reportRepository.saveAndFlush(report);
+        validateReport(report, request, reporter, discussion.getDiscussionId());
+        return report;
+    }
+
+    private UserAccount createNewUser(String firebaseUid, RoleType roleType){
+        GymRole role = gymRoleRepository.findByRoleType(roleType)
+                .orElseThrow(() -> new RuntimeException("Incorrect role type"));
+        UserAccount user = UserAccount.builder()
+                .firebaseUid(firebaseUid)
+                .email("testEmail@gmail.com")
+                .username("testUser123")
+                .gymRole(role)
+                .build();
+        return userAccountRepository.saveAndFlush(user);
     }
 
     @Test
@@ -189,7 +255,7 @@ public class ModerationReportTest {
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> moderationService.createNewReport(request2, user.getFirebaseUid()));
+                () -> reportService.createNewReport(request2, user.getFirebaseUid()));
 
         ReportRequest request3 = new ReportRequest(
                 ReportTargetType.DISCUSSION,
@@ -200,7 +266,7 @@ public class ModerationReportTest {
 
         ex = assertThrows(
                 RuntimeException.class,
-                () -> moderationService.createNewReport(request3, user.getFirebaseUid()));
+                () -> reportService.createNewReport(request3, user.getFirebaseUid()));
     }
 
     @Test
@@ -218,7 +284,7 @@ public class ModerationReportTest {
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> moderationService.createNewReport(request, "12345")
+                () -> reportService.createNewReport(request, "12345")
         );
     }
 
@@ -234,7 +300,7 @@ public class ModerationReportTest {
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> moderationService.createNewReport(badRequest, "testFirebaseUid")
+                () -> reportService.createNewReport(badRequest, "testFirebaseUid")
         );
     }
 
@@ -377,7 +443,7 @@ public class ModerationReportTest {
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> moderationService.createNewReport(request2, user.getFirebaseUid())
+                () -> reportService.createNewReport(request2, user.getFirebaseUid())
         );
 
     }
@@ -511,6 +577,479 @@ public class ModerationReportTest {
                         ReportCategoryName.SPAM,
                         999_999L))
         );
+    }
+
+    @Test
+    @DisplayName("Success getting report queue list for admin")
+    void testSuccessGetReportQueueListForAdmin(){
+        UserAccount user1 = getUserAccount("testFirebaseUid");
+        UserAccount user2 = getUserAccount("testFirebaseUid2");
+        Report report = createReport(user1.getFirebaseUid(), user2.getFirebaseUid(), 1L, DiscussionType.COMMENT);
+
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
+        validateReportsPayload(payload, List.of(report));
+    }
+
+    @Test
+    @DisplayName("Fail getting report queue due to incorrect role")
+    void testFailGetReportQueueListForNotAdmin(){
+        UserAccount user = getUserAccount("testFirebaseUid");
+        assertThrows(RuntimeException.class, () -> reportService.getReportQueue(user.getFirebaseUid()));
+    }
+
+    @Test
+    @DisplayName("Success getting empty Report queue for Admin when nothing is reported")
+    void testSuccessGetReportQueueListForAdminWhenNothingIsReported(){
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
+        validateReportsPayload(payload, List.of());
+    }
+
+    @Test
+    @DisplayName("Success hide report from admin if admin is the one the report content target")
+    void testSuccessHideReportFromAdminIfAdminIsTheOneTheReportContentTarget(){
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        UserAccount reporter = getUserAccount("testFirebaseUid");
+        Report report = createReport(reporter.getFirebaseUid(), admin.getFirebaseUid(), 1L, DiscussionType.COMMENT);
+
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
+        assertNotNull(payload);
+        assertEquals(0, payload.reports().size());
+    }
+
+    @Test
+    @DisplayName("Report only show up to admin that not from the report target")
+    void testSuccessReportShowUpForAdminNotFromTheReportTarget(){
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        UserAccount reporter = getUserAccount("testFirebaseUid");
+        UserAccount admin2 = createNewUser("testAdminUser", RoleType.ADMIN);
+
+        Report report = createReport(reporter.getFirebaseUid(), admin.getFirebaseUid(), 1L, DiscussionType.COMMENT);
+
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
+        assertNotNull(payload);
+        assertEquals(0, payload.reports().size());
+
+        ReportsPayload payload2 = reportService.getReportQueue(admin2.getFirebaseUid());
+        assertNotNull(payload2);
+        assertEquals(1, payload2.reports().size());
+        validateReportsPayload(payload2, List.of(report));
+    }
+
+    @Test
+    @DisplayName("Queue groups the same target when reporters use different categories")
+    void testGetReportQueueGroupsSameTargetByCategory(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        DiscussionRoot discussion = createDiscussionRoot(setter.getFirebaseUid(), 1L, COMMENT);
+
+        Report spam = createDiscussionReport(climber, discussion, ReportCategoryName.SPAM, "spam");
+        Report harassment = createDiscussionReport(
+                admin, discussion, ReportCategoryName.HARASSMENT_BULLYING, "harassment");
+
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
+        validateReportsPayload(payload, List.of(spam, harassment));
+    }
+
+    @Test
+    @DisplayName("Queue lists multiple reported targets")
+    void testGetReportQueueListsMultipleTargets(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+
+        Report first = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
+        Report second = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
+
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
+        validateReportsPayload(payload, List.of(first, second));
+    }
+
+    @Test
+    @DisplayName("Success getting ReportPayLoad from report id")
+    void testSuccessGetReportPayLoadFromReportId(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+
+
+        Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), report.getReportId());
+        validateReportsPayload(payload, List.of(report));
+    }
+
+    @Test
+    @DisplayName("Success getting multiple report from report id")
+    void testSuccessGetMultipleReportsFromReportId(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        DiscussionRoot discussion = createDiscussionRoot(setter.getFirebaseUid(), 1L, COMMENT);
+
+        Report spam = createDiscussionReport(climber, discussion, ReportCategoryName.SPAM, "spam");
+        Report harassment = createDiscussionReport(
+                admin, discussion, ReportCategoryName.HARASSMENT_BULLYING, "harassment");
+
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), spam.getReportId());
+        validateReportsPayload(payload, List.of(spam, harassment));
+    }
+
+    @Test
+    @DisplayName("Fail to get report from wrong report id")
+    void testFailedToGetReportFromWrongReportId(){
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        assertThrows(RuntimeException.class, () -> reportService.getReport(admin.getFirebaseUid(), 123214L));
+    }
+
+    @Test
+    @DisplayName("Success hide report from admin with report id when the reported is for admin user")
+    void testSuccessHideReportFromAdminWithReportId(){
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        Report report = createReport(setter.getFirebaseUid(), admin.getFirebaseUid(), 1L, COMMENT);
+
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), report.getReportId());
+        assertNotNull(payload);
+        assertEquals(0, payload.reports().size());
+    }
+
+    @Test
+    @DisplayName("Success get report from admin wiht report id for admin not in report target")
+    void testSuccessGetReportFromAdminNotInReportTarget(){
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        UserAccount reporter = getUserAccount("testFirebaseUid");
+        UserAccount admin2 = createNewUser("testAdminUser", RoleType.ADMIN);
+
+        Report report = createReport(reporter.getFirebaseUid(), admin.getFirebaseUid(), 1L, DiscussionType.COMMENT);
+
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), report.getReportId());
+        assertNotNull(payload);
+        assertEquals(0, payload.reports().size());
+
+        ReportsPayload payload2 = reportService.getReport(admin2.getFirebaseUid(), report.getReportId());
+        assertNotNull(payload2);
+        assertEquals(1, payload2.reports().size());
+        validateReportsPayload(payload2, List.of(report));
+    }
+
+    @Test
+    @DisplayName("Admin queue includes a reported beta with a discussion snapshot")
+    void testSuccessReportBetaAppearsInAdminQueue(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+
+        Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, BETA);
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
+        validateReportsPayload(payload, List.of(report));
+        assertEquals(DiscussionType.BETA, payload.reports().get(0).report().discussion().discussionType());
+    }
+
+    @Test
+    @DisplayName("Queue orders discussion cases by descending queue score")
+    void testGetReportQueueOrdersHigherScoreFirst(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+
+        DiscussionRoot offTopicDiscussion = createDiscussionRoot(setter.getFirebaseUid(), 1L, COMMENT);
+        DiscussionRoot inappropriateDiscussion = createDiscussionRoot(setter.getFirebaseUid(), 1L, COMMENT);
+        Report offTopic = createDiscussionReport(
+                climber, offTopicDiscussion, ReportCategoryName.OFF_TOPIC, "off topic");
+        Report inappropriate = createDiscussionReport(
+                climber, inappropriateDiscussion, ReportCategoryName.INAPPROPRIATE_CONTENT, "inappropriate");
+
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
+        validateReportsPayload(payload, List.of(offTopic, inappropriate));
+        assertEquals(
+                inappropriate.getDiscussion().getDiscussionId(),
+                payload.reports().get(0).report().discussion().discussionId()
+        );
+        assertTrue(payload.reports().get(0).queueScore() > payload.reports().get(1).queueScore());
+    }
+
+    @Test
+    @DisplayName("Same discussion and category from two reporters multiplies category score")
+    void testGetReportQueueSameCategoryTwoReportersIncreasesScore(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        DiscussionRoot discussion = createDiscussionRoot(setter.getFirebaseUid(), 1L, COMMENT);
+
+        Report first = createDiscussionReport(
+                climber, discussion, ReportCategoryName.HARASSMENT_BULLYING, "harassment one");
+        Report second = createDiscussionReport(
+                admin, discussion, ReportCategoryName.HARASSMENT_BULLYING, "harassment two");
+
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
+        validateReportsPayload(payload, List.of(first, second));
+
+        ReportPriorityDTO caseDto = payload.reports().get(0);
+        assertEquals(1, payload.reports().size());
+        assertEquals(6, caseDto.queueScore());
+        assertEquals(1, caseDto.categories().size());
+        assertEquals(ReportCategoryName.HARASSMENT_BULLYING, caseDto.categories().get(0).categoryName());
+        assertEquals(2, caseDto.categories().get(0).reportCount());
+        assertEquals(6, caseDto.categories().get(0).categoryScore());
+    }
+
+    @Test
+    @DisplayName("Dismissed reports are excluded from the admin queue")
+    void testGetReportQueueExcludesDismissedReports(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+
+        Report openReport = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
+        Report dismissedReport = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
+        dismissedReport.setReportStatus(ReportStatus.DISMISSED);
+        reportRepository.saveAndFlush(dismissedReport);
+
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
+        validateReportsPayload(payload, List.of(openReport));
+    }
+
+    @Test
+    @DisplayName("Hide an admin-owned beta from that admin's queue and detail")
+    void testHideAdminOwnedBetaFromQueueAndDetail(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        UserAccount otherAdmin = createNewUser("testAdminUserBeta", RoleType.ADMIN);
+
+        Report report = createReport(climber.getFirebaseUid(), admin.getFirebaseUid(), 1L, BETA);
+
+        ReportsPayload ownerQueue = reportService.getReportQueue(admin.getFirebaseUid());
+        assertEquals(0, ownerQueue.reports().size());
+        ReportsPayload ownerDetail = reportService.getReport(admin.getFirebaseUid(), report.getReportId());
+        assertEquals(0, ownerDetail.reports().size());
+
+        ReportsPayload otherQueue = reportService.getReportQueue(otherAdmin.getFirebaseUid());
+        validateReportsPayload(otherQueue, List.of(report));
+        ReportsPayload otherDetail = reportService.getReport(otherAdmin.getFirebaseUid(), report.getReportId());
+        validateReportsPayload(otherDetail, List.of(report));
+    }
+
+    @Test
+    @DisplayName("Setter cannot view the report queue")
+    void testSetterCannotGetReportQueue(){
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        assertThrows(RuntimeException.class, () -> reportService.getReportQueue(setter.getFirebaseUid()));
+    }
+
+    @Test
+    @DisplayName("Setter cannot view a report by id")
+    void testSetterCannotGetReportById(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
+        assertThrows(RuntimeException.class,
+                () -> reportService.getReport(setter.getFirebaseUid(), report.getReportId()));
+    }
+
+    @Test
+    @DisplayName("Climber cannot view a report by id")
+    void testClimberCannotGetReportById(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
+        assertThrows(RuntimeException.class,
+                () -> reportService.getReport(climber.getFirebaseUid(), report.getReportId()));
+    }
+
+    @Test
+    @DisplayName("Unknown firebase uid cannot view the report queue")
+    void testGetReportQueueUnknownFirebaseUid(){
+        assertThrows(RuntimeException.class, () -> reportService.getReportQueue("unknown-firebase-uid"));
+    }
+
+    @Test
+    @DisplayName("Unknown firebase uid cannot view a report by id")
+    void testGetReportByIdUnknownFirebaseUid(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
+        assertThrows(RuntimeException.class,
+                () -> reportService.getReport("unknown-firebase-uid", report.getReportId()));
+    }
+
+    @Test
+    @DisplayName("Get by id returns empty when the report is dismissed and has no open siblings")
+    void testGetReportByIdDismissedReturnsEmpty(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+
+        Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
+        report.setReportStatus(ReportStatus.DISMISSED);
+        reportRepository.saveAndFlush(report);
+
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), report.getReportId());
+        assertNotNull(payload);
+        assertEquals(0, payload.reports().size());
+    }
+
+    @Test
+    @DisplayName("Get by id returns remaining open siblings after one report on the discussion is dismissed")
+    void testGetReportByIdReturnsRemainingOpenSiblingsWhenOneDismissed(){
+        UserAccount climber = getUserAccount("testFirebaseUid");
+        UserAccount setter = getUserAccount("testFirebaseUid2");
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        DiscussionRoot discussion = createDiscussionRoot(setter.getFirebaseUid(), 1L, COMMENT);
+
+        Report dismissed = createDiscussionReport(climber, discussion, ReportCategoryName.SPAM, "spam");
+        Report stillOpen = createDiscussionReport(
+                admin, discussion, ReportCategoryName.HARASSMENT_BULLYING, "harassment");
+        dismissed.setReportStatus(ReportStatus.DISMISSED);
+        reportRepository.saveAndFlush(dismissed);
+
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), dismissed.getReportId());
+        validateReportsPayload(payload, List.of(stillOpen));
+    }
+
+    private void validateReportsPayload(ReportsPayload payload, List<Report> expectedReports) {
+        assertNotNull(payload);
+        assertNotNull(payload.reports());
+
+        Map<QueueTargetKey, List<Report>> expectedByTarget = expectedReports.stream()
+                .collect(Collectors.groupingBy(this::queueTargetKey, LinkedHashMap::new, Collectors.toList()));
+        assertEquals(expectedByTarget.size(), payload.reports().size());
+
+        List<Integer> scores = payload.reports().stream()
+                .map(ReportPriorityDTO::queueScore)
+                .toList();
+        List<Integer> sortedScores = scores.stream()
+                .sorted(Comparator.reverseOrder())
+                .toList();
+        assertEquals(sortedScores, scores);
+
+        Map<QueueTargetKey, ReportPriorityDTO> actualByTarget = payload.reports().stream()
+                .collect(Collectors.toMap(this::queueTargetKey, dto -> dto));
+
+        expectedByTarget.forEach((target, reportsOnTarget) -> {
+            ReportPriorityDTO actual = actualByTarget.get(target);
+            assertNotNull(actual, () -> "Missing queue case for " + target);
+            validateReportPriorityDTO(actual, reportsOnTarget);
+        });
+    }
+
+    private void validateReportPriorityDTO(ReportPriorityDTO priorityDTO, List<Report> reportsOnTarget) {
+        assertNotNull(priorityDTO);
+
+        Map<ReportCategoryName, List<Report>> expectedByCategory = reportsOnTarget.stream()
+                .collect(Collectors.groupingBy(report -> report.getCategory().getCategoryName()));
+        assertEquals(expectedByCategory.size(), priorityDTO.categories().size());
+
+        Map<ReportCategoryName, CategoryTallyDTO> actualTallies = priorityDTO.categories().stream()
+                .collect(Collectors.toMap(CategoryTallyDTO::categoryName, tally -> tally));
+
+        int expectedScore = 0;
+        for (Map.Entry<ReportCategoryName, List<Report>> entry : expectedByCategory.entrySet()) {
+            CategoryTallyDTO tally = actualTallies.get(entry.getKey());
+            assertNotNull(tally, () -> "Missing category tally " + entry.getKey());
+            int count = entry.getValue().size();
+            int weight = entry.getValue().get(0).getCategory().getWeight();
+            assertEquals(count, tally.reportCount());
+            assertEquals(weight * count, tally.categoryScore());
+            expectedScore += weight * count;
+        }
+        assertEquals(expectedScore, priorityDTO.queueScore());
+        validateReportDTO(reportsOnTarget, priorityDTO.report());
+    }
+
+    private void validateReportDTO(List<Report> reportsOnTarget, ReportDTO reportDTO) {
+        assertNotNull(reportDTO);
+        Report first = reportsOnTarget.get(0);
+        assertEquals(first.getTargetType(), reportDTO.targetType());
+        validateTargetSnapshot(first, reportDTO);
+        assertEquals(reportsOnTarget.size(), reportDTO.reporters().size());
+
+        Map<Long, ReportUserDTO> reportersById = reportDTO.reporters().stream()
+                .collect(Collectors.toMap(ReportUserDTO::reportId, reporter -> reporter));
+        for (Report report : reportsOnTarget) {
+            ReportUserDTO reporterDto = reportersById.get(report.getReportId());
+            assertNotNull(reporterDto, () -> "Missing reporter row for report " + report.getReportId());
+            validateReportUserDTO(
+                    reporterDto,
+                    report.getReporter(),
+                    report,
+                    report.getCategory().getCategoryName()
+            );
+        }
+    }
+
+    private void validateTargetSnapshot(Report report, ReportDTO reportDTO) {
+        switch (report.getTargetType()) {
+            case DISCUSSION -> {
+                assertNotNull(reportDTO.discussion());
+                assertEquals(report.getDiscussion().getDiscussionId(), reportDTO.discussion().discussionId());
+                assertNull(reportDTO.climbingProblem());
+                assertNull(reportDTO.wallSection());
+                assertNull(reportDTO.user());
+            }
+            case CLIMBING_PROBLEM -> {
+                assertNotNull(reportDTO.climbingProblem());
+                assertEquals(report.getProblem().getId(), reportDTO.climbingProblem().problemId());
+                assertNull(reportDTO.discussion());
+                assertNull(reportDTO.wallSection());
+                assertNull(reportDTO.user());
+            }
+            case WALL_SECTION -> {
+                assertNotNull(reportDTO.wallSection());
+                assertEquals(report.getWallSection().getId(), reportDTO.wallSection().wallSectionID());
+                assertNull(reportDTO.discussion());
+                assertNull(reportDTO.climbingProblem());
+                assertNull(reportDTO.user());
+            }
+            case USER_ACCOUNT -> {
+                assertNotNull(reportDTO.user());
+                assertEquals(report.getUser().getId(), reportDTO.user().userId());
+                assertNull(reportDTO.discussion());
+                assertNull(reportDTO.climbingProblem());
+                assertNull(reportDTO.wallSection());
+            }
+        }
+    }
+
+    private record QueueTargetKey(ReportTargetType targetType, Long targetId) {}
+
+    private QueueTargetKey queueTargetKey(Report report) {
+        Long targetId = switch (report.getTargetType()) {
+            case DISCUSSION -> report.getDiscussion().getDiscussionId();
+            case CLIMBING_PROBLEM -> report.getProblem().getId();
+            case WALL_SECTION -> report.getWallSection().getId();
+            case USER_ACCOUNT -> report.getUser().getId();
+        };
+        return new QueueTargetKey(report.getTargetType(), targetId);
+    }
+
+    private QueueTargetKey queueTargetKey(ReportPriorityDTO priorityDTO) {
+        ReportDTO report = priorityDTO.report();
+        Long targetId = switch (report.targetType()) {
+            case DISCUSSION -> report.discussion().discussionId();
+            case CLIMBING_PROBLEM -> report.climbingProblem().problemId();
+            case WALL_SECTION -> report.wallSection().wallSectionID();
+            case USER_ACCOUNT -> report.user().userId();
+        };
+        return new QueueTargetKey(report.targetType(), targetId);
+    }
+
+    private void validateReportUserDTO(ReportUserDTO reportUserDTO, UserAccount user,
+                                       Report report, ReportCategoryName category){
+        assertNotNull(reportUserDTO);
+        assertEquals(report.getReportId(), reportUserDTO.reportId());
+        assertEquals(category, reportUserDTO.categoryName());
+        assertEquals(report.getReportReason(), reportUserDTO.reportReason());
+        assertEquals(report.getCreatedAt(), reportUserDTO.createdAt());
+
+        UserAccountDTO reporter =  reportUserDTO.reporter();
+        assertNotNull(reporter);
+        assertEquals(user.getEmail(), reporter.email());
+        assertEquals(user.getUsername(), reporter.username());
+        assertEquals(user.getGymRole().getRoleType().name(), reporter.role());
+        assertEquals(user.getId(), reporter.userId());
     }
 
     private void validateTypedReport(Report report, ReportRequest request, UserAccount reporter){

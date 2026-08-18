@@ -1,10 +1,10 @@
-package app.VBeta;
+package app.VBeta.mvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import app.VBeta.api.dto.discussions.PerceiveGradeRequest;
 import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageRequest;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageResponse;
 import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
@@ -65,8 +65,8 @@ public class ProblemDiscussionControllerTest {
     @MockitoBean
     private ClimbingWallService climbingWallService;
 
-    private UserCommentData sampleComment() {
-        return new UserCommentData(
+    private UserDiscussionData sampleComment() {
+        return new UserDiscussionData(
                 101L,
                 1L,
                 "test-user",
@@ -173,7 +173,7 @@ public class ProblemDiscussionControllerTest {
     void returns201_whenSavingSolutionBeta() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         when(problemDiscussionService.saveSolutionBeta(any(SolutionBetaCreateRequest.class), eq("testFirebaseUid")))
-                .thenReturn(new UserCommentData(
+                .thenReturn(new UserDiscussionData(
                         402L, 1L, "test-user", null, DiscussionType.BETA,
                         "https://storage.googleapis.com/bucket/video.mp4",
                         LocalDateTime.of(2026, 4, 20, 20, 2)
@@ -198,10 +198,11 @@ public class ProblemDiscussionControllerTest {
     void returns200_whenDeletingSolutionBeta() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         doNothing().when(problemDiscussionService)
-                .removeUserSolutionBeta(any(SolutionBetaDeletionRequest.class), eq("testFirebaseUid"));
+                .softDeleteUserSolutionBeta(any(SolutionBetaDeletionRequest.class), eq("testFirebaseUid"));
 
         SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
-                1L, 22L, 402L, "https://storage.googleapis.com/bucket/video.mp4");
+                1L, 22L, 402L, "https://storage.googleapis.com/bucket/video.mp4",
+                "User deleted their own discussion");
 
         mockMvc.perform(delete("/api/discussion/solution-beta")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -209,7 +210,7 @@ public class ProblemDiscussionControllerTest {
                 .andExpect(status().isOk());
 
         verify(problemDiscussionService, times(1))
-                .removeUserSolutionBeta(any(SolutionBetaDeletionRequest.class), eq("testFirebaseUid"));
+                .softDeleteUserSolutionBeta(any(SolutionBetaDeletionRequest.class), eq("testFirebaseUid"));
     }
 
     @Test
@@ -218,9 +219,10 @@ public class ProblemDiscussionControllerTest {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         doNothing().when(authorizationService).authorize("testFirebaseUid", ActionDefinition.DELETE_COMMENT);
         doNothing().when(problemDiscussionService)
-                .removeUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
+                .softDeleteUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
 
-        CommentDeletionRequest request = new CommentDeletionRequest(1L, 22L, 101L, "Nice");
+        CommentDeletionRequest request = new CommentDeletionRequest(
+                1L, 22L, 101L, "Nice", "User deleted their own discussion");
 
         mockMvc.perform(delete("/api/discussion/comment/delete")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -228,7 +230,7 @@ public class ProblemDiscussionControllerTest {
                 .andExpect(status().isOk());
 
         verify(problemDiscussionService, times(1))
-                .removeUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
+                .softDeleteUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
     }
 
     @Test
@@ -238,9 +240,10 @@ public class ProblemDiscussionControllerTest {
         doNothing().when(authorizationService).authorize("testFirebaseUid", ActionDefinition.DELETE_COMMENT);
         doThrow(new RuntimeException("Invalid Action. Cannot remove object from different author"))
                 .when(problemDiscussionService)
-                .removeUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
+                .softDeleteUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
 
-        CommentDeletionRequest request = new CommentDeletionRequest(1L, 22L, 101L, "Nice");
+        CommentDeletionRequest request = new CommentDeletionRequest(
+                1L, 22L, 101L, "Nice", "User deleted their own discussion");
 
         mockMvc.perform(delete("/api/discussion/comment/delete")
                         .contentType(MediaType.APPLICATION_JSON)

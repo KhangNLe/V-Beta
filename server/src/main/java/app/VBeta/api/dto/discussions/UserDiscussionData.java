@@ -1,4 +1,4 @@
-package app.VBeta.api.dto.discussions.comment;
+package app.VBeta.api.dto.discussions;
 
 import app.VBeta.domain.model.discussions.DiscussionType;
 
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
  * @param discussionContent comment text or beta URL
  * @param createdDate timestamp when the comment was created
  */
-public record UserCommentData(
+public record UserDiscussionData(
         Long discussionId,
         Long userId,
         String username,

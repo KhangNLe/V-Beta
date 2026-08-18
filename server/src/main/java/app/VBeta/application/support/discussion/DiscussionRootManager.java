@@ -3,8 +3,10 @@ package app.VBeta.application.support.discussion;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
 import app.VBeta.application.support.discussion.comment.DiscussionCommentManager;
 import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.discussions.DiscussionComment;
 import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.discussions.DiscussionType;
+import app.VBeta.domain.model.discussions.SolutionBeta;
 import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.DiscussionRootRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,8 +17,12 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * {@code DiscussionRootManager} manages creation, lookup, and deletion of
+ * {@code DiscussionRootManager} manages creation, lookup, hard deletion, and updates of
  * {@link DiscussionRoot} records that anchor all problem-discussion items.
+ * <p>
+ * User-facing comment/beta hide uses {@link ClimbingProblemDiscussionManager#softDeleteDiscussionRoot}
+ * rather than {@link #removeDiscussion}. This manager still hard-deletes roots when
+ * cascading problem or account cleanup.
  * <p>
  * It provides query helpers used by discussion timeline composition and
  * authorization flows.
@@ -81,7 +87,8 @@ public class DiscussionRootManager {
     }
 
     /**
-     * Returns all discussion roots attached to a climbing problem in timeline order.
+     * Returns all discussion roots attached to a climbing problem in timeline order,
+     * including soft-deleted rows. Public timelines should skip roots with {@code deletedAt} set.
      *
      * @param problem climbing problem context
      * @return discussion roots ordered by create date ascending, then id ascending
@@ -144,7 +151,7 @@ public class DiscussionRootManager {
     }
 
     /**
-     * Deletes a single discussion root.
+     * Hard-deletes a single discussion root. Prefer soft-delete for user/admin hide.
      *
      * @param discussionRoot discussion root to delete
      */
@@ -153,7 +160,7 @@ public class DiscussionRootManager {
     }
 
     /**
-     * Deletes a batch of discussion roots.
+     * Hard-deletes a batch of discussion roots. Prefer soft-delete for user/admin hide.
      *
      * @param discussionRoots discussion roots to delete
      */
@@ -170,5 +177,30 @@ public class DiscussionRootManager {
      */
     public List<DiscussionRoot> findDiscussionRootByUserAndProblem(UserAccount userAccount, ClimbingProblem problem){
         return discussionRootRepository.findByUserAccount_AndProblem(userAccount, problem);
+    }
+
+    /**
+     * Persists updates to an existing discussion root, including soft-delete metadata.
+     *
+     * @param discussionRoot discussion root to save
+     */
+    public void updateDiscussionRoot(DiscussionRoot discussionRoot){
+        discussionRootRepository.save(discussionRoot);
+    }
+
+    public boolean validateDiscussionCommentContent(DiscussionRoot discussionRoot, String commentContent){
+        if (!discussionRoot.getDiscussionType().equals(DiscussionType.COMMENT)){
+            throw new RuntimeException("Mismatching discussion information");
+        }
+        DiscussionComment comment = discussionCommentManager.getDiscussionComment(discussionRoot);
+        return comment.getCommentInfo().equals(commentContent);
+    }
+
+    public boolean validateDiscussionBetaContent(DiscussionRoot discussionRoot, String betaUrl){
+        if (!discussionRoot.getDiscussionType().equals(DiscussionType.BETA)){
+            throw new RuntimeException("Mismatching discussion information");
+        }
+        SolutionBeta beta = solutionBetaManager.getSolutionBetaFromDiscussionRoot(discussionRoot);
+        return beta.getVideoURL().equals(betaUrl);
     }
 }

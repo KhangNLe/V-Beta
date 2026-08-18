@@ -267,6 +267,62 @@ Authorization: Bearer <firebase_id_token>
 
 Returns updated problem-detail payload (same shape as problem detail endpoint).
 
+## 9.1) Soft-Delete Comment
+
+Owner or admin. Marks `Discussion_Root.deleted_at` / `deleted_by` / `deleted_reason`. The comment row remains.
+
+### Request
+
+```http
+DELETE /api/discussion/comment/delete
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "authorId": 7,
+  "problemId": 22,
+  "discussionId": 301,
+  "commentContent": "Felt like soft V5.",
+  "deletedReason": "User deleted their own discussion"
+}
+```
+
+Admin deleting another user's comment uses `"Admin forced delete the discussion"` for `deletedReason`.
+
+### Response (200)
+
+Empty body. Subsequent problem-detail timelines omit this discussion.
+
+## 9.2) Soft-Delete Solution Beta
+
+Owner or admin. Marks `Discussion_Root` deleted; solution-beta metadata and GCS object are kept.
+
+### Request
+
+```http
+DELETE /api/discussion/solution-beta
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "userId": 7,
+  "problemId": 22,
+  "discussionId": 402,
+  "publicUrl": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
+  "deleteReason": "User deleted their own discussion"
+}
+```
+
+Admin deleting another user's beta uses `"Admin forced delete the discussion"` for `deleteReason`.
+
+### Response (200)
+
+Empty body. Subsequent problem-detail timelines omit this discussion.
+
 ## 10) Promote/Demote User Role (Admin)
 
 ### Request
@@ -404,11 +460,134 @@ Empty body.
 
 Example duplicate reason: `Report already exists`.
 
-## 16) Get Unread Notifications (Authenticated)
+## 16) Get Admin Report Queue (Action-gated)
 
-Poll unread inbox rows (`readAt` is null). The payload is event type + description + `createdAt`. It does not include the report reason.
+Requires `VIEW_REPORTS`. Each element is one **target** (for example one discussion), not one reporter row. Ranked by `queueScore` descending.
 
-Any authenticated role may call this endpoint. `REPORT_CREATED` inbox rows are written for admins only (the reporter is skipped if they are an admin).
+### Request — queue
+
+```http
+GET /api/report/reports
+Authorization: Bearer <firebase_id_token>
+```
+
+### Request — case detail
+
+```http
+GET /api/report/reports?reportId=11
+Authorization: Bearer <firebase_id_token>
+```
+
+`reportId` may be any OPEN (or dismissed) report on that target. Detail still returns only remaining **OPEN** siblings. If the viewer owns the discussion, `reports` is `[]`.
+
+### Response (200)
+
+```json
+{
+  "reports": [
+    {
+      "report": {
+        "targetType": "DISCUSSION",
+        "discussion": {
+          "discussionId": 40,
+          "userId": 8,
+          "username": "alex",
+          "parentCommentId": null,
+          "discussionType": "COMMENT",
+          "discussionContent": "hello",
+          "createdDate": "2026-08-16T10:00:00"
+        },
+        "climbingProblem": null,
+        "wallSection": null,
+        "user": null,
+        "reporters": [
+          {
+            "reportId": 11,
+            "reporter": {
+              "userId": 2,
+              "username": "sam",
+              "email": "sam@example.com",
+              "role": "CLIMBER"
+            },
+            "categoryName": "SPAM",
+            "reportReason": "Spammy comment",
+            "createdAt": "2026-08-16T15:00:00Z"
+          }
+        ]
+      },
+      "categories": [
+        {
+          "categoryName": "SPAM",
+          "reportCount": 1,
+          "categoryScore": 2
+        }
+      ],
+      "queueScore": 2
+    }
+  ]
+}
+```
+
+Two reporters on the same discussion with different categories produce **one** array element, two `reporters`, two `categories`, and `queueScore` as the sum of `categoryScore`.
+
+### Error examples
+
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when the account is missing, the caller is not allowed `VIEW_REPORTS`, or `reportId` does not exist
+
+Empty queue or a hidden/dismissed-only case is `200` with `"reports": []`, not 404.
+
+## 17) Resolve Report Queue (Action-gated)
+
+Requires `MODERATE_REPORT`. Success is `200` with an empty body. Each `reportIds` value is one reporter row; omitted OPEN siblings stay open.
+
+### Request — dismiss
+
+```http
+POST /api/moderate/report
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "reportIds": [11, 12],
+  "decision": "REPORT_DISMISSED",
+  "reason": "Does not violate gym guidelines."
+}
+```
+
+### Request — remove content
+
+```json
+{
+  "reportIds": [11, 12],
+  "decision": "CONTENT_REMOVED",
+  "reason": "Does not belong on this wall."
+}
+```
+
+`decision` values accepted here: `REPORT_DISMISSED`, `CONTENT_REMOVED`. `APPEAL_APPROVED` and `APPEAL_DENIED` are rejected.
+
+`reason` is required and stored on `Moderation_Action.admin_notes`.
+
+### Response (200)
+
+Empty body. Unknown, already-closed, admin-filed, and admin-owned-discussion ids are skipped; the call still returns `200`.
+
+Dismiss notifies each reporter (`REPORT_DISMISSED`) and does not notify the owner. Remove closes each report, soft-deletes the discussion once, notifies each reporter (`REPORT_APPROVED`), and notifies the owner once (`CONTENT_REMOVED`).
+
+### Error examples
+
+- `400` when `reportIds` is missing, `decision` is missing, or `reason` is blank
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when the account is missing, the caller is not allowed `MODERATE_REPORT`, or `decision` is an appeal type (`Appeal decisions are not supported on this endpoint.`)
+
+## 18) Get Unread Notifications (Authenticated)
+
+Poll unread inbox rows (`readAt` is null). The payload is event type + description + `createdAt`. It does not include the report reason, admin notes, `notificationId`, or `reportId`.
+
+Any authenticated role may call this endpoint. `REPORT_CREATED` inbox rows are written for admins only (the reporter is skipped if they are an admin). Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner.
 
 ### Request
 
@@ -431,10 +610,32 @@ Authorization: Bearer <firebase_id_token>
 ]
 ```
 
-### Response (200) — climber/setter with no unread admin events
+### Response (200) — reporter after dismiss
 
 ```json
-[]
+[
+  {
+    "event": {
+      "eventTypeName": "REPORT_DISMISSED",
+      "description": "An admin dismissed a report you submitted"
+    },
+    "createdAt": "2026-08-18T18:00:00"
+  }
+]
+```
+
+### Response (200) — owner after content removed
+
+```json
+[
+  {
+    "event": {
+      "eventTypeName": "CONTENT_REMOVED",
+      "description": "One of your content had been reported and removed."
+    },
+    "createdAt": "2026-08-18T18:00:00"
+  }
+]
 ```
 
 ### Error examples

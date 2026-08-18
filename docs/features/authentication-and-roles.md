@@ -43,7 +43,7 @@ This section documents the authentication and authorization features that are cu
   - Cannot perform authenticated actions (comment, beta upload, content report, notifications, account-only actions).
 - **Climber**
   - Authenticated features such as comments, beta uploads, grade suggestions, and content reports.
-  - Can poll `GET /api/notification/short`; `REPORT_CREATED` inbox rows are not written for this role.
+  - Can poll `GET /api/notification/short`. `REPORT_CREATED` inbox rows are not written for this role; queue-resolve can write `REPORT_DISMISSED`, `REPORT_APPROVED`, or `CONTENT_REMOVED`.
   - Can access own account page and self-service account actions.
 - **Setter**
   - Includes climber capabilities.
@@ -52,6 +52,7 @@ This section documents the authentication and authorization features that are cu
   - Includes climber capabilities, including creating content reports.
   - Receives `REPORT_CREATED` unread inbox rows (unless they are the reporter).
   - Can view all accounts and promote/demote account roles.
+  - Can view the ranked report queue (`VIEW_REPORTS`) and resolve OPEN discussion reports (`MODERATE_REPORT`).
   - Can manage wall sections (create/delete).
   - Can perform moderation-style actions such as deleting comments/betas where admin checks are enforced.
   - Can access admin navigation/account-management workflow.
@@ -62,13 +63,17 @@ This section documents the authentication and authorization features that are cu
 - Account list and role management are backed by:
   - `GET /api/accounts`
   - `PATCH /api/accounts/{userId}/role`
-- Backend authorization for these actions is enforced through `ActionDefinition.VIEW_ACCOUNTS` and `ActionDefinition.CHANGE_ROLE`.
+- Report queue and detail are backed by `GET /api/report/reports` (`ActionDefinition.VIEW_REPORTS`).
+- Report resolve is backed by `POST /api/moderate/report` (`ActionDefinition.MODERATE_REPORT`).
+- Backend authorization for these actions is enforced through `ActionDefinition.VIEW_ACCOUNTS`, `ActionDefinition.CHANGE_ROLE`, `ActionDefinition.VIEW_REPORTS`, and `ActionDefinition.MODERATE_REPORT`.
 - The frontend exposes admin navigation for account-management workflow.
 - Admin role changes should be validated end-to-end (UI + API + permission checks) whenever role logic changes.
 
 ## Content Reports and Notifications
 
 - Create report: `POST /api/report/create` (authenticated; not action-gated; no `CREATE_REPORT`; success `200`).
+- Admin queue/detail: `GET /api/report/reports` (action-gated `VIEW_REPORTS`; admin only). Optional `reportId` returns one OPEN case.
+- Admin resolve: `POST /api/moderate/report` (action-gated `MODERATE_REPORT`; admin only). Dismiss or remove discussion reports; appeals are not accepted here.
 - Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated).
 - See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.
 
@@ -88,6 +93,7 @@ This section documents the authentication and authorization features that are cu
   - `server/src/main/java/app/VBeta/application/AuthorizationService.java`
 - Content report and notification APIs:
   - `server/src/main/java/app/VBeta/controller/ContentReportController.java`
+  - `server/src/main/java/app/VBeta/controller/ModerationController.java`
   - `server/src/main/java/app/VBeta/controller/EvenNotificationController.java`
 
 ## Limitations and Notes

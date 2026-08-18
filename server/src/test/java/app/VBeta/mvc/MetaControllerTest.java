@@ -1,4 +1,4 @@
-package app.VBeta;
+package app.VBeta.mvc;
 
 import app.VBeta.controller.MetaController;
 import org.junit.jupiter.api.DisplayName;

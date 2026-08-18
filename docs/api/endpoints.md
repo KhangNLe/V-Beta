@@ -61,7 +61,7 @@ Account session (`POST /api/accounts/session`) still throws `ResponseStatusExcep
   - Response:
     - `climbingProblem` (problem details),
     - `perceiveGrade` (aggregate/perceived value),
-    - `discussion` (ordered `UserCommentData` entries).
+    - `discussion` (ordered `UserDiscussionData` entries).
 
 ### Problem Discovery (Grade Range / Sort)
 
@@ -113,7 +113,7 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
   - Request body:
     - `problemId`
     - `commentInfo`
-  - Response: `201` with created `UserCommentData`:
+  - Response: `201` with created `UserDiscussionData`:
     - `discussionId`
     - `userId`
     - `username`
@@ -141,15 +141,20 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
     - `problemId`
     - `objectFileName`
     - `videoURL`
-  - Response: `201` with `UserCommentData` record.
+  - Response: `201` with `UserDiscussionData` record.
 
 - `DELETE /api/discussion/solution-beta`
-  - Purpose: delete a solution beta entry.
+  - Purpose: **soft-delete** a solution beta discussion. The `Discussion_Root` row stays; child `Solution_Beta` metadata and GCS object are kept. Problem timelines omit rows with `deleted_at` set.
   - Request body:
-    - `userId`
+    - `userId` (discussion author)
     - `problemId`
     - `discussionId`
     - `publicUrl`
+    - `deleteReason` (required, max 100 characters)
+  - Additional service rule: requester must be the beta owner or an admin. A second delete of an already-deleted discussion fails.
+  - Frontend currently sends:
+    - `"User deleted their own discussion"` for owner deletes
+    - `"Admin forced delete the discussion"` when an admin deletes another user's beta
   - Response: `200` (empty body).
 
 ### Content Reports (Authenticated)
@@ -175,17 +180,19 @@ Create-report is **authenticated, not action-gated**. There is no `CREATE_REPORT
     - `404` when the reporter account is missing, the target is missing/deleted, the reporter owns the discussion / is the reported user, or a duplicate report already exists
   - Product note: Sprint 5 UI scope is discussion comments/betas (`DISCUSSION`). The API also accepts wall, problem, and user targets.
 
+Admin queue and detail are action-gated (`VIEW_REPORTS`). Resolve is action-gated (`MODERATE_REPORT`). See Action-Gated Endpoints below.
+
 ### Notifications (Authenticated)
 
-Unread inbox read is **authenticated, not action-gated**. Any signed-in role may call it; `REPORT_CREATED` rows are currently fanned out to admins only, so climber/setter inboxes are typically empty for this event.
+Unread inbox read is **authenticated, not action-gated**. Any signed-in role may call it. `REPORT_CREATED` rows are fanned out to admins only. Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner.
 
 - `GET /api/notification/short`
   - Purpose: poll unread inbox summaries for the authenticated user (`readAt IS NULL`).
   - Response: `200` array of `QuickNotificationDTO`:
-    - `event.eventTypeName` (for example `REPORT_CREATED`)
-    - `event.description` (seeded catalog text; does **not** include the report reason)
+    - `event.eventTypeName` (`REPORT_CREATED`, `REPORT_DISMISSED`, `REPORT_APPROVED`, `CONTENT_REMOVED`)
+    - `event.description` (seeded catalog text; does **not** include the report reason or admin notes)
     - `createdAt`
-  - Delivery: client polling is sufficient for Sprint 5 (no WebSocket/SSE/FCM).
+  - Delivery: client polling is sufficient for Sprint 5 (no WebSocket/SSE/FCM). Click routing uses `eventTypeName`; the DTO does not include `notificationId` or `reportId`.
   - Errors:
     - `401` when unauthenticated, the Firebase token is invalid, or no account matches the UID
 
@@ -250,15 +257,59 @@ Unread inbox read is **authenticated, not action-gated**. Any signed-in role may
 
 - `DELETE /api/discussion/comment/delete`
   - Required action: `DELETE_COMMENT`
-  - Purpose: delete comment.
+  - Purpose: **soft-delete** a discussion comment. The `Discussion_Root` row stays; the `Discussion_Comment` child row is kept. Problem timelines omit rows with `deleted_at` set.
   - Request body:
     - `authorId`
     - `problemId`
     - `discussionId`
     - `commentContent`
-  - Additional service rule: requester must be comment owner or admin.
+    - `deletedReason` (required, max 100 characters)
+  - Additional service rule: requester must be comment owner or admin. A second delete of an already-deleted discussion fails.
+  - Frontend currently sends:
+    - `"User deleted their own discussion"` for owner deletes
+    - `"Admin forced delete the discussion"` when an admin deletes another user's comment
   - Response: `200` (empty body).
 
+### Content Reports (Admin Queue)
+
+- `GET /api/report/reports`
+  - Required action: `VIEW_REPORTS` (admin)
+  - Purpose: list ranked OPEN report **cases** (grouped by target, not one row per reporter).
+  - Query params:
+    - none — full queue
+    - `reportId` (optional) — one case: all OPEN reports on the same target as that id
+  - Ranking: `queueScore = Σ (category weight × OPEN count)` on that target, highest first. Weights: `INAPPROPRIATE_CONTENT` 4, `HARASSMENT_BULLYING` 3, `SPAM` 2, `OFF_TOPIC` 1.
+  - Visibility: omits discussion cases owned by the viewer and user-account cases targeting the viewer. Dismissed rows are excluded.
+  - Response: `200` `ReportsPayload`:
+    - `reports[]` (`ReportPriorityDTO`)
+      - `report` (`ReportDTO`): `targetType`; exactly one of `discussion` / `climbingProblem` / `wallSection` / `user`; `reporters[]` (`reportId`, `reporter`, `categoryName`, `reportReason`, `createdAt`)
+      - `categories[]`: `categoryName`, `reportCount`, `categoryScore` (`weight × reportCount`)
+      - `queueScore` (sum of `categoryScore`)
+  - Empty `reports` is a valid `200` (nothing visible, or get-by-id hidden / no remaining OPEN siblings).
+  - Errors:
+    - `401` when unauthenticated or the Firebase token is invalid
+    - `404` when the account is missing, the caller lacks `VIEW_REPORTS`, or `reportId` does not exist
+  - Product note: Sprint 5 queue/detail is built for discussion comments and betas. The mapper also serializes problem/wall/user targets if those rows exist.
+
+- `POST /api/moderate/report`
+  - Required action: `MODERATE_REPORT` (admin)
+  - Purpose: close one or more OPEN discussion reports with a dismiss or remove decision. Each `reportIds` value is one reporter row; omitted siblings stay `OPEN`.
+  - Request body (`ModerationRequest`):
+    - `reportIds` (required list of report ids)
+    - `decision` (`REPORT_DISMISSED` or `CONTENT_REMOVED`; appeal types are rejected)
+    - `reason` (required admin notes, stored on `Moderation_Action.admin_notes`)
+  - Per eligible report: write a logbook row, set status (`DISMISSED` or `CONTENT_REMOVED`), notify that reporter.
+  - `CONTENT_REMOVED` shared side effects (once per discussion in the request): soft-delete `Discussion_Root` and notify the owner with `CONTENT_REMOVED`. If the discussion is already deleted, reports still close and the owner is not notified again.
+  - Skipped ids (request still `200`): unknown, already-closed, filed by the acting admin, on a discussion the admin owns, or non-`DISCUSSION` targets.
+  - Response: `200` with empty body (including when every id was skipped).
+  - Side effects (events `target_type = REPORT`, actor = admin):
+    - dismiss → reporter `REPORT_DISMISSED`; owner is not notified
+    - remove → reporter `REPORT_APPROVED`; owner `CONTENT_REMOVED` once
+  - Errors:
+    - `400` when `reportIds` / `decision` / `reason` fail bean validation (missing list, missing decision, blank reason)
+    - `401` when unauthenticated or the Firebase token is invalid
+    - `404` when the account is missing, the caller lacks `MODERATE_REPORT`, or `decision` is `APPEAL_APPROVED` / `APPEAL_DENIED` (`Appeal decisions are not supported on this endpoint.`)
+  - Product note: Sprint 5 resolve is discussion comments and betas only. Appeals are out of this endpoint.
 
 ## Related Docs
 
