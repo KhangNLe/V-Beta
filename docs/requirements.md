@@ -91,6 +91,7 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 - **FR-18**: The system shall allow a climber to delete comments that they originally created.
 - **FR-19**: The system shall allow administrators to delete any comment regardless of creator.
 - **FR-20**: The system shall prevent users from deleting comments created by other users unless they hold the administrator role.
+- Comment and solution-beta deletes are **soft deletes** of the discussion root (hidden from user-visible timelines; child rows remain).
 
 ### 5.5 Grading and Discovery
 
@@ -116,7 +117,7 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 ### 6.4 Data Integrity
 
 - **NFR-5**: Archived climbing problems shall remain immutable with respect to beta submissions and comments.
-- **NFR-6**: Deletion of beta submissions or comments shall remove the content from user-visible views immediately after successful operation.
+- **NFR-6**: Deletion of beta submissions or comments shall remove the content from user-visible views immediately after successful operation (soft delete of the discussion root).
 
 ## 7. Constraints, Assumptions, and Risks
 

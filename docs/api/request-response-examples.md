@@ -267,6 +267,62 @@ Authorization: Bearer <firebase_id_token>
 
 Returns updated problem-detail payload (same shape as problem detail endpoint).
 
+## 9.1) Soft-Delete Comment
+
+Owner or admin. Marks `Discussion_Root.deleted_at` / `deleted_by` / `deleted_reason`. The comment row remains.
+
+### Request
+
+```http
+DELETE /api/discussion/comment/delete
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "authorId": 7,
+  "problemId": 22,
+  "discussionId": 301,
+  "commentContent": "Felt like soft V5.",
+  "deletedReason": "User deleted their own discussion"
+}
+```
+
+Admin deleting another user's comment uses `"Admin forced delete the discussion"` for `deletedReason`.
+
+### Response (200)
+
+Empty body. Subsequent problem-detail timelines omit this discussion.
+
+## 9.2) Soft-Delete Solution Beta
+
+Owner or admin. Marks `Discussion_Root` deleted; solution-beta metadata and GCS object are kept.
+
+### Request
+
+```http
+DELETE /api/discussion/solution-beta
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "userId": 7,
+  "problemId": 22,
+  "discussionId": 402,
+  "publicUrl": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
+  "deleteReason": "User deleted their own discussion"
+}
+```
+
+Admin deleting another user's beta uses `"Admin forced delete the discussion"` for `deleteReason`.
+
+### Response (200)
+
+Empty body. Subsequent problem-detail timelines omit this discussion.
+
 ## 10) Promote/Demote User Role (Admin)
 
 ### Request

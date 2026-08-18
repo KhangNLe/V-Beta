@@ -11,13 +11,15 @@ import app.VBeta.domain.model.discussions.SolutionBeta;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * {@code ClimbingProblemDiscussionManager} composes a unified discussion timeline for a climbing problem.
  * It merges text comments and beta video submissions into a shared
- * {@link UserDiscussionData} stream ordered by creation time.
+ * {@link UserDiscussionData} stream ordered by creation time, omitting roots whose
+ * {@code deletedAt} is set.
  * <p>
  * Data is sourced from {@link DiscussionCommentManager} and {@link SolutionBetaManager}.
  */
@@ -46,15 +48,19 @@ public class ClimbingProblemDiscussionManager {
 
     /**
      * Returns merged comment and beta entries for a climbing problem in chronological order.
+     * Soft-deleted discussion roots ({@code deletedAt != null}) are excluded.
      *
      * @param problem climbing problem context
-     * @return discussion timeline entries in database order
+     * @return visible discussion timeline entries in database order
      */
     public List<UserDiscussionData> getCommentsForProblem(ClimbingProblem problem){
         List<DiscussionRoot> discussionRoots = discussionRootManager.getDiscussionForProblem(problem);
         List<UserDiscussionData> data = new ArrayList<>();
 
         discussionRoots.forEach(root -> {
+            if (root.getDeletedAt() != null) {
+                return;
+            }
             UserDiscussionData dataContent = null;
             if (root.getDiscussionType().equals(DiscussionType.COMMENT)){
                 dataContent = getCommentDiscussion(root);
@@ -134,6 +140,7 @@ public class ClimbingProblemDiscussionManager {
     }
 
     /**
+     * Deprecated hard-delete path. Comment hide is now {@link #softDeleteDiscussionRoot}.
      * Removes a discussion comment by discussion id.
      *
      * @param discussionId discussion identifier to remove
@@ -146,6 +153,7 @@ public class ClimbingProblemDiscussionManager {
     }
 
     /**
+     * Deprecated hard-delete path. Beta hide is now {@link #softDeleteDiscussionRoot}.
      * Removes a solution beta by discussion id.
      *
      * @param discussionId discussion identifier to remove
@@ -157,6 +165,32 @@ public class ClimbingProblemDiscussionManager {
         discussionRootManager.removeDiscussion(discussion);
     }
 
+    /**
+     * Marks a discussion root as deleted without removing the row or child comment/beta records.
+     *
+     * @param actor account performing the delete (stored as {@code deletedBy})
+     * @param discussionRootId discussion identifier to soft-delete
+     * @param deletedReason reason stored on the root (max 100 characters)
+     * @throws RuntimeException when the discussion is missing or already deleted
+     */
+    public void softDeleteDiscussionRoot(UserAccount actor, Long discussionRootId, String deletedReason){
+        DiscussionRoot discussionRoot = getDiscussionNode(discussionRootId);
+        if (discussionRoot.getDeletedAt() != null) {
+            throw new RuntimeException("Invalid action. Discussion is already deleted.");
+        }
+        discussionRoot.setDeletedAt(LocalDateTime.now());
+        discussionRoot.setDeletedBy(actor);
+        discussionRoot.setDeletedReason(deletedReason);
+        discussionRootManager.updateDiscussionRoot(discussionRoot);
+    }
+
+    /**
+     * Maps a discussion root to a timeline DTO. Does not apply soft-delete filtering;
+     * callers that build public timelines should skip roots with {@code deletedAt} set.
+     *
+     * @param discussionRoot discussion root to map
+     * @return comment or beta timeline payload, or {@code null} when child content is missing
+     */
     public UserDiscussionData getDiscussionData(DiscussionRoot discussionRoot){
         UserDiscussionData dataContent = null;
         if (discussionRoot.getDiscussionType().equals(DiscussionType.COMMENT)){

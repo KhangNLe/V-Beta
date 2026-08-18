@@ -11,6 +11,10 @@ import {
 } from "@/api/solutionBeta";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useParams, useRouter } from "next/navigation";
+import {
+  ADMIN_FORCED_DELETE_DISCUSSION,
+  USER_DELETED_OWN_DISCUSSION,
+} from "@/lib/discussionDeletion";
 import { toast } from "react-toastify";
 
 jest.mock("@/api/wallSections", () => ({
@@ -270,6 +274,76 @@ describe("ProblemPage coverage", () => {
           problemId: 100,
           discussionId: 301,
           commentContent: "Try heel hook",
+          deletedReason: USER_DELETED_OWN_DISCUSSION,
+        });
+      });
+    });
+
+    it("uses admin forced-delete reason when an admin deletes another user's comment", async () => {
+      deleteUserComment.mockResolvedValue(undefined);
+      fetchProblemForUser
+        .mockResolvedValueOnce({ ...baseProblem, discussion: [commentByOwner] })
+        .mockResolvedValueOnce({ ...baseProblem, discussion: [] });
+      renderProblemPage({
+        account: adminAccount,
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      await screen.findByText("Try heel hook");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Delete Comment" }));
+      await waitFor(() => {
+        expect(deleteUserComment).toHaveBeenCalledWith(user, {
+          authorId: 5,
+          problemId: 100,
+          discussionId: 301,
+          commentContent: "Try heel hook",
+          deletedReason: ADMIN_FORCED_DELETE_DISCUSSION,
+        });
+      });
+    });
+
+    it("uses correct payload for owner solution beta deletion", async () => {
+      deleteSolutionBetaFromDatabase.mockResolvedValue(undefined);
+      fetchProblemForUser
+        .mockResolvedValueOnce({ ...baseProblem, discussion: [betaByOwner] })
+        .mockResolvedValueOnce({ ...baseProblem, discussion: [] });
+      renderProblemPage({
+        account: ownerAccount,
+        problem: { ...baseProblem, discussion: [betaByOwner] },
+      });
+      await screen.findByText("Watch Beta");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Delete Solution Beta" }));
+      await waitFor(() => {
+        expect(deleteSolutionBetaFromDatabase).toHaveBeenCalledWith(user, {
+          userId: 5,
+          problemId: 100,
+          discussionId: 302,
+          publicUrl: "https://example.com/beta.mp4",
+          deleteReason: USER_DELETED_OWN_DISCUSSION,
+        });
+      });
+    });
+
+    it("uses admin forced-delete reason when an admin deletes another user's solution beta", async () => {
+      deleteSolutionBetaFromDatabase.mockResolvedValue(undefined);
+      fetchProblemForUser
+        .mockResolvedValueOnce({ ...baseProblem, discussion: [betaByOwner] })
+        .mockResolvedValueOnce({ ...baseProblem, discussion: [] });
+      renderProblemPage({
+        account: adminAccount,
+        problem: { ...baseProblem, discussion: [betaByOwner] },
+      });
+      await screen.findByText("Watch Beta");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Delete Solution Beta" }));
+      await waitFor(() => {
+        expect(deleteSolutionBetaFromDatabase).toHaveBeenCalledWith(user, {
+          userId: 5,
+          problemId: 100,
+          discussionId: 302,
+          publicUrl: "https://example.com/beta.mp4",
+          deleteReason: ADMIN_FORCED_DELETE_DISCUSSION,
         });
       });
     });

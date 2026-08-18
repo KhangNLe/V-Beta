@@ -14,7 +14,7 @@ This section documents wall section and climbing problem features currently avai
 - Setter wall section reset/archive operation
 - Authenticated discussion actions (comments, beta upload, grade suggestion)
 - Guest browsing mode with read-only wall/problem access and banner messaging
-- Owner/admin deletion behavior for comments and solution betas
+- Owner/admin **soft-delete** for comments and solution betas (`Discussion_Root.deleted_at` / `deleted_by` / `deleted_reason`)
 - Backend discovery: filter active problems by inclusive grade range within a wall section
 - Backend discovery: sort filtered problems by assigned grade ascending or descending
 - Wall section Filter UI: grade range (min–max), sort by most recent / easiest / hardest, Apply / Clear
@@ -56,12 +56,14 @@ Keyword/text search is deferred to a later sprint (completed Sprint 4 delivered 
 2. User can post a comment.
 3. User can upload a beta video and save metadata.
 4. User can submit perceived grade.
-5. Comment/solution beta deletion is allowed for owner or admin (when checks pass).
+5. Comment/solution beta **soft-delete** is allowed for owner or admin (when checks pass). Deleted items disappear from the problem timeline after refresh.
 
 Current discussion payload contract is unified through `DiscussionRoot` metadata:
 
 - Discussion entries include `discussionId`, `discussionType`, and `discussionContent`.
-- Deletion payloads for both comments and solution betas include `discussionId`.
+- Deletion payloads for both comments and solution betas include `discussionId` and a reason string (max 100).
+- Comment deletes send `deletedReason`; beta deletes send `deleteReason`.
+- The problem page currently sends `"User deleted their own discussion"` for owner deletes and `"Admin forced delete the discussion"` when an admin deletes another user's item.
 
 ## Permissions and Visibility
 
@@ -80,6 +82,7 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
     - `v-beta/src/api/wallSections.js`
     - `v-beta/src/api/comments.js`
     - `v-beta/src/api/solutionBeta.js`
+    - `v-beta/src/lib/discussionDeletion.js`
 - Backend controllers/services:
     - `server/src/main/java/app/VBeta/controller/WallSectionController.java`
     - `server/src/main/java/app/VBeta/controller/ProblemDiscussionController.java`
@@ -90,6 +93,7 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 
 ## Limitations and Notes
 
+- Comment/beta delete is a soft delete: discussion root metadata is marked deleted; comment text, beta metadata, and GCS objects stay until a later purge/restore flow.
 - Problem delete is `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`.
 - Wall reset is `PATCH /api/home/wall-section/{wallSectionId}/reset`.
 - UI gating and backend authorization should both be revalidated when role logic changes.

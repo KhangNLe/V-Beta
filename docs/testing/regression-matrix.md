@@ -16,8 +16,8 @@ Use this together with:
 | Account Management | profile load, delete account, role promotion/demotion | ACCOUNT-01, ACCOUNT-02, ACCOUNT-03 | High |
 | Wall Section Management | list, create/delete section, invalid section navigation | WALL-01, WALL-03 | High |
 | Problem Management | create/delete/reset problem flows as setter/admin-allowed | WALL-02 | High |
-| Discussion Comments | post comment, delete as owner/admin, block unauthorized delete | DISC-01 | High |
-| Solution Beta | signed URL request, upload, save metadata, delete beta | DISC-02 | High |
+| Discussion Comments | post comment, soft-delete as owner/admin, block unauthorized delete | DISC-01 | High |
+| Solution Beta | signed URL request, upload, save metadata, soft-delete beta | DISC-02 | High |
 | Perceived Grade | submit perceived grade and verify reflected result | DISC-03 | Medium |
 | Problem Discovery | grade-range filter, asc/desc sort, invalid range/missing wall behavior | DISC-04 | High |
 | Problem Discovery UI | wall Filter dialog, most recent/easiest/hardest, clear filters | DISC-05 | High |

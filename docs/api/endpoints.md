@@ -144,12 +144,17 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
   - Response: `201` with `UserDiscussionData` record.
 
 - `DELETE /api/discussion/solution-beta`
-  - Purpose: delete a solution beta entry.
+  - Purpose: **soft-delete** a solution beta discussion. The `Discussion_Root` row stays; child `Solution_Beta` metadata and GCS object are kept. Problem timelines omit rows with `deleted_at` set.
   - Request body:
-    - `userId`
+    - `userId` (discussion author)
     - `problemId`
     - `discussionId`
     - `publicUrl`
+    - `deleteReason` (required, max 100 characters)
+  - Additional service rule: requester must be the beta owner or an admin. A second delete of an already-deleted discussion fails.
+  - Frontend currently sends:
+    - `"User deleted their own discussion"` for owner deletes
+    - `"Admin forced delete the discussion"` when an admin deletes another user's beta
   - Response: `200` (empty body).
 
 ### Content Reports (Authenticated)
@@ -252,13 +257,17 @@ Unread inbox read is **authenticated, not action-gated**. Any signed-in role may
 
 - `DELETE /api/discussion/comment/delete`
   - Required action: `DELETE_COMMENT`
-  - Purpose: delete comment.
+  - Purpose: **soft-delete** a discussion comment. The `Discussion_Root` row stays; the `Discussion_Comment` child row is kept. Problem timelines omit rows with `deleted_at` set.
   - Request body:
     - `authorId`
     - `problemId`
     - `discussionId`
     - `commentContent`
-  - Additional service rule: requester must be comment owner or admin.
+    - `deletedReason` (required, max 100 characters)
+  - Additional service rule: requester must be comment owner or admin. A second delete of an already-deleted discussion fails.
+  - Frontend currently sends:
+    - `"User deleted their own discussion"` for owner deletes
+    - `"Admin forced delete the discussion"` when an admin deletes another user's comment
   - Response: `200` (empty body).
 
 ### Content Reports (Admin Queue)
