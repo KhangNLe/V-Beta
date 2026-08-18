@@ -3,8 +3,10 @@ package app.VBeta.application.support.discussion;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
 import app.VBeta.application.support.discussion.comment.DiscussionCommentManager;
 import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.discussions.DiscussionComment;
 import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.discussions.DiscussionType;
+import app.VBeta.domain.model.discussions.SolutionBeta;
 import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.DiscussionRootRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -170,5 +172,25 @@ public class DiscussionRootManager {
      */
     public List<DiscussionRoot> findDiscussionRootByUserAndProblem(UserAccount userAccount, ClimbingProblem problem){
         return discussionRootRepository.findByUserAccount_AndProblem(userAccount, problem);
+    }
+
+    public void updateDiscussionRoot(DiscussionRoot discussionRoot){
+        discussionRootRepository.save(discussionRoot);
+    }
+
+    public boolean validateDiscussionCommentContent(DiscussionRoot discussionRoot, String commentContent){
+        if (!discussionRoot.getDiscussionType().equals(DiscussionType.COMMENT)){
+            throw new RuntimeException("Mismatching discussion information");
+        }
+        DiscussionComment comment = discussionCommentManager.getDiscussionComment(discussionRoot);
+        return comment.getCommentInfo().equals(commentContent);
+    }
+
+    public boolean validateDiscussionBetaContent(DiscussionRoot discussionRoot, String betaUrl){
+        if (!discussionRoot.getDiscussionType().equals(DiscussionType.BETA)){
+            throw new RuntimeException("Mismatching discussion information");
+        }
+        SolutionBeta beta = solutionBetaManager.getSolutionBetaFromDiscussionRoot(discussionRoot);
+        return beta.getVideoURL().equals(betaUrl);
     }
 }

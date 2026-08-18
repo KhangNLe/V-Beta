@@ -138,7 +138,7 @@ public class ProblemDiscussionController {
     public ResponseEntity<?> deleteUserSolutionBeta(@RequestBody SolutionBetaDeletionRequest request){
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-            problemDiscussionService.removeUserSolutionBeta(request, firebaseUid);
+            problemDiscussionService.softDeleteUserSolutionBeta(request, firebaseUid);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -160,7 +160,7 @@ public class ProblemDiscussionController {
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
             authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_COMMENT);
-            problemDiscussionService.removeUserComment(firebaseUid, request);
+            problemDiscussionService.softDeleteUserComment(firebaseUid, request);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);

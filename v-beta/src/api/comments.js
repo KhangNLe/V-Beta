@@ -28,7 +28,7 @@ export async function postCommentForUser(user, problemId, commentInfo) {
  * Delete user comment from a problem.
  * 
  * @param {import("firebase/auth").User} user
- * @param {{authorId: number, problemId: number, discussionId: number, commentContent: string}} payload
+ * @param {{authorId: number, problemId: number, discussionId: number, commentContent: string, deletedReason: string}} payload
  */
 export async function deleteUserComment(user, payload){
   const idToken = await user.getIdToken();

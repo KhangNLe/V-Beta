@@ -12,13 +12,10 @@ import jakarta.validation.constraints.Size;
  * @param publicUrl public URL of the video to remove
  */
 public record SolutionBetaDeletionRequest(
-        @NotNull
-        Long userId,
-        @NotNull
-        Long problemId,
-        @NotNull
-        Long discussionId,
-        @NotBlank @Size(max = 250)
-        String publicUrl
+        @NotNull Long userId,
+        @NotNull Long problemId,
+        @NotNull Long discussionId,
+        @NotBlank @Size(max = 250) String publicUrl,
+        @NotBlank @Size(max = 100) String deleteReason
 ) {
 }

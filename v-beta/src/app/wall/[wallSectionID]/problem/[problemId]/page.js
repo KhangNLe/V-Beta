@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { getAccountId, getAccountRole } from '@/lib/accountSession';
+import { discussionDeletionReason } from '@/lib/discussionDeletion';
 import { buttons, card, colors, layout, fontFamily } from '@/ui/appTheme';
 import { ArrowLeftIcon, MoreVertical } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
@@ -185,8 +186,8 @@ export default function ProblemPage() {
     }
 
     const authorId = getCommentAuthorId(targetComment);
-    const canDeleteComment =
-      isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
+    const isOwner = !!currentUserId && !!authorId && currentUserId === authorId;
+    const canDeleteComment = isAdmin || isOwner;
     if (!canDeleteComment) {
       return;
     }
@@ -205,6 +206,7 @@ export default function ProblemPage() {
         problemId,
         discussionId,
         commentContent,
+        deletedReason: discussionDeletionReason(isOwner),
       });
       await refreshProblem();
       toast.success("Comment deleted.");
@@ -221,8 +223,8 @@ export default function ProblemPage() {
     if (!mediaUrl) return;
 
     const authorId = getCommentAuthorId(targetComment);
-    const canDeleteSolutionBeta =
-      isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
+    const isOwner = !!currentUserId && !!authorId && currentUserId === authorId;
+    const canDeleteSolutionBeta = isAdmin || isOwner;
     if (!canDeleteSolutionBeta) {
       return;
     }
@@ -240,6 +242,7 @@ export default function ProblemPage() {
         problemId,
         discussionId,
         publicUrl: mediaUrl,
+        deleteReason: discussionDeletionReason(isOwner),
       });
       await refreshProblem();
       clearSelectedSolutionFile();

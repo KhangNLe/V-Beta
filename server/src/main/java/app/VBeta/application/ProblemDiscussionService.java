@@ -119,12 +119,15 @@ public class ProblemDiscussionService {
      * @param request solution beta deletion payload
      * @param firebaseUid Firebase UID of the authenticated requester
      */
-    public void removeUserSolutionBeta(SolutionBetaDeletionRequest request, String firebaseUid){
+    public void softDeleteUserSolutionBeta(SolutionBetaDeletionRequest request, String firebaseUid){
         UserAccount requestUser = getUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
         validateDeletionOwnerObject(requestUser, request.userId());
-        validateDiscussionExisting(request.discussionId(), requestUser, problem);
-        climbingProblemDiscussionManager.removeUserSolutionBeta(request.discussionId(), request.publicUrl());
+        validateDiscussionExisting(request.discussionId(), requestUser, problem,
+                new DiscussionContent(null, request.publicUrl()));
+
+        climbingProblemDiscussionManager.softDeleteDiscussionRoot(requestUser, request.discussionId(),
+                request.deleteReason());
     }
 
     private UserAccount getUserAccount(String firebaseUid){
@@ -153,15 +156,16 @@ public class ProblemDiscussionService {
      * @param firebaseUid Firebase UID of the authenticated requester
      * @param request comment deletion payload
      */
-    public void removeUserComment(String firebaseUid, CommentDeletionRequest request){
+    public void softDeleteUserComment(String firebaseUid, CommentDeletionRequest request){
         UserAccount requestUser = userAccountManager.findUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
 
         validateDeletionOwnerObject(requestUser, request.authorId());
-        validateDiscussionExisting(request.discussionId(), requestUser, problem);
+        validateDiscussionExisting(request.discussionId(), requestUser, problem,
+                new DiscussionContent(request.commentContent(), null));
 
-
-        climbingProblemDiscussionManager.removeUserComment(request.discussionId(), request.commentContent());
+        climbingProblemDiscussionManager.softDeleteDiscussionRoot(requestUser, request.discussionId(),
+                request.deletedReason());
     }
 
     private UserAccount getUserAccount(Long userId){
@@ -194,6 +198,8 @@ public class ProblemDiscussionService {
         }
     }
 
+    private record DiscussionContent(String commentContent, String betaUrl) {}
+
     /**
      * Validates that a discussion id belongs to the requester on the given problem,
      * unless requester is an administrator.
@@ -205,15 +211,37 @@ public class ProblemDiscussionService {
      * does not own the discussion and is not admin
      */
     private void validateDiscussionExisting(Long requestDiscussionId, UserAccount requestUser,
-                                            ClimbingProblem problem){
-        List<DiscussionRoot> discussionRoots = discussionRootManager.findDiscussionRootByUserAndProblem(requestUser,
-                problem);
+                                            ClimbingProblem problem, DiscussionContent discussionContent){
+        DiscussionRoot discussion;
+        if (requestUser.getGymRole().getRoleType().equals(RoleType.ADMIN)) {
+            discussion = discussionRootManager.findDiscussionRootById(requestDiscussionId);
+            if (discussion == null
+                    || discussion.getProblem() == null
+                    || !discussion.getProblem().getId().equals(problem.getId())) {
+                throw new RuntimeException("Invalid action. Could not find discussion inside the climbing problem.");
+            }
+        } else {
+            List<DiscussionRoot> discussionRoots = discussionRootManager.findDiscussionRootByUserAndProblem(
+                    requestUser, problem);
+            discussion = discussionRoots.stream()
+                    .filter(d -> d.getDiscussionId().equals(requestDiscussionId))
+                    .findAny()
+                    .orElse(null);
+            if (discussion == null) {
+                throw new RuntimeException("Invalid action. Could not find discussion inside the climbing problem.");
+            }
+        }
 
-        boolean isExist = discussionRoots.stream()
-                .anyMatch(d -> d.getDiscussionId().equals(requestDiscussionId));
-
-        if  (!isExist && !requestUser.getGymRole().getRoleType().equals(RoleType.ADMIN)){
-            throw new RuntimeException("Invalid action. Cannot remove object from different author");
+        boolean isExist;
+        if (discussionContent.commentContent() != null){
+            isExist = discussionRootManager.validateDiscussionCommentContent(discussion,
+                    discussionContent.commentContent());
+        } else {
+            isExist = discussionRootManager.validateDiscussionBetaContent(discussion,
+                    discussionContent.betaUrl());
+        }
+        if (!isExist){
+            throw new RuntimeException("Could not find discussion with the given information.");
         }
     }
 }

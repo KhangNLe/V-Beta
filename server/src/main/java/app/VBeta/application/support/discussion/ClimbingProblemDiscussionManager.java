@@ -11,6 +11,7 @@ import app.VBeta.domain.model.discussions.SolutionBeta;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,6 +56,9 @@ public class ClimbingProblemDiscussionManager {
         List<UserDiscussionData> data = new ArrayList<>();
 
         discussionRoots.forEach(root -> {
+            if (root.getDeletedAt() != null) {
+                return;
+            }
             UserDiscussionData dataContent = null;
             if (root.getDiscussionType().equals(DiscussionType.COMMENT)){
                 dataContent = getCommentDiscussion(root);
@@ -134,6 +138,7 @@ public class ClimbingProblemDiscussionManager {
     }
 
     /**
+     * Deprecated, comment is now by default soft deleted.
      * Removes a discussion comment by discussion id.
      *
      * @param discussionId discussion identifier to remove
@@ -146,6 +151,7 @@ public class ClimbingProblemDiscussionManager {
     }
 
     /**
+     * Deprecated, solution beta is now by default soft deleted.
      * Removes a solution beta by discussion id.
      *
      * @param discussionId discussion identifier to remove
@@ -155,6 +161,17 @@ public class ClimbingProblemDiscussionManager {
         DiscussionRoot discussion = getDiscussionNode(discussionId);
         solutionBetaManager.removeUserSolutionBeta(discussion, publicUrl);
         discussionRootManager.removeDiscussion(discussion);
+    }
+
+    public void softDeleteDiscussionRoot(UserAccount actor, Long discussionRootId, String deletedReason){
+        DiscussionRoot discussionRoot = getDiscussionNode(discussionRootId);
+        if (discussionRoot.getDeletedAt() != null) {
+            throw new RuntimeException("Invalid action. Discussion is already deleted.");
+        }
+        discussionRoot.setDeletedAt(LocalDateTime.now());
+        discussionRoot.setDeletedBy(actor);
+        discussionRoot.setDeletedReason(deletedReason);
+        discussionRootManager.updateDiscussionRoot(discussionRoot);
     }
 
     public UserDiscussionData getDiscussionData(DiscussionRoot discussionRoot){
