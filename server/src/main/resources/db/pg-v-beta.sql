@@ -333,7 +333,7 @@ INSERT INTO Gym_Role(role_type)
 INSERT INTO Gym_Action (action_definition)
     VALUES ('CREATE_BETA'), ('DELETE_BETA'), ('CREATE_COMMENT'), ('DELETE_COMMENT'),
            ('CREATE_PROBLEM'), ('DELETE_PROBLEM'), ('RESET_WALL'), ('CREATE_WALL'), ('DELETE_WALL'),
-           ('CHANGE_ROLE'), ('GRADE_PROBLEM'), ('VIEW_ACCOUNTS'), ('MODERATE_REPORT');
+           ('CHANGE_ROLE'), ('GRADE_PROBLEM'), ('VIEW_ACCOUNTS'), ('VIEW_REPORTS'), ('MODERATE_REPORT');
 
 INSERT INTO Climbing_Grade(grade)
     VALUES ('VB'), ('V0'), ('V1'), ('V2'), ('V3'), ('V4'),
