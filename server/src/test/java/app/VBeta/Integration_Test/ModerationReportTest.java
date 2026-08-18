@@ -2,7 +2,7 @@ package app.VBeta.Integration_Test;
 
 import app.VBeta.api.dto.account.UserAccountDTO;
 import app.VBeta.api.dto.report.*;
-import app.VBeta.application.ModerationService;
+import app.VBeta.application.ReportService;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.discussion.DiscussionRootManager;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.*;
 })
 public class ModerationReportTest {
     @Autowired
-    private ModerationService moderationService;
+    private ReportService reportService;
 
     @Autowired
     private UserAccountManager userAccountManager;
@@ -255,7 +255,7 @@ public class ModerationReportTest {
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> moderationService.createNewReport(request2, user.getFirebaseUid()));
+                () -> reportService.createNewReport(request2, user.getFirebaseUid()));
 
         ReportRequest request3 = new ReportRequest(
                 ReportTargetType.DISCUSSION,
@@ -266,7 +266,7 @@ public class ModerationReportTest {
 
         ex = assertThrows(
                 RuntimeException.class,
-                () -> moderationService.createNewReport(request3, user.getFirebaseUid()));
+                () -> reportService.createNewReport(request3, user.getFirebaseUid()));
     }
 
     @Test
@@ -284,7 +284,7 @@ public class ModerationReportTest {
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> moderationService.createNewReport(request, "12345")
+                () -> reportService.createNewReport(request, "12345")
         );
     }
 
@@ -300,7 +300,7 @@ public class ModerationReportTest {
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> moderationService.createNewReport(badRequest, "testFirebaseUid")
+                () -> reportService.createNewReport(badRequest, "testFirebaseUid")
         );
     }
 
@@ -443,7 +443,7 @@ public class ModerationReportTest {
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> moderationService.createNewReport(request2, user.getFirebaseUid())
+                () -> reportService.createNewReport(request2, user.getFirebaseUid())
         );
 
     }
@@ -588,7 +588,7 @@ public class ModerationReportTest {
 
         UserAccount admin = getUserAccount("testFirebaseUid3");
 
-        ReportsPayload payload = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         validateReportsPayload(payload, List.of(report));
     }
 
@@ -596,14 +596,14 @@ public class ModerationReportTest {
     @DisplayName("Fail getting report queue due to incorrect role")
     void testFailGetReportQueueListForNotAdmin(){
         UserAccount user = getUserAccount("testFirebaseUid");
-        assertThrows(RuntimeException.class, () -> moderationService.getReportQueue(user.getFirebaseUid()));
+        assertThrows(RuntimeException.class, () -> reportService.getReportQueue(user.getFirebaseUid()));
     }
 
     @Test
     @DisplayName("Success getting empty Report queue for Admin when nothing is reported")
     void testSuccessGetReportQueueListForAdminWhenNothingIsReported(){
         UserAccount admin = getUserAccount("testFirebaseUid3");
-        ReportsPayload payload = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         validateReportsPayload(payload, List.of());
     }
 
@@ -614,7 +614,7 @@ public class ModerationReportTest {
         UserAccount reporter = getUserAccount("testFirebaseUid");
         Report report = createReport(reporter.getFirebaseUid(), admin.getFirebaseUid(), 1L, DiscussionType.COMMENT);
 
-        ReportsPayload payload = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         assertNotNull(payload);
         assertEquals(0, payload.reports().size());
     }
@@ -628,11 +628,11 @@ public class ModerationReportTest {
 
         Report report = createReport(reporter.getFirebaseUid(), admin.getFirebaseUid(), 1L, DiscussionType.COMMENT);
 
-        ReportsPayload payload = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         assertNotNull(payload);
         assertEquals(0, payload.reports().size());
 
-        ReportsPayload payload2 = moderationService.getReportQueue(admin2.getFirebaseUid());
+        ReportsPayload payload2 = reportService.getReportQueue(admin2.getFirebaseUid());
         assertNotNull(payload2);
         assertEquals(1, payload2.reports().size());
         validateReportsPayload(payload2, List.of(report));
@@ -650,7 +650,7 @@ public class ModerationReportTest {
         Report harassment = createDiscussionReport(
                 admin, discussion, ReportCategoryName.HARASSMENT_BULLYING, "harassment");
 
-        ReportsPayload payload = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         validateReportsPayload(payload, List.of(spam, harassment));
     }
 
@@ -664,7 +664,7 @@ public class ModerationReportTest {
         Report first = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
         Report second = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
 
-        ReportsPayload payload = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         validateReportsPayload(payload, List.of(first, second));
     }
 
@@ -677,7 +677,7 @@ public class ModerationReportTest {
 
 
         Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
-        ReportsPayload payload = moderationService.getReport(admin.getFirebaseUid(), report.getReportId());
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), report.getReportId());
         validateReportsPayload(payload, List.of(report));
     }
 
@@ -693,7 +693,7 @@ public class ModerationReportTest {
         Report harassment = createDiscussionReport(
                 admin, discussion, ReportCategoryName.HARASSMENT_BULLYING, "harassment");
 
-        ReportsPayload payload = moderationService.getReport(admin.getFirebaseUid(), spam.getReportId());
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), spam.getReportId());
         validateReportsPayload(payload, List.of(spam, harassment));
     }
 
@@ -701,7 +701,7 @@ public class ModerationReportTest {
     @DisplayName("Fail to get report from wrong report id")
     void testFailedToGetReportFromWrongReportId(){
         UserAccount admin = getUserAccount("testFirebaseUid3");
-        assertThrows(RuntimeException.class, () -> moderationService.getReport(admin.getFirebaseUid(), 123214L));
+        assertThrows(RuntimeException.class, () -> reportService.getReport(admin.getFirebaseUid(), 123214L));
     }
 
     @Test
@@ -711,7 +711,7 @@ public class ModerationReportTest {
         UserAccount setter = getUserAccount("testFirebaseUid2");
         Report report = createReport(setter.getFirebaseUid(), admin.getFirebaseUid(), 1L, COMMENT);
 
-        ReportsPayload payload = moderationService.getReport(admin.getFirebaseUid(), report.getReportId());
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), report.getReportId());
         assertNotNull(payload);
         assertEquals(0, payload.reports().size());
     }
@@ -725,11 +725,11 @@ public class ModerationReportTest {
 
         Report report = createReport(reporter.getFirebaseUid(), admin.getFirebaseUid(), 1L, DiscussionType.COMMENT);
 
-        ReportsPayload payload = moderationService.getReport(admin.getFirebaseUid(), report.getReportId());
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), report.getReportId());
         assertNotNull(payload);
         assertEquals(0, payload.reports().size());
 
-        ReportsPayload payload2 = moderationService.getReport(admin2.getFirebaseUid(), report.getReportId());
+        ReportsPayload payload2 = reportService.getReport(admin2.getFirebaseUid(), report.getReportId());
         assertNotNull(payload2);
         assertEquals(1, payload2.reports().size());
         validateReportsPayload(payload2, List.of(report));
@@ -743,7 +743,7 @@ public class ModerationReportTest {
         UserAccount admin = getUserAccount("testFirebaseUid3");
 
         Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, BETA);
-        ReportsPayload payload = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         validateReportsPayload(payload, List.of(report));
         assertEquals(DiscussionType.BETA, payload.reports().get(0).report().discussion().discussionType());
     }
@@ -762,7 +762,7 @@ public class ModerationReportTest {
         Report inappropriate = createDiscussionReport(
                 climber, inappropriateDiscussion, ReportCategoryName.INAPPROPRIATE_CONTENT, "inappropriate");
 
-        ReportsPayload payload = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         validateReportsPayload(payload, List.of(offTopic, inappropriate));
         assertEquals(
                 inappropriate.getDiscussion().getDiscussionId(),
@@ -784,7 +784,7 @@ public class ModerationReportTest {
         Report second = createDiscussionReport(
                 admin, discussion, ReportCategoryName.HARASSMENT_BULLYING, "harassment two");
 
-        ReportsPayload payload = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         validateReportsPayload(payload, List.of(first, second));
 
         ReportPriorityDTO caseDto = payload.reports().get(0);
@@ -808,7 +808,7 @@ public class ModerationReportTest {
         dismissedReport.setReportStatus(ReportStatus.DISMISSED);
         reportRepository.saveAndFlush(dismissedReport);
 
-        ReportsPayload payload = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         validateReportsPayload(payload, List.of(openReport));
     }
 
@@ -821,14 +821,14 @@ public class ModerationReportTest {
 
         Report report = createReport(climber.getFirebaseUid(), admin.getFirebaseUid(), 1L, BETA);
 
-        ReportsPayload ownerQueue = moderationService.getReportQueue(admin.getFirebaseUid());
+        ReportsPayload ownerQueue = reportService.getReportQueue(admin.getFirebaseUid());
         assertEquals(0, ownerQueue.reports().size());
-        ReportsPayload ownerDetail = moderationService.getReport(admin.getFirebaseUid(), report.getReportId());
+        ReportsPayload ownerDetail = reportService.getReport(admin.getFirebaseUid(), report.getReportId());
         assertEquals(0, ownerDetail.reports().size());
 
-        ReportsPayload otherQueue = moderationService.getReportQueue(otherAdmin.getFirebaseUid());
+        ReportsPayload otherQueue = reportService.getReportQueue(otherAdmin.getFirebaseUid());
         validateReportsPayload(otherQueue, List.of(report));
-        ReportsPayload otherDetail = moderationService.getReport(otherAdmin.getFirebaseUid(), report.getReportId());
+        ReportsPayload otherDetail = reportService.getReport(otherAdmin.getFirebaseUid(), report.getReportId());
         validateReportsPayload(otherDetail, List.of(report));
     }
 
@@ -836,7 +836,7 @@ public class ModerationReportTest {
     @DisplayName("Setter cannot view the report queue")
     void testSetterCannotGetReportQueue(){
         UserAccount setter = getUserAccount("testFirebaseUid2");
-        assertThrows(RuntimeException.class, () -> moderationService.getReportQueue(setter.getFirebaseUid()));
+        assertThrows(RuntimeException.class, () -> reportService.getReportQueue(setter.getFirebaseUid()));
     }
 
     @Test
@@ -846,7 +846,7 @@ public class ModerationReportTest {
         UserAccount setter = getUserAccount("testFirebaseUid2");
         Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
         assertThrows(RuntimeException.class,
-                () -> moderationService.getReport(setter.getFirebaseUid(), report.getReportId()));
+                () -> reportService.getReport(setter.getFirebaseUid(), report.getReportId()));
     }
 
     @Test
@@ -856,13 +856,13 @@ public class ModerationReportTest {
         UserAccount setter = getUserAccount("testFirebaseUid2");
         Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
         assertThrows(RuntimeException.class,
-                () -> moderationService.getReport(climber.getFirebaseUid(), report.getReportId()));
+                () -> reportService.getReport(climber.getFirebaseUid(), report.getReportId()));
     }
 
     @Test
     @DisplayName("Unknown firebase uid cannot view the report queue")
     void testGetReportQueueUnknownFirebaseUid(){
-        assertThrows(RuntimeException.class, () -> moderationService.getReportQueue("unknown-firebase-uid"));
+        assertThrows(RuntimeException.class, () -> reportService.getReportQueue("unknown-firebase-uid"));
     }
 
     @Test
@@ -872,7 +872,7 @@ public class ModerationReportTest {
         UserAccount setter = getUserAccount("testFirebaseUid2");
         Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, COMMENT);
         assertThrows(RuntimeException.class,
-                () -> moderationService.getReport("unknown-firebase-uid", report.getReportId()));
+                () -> reportService.getReport("unknown-firebase-uid", report.getReportId()));
     }
 
     @Test
@@ -886,7 +886,7 @@ public class ModerationReportTest {
         report.setReportStatus(ReportStatus.DISMISSED);
         reportRepository.saveAndFlush(report);
 
-        ReportsPayload payload = moderationService.getReport(admin.getFirebaseUid(), report.getReportId());
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), report.getReportId());
         assertNotNull(payload);
         assertEquals(0, payload.reports().size());
     }
@@ -905,7 +905,7 @@ public class ModerationReportTest {
         dismissed.setReportStatus(ReportStatus.DISMISSED);
         reportRepository.saveAndFlush(dismissed);
 
-        ReportsPayload payload = moderationService.getReport(admin.getFirebaseUid(), dismissed.getReportId());
+        ReportsPayload payload = reportService.getReport(admin.getFirebaseUid(), dismissed.getReportId());
         validateReportsPayload(payload, List.of(stillOpen));
     }
 

@@ -5,7 +5,7 @@ import app.VBeta.api.dto.account.UserAccountDTO;
 import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.api.dto.report.*;
 import app.VBeta.application.AuthorizationService;
-import app.VBeta.application.ModerationService;
+import app.VBeta.application.ReportService;
 import app.VBeta.controller.ContentReportController;
 import app.VBeta.domain.model.discussions.DiscussionType;
 import app.VBeta.domain.model.report.*;
@@ -44,14 +44,14 @@ public class ContentReportControllerTest {
     AuthorizationService authorizationService;
 
     @MockitoBean
-    ModerationService moderationService;
+    ReportService reportService;
 
     @Test
     @DisplayName("Test for user report discussion. Happy path return 201")
     void happyPath_return201_whenAuthenticatedUserReportDiscussion() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
 
-        doNothing().when(moderationService).createNewReport(
+        doNothing().when(reportService).createNewReport(
                 org.mockito.ArgumentMatchers.any(ReportRequest.class),
                 org.mockito.ArgumentMatchers.eq("testFirebaseUid")
         );
@@ -70,7 +70,7 @@ public class ContentReportControllerTest {
                 .andExpect(content().string("")
         );
 
-        verify(moderationService, times(1))
+        verify(reportService, times(1))
                 .createNewReport(request, "testFirebaseUid");
     }
 
@@ -80,7 +80,7 @@ public class ContentReportControllerTest {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
 
         org.mockito.Mockito.doThrow(new RuntimeException("Report already exists"))
-                .when(moderationService)
+                .when(reportService)
                 .createNewReport(
                         org.mockito.ArgumentMatchers.any(ReportRequest.class),
                         org.mockito.ArgumentMatchers.eq("testFirebaseUid")
@@ -117,7 +117,7 @@ public class ContentReportControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
 
-        verifyNoInteractions(moderationService);
+        verifyNoInteractions(reportService);
     }
 
     @Test
@@ -135,7 +135,7 @@ public class ContentReportControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
 
-        verifyNoInteractions(moderationService);
+        verifyNoInteractions(reportService);
     }
 
     @Test
@@ -143,7 +143,7 @@ public class ContentReportControllerTest {
     void returns404_whenDiscussionDoesNotExist() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         doThrow(new RuntimeException("Discussion not found"))
-                .when(moderationService)
+                .when(reportService)
                 .createNewReport(
                         org.mockito.ArgumentMatchers.any(ReportRequest.class),
                         org.mockito.ArgumentMatchers.eq("testFirebaseUid"));
@@ -167,14 +167,14 @@ public class ContentReportControllerTest {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
 
         ReportsPayload payload = queuePayload();
-        when(moderationService.getReportQueue("testFirebaseUid3")).thenReturn(payload);
+        when(reportService.getReportQueue("testFirebaseUid3")).thenReturn(payload);
 
         mockMvc.perform(get("/api/report/reports"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectMapper.writeValueAsString(payload)));
 
-        verify(moderationService, times(1)).getReportQueue("testFirebaseUid3");
-        verify(moderationService, never()).getReport(anyString(), anyLong());
+        verify(reportService, times(1)).getReportQueue("testFirebaseUid3");
+        verify(reportService, never()).getReport(anyString(), anyLong());
     }
 
     @Test
@@ -183,15 +183,15 @@ public class ContentReportControllerTest {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
         ReportsPayload payload = queuePayload();
 
-        when(moderationService.getReport("testFirebaseUid3", 1L)).thenReturn(payload);
+        when(reportService.getReport("testFirebaseUid3", 1L)).thenReturn(payload);
 
         mockMvc.perform(get("/api/report/reports")
                         .param("reportId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectMapper.writeValueAsString(payload)));
 
-        verify(moderationService, times(1)).getReport("testFirebaseUid3", 1L);
-        verify(moderationService, never()).getReportQueue(anyString());
+        verify(reportService, times(1)).getReport("testFirebaseUid3", 1L);
+        verify(reportService, never()).getReportQueue(anyString());
     }
 
     @Test
@@ -204,52 +204,52 @@ public class ContentReportControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Missing or invalid authentication token"));
 
-        verifyNoInteractions(moderationService);
+        verifyNoInteractions(reportService);
     }
 
     @Test
     @DisplayName("GET /api/report/reports maps unauthorized role to 404")
     void return404_whenGetReportQueueUnauthorized() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
-        when(moderationService.getReportQueue("testFirebaseUid"))
+        when(reportService.getReportQueue("testFirebaseUid"))
                 .thenThrow(new RuntimeException("Role CLIMBER is not allowed to perform action "));
 
         mockMvc.perform(get("/api/report/reports"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Role CLIMBER is not allowed to perform action "));
 
-        verify(moderationService, times(1)).getReportQueue("testFirebaseUid");
-        verify(moderationService, never()).getReport(anyString(), anyLong());
+        verify(reportService, times(1)).getReportQueue("testFirebaseUid");
+        verify(reportService, never()).getReport(anyString(), anyLong());
     }
 
     @Test
     @DisplayName("GET /api/report/reports?reportId= maps missing report to 404")
     void return404_whenGetReportByIdNotFound() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
-        when(moderationService.getReport("testFirebaseUid3", 999L))
+        when(reportService.getReport("testFirebaseUid3", 999L))
                 .thenThrow(new RuntimeException("Report not found"));
 
         mockMvc.perform(get("/api/report/reports").param("reportId", "999"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Report not found"));
 
-        verify(moderationService, times(1)).getReport("testFirebaseUid3", 999L);
-        verify(moderationService, never()).getReportQueue(anyString());
+        verify(reportService, times(1)).getReport("testFirebaseUid3", 999L);
+        verify(reportService, never()).getReportQueue(anyString());
     }
 
     @Test
     @DisplayName("GET /api/report/reports?reportId= maps unauthorized role to 404")
     void return404_whenGetReportByIdUnauthorized() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
-        when(moderationService.getReport("testFirebaseUid", 1L))
+        when(reportService.getReport("testFirebaseUid", 1L))
                 .thenThrow(new RuntimeException("Role CLIMBER is not allowed to perform action "));
 
         mockMvc.perform(get("/api/report/reports").param("reportId", "1"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Role CLIMBER is not allowed to perform action "));
 
-        verify(moderationService, times(1)).getReport("testFirebaseUid", 1L);
-        verify(moderationService, never()).getReportQueue(anyString());
+        verify(reportService, times(1)).getReport("testFirebaseUid", 1L);
+        verify(reportService, never()).getReportQueue(anyString());
     }
 
     private static ReportsPayload queuePayload() {

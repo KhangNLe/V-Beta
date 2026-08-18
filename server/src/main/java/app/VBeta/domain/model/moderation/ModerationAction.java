@@ -3,10 +3,7 @@ package app.VBeta.domain.model.moderation;
 import app.VBeta.domain.model.report.Report;
 import app.VBeta.domain.model.user.UserAccount;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.Getter;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -15,7 +12,7 @@ import java.time.LocalDateTime;
 
 /**
  * {@code ModerationAction} is an append-only admin logbook row for a {@link Report}.
- * Multiple actions per report are allowed.
+ * Multiple actions per report are allowed. Notes live here, not on {@code Events}.
  */
 @Entity
 @Table(name = "moderation_action")
@@ -23,6 +20,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ModerationAction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -63,7 +63,7 @@ Then by report date/time.
 
 - Issue breakdown drafts can follow the Sprint 5 moderation MVP contract (reports, notifications, logbook, appeals).
 - Related backlog: `docs/features/future-features.md` (#3, #6, #12)
-- API contract for the shipped create-report / unread-notification slice: `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, `docs/api/request-response-examples.md`
+- API contract for the shipped create-report / queue / resolve / unread-notification slice: `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, `docs/api/request-response-examples.md`
 
 ## Upcoming Sprints
 

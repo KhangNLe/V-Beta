@@ -3,7 +3,7 @@ package app.VBeta.controller;
 import app.VBeta.api.dto.report.ReportRequest;
 import app.VBeta.api.dto.report.ReportsPayload;
 import app.VBeta.application.AuthorizationService;
-import app.VBeta.application.ModerationService;
+import app.VBeta.application.ReportService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,18 +21,18 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/report")
 public class ContentReportController {
     private final AuthorizationService authorizationService;
-    private final ModerationService moderationService;
+    private final ReportService reportService;
 
     /**
      * Constructs a new {@code ContentReportController} with required services.
      *
      * @param authorizationService service for authentication context
-     * @param moderationService service for report creation, queue, and detail
+     * @param reportService service for report creation, queue, and detail
      */
     public ContentReportController(AuthorizationService authorizationService,
-                                   ModerationService moderationService) {
+                                   ReportService reportService) {
         this.authorizationService = authorizationService;
-        this.moderationService = moderationService;
+        this.reportService = reportService;
     }
 
     /**
@@ -46,7 +46,7 @@ public class ContentReportController {
     public ResponseEntity<?> createContentReport(@Valid @RequestBody ReportRequest request){
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-            moderationService.createNewReport(request, firebaseUid);
+            reportService.createNewReport(request, firebaseUid);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -76,9 +76,9 @@ public class ContentReportController {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
             ReportsPayload reports;
             if (reportId == null){
-                reports = moderationService.getReportQueue(firebaseUid);
+                reports = reportService.getReportQueue(firebaseUid);
             } else {
-                reports = moderationService.getReport(firebaseUid, reportId);
+                reports = reportService.getReport(firebaseUid, reportId);
             }
             return new ResponseEntity<>(reports, HttpStatus.OK);
         } catch (RuntimeException e) {

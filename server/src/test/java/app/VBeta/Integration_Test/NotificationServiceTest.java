@@ -2,13 +2,12 @@ package app.VBeta.Integration_Test;
 
 import app.VBeta.api.dto.notification.QuickNotificationDTO;
 import app.VBeta.api.dto.report.ReportRequest;
-import app.VBeta.application.ModerationService;
+import app.VBeta.application.ReportService;
 import app.VBeta.application.NotificationService;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.discussion.DiscussionRootManager;
 import app.VBeta.application.support.events.NotificationManager;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
-import app.VBeta.application.support.report.ReportManager;
 import app.VBeta.domain.model.actions.GymRole;
 import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.domain.model.climb.ClimbingProblem;
@@ -17,16 +16,13 @@ import app.VBeta.domain.model.discussions.DiscussionType;
 import app.VBeta.domain.model.notification.EventTargetType;
 import app.VBeta.domain.model.notification.EventTypeName;
 import app.VBeta.domain.model.notification.Notification;
-import app.VBeta.domain.model.report.Report;
 import app.VBeta.domain.model.report.ReportCategoryName;
-import app.VBeta.domain.model.report.ReportStatus;
 import app.VBeta.domain.model.report.ReportTargetType;
 import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.GymRoleRepository;
 import app.VBeta.repository.NotificationRepository;
 import app.VBeta.repository.ReportRepository;
 import app.VBeta.repository.UserAccountRepository;
-import org.h2.engine.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import app.VBeta.config.TestGcpStorageConfig;
@@ -59,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.*;
 })
 public class NotificationServiceTest {
     @Autowired
-    ModerationService moderationService;
+    ReportService reportService;
 
     @Autowired
     DiscussionRootManager discussionRootManager;
@@ -138,7 +134,7 @@ public class NotificationServiceTest {
                 discussionRoot.getDiscussionId()
         );
 
-        moderationService.createNewReport(report, user2.getFirebaseUid());
+        reportService.createNewReport(report, user2.getFirebaseUid());
 
         adminNoti = notificationManager.getUserUnreadNotifications(admin);
         assertNotNull(adminNoti);
@@ -170,7 +166,7 @@ public class NotificationServiceTest {
                 discussionRoot.getDiscussionId()
         );
 
-        moderationService.createNewReport(report, admin2.getFirebaseUid());
+        reportService.createNewReport(report, admin2.getFirebaseUid());
         List<Notification> admin1Inbox = notificationManager.getUserUnreadNotifications(admin);
         List<Notification> admin2Inbox = notificationManager.getUserUnreadNotifications(admin2);
 
@@ -203,7 +199,7 @@ public class NotificationServiceTest {
                 ReportCategoryName.OFF_TOPIC,
                 discussionRoot.getDiscussionId()
         );
-        moderationService.createNewReport(request, reporter.getFirebaseUid());
+        reportService.createNewReport(request, reporter.getFirebaseUid());
 
         List<QuickNotificationDTO> inbox =
                 notificationService.getQuickNotifications("testFirebaseUid3");
@@ -229,7 +225,7 @@ public class NotificationServiceTest {
                 ReportCategoryName.OFF_TOPIC,
                 discussionRoot.getDiscussionId()
         );
-        moderationService.createNewReport(request, reporter.getFirebaseUid());
+        reportService.createNewReport(request, reporter.getFirebaseUid());
 
         List<Notification> adminInbox = notificationManager.getUserUnreadNotifications(admin);
         assertEquals(1, adminInbox.size());
@@ -249,14 +245,14 @@ public class NotificationServiceTest {
         DiscussionRoot first = createDiscussionRoot("testFirebaseUid", 1L, DiscussionType.COMMENT);
         DiscussionRoot second = createDiscussionRoot("testFirebaseUid", 1L, DiscussionType.BETA);
 
-        moderationService.createNewReport(
+        reportService.createNewReport(
                 new ReportRequest(
                         ReportTargetType.DISCUSSION,
                         "first",
                         ReportCategoryName.OFF_TOPIC,
                         first.getDiscussionId()),
                 reporter.getFirebaseUid());
-        moderationService.createNewReport(
+        reportService.createNewReport(
                 new ReportRequest(
                         ReportTargetType.DISCUSSION,
                         "second",
@@ -276,7 +272,7 @@ public class NotificationServiceTest {
         DiscussionRoot discussionRoot = createDiscussionRoot(
                 "testFirebaseUid", 1L, DiscussionType.COMMENT);
 
-        moderationService.createNewReport(
+        reportService.createNewReport(
                 new ReportRequest(
                         ReportTargetType.DISCUSSION,
                         "test",
@@ -300,7 +296,7 @@ public class NotificationServiceTest {
         DiscussionRoot discussionRoot = createDiscussionRoot(
                 "testFirebaseUid", 1L, DiscussionType.COMMENT);
 
-        moderationService.createNewReport(
+        reportService.createNewReport(
                 new ReportRequest(
                         ReportTargetType.DISCUSSION,
                         "test",

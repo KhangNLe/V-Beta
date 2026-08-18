@@ -122,9 +122,9 @@ When adding a new feature, prefer extending existing project patterns over intro
 
 Place new types in the matching domain subpackage under `app.VBeta` (do not leave them in the layer root):
 
-- **DTOs** (`api/dto/`): `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`)
-- **Domain** (`domain/model/`): `actions/`, `climb/`, `discussions/`, `user/`
-- **Support** (`application/support/`): `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`
+- **DTOs** (`api/dto/`): `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`), `report/`, `notification/`, `moderation/`
+- **Domain** (`domain/model/`): `actions/`, `climb/`, `discussions/`, `user/`, `report/`, `notification/`, `appeal/`, `moderation/`
+- **Support** (`application/support/`): `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`, `report/`, `events/`, `moderation/`
 
 See [`docs/architecture/backend-architecture.md`](../architecture/backend-architecture.md) for the full layout.
 

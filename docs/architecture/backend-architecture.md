@@ -19,7 +19,7 @@ The backend follows a layered architecture under `server/src/main/java/app/VBeta
    - Coordinate use cases and transaction boundaries.
 3. **Support Managers/Adapters** (`application/support/`)
    - Domain-specific orchestration and integration helpers, grouped by concern:
-     - `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`, `report/`, `events/`
+     - `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`, `report/`, `events/`, `moderation/`
 4. **Repositories** (`repository/`)
    - Data access through Spring Data JPA.
 5. **Domain Model** (`domain/model/`)
@@ -31,7 +31,7 @@ The backend follows a layered architecture under `server/src/main/java/app/VBeta
      - `report/`, `notification/`, `appeal/`, `moderation/` — Sprint 5 moderation model
 6. **API DTOs** (`api/dto/`)
    - Request/response contracts, grouped by feature area:
-     - `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`), `report/`, `notification/`
+     - `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`), `report/`, `notification/`, `moderation/`
 
 Place new types in the matching domain subpackage rather than the layer root.
 
@@ -101,6 +101,7 @@ Access model types:
 - Some discussion endpoints are authenticated without full action-gating; enforceable behavior is partly service-rule based.
 - Content report **create** and unread notification poll are authenticated only (no `CREATE_REPORT` action).
 - Admin report **queue/detail** (`GET /api/report/reports`) is action-gated with `VIEW_REPORTS`.
+- Admin report **resolve** (`POST /api/moderate/report`) is action-gated with `MODERATE_REPORT`.
 
 ## Constraints and Technical Debt Notes
 

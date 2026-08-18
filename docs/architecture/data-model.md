@@ -71,7 +71,7 @@ Defined in runtime/test SQL. Closed workflow values use PostgreSQL enums; extens
   - Admin queue score for a target is `Σ (weight × OPEN report count)` per category.
 - `Event_Type`
   - Event name + description for notifiable lifecycle events.
-  - Seeded: `REPORT_CREATED`, `REPORT_DISMISSED`, `CONTENT_REMOVED`, `APPEAL_SUBMITTED`, `CONTENT_RESTORED`, `APPEAL_DENIED`.
+  - Seeded: `REPORT_CREATED`, `REPORT_DISMISSED`, `REPORT_APPROVED`, `CONTENT_REMOVED`, `APPEAL_SUBMITTED`, `CONTENT_RESTORED`, `APPEAL_DENIED`.
 
 #### Report lifecycle
 
@@ -85,13 +85,14 @@ Defined in runtime/test SQL. Closed workflow values use PostgreSQL enums; extens
 - `Moderation_Action`
   - Append-only admin logbook rows for a report (action type + required notes).
   - Multiple actions per report are allowed (for example remove, then later appeal decision).
+  - Queue resolve writes one row per closed reporter; notes are not copied onto `Events`.
 
 #### Events and inbox
 
 - `Events`
   - Happened-fact row: event type, optional `actor_user_id`, `event_target_type`, and typed target FKs with a one-target CHECK.
   - No JSON payload; consumers join related rows for display context.
-  - Sprint 5 moderation notifications typically target `REPORT`.
+  - Sprint 5 moderation notifications typically target `REPORT`. Create uses the reporter as actor; queue resolve uses the deciding admin (never the reporter).
 - `Notification`
   - Per-recipient inbox row for an event (`read_at` nullable).
   - Unique on `(event_id, recipient_user_id)`.
@@ -141,7 +142,7 @@ Action-level authorization uses:
 
 This model enables action-gated endpoint checks beyond simple authenticated/unauthenticated access.
 
-Dedicated moderation permission: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. Create-report and unread notification poll stay authenticated only (no `CREATE_REPORT`). `RESOLVE_REPORT` is not seeded yet.
+Dedicated moderation permissions: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. `MODERATE_REPORT` gates `POST /api/moderate/report` (dismiss or remove OPEN discussion reports). Create-report and unread notification poll stay authenticated only (no `CREATE_REPORT`). Appeals are not accepted on the resolve endpoint.
 
 ## Schema Management Notes
 
