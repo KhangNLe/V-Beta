@@ -102,9 +102,10 @@ This document defines the manual regression checklist for validating core user f
   3. As another non-admin user, attempt deleting other user comment
   4. As admin, delete another user comment
 - Expected:
-  - owner delete succeeds
+  - owner delete succeeds and the comment disappears from the problem timeline
   - non-owner non-admin delete is blocked
-  - admin delete succeeds
+  - admin delete succeeds and the comment disappears from the problem timeline
+  - the discussion root remains (soft delete); owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
 
 ### DISC-02: Solution Beta Upload/Delete
 
@@ -112,10 +113,13 @@ This document defines the manual regression checklist for validating core user f
   1. Upload a valid beta video on problem page
   2. Confirm metadata appears in discussion
   3. Delete beta as owner
+  4. As admin, delete another user's beta
 - Expected:
   - signed URL/upload/save flow succeeds
   - beta entry is visible after refresh
   - owner/admin deletion rules are enforced
+  - deleted betas disappear from the timeline; video metadata/GCS object is not immediately removed
+  - owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
 
 ### DISC-03: Suggest Perceived Grade
 

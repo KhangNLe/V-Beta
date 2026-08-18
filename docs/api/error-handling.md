@@ -23,7 +23,7 @@ Errors come from three main layers:
   - `GET /api/notification/short` when auth/account lookup throws `RuntimeException`
 - **404 Not Found**
   - Referenced resource not found (wall/problem/comment/beta/account/report targets)
-  - Most other controller `RuntimeException`s, including action-gated authorization failures and duplicate report creates
+  - Most other controller `RuntimeException`s, including action-gated authorization failures, duplicate report creates, unauthorized discussion deletes, and deleting an already-deleted discussion
 - **500 Internal Server Error**
   - Unhandled exceptions or infrastructure failures (storage/DB/internal service issues)
 

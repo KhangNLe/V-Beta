@@ -31,7 +31,7 @@ Deliver an end-to-end moderation loop: signed users report comments and solution
 - In-app notifications (new report for admins; outcome notifications for reporter/owner)
 - Personal notifications page (click notification lands here, then deep-link to queue/detail)
 - Moderation logbook UI/API
-- One-time appeal + admin-approved restore of soft-deleted discussion content
+- One-time appeal + admin-approved restore of soft-deleted discussion content (comment/beta delete already marks `Discussion_Root`; restore/purge still open)
 - Report action in discussion ⋮ menu (alongside owner/admin delete)
 
 ### Category priority (queue ranking)

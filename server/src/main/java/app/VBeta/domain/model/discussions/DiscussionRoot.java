@@ -16,7 +16,9 @@ import java.time.LocalDateTime;
  * {@code DiscussionRoot} is the anchor row for a discussion item on a climbing problem.
  * <p>
  * Each row represents either a comment or a solution beta entry and can optionally
- * reference a parent discussion to form reply threads.
+ * reference a parent discussion to form reply threads. User/admin deletes set
+ * {@code deletedAt}, {@code deletedBy}, and {@code deletedReason} rather than removing
+ * the row. Problem timelines omit roots whose {@code deletedAt} is set.
  */
 @Entity
 @Table(name = "Discussion_Root")

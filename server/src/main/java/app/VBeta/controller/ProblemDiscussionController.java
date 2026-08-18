@@ -21,7 +21,8 @@ import org.springframework.web.bind.annotation.*;
 /**
  * {@code ProblemDiscussionController} handles discussion interactions for climbing problems.
  * <p>
- * Endpoints include user comments, solution beta upload lifecycle, and perceived grade submissions.
+ * Endpoints include user comments, solution beta upload lifecycle, perceived grade submissions,
+ * and owner/admin soft-delete of comments and betas.
  * Business logic is delegated to {@link ProblemDiscussionService} and {@link ClimbingWallService}.
  * Authorization checks are performed via {@link AuthorizationService} for privileged actions.
  */
@@ -130,15 +131,17 @@ public class ProblemDiscussionController {
     }
 
     /**
-     * Deletes a user solution beta entry.
+     * Soft-deletes a user solution beta when requester is owner or admin.
+     * <p>
+     * Marks the discussion root deleted. Does not remove the solution-beta row or GCS object.
      *
-     * @param request solution beta deletion payload
+     * @param request solution beta deletion payload, including {@code deleteReason}
      */
     @DeleteMapping("/solution-beta")
     public ResponseEntity<?> deleteUserSolutionBeta(@RequestBody SolutionBetaDeletionRequest request){
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-            problemDiscussionService.removeUserSolutionBeta(request, firebaseUid);
+            problemDiscussionService.softDeleteUserSolutionBeta(request, firebaseUid);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -148,19 +151,21 @@ public class ProblemDiscussionController {
     }
 
     /**
-     * Deletes a discussion comment authored by a user.
+     * Soft-deletes a discussion comment authored by a user.
      * <p>
      * Caller must be authorized for {@link ActionDefinition#DELETE_COMMENT}. The underlying
-     * service validates whether the requester is either the author or an administrator.
+     * service validates whether the requester is either the author or an administrator, then
+     * marks the discussion root deleted without removing the comment row.
      *
      * @param request comment deletion payload containing author/problem/content identifiers
+     *                and {@code deletedReason}
      */
     @DeleteMapping("/comment/delete")
     public ResponseEntity<?> deleteComment(@Valid @RequestBody CommentDeletionRequest request){
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
             authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_COMMENT);
-            problemDiscussionService.removeUserComment(firebaseUid, request);
+            problemDiscussionService.softDeleteUserComment(firebaseUid, request);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);

@@ -306,6 +306,7 @@ Keep test schema SQL aligned if you roll back.
     - nullable `parent_discussion_id` (self-FK for future threading)
     - `discussion_type` backed by PostgreSQL enum `discussion_kind`
     - `create_at` timestamp used by runtime entity mapping
+    - nullable soft-delete columns `deleted_by`, `deleted_reason`, `deleted_at`
     - referential integrity FKs for `problem_id`, `user_id`, and `deleted_by`
   - Sprint 5 moderation tables with:
     - enum-backed statuses / target / action types
