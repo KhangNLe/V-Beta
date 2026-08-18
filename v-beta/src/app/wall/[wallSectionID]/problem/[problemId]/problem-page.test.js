@@ -11,7 +11,10 @@ import {
 } from "@/api/solutionBeta";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useParams, useRouter } from "next/navigation";
-import { discussionDeletionReason } from "@/lib/discussionDeletion";
+import {
+  ADMIN_FORCED_DELETE_DISCUSSION,
+  USER_DELETED_OWN_DISCUSSION,
+} from "@/lib/discussionDeletion";
 import { toast } from "react-toastify";
 
 jest.mock("@/api/wallSections", () => ({
@@ -271,7 +274,7 @@ describe("ProblemPage coverage", () => {
           problemId: 100,
           discussionId: 301,
           commentContent: "Try heel hook",
-          deletedReason: discussionDeletionReason(true),
+          deletedReason: USER_DELETED_OWN_DISCUSSION,
         });
       });
     });
@@ -294,7 +297,7 @@ describe("ProblemPage coverage", () => {
           problemId: 100,
           discussionId: 301,
           commentContent: "Try heel hook",
-          deletedReason: discussionDeletionReason(false),
+          deletedReason: ADMIN_FORCED_DELETE_DISCUSSION,
         });
       });
     });
@@ -317,7 +320,7 @@ describe("ProblemPage coverage", () => {
           problemId: 100,
           discussionId: 302,
           publicUrl: "https://example.com/beta.mp4",
-          deleteReason: discussionDeletionReason(true),
+          deleteReason: USER_DELETED_OWN_DISCUSSION,
         });
       });
     });
@@ -340,7 +343,7 @@ describe("ProblemPage coverage", () => {
           problemId: 100,
           discussionId: 302,
           publicUrl: "https://example.com/beta.mp4",
-          deleteReason: discussionDeletionReason(false),
+          deleteReason: ADMIN_FORCED_DELETE_DISCUSSION,
         });
       });
     });
