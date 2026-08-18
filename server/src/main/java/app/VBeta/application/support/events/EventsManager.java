@@ -14,8 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * {@code EventsManager} persists domain event rows used by in-app notifications.
  * <p>
- * Moderation notifications typically target a {@link Report} with
- * {@link EventTypeName#REPORT_CREATED}.
+ * Report-lifecycle events target a {@link Report} ({@code target_type = REPORT}).
+ * Create uses the reporter as actor; queue resolve uses the deciding admin.
  */
 @Transactional
 @Service
@@ -57,6 +57,19 @@ public class EventsManager {
         );
     }
 
+    /**
+     * Creates a queue-resolve event for the given report.
+     * <p>
+     * The actor is the deciding admin and the event target is the report itself.
+     * Used for {@code REPORT_DISMISSED}, {@code REPORT_APPROVED}, and
+     * {@code CONTENT_REMOVED}.
+     *
+     * @param report persisted report
+     * @param eventTypeName seeded event kind
+     * @param decision logbook row supplying the admin actor
+     * @return saved event
+     * @throws IllegalArgumentException when the event type is missing
+     */
     public Events createModeratedReportEvent(Report report, EventTypeName eventTypeName, ModerationAction decision) {
         return eventsRepository.save(Events.builder()
                 .eventType(

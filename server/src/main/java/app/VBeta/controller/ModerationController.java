@@ -3,24 +3,47 @@ package app.VBeta.controller;
 import app.VBeta.api.dto.moderation.ModerationRequest;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ModerationService;
-import app.VBeta.application.ReportService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * {@code ModerationController} accepts admin decisions on OPEN report-queue rows.
+ * <p>
+ * Resolve is action-gated with
+ * {@link app.VBeta.domain.model.actions.ActionDefinition#MODERATE_REPORT}.
+ * Caller identity is taken from {@link AuthorizationService}, not the request body.
+ */
 @RestController
 @RequestMapping("/api/moderate")
 public class ModerationController {
     private final AuthorizationService authorizationService;
     private final ModerationService moderationService;
 
+    /**
+     * Constructs a new {@code ModerationController} with required services.
+     *
+     * @param authorizationService service for authentication context
+     * @param moderationService service for report-queue resolve
+     */
     public ModerationController(AuthorizationService authorizationService,
                                 ModerationService moderationService) {
         this.authorizationService = authorizationService;
         this.moderationService = moderationService;
     }
 
+    /**
+     * Applies a dismiss or content-removed decision to each eligible report id.
+     * <p>
+     * On success the response is {@code 200} with an empty body, including when
+     * every id was skipped. {@code RuntimeException} is mapped to {@code 404}
+     * (missing account, missing {@code MODERATE_REPORT}, or unsupported appeal
+     * decision). Bean validation failures still return {@code 400}.
+     *
+     * @param moderationRequest report ids, decision, and required admin notes
+     * @return empty {@code 200} on success
+     */
     @PostMapping("/report")
     public ResponseEntity<?> moderateReport(@Valid @RequestBody ModerationRequest moderationRequest) {
         try {

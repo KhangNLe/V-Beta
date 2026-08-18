@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 /**
  * {@code ModerationAction} is an append-only admin logbook row for a {@link Report}.
- * Multiple actions per report are allowed.
+ * Multiple actions per report are allowed. Notes live here, not on {@code Events}.
  */
 @Entity
 @Table(name = "moderation_action")

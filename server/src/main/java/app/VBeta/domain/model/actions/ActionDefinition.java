@@ -30,6 +30,6 @@ public enum ActionDefinition {
     GRADE_PROBLEM,
     /** Permission to view the admin report queue and report detail. */
     VIEW_REPORTS,
-    /** Permission to decide what action to take on a report.*/
+    /** Permission to dismiss or remove reported discussion content ({@code POST /api/moderate/report}). */
     MODERATE_REPORT
 }

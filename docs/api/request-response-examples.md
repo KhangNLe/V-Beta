@@ -537,11 +537,57 @@ Two reporters on the same discussion with different categories produce **one** a
 
 Empty queue or a hidden/dismissed-only case is `200` with `"reports": []`, not 404.
 
-## 17) Get Unread Notifications (Authenticated)
+## 17) Resolve Report Queue (Action-gated)
 
-Poll unread inbox rows (`readAt` is null). The payload is event type + description + `createdAt`. It does not include the report reason.
+Requires `MODERATE_REPORT`. Success is `200` with an empty body. Each `reportIds` value is one reporter row; omitted OPEN siblings stay open.
 
-Any authenticated role may call this endpoint. `REPORT_CREATED` inbox rows are written for admins only (the reporter is skipped if they are an admin).
+### Request — dismiss
+
+```http
+POST /api/moderate/report
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "reportIds": [11, 12],
+  "decision": "REPORT_DISMISSED",
+  "reason": "Does not violate gym guidelines."
+}
+```
+
+### Request — remove content
+
+```json
+{
+  "reportIds": [11, 12],
+  "decision": "CONTENT_REMOVED",
+  "reason": "Does not belong on this wall."
+}
+```
+
+`decision` values accepted here: `REPORT_DISMISSED`, `CONTENT_REMOVED`. `APPEAL_APPROVED` and `APPEAL_DENIED` are rejected.
+
+`reason` is required and stored on `Moderation_Action.admin_notes`.
+
+### Response (200)
+
+Empty body. Unknown, already-closed, admin-filed, and admin-owned-discussion ids are skipped; the call still returns `200`.
+
+Dismiss notifies each reporter (`REPORT_DISMISSED`) and does not notify the owner. Remove closes each report, soft-deletes the discussion once, notifies each reporter (`REPORT_APPROVED`), and notifies the owner once (`CONTENT_REMOVED`).
+
+### Error examples
+
+- `400` when `reportIds` is missing, `decision` is missing, or `reason` is blank
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when the account is missing, the caller is not allowed `MODERATE_REPORT`, or `decision` is an appeal type (`Appeal decisions are not supported on this endpoint.`)
+
+## 18) Get Unread Notifications (Authenticated)
+
+Poll unread inbox rows (`readAt` is null). The payload is event type + description + `createdAt`. It does not include the report reason, admin notes, `notificationId`, or `reportId`.
+
+Any authenticated role may call this endpoint. `REPORT_CREATED` inbox rows are written for admins only (the reporter is skipped if they are an admin). Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner.
 
 ### Request
 
@@ -564,10 +610,32 @@ Authorization: Bearer <firebase_id_token>
 ]
 ```
 
-### Response (200) — climber/setter with no unread admin events
+### Response (200) — reporter after dismiss
 
 ```json
-[]
+[
+  {
+    "event": {
+      "eventTypeName": "REPORT_DISMISSED",
+      "description": "An admin dismissed a report you submitted"
+    },
+    "createdAt": "2026-08-18T18:00:00"
+  }
+]
+```
+
+### Response (200) — owner after content removed
+
+```json
+[
+  {
+    "event": {
+      "eventTypeName": "CONTENT_REMOVED",
+      "description": "One of your content had been reported and removed."
+    },
+    "createdAt": "2026-08-18T18:00:00"
+  }
+]
 ```
 
 ### Error examples

@@ -13,7 +13,9 @@ import java.util.List;
  * authenticated user.
  * <p>
  * Inbox lookups are delegated to {@link NotificationService}. Identity is resolved
- * through {@link AuthorizationService}.
+ * through {@link AuthorizationService}. Queue-resolve outcomes
+ * ({@code REPORT_DISMISSED}, {@code REPORT_APPROVED}, {@code CONTENT_REMOVED})
+ * appear here alongside admin {@code REPORT_CREATED} rows.
  */
 @RestController
 @RequestMapping("/api/notification")

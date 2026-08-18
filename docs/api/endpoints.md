@@ -180,19 +180,19 @@ Create-report is **authenticated, not action-gated**. There is no `CREATE_REPORT
     - `404` when the reporter account is missing, the target is missing/deleted, the reporter owns the discussion / is the reported user, or a duplicate report already exists
   - Product note: Sprint 5 UI scope is discussion comments/betas (`DISCUSSION`). The API also accepts wall, problem, and user targets.
 
-Admin queue and detail are action-gated (`VIEW_REPORTS`). See Action-Gated Endpoints below.
+Admin queue and detail are action-gated (`VIEW_REPORTS`). Resolve is action-gated (`MODERATE_REPORT`). See Action-Gated Endpoints below.
 
 ### Notifications (Authenticated)
 
-Unread inbox read is **authenticated, not action-gated**. Any signed-in role may call it; `REPORT_CREATED` rows are currently fanned out to admins only, so climber/setter inboxes are typically empty for this event.
+Unread inbox read is **authenticated, not action-gated**. Any signed-in role may call it. `REPORT_CREATED` rows are fanned out to admins only. Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner.
 
 - `GET /api/notification/short`
   - Purpose: poll unread inbox summaries for the authenticated user (`readAt IS NULL`).
   - Response: `200` array of `QuickNotificationDTO`:
-    - `event.eventTypeName` (for example `REPORT_CREATED`)
-    - `event.description` (seeded catalog text; does **not** include the report reason)
+    - `event.eventTypeName` (`REPORT_CREATED`, `REPORT_DISMISSED`, `REPORT_APPROVED`, `CONTENT_REMOVED`)
+    - `event.description` (seeded catalog text; does **not** include the report reason or admin notes)
     - `createdAt`
-  - Delivery: client polling is sufficient for Sprint 5 (no WebSocket/SSE/FCM).
+  - Delivery: client polling is sufficient for Sprint 5 (no WebSocket/SSE/FCM). Click routing uses `eventTypeName`; the DTO does not include `notificationId` or `reportId`.
   - Errors:
     - `401` when unauthenticated, the Firebase token is invalid, or no account matches the UID
 
@@ -290,6 +290,26 @@ Unread inbox read is **authenticated, not action-gated**. Any signed-in role may
     - `401` when unauthenticated or the Firebase token is invalid
     - `404` when the account is missing, the caller lacks `VIEW_REPORTS`, or `reportId` does not exist
   - Product note: Sprint 5 queue/detail is built for discussion comments and betas. The mapper also serializes problem/wall/user targets if those rows exist.
+
+- `POST /api/moderate/report`
+  - Required action: `MODERATE_REPORT` (admin)
+  - Purpose: close one or more OPEN discussion reports with a dismiss or remove decision. Each `reportIds` value is one reporter row; omitted siblings stay `OPEN`.
+  - Request body (`ModerationRequest`):
+    - `reportIds` (required list of report ids)
+    - `decision` (`REPORT_DISMISSED` or `CONTENT_REMOVED`; appeal types are rejected)
+    - `reason` (required admin notes, stored on `Moderation_Action.admin_notes`)
+  - Per eligible report: write a logbook row, set status (`DISMISSED` or `CONTENT_REMOVED`), notify that reporter.
+  - `CONTENT_REMOVED` shared side effects (once per discussion in the request): soft-delete `Discussion_Root` and notify the owner with `CONTENT_REMOVED`. If the discussion is already deleted, reports still close and the owner is not notified again.
+  - Skipped ids (request still `200`): unknown, already-closed, filed by the acting admin, on a discussion the admin owns, or non-`DISCUSSION` targets.
+  - Response: `200` with empty body (including when every id was skipped).
+  - Side effects (events `target_type = REPORT`, actor = admin):
+    - dismiss → reporter `REPORT_DISMISSED`; owner is not notified
+    - remove → reporter `REPORT_APPROVED`; owner `CONTENT_REMOVED` once
+  - Errors:
+    - `400` when `reportIds` / `decision` / `reason` fail bean validation (missing list, missing decision, blank reason)
+    - `401` when unauthenticated or the Firebase token is invalid
+    - `404` when the account is missing, the caller lacks `MODERATE_REPORT`, or `decision` is `APPEAL_APPROVED` / `APPEAL_DENIED` (`Appeal decisions are not supported on this endpoint.`)
+  - Product note: Sprint 5 resolve is discussion comments and betas only. Appeals are out of this endpoint.
 
 ## Related Docs
 

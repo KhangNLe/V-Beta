@@ -16,8 +16,9 @@ import java.util.*;
  * {@code ReportManager} encapsulates persistence and validation rules for
  * {@link Report} entities.
  * <p>
- * It resolves typed report targets, maps category names to catalog rows, and
- * exposes duplicate checks used by {@link ReportService}.
+ * It resolves typed report targets, maps category names to catalog rows,
+ * hides self-owned cases from admins, and exposes duplicate checks used by
+ * {@link ReportService}.
  */
 @Service
 @Transactional
@@ -128,6 +129,14 @@ public class ReportManager {
         ).toList();
     }
 
+    /**
+     * Returns a report by id when it is not hidden from {@code user}.
+     *
+     * @param user viewing account
+     * @param reportId report identifier
+     * @return matching report
+     * @throws RuntimeException when missing or hidden from the viewer
+     */
     public Report findReportNotFromUser(UserAccount user, Long reportId){
         Report report = findById(reportId);
         if (isHiddenFromViewer(report, user)){
@@ -136,6 +145,18 @@ public class ReportManager {
         return report;
     }
 
+    /**
+     * Returns an {@code OPEN} report the acting admin may resolve.
+     * <p>
+     * Excludes reports filed by {@code admin} and reports hidden because the
+     * admin owns the discussion (or is the reported user).
+     *
+     * @param admin acting admin
+     * @param reportId report identifier
+     * @return matching OPEN report
+     * @throws RuntimeException when missing, already closed, filed by
+     *         {@code admin}, or hidden from {@code admin}
+     */
     public Report findOpenReportNotOfAdmin(UserAccount admin, Long reportId){
         Optional<Report> report = reportRepository.findOpenReportNotFromReporter(ReportStatus.OPEN, admin, reportId);
         if (report.isEmpty()) {
@@ -174,12 +195,26 @@ public class ReportManager {
         };
     }
 
+    /**
+     * Sets status and {@code resolvedAt} on a report and persists it.
+     *
+     * @param report report to close or update
+     * @param reportStatus new status ({@code DISMISSED} or {@code CONTENT_REMOVED})
+     */
     public void updateReportStatus(Report report, ReportStatus reportStatus){
         report.setReportStatus(reportStatus);
         report.setResolvedAt(Instant.now());
         reportRepository.save(report);
     }
 
+    /**
+     * Returns whether {@code user} must not see this report: they own the
+     * reported discussion, or they are the target of a user-account report.
+     *
+     * @param report report being viewed
+     * @param user viewing account
+     * @return {@code true} when the case is hidden from {@code user}
+     */
     private boolean isHiddenFromViewer(Report report, UserAccount user) {
         return (report.getTargetType() == ReportTargetType.DISCUSSION
                 && report.getDiscussion().getUserAccount().equals(user))

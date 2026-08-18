@@ -21,7 +21,8 @@ import java.util.*;
  * {@code NotificationService} is the orchestration layer for in-app moderation notifications.
  * <p>
  * It records {@code REPORT_CREATED} events and fans out inbox rows to admin recipients,
- * and maps unread notifications into lightweight DTOs for the client.
+ * records report-queue outcome events for reporters and owners, and maps unread
+ * notifications into lightweight DTOs for the client.
  */
 @Service
 @Transactional
@@ -60,6 +61,18 @@ public class NotificationService {
         }
     }
 
+    /**
+     * Records a report-queue outcome event and pushes one inbox row to {@code toUser}.
+     * <p>
+     * The event actor is the deciding admin (never the reporter). Typical types:
+     * {@link EventTypeName#REPORT_DISMISSED} and {@link EventTypeName#REPORT_APPROVED}
+     * for the reporter, {@link EventTypeName#CONTENT_REMOVED} for the owner.
+     *
+     * @param decision logbook row whose admin is the event actor
+     * @param toUser inbox recipient
+     * @param report report the event targets
+     * @param eventTypeName seeded event kind to record
+     */
     public void sendReportModerationNotification(ModerationAction decision, UserAccount toUser, Report report,
                                                  EventTypeName eventTypeName) {
         Events event = eventManager.createModeratedReportEvent(report, eventTypeName, decision);

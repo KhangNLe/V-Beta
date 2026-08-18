@@ -19,6 +19,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Set;
 import java.util.HashSet;
 
+/**
+ * {@code ModerationService} is the orchestration layer for admin report-queue
+ * decisions ({@code POST /api/moderate/report}).
+ * <p>
+ * It authorizes {@link ActionDefinition#MODERATE_REPORT}, writes a
+ * {@link ModerationAction} logbook row per eligible report, closes that reporter
+ * row, and notifies the reporter. {@code CONTENT_REMOVED} also soft-deletes the
+ * shared discussion once and notifies the owner once. Appeals are rejected.
+ */
 @Service
 @Transactional
 public class ModerationService {
@@ -29,6 +38,16 @@ public class ModerationService {
     private final ReportManager reportManager;
     private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
 
+    /**
+     * Constructs a new {@code ModerationService} with required collaborators.
+     *
+     * @param moderationManager manager for append-only logbook rows
+     * @param authorizationService service for {@code MODERATE_REPORT} checks
+     * @param notificationService service for reporter/owner outcome inbox writes
+     * @param userAccountManager manager for admin account lookups
+     * @param reportManager manager for open-report lookup and status updates
+     * @param climbingProblemDiscussionManager manager for discussion soft-delete
+     */
     public ModerationService(ModerationManager moderationManager,
                              AuthorizationService authorizationService,
                              NotificationService notificationService,
@@ -43,6 +62,20 @@ public class ModerationService {
         this.climbingProblemDiscussionManager = climbingProblemDiscussionManager;
     }
 
+    /**
+     * Applies one queue decision to each eligible id in {@code reportIds}.
+     * <p>
+     * Allowed decisions are {@link ModerateActionType#REPORT_DISMISSED} and
+     * {@link ModerateActionType#CONTENT_REMOVED}. Each id is resolved independently:
+     * unknown, already-closed, admin-filed, admin-owned-discussion, and
+     * non-{@code DISCUSSION} reports are skipped. Sibling OPEN reports not in
+     * {@code reportIds} stay open.
+     *
+     * @param moderationRequest report ids, decision, and required admin notes
+     * @param firebaseUid Firebase UID of the acting admin
+     * @throws RuntimeException when the account is missing, unauthorized, or
+     *         the decision is an appeal type
+     */
     public void createModerationForReportQueue(ModerationRequest moderationRequest, String firebaseUid) {
         UserAccount admin = userAccountManager.findUserAccount(firebaseUid);
         if (admin == null){
@@ -66,6 +99,12 @@ public class ModerationService {
         }
     }
 
+    /**
+     * Rejects appeal decisions; this endpoint only dismisses or removes content.
+     *
+     * @param decision requested logbook action type
+     * @throws RuntimeException when the decision is not a queue resolve action
+     */
     private void validateQueueDecision(ModerateActionType decision) {
         if (decision != ModerateActionType.REPORT_DISMISSED
                 && decision != ModerateActionType.CONTENT_REMOVED) {
@@ -73,12 +112,31 @@ public class ModerationService {
         }
     }
 
+    /**
+     * Writes the logbook row for one report, then applies status and notification
+     * side effects.
+     *
+     * @param request queue decision payload (notes are copied onto the logbook)
+     * @param admin acting admin (logbook actor and event actor)
+     * @param report OPEN discussion report visible to {@code admin}
+     * @param removedDiscussionIds discussions already soft-deleted in this request
+     */
     private void createModerationForReport(ModerationRequest request, UserAccount admin, Report report,
                                            Set<Long> removedDiscussionIds) {
         ModerationAction decision = moderationManager.createModeration(report, admin, request);
         moderateDiscussionReport(decision, report, admin, removedDiscussionIds);
     }
 
+    /**
+     * Closes the report and notifies the reporter. Dismiss does not notify the
+     * owner. Remove also soft-deletes the discussion (once) and notifies the owner
+     * (once) with {@link EventTypeName#CONTENT_REMOVED}.
+     *
+     * @param decision persisted logbook row
+     * @param report report being closed
+     * @param admin acting admin used for soft-delete attribution
+     * @param removedDiscussionIds discussions already handled in this request
+     */
     private void moderateDiscussionReport(ModerationAction decision, Report report, UserAccount admin,
                                           Set<Long> removedDiscussionIds) {
         switch (decision.getModerateActionType()) {
@@ -97,6 +155,18 @@ public class ModerationService {
         }
     }
 
+    /**
+     * Soft-deletes the reported discussion once per request and notifies the owner.
+     * <p>
+     * If this discussion was already processed in {@code removedDiscussionIds}, or
+     * {@code deletedAt} is already set, the method returns without a second delete
+     * or a second owner notification. Reports are still closed by the caller.
+     *
+     * @param admin acting admin stored as {@code deletedBy}
+     * @param report report whose discussion is the remove target
+     * @param decision logbook row used as the owner-notification event source
+     * @param removedDiscussionIds discussions already removed in this request
+     */
     private void removeDiscussion(UserAccount admin, Report report, ModerationAction decision,
                                   Set<Long> removedDiscussionIds) {
         Long discussionId = report.getDiscussion().getDiscussionId();

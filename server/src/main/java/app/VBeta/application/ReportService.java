@@ -20,7 +20,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * {@code ModerationService} is the orchestration layer for content-report creation
+ * {@code ReportService} is the orchestration layer for content-report creation
  * and the admin report queue.
  * <p>
  * It resolves the reporter, enforces duplicate rules, persists the report through
@@ -38,7 +38,7 @@ public class ReportService {
     private final ClimbingWallService climbingWallService;
 
     /**
-     * Constructs a new {@code ModerationService} with required collaborators.
+     * Constructs a new {@code ReportService} with required collaborators.
      *
      * @param reportManager manager for report persistence and duplicate checks
      * @param userAccountManager manager for reporter account lookups
