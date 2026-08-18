@@ -5,11 +5,16 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * Request payload for deleting a previously uploaded beta solution video.
+ * Request payload for soft-deleting a previously uploaded beta solution video.
+ * <p>
+ * The discussion root is marked deleted. The solution-beta metadata row and GCS
+ * object are kept until a later purge flow.
  *
- * @param userId identifier of the user requesting deletion
+ * @param userId identifier of the beta author
  * @param problemId identifier of the related climbing problem
- * @param publicUrl public URL of the video to remove
+ * @param discussionId identifier of the {@code DiscussionRoot} to mark deleted
+ * @param publicUrl public URL of the video used for consistency check
+ * @param deleteReason reason stored on the discussion root (max 100 characters)
  */
 public record SolutionBetaDeletionRequest(
         @NotNull Long userId,

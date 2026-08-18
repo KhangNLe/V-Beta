@@ -34,8 +34,8 @@ All routes below are under `/api`.
 | `GET /api/discussion/solution-beta/upload-url` | No | Yes | Yes | Yes | Authenticated |
 | `POST /api/discussion/solution-beta/save` | No | Yes | Yes | Yes | Authenticated |
 | `POST /api/discussion/problems/{problemId}/suggest-grade` | No | Yes | Yes | Yes | Action-gated (`GRADE_PROBLEM`) |
-| `DELETE /api/discussion/comment/delete` | No | Depends | Depends | Yes | Action-gated (`DELETE_COMMENT`) + owner/admin service check |
-| `DELETE /api/discussion/solution-beta` | No | Depends | Depends | Yes | Authenticated + owner/admin service check |
+| `DELETE /api/discussion/comment/delete` | No | Depends | Depends | Yes | Action-gated (`DELETE_COMMENT`) + owner/admin **soft-delete** |
+| `DELETE /api/discussion/solution-beta` | No | Depends | Depends | Yes | Authenticated + owner/admin **soft-delete** |
 | `POST /api/report/create` | No | Yes | Yes | Yes | Authenticated (not action-gated; no `CREATE_REPORT`) |
 | `GET /api/report/reports` | No | No | No | Yes | Action-gated (`VIEW_REPORTS`) |
 | `GET /api/report/reports?reportId=` | No | No | No | Yes | Action-gated (`VIEW_REPORTS`) |
@@ -68,3 +68,4 @@ All routes below are under `/api`.
 - `GET /api/report/reports` returns grouped OPEN cases ranked by `Σ (weight × count)`. Climber/setter and missing `VIEW_REPORTS` currently map to **404**. An admin does not see reports on their own discussion (or a user-account report targeting themselves); that is a `200` with an empty `reports` list, not 404.
 - Action-gated `RuntimeException` failures are currently mapped by controllers to **404** (most reads) or **400** (wall/problem writes), not 403.
 - Problem delete is `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`. Wall reset is `PATCH /api/home/wall-section/{wallSectionId}/reset`. Upload URL is `GET /api/discussion/solution-beta/upload-url` with a JSON body.
+- Comment/beta `DELETE` endpoints **soft-delete** `Discussion_Root` (they do not remove comment/beta child rows or GCS objects). Comment requests require `deletedReason`; beta requests require `deleteReason`.

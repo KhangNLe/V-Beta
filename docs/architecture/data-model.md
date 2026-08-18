@@ -46,7 +46,8 @@ Located in `domain/model/discussions/` and `domain/model/user/`:
 - `DiscussionRoot`
   - Unified discussion anchor row for comments and solution betas.
   - Supports future nested discussion via nullable self-reference (`parent_discussion_id`).
-  - Stores discussion type (`COMMENT` / `BETA`) and soft-delete metadata (`deleted_by`, `deleted_reason`, `deleted_at`) used for reversible moderation deletes.
+  - Stores discussion type (`COMMENT` / `BETA`) and soft-delete metadata (`deleted_by`, `deleted_reason`, `deleted_at`).
+  - Owner/admin delete endpoints set those fields and hide the row from problem timelines. Comment/beta child rows are not removed. Admin restore and delayed GCS purge remain future work.
 - `UserComment`
   - User-to-problem comment anchor.
 - `DiscussionComment`

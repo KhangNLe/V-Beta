@@ -42,11 +42,21 @@ Climber users can participate in problem discussion and feedback.
 3. Enter comment text and submit.
 4. Verify the new comment appears in the discussion.
 
+### B2) Delete a Comment
+1. On a problem page, open the actions menu on a comment you own (or, as admin, on another user's comment).
+2. Choose Delete Comment.
+3. Verify the comment disappears from the discussion after refresh.
+
 ### C) Submit a Beta Video
 1. On a problem page, choose beta upload flow.
 2. Request signed upload URL.
 3. Upload video and save beta metadata.
 4. Verify your beta appears in discussion.
+
+### C2) Delete a Beta Video
+1. On a problem page, open the actions menu on a beta you own (or, as admin, on another user's beta).
+2. Choose Delete Solution Beta.
+3. Verify the beta disappears from the discussion after refresh.
 
 ### D) Suggest a Grade
 1. On a problem page, choose a perceived grade.

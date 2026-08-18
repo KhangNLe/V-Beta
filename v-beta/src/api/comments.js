@@ -25,8 +25,8 @@ export async function postCommentForUser(user, problemId, commentInfo) {
 }
 
 /**
- * Delete user comment from a problem.
- * 
+ * Delete user comment from a problem (soft-delete of the discussion root).
+ *
  * @param {import("firebase/auth").User} user
  * @param {{authorId: number, problemId: number, discussionId: number, commentContent: string, deletedReason: string}} payload
  */

@@ -3,6 +3,8 @@ export const ADMIN_FORCED_DELETE_DISCUSSION = "Admin forced delete the discussio
 
 /**
  * Reason string sent with discussion soft-delete requests.
+ * Owner deletes use {@link USER_DELETED_OWN_DISCUSSION}; admin deletes of
+ * another user's item use {@link ADMIN_FORCED_DELETE_DISCUSSION}.
  *
  * @param {boolean} isOwner
  * @returns {typeof USER_DELETED_OWN_DISCUSSION | typeof ADMIN_FORCED_DELETE_DISCUSSION}

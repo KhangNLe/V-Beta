@@ -102,7 +102,7 @@ export async function saveSolutionBetaToDatabase(user, payload) {
 }
 
 /**
- * Delete solution beta from database.
+ * Soft-delete a solution beta discussion. Does not remove the GCS object.
  *
  * @param {import("firebase/auth").User} user
  * @param {{userId: number, problemId: number, discussionId: number, publicUrl: string, deleteReason: string}} payload

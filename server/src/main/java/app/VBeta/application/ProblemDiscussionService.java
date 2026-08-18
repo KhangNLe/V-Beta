@@ -32,7 +32,7 @@ import java.util.Objects;
  * <p>
  * It validates user/problem context and delegates persistence operations to
  * specialized managers, while enforcing discussion-id-based authorization checks
- * for deletion operations.
+ * for soft-deletion operations.
  */
 @Service
 @Transactional
@@ -114,7 +114,10 @@ public class ProblemDiscussionService {
     }
 
     /**
-     * Removes a user's solution beta when requester is owner or admin.
+     * Soft-deletes a user's solution beta when requester is owner or admin.
+     * <p>
+     * Sets {@code deleted_at}, {@code deleted_by}, and {@code deleted_reason} on the
+     * discussion root. Child beta metadata and GCS objects are left in place.
      *
      * @param request solution beta deletion payload
      * @param firebaseUid Firebase UID of the authenticated requester
@@ -151,7 +154,10 @@ public class ProblemDiscussionService {
     }
 
     /**
-     * Removes a user discussion comment when requester is the author or an admin.
+     * Soft-deletes a user discussion comment when requester is the author or an admin.
+     * <p>
+     * Sets {@code deleted_at}, {@code deleted_by}, and {@code deleted_reason} on the
+     * discussion root. The comment child row is left in place.
      *
      * @param firebaseUid Firebase UID of the authenticated requester
      * @param request comment deletion payload
@@ -201,14 +207,15 @@ public class ProblemDiscussionService {
     private record DiscussionContent(String commentContent, String betaUrl) {}
 
     /**
-     * Validates that a discussion id belongs to the requester on the given problem,
-     * unless requester is an administrator.
+     * Validates that a discussion id exists on the given problem with matching content.
+     * Non-admins must own the discussion; admins may target any discussion on the problem.
      *
      * @param requestDiscussionId discussion id to validate
      * @param requestUser requester account
      * @param problem climbing problem context
-     * @throws RuntimeException when requester
-     * does not own the discussion and is not admin
+     * @param discussionContent expected comment text or beta URL
+     * @throws RuntimeException when the discussion is missing, content mismatches,
+     *         or a non-admin does not own the discussion
      */
     private void validateDiscussionExisting(Long requestDiscussionId, UserAccount requestUser,
                                             ClimbingProblem problem, DiscussionContent discussionContent){

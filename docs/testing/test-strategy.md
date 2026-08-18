@@ -72,8 +72,8 @@ Focus:
 
 - end-to-end service/controller behavior with realistic persistence interactions
 - wall/problem lifecycle operations
-- comment creation/deletion behavior
-- solution beta metadata creation/deletion behavior
+- comment creation/soft-deletion behavior (root stays; timeline hides deleted rows)
+- solution beta metadata creation/soft-deletion behavior (GCS object is not deleted on user/admin hide)
 - discussion timeline/read ordering and deterministic retrieval semantics
 
 Target outcomes:
