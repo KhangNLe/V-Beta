@@ -27,6 +27,7 @@ Most controllers catch service failures themselves (plain-text body, not a JSON 
 - `RuntimeException` → typically **404**
   - wall/problem write endpoints (`create`/`delete`/`reset`) → **400**
   - `GET /api/notification/short` → **401**
+  - `PATCH /api/notification/short` → **404**
 - uncaught `Exception` → **500**
 - bean-validation failures (`@Valid`) still return **400** from Spring
 
@@ -184,17 +185,32 @@ Admin queue and detail are action-gated (`VIEW_REPORTS`). Resolve is action-gate
 
 ### Notifications (Authenticated)
 
-Unread inbox read is **authenticated, not action-gated**. Any signed-in role may call it. `REPORT_CREATED` rows are fanned out to admins only. Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner.
+Inbox APIs are **authenticated, not action-gated**. Any signed-in role may call them. Recipients only see their own rows. `REPORT_CREATED` is fanned out to admins only. Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner.
 
 - `GET /api/notification/short`
-  - Purpose: poll unread inbox summaries for the authenticated user (`readAt IS NULL`).
+  - Purpose: poll unread inbox items for the authenticated user (`readAt IS NULL`).
   - Response: `200` array of `QuickNotificationDTO`:
-    - `event.eventTypeName` (`REPORT_CREATED`, `REPORT_DISMISSED`, `REPORT_APPROVED`, `CONTENT_REMOVED`)
-    - `event.description` (seeded catalog text; does **not** include the report reason or admin notes)
+    - `notificationId`
+    - `summary.eventTypeName` (`REPORT_CREATED`, `REPORT_DISMISSED`, `REPORT_APPROVED`, `CONTENT_REMOVED`)
+    - `summary.description` (seeded catalog text; does **not** include the report reason or admin notes)
+    - `click` (`NotificationClickDTO`): `kind` plus nullable `reportId` / `wallSectionId` / `problemId` / `discussionId` / `userId`
     - `createdAt`
-  - Delivery: client polling is sufficient for Sprint 5 (no WebSocket/SSE/FCM). Click routing uses `eventTypeName`; the DTO does not include `notificationId` or `reportId`.
+  - Click mapping: derived at read time from the event's `target_type` (not a stored href). Current moderation events use `target_type = REPORT`, so `kind` is `REPORT_QUEUE` and `reportId` is set. Other kinds (`PROBLEM_DISCUSSION`, `PROBLEM`, `WALL_SECTION`, `ACCOUNT`) are reserved for later event targets.
+  - Delivery: client polling is sufficient for Sprint 5 (no WebSocket/SSE/FCM). The client builds the frontend path from `click.kind` and the filled ids.
   - Errors:
     - `401` when unauthenticated, the Firebase token is invalid, or no account matches the UID
+
+- `PATCH /api/notification/short?notificationId={id}`
+  - Purpose: mark one of the caller's notifications as read (`readAt` set). Already-read rows succeed as a no-op.
+  - Query params:
+    - `notificationId` (required)
+  - Response: `200` with empty body.
+  - Errors:
+    - `400` when `notificationId` is missing
+    - `401` when unauthenticated or the Firebase token is invalid (Spring Security)
+    - `404` when auth context is missing, the account is missing, the id does not exist, or the row belongs to another user
+
+There is no mark-all-read endpoint in this slice.
 
 ## Action-Gated Endpoints
 

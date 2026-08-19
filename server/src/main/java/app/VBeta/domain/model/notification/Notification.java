@@ -4,7 +4,7 @@ import app.VBeta.domain.model.user.UserAccount;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * {@code Notification} is a per-recipient inbox row pointing at a domain {@link Events} fact.
@@ -32,15 +32,15 @@ public class Notification {
     private UserAccount recipient;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "read_at")
-    private LocalDateTime readAt;
+    private Instant readAt;
 
     @PrePersist
     protected void onCreate(){
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = Instant.now();
         }
     }
 }

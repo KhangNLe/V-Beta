@@ -1,5 +1,6 @@
 package app.VBeta.domain.model.notification;
 
+import app.VBeta.domain.model.climb.ClimbingProblem;
 import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.report.Report;
@@ -54,6 +55,10 @@ public class Events {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "discussion_id", referencedColumnName = "discussion_id")
     private DiscussionRoot discussion;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "problem_id", referencedColumnName = "problem_id")
+    private ClimbingProblem problem;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "wall_section_id", referencedColumnName = "wall_section_id")

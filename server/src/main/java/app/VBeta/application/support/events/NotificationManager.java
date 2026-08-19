@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * {@code NotificationManager} persists and reads per-recipient inbox rows.
@@ -48,5 +49,25 @@ public class NotificationManager {
      */
     public List<Notification> getUserUnreadNotifications(UserAccount user) {
         return notificationRepository.findAllUnreadByRecipientUser(user);
+    }
+
+    /**
+     * Returns a notification by id when it belongs to {@code user}.
+     *
+     * @param id notification identifier
+     * @param user expected recipient
+     * @return matching row, or empty when missing or owned by someone else
+     */
+    public Optional<Notification> findNotificationByIdAndOwner(Long id, UserAccount user) {
+        return notificationRepository.findByNotificationIdAndRecipient(id, user);
+    }
+
+    /**
+     * Persists notification changes (for example {@code readAt}).
+     *
+     * @param notification inbox row to save
+     */
+    public void save(Notification notification){
+        notificationRepository.save(notification);
     }
 }

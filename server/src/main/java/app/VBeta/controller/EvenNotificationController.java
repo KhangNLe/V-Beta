@@ -9,13 +9,11 @@ import org.springframework.http.*;
 import java.util.List;
 
 /**
- * {@code EvenNotificationController} exposes in-app notification reads for the
- * authenticated user.
+ * {@code EvenNotificationController} exposes the authenticated user's in-app inbox.
  * <p>
- * Inbox lookups are delegated to {@link NotificationService}. Identity is resolved
- * through {@link AuthorizationService}. Queue-resolve outcomes
- * ({@code REPORT_DISMISSED}, {@code REPORT_APPROVED}, {@code CONTENT_REMOVED})
- * appear here alongside admin {@code REPORT_CREATED} rows.
+ * {@code GET /short} returns unread rows with click metadata.
+ * {@code PATCH /short?notificationId=} marks one of the caller's rows read.
+ * Identity is resolved through {@link AuthorizationService}. There is no action gate.
  */
 @RestController
 @RequestMapping("/api/notification")
@@ -26,7 +24,7 @@ public class EvenNotificationController {
     /**
      * Constructs a new {@code EvenNotificationController} with required services.
      *
-     * @param notificationService service for unread inbox reads
+     * @param notificationService service for unread inbox reads and mark-read
      * @param authorizationService service for authentication context
      */
     public EvenNotificationController(NotificationService notificationService,
@@ -36,9 +34,13 @@ public class EvenNotificationController {
     }
 
     /**
-     * Returns unread notification summaries for the authenticated user.
+     * Returns unread inbox items for the authenticated user.
+     * <p>
+     * On success the response is {@code 200} with an array of
+     * {@link QuickNotificationDTO}. {@code RuntimeException} is mapped to
+     * {@code 401} (missing auth or missing account).
      *
-     * @return unread notification DTOs
+     * @return unread notification DTOs (empty list when the inbox is empty)
      */
     @GetMapping("/short")
     public ResponseEntity<?> getUserNotifications(){
@@ -50,6 +52,30 @@ public class EvenNotificationController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED);
         } catch (Exception e){
             return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Marks one of the authenticated user's notifications as read.
+     * <p>
+     * On success the response is {@code 200} with an empty body, including when
+     * the row was already read. {@code RuntimeException} is mapped to {@code 404}
+     * (missing auth, missing account, unknown id, or another user's notification).
+     * Missing {@code notificationId} is {@code 400} from Spring.
+     *
+     * @param notificationId inbox row owned by the caller
+     * @return empty {@code 200} on success
+     */
+    @PatchMapping("/short")
+    public ResponseEntity<?> updateNotificationToRead(@RequestParam() Long notificationId){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            notificationService.updateNotificationToRead(firebaseUid, notificationId);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

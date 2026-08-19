@@ -585,9 +585,11 @@ Dismiss notifies each reporter (`REPORT_DISMISSED`) and does not notify the owne
 
 ## 18) Get Unread Notifications (Authenticated)
 
-Poll unread inbox rows (`readAt` is null). The payload is event type + description + `createdAt`. It does not include the report reason, admin notes, `notificationId`, or `reportId`.
+Poll unread inbox rows (`readAt` is null). Each item includes `notificationId`, catalog `summary`, `click` metadata, and `createdAt`. It does not include the report reason or admin notes.
 
-Any authenticated role may call this endpoint. `REPORT_CREATED` inbox rows are written for admins only (the reporter is skipped if they are an admin). Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner.
+Any authenticated role may call this endpoint. Callers only receive their own rows. `REPORT_CREATED` inbox rows are written for admins only (the reporter is skipped if they are an admin). Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner.
+
+Current moderation events have `target_type = REPORT`, so `click.kind` is `REPORT_QUEUE` and `click.reportId` is set. Unused click ids are `null`.
 
 ### Request
 
@@ -601,11 +603,20 @@ Authorization: Bearer <firebase_id_token>
 ```json
 [
   {
-    "event": {
+    "notificationId": 81,
+    "summary": {
       "eventTypeName": "REPORT_CREATED",
       "description": "A user submitted a content report"
     },
-    "createdAt": "2026-08-14T19:11:00"
+    "click": {
+      "kind": "REPORT_QUEUE",
+      "reportId": 11,
+      "wallSectionId": null,
+      "problemId": null,
+      "discussionId": null,
+      "userId": null
+    },
+    "createdAt": "2026-08-14T19:11:00Z"
   }
 ]
 ```
@@ -615,11 +626,20 @@ Authorization: Bearer <firebase_id_token>
 ```json
 [
   {
-    "event": {
+    "notificationId": 82,
+    "summary": {
       "eventTypeName": "REPORT_DISMISSED",
       "description": "An admin dismissed a report you submitted"
     },
-    "createdAt": "2026-08-18T18:00:00"
+    "click": {
+      "kind": "REPORT_QUEUE",
+      "reportId": 11,
+      "wallSectionId": null,
+      "problemId": null,
+      "discussionId": null,
+      "userId": null
+    },
+    "createdAt": "2026-08-18T18:00:00Z"
   }
 ]
 ```
@@ -629,11 +649,20 @@ Authorization: Bearer <firebase_id_token>
 ```json
 [
   {
-    "event": {
+    "notificationId": 83,
+    "summary": {
       "eventTypeName": "CONTENT_REMOVED",
       "description": "One of your content had been reported and removed."
     },
-    "createdAt": "2026-08-18T18:00:00"
+    "click": {
+      "kind": "REPORT_QUEUE",
+      "reportId": 11,
+      "wallSectionId": null,
+      "problemId": null,
+      "discussionId": null,
+      "userId": null
+    },
+    "createdAt": "2026-08-18T18:00:00Z"
   }
 ]
 ```
@@ -641,3 +670,24 @@ Authorization: Bearer <firebase_id_token>
 ### Error examples
 
 - `401` when unauthenticated, the Firebase token is invalid, or no account matches the UID
+
+## 19) Mark Notification Read (Authenticated)
+
+Marks one of the caller's notifications as read. Success is `200` with an empty body. A second call on the same id is a no-op.
+
+### Request
+
+```http
+PATCH /api/notification/short?notificationId=81
+Authorization: Bearer <firebase_id_token>
+```
+
+### Response (200)
+
+Empty body.
+
+### Error examples
+
+- `400` when `notificationId` is missing
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when the account is missing, the id does not exist, or the row belongs to another user
