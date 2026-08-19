@@ -96,6 +96,7 @@ Defined in runtime/test SQL. Closed workflow values use PostgreSQL enums; extens
 - `Notification`
   - Per-recipient inbox row for an event (`read_at` nullable).
   - Unique on `(event_id, recipient_user_id)`.
+  - Inbox GET maps unread rows to `QuickNotificationDTO` with click metadata computed from the event target (not stored on `Events`). Mark-read sets `read_at`.
 
 #### Key enums
 
@@ -142,7 +143,7 @@ Action-level authorization uses:
 
 This model enables action-gated endpoint checks beyond simple authenticated/unauthenticated access.
 
-Dedicated moderation permissions: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. `MODERATE_REPORT` gates `POST /api/moderate/report` (dismiss or remove OPEN discussion reports). Create-report and unread notification poll stay authenticated only (no `CREATE_REPORT`). Appeals are not accepted on the resolve endpoint.
+Dedicated moderation permissions: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. `MODERATE_REPORT` gates `POST /api/moderate/report` (dismiss or remove OPEN discussion reports). Create-report and notification inbox (`GET`/`PATCH /api/notification/short`) stay authenticated only (no `CREATE_REPORT`). Appeals are not accepted on the resolve endpoint.
 
 ## Schema Management Notes
 

@@ -17,14 +17,15 @@ Errors come from three main layers:
   - Invalid perceived grade / role enum values
   - Blank or over-length report reason / missing report enums
   - Blank moderation `reason` / missing `reportIds` or `decision`
+  - Missing `notificationId` on `PATCH /api/notification/short`
   - Wall/problem write `RuntimeException`s (create/delete/reset), including authorization failures on those routes
 - **401 Unauthorized**
   - Missing/invalid bearer token for protected routes (Spring Security or `FirebaseAuthFilter`)
   - Missing auth context on `POST /api/accounts/session`
   - `GET /api/notification/short` when auth/account lookup throws `RuntimeException`
 - **404 Not Found**
-  - Referenced resource not found (wall/problem/comment/beta/account/report targets)
-  - Most other controller `RuntimeException`s, including action-gated authorization failures, duplicate report creates, unauthorized discussion deletes, and deleting an already-deleted discussion
+  - Referenced resource not found (wall/problem/comment/beta/account/report/notification targets)
+  - Most other controller `RuntimeException`s, including action-gated authorization failures, duplicate report creates, unauthorized discussion deletes, deleting an already-deleted discussion, and `PATCH /api/notification/short` failures
 - **500 Internal Server Error**
   - Unhandled exceptions or infrastructure failures (storage/DB/internal service issues)
 
@@ -55,6 +56,7 @@ How that surfaces depends on the controller:
 - most routes → **404** with that message
 - wall/problem writes → **400**
 - `GET /api/notification/short` → **401**
+- `PATCH /api/notification/short` → **404**
 - `POST /api/accounts/session` with no security context → **401** (`ResponseStatusException`)
 
 ## Authorization Error Behavior
@@ -74,7 +76,7 @@ Clients should not hardcode one exact JSON shape for all non-auth errors.
 
 ## Content Report and Notification Errors
 
-`POST /api/report/create` and `GET /api/notification/short` are authenticated, not action-gated. Missing bearer tokens are rejected by Spring Security (`401`). Invalid/expired tokens still use the filter payload above.
+`POST /api/report/create`, `GET /api/notification/short`, and `PATCH /api/notification/short` are authenticated, not action-gated. Missing bearer tokens are rejected by Spring Security (`401`). Invalid/expired tokens still use the filter payload above.
 
 `GET /api/report/reports` is action-gated (`VIEW_REPORTS`). `POST /api/moderate/report` is action-gated (`MODERATE_REPORT`). Guest callers are `401`. Climber/setter and other authorization failures currently map to **404**.
 
@@ -94,11 +96,17 @@ Admin resolve errors (`POST /api/moderate/report`):
 - `404` — missing account, missing `MODERATE_REPORT`, or appeal `decision` (`Appeal decisions are not supported on this endpoint.`)
 - `200` with empty body — success, including when every id was skipped (unknown, already closed, filed by the acting admin, or on a discussion the admin owns)
 
-Unread notification errors:
+Unread notification errors (`GET /api/notification/short`):
 
 - `401` — missing/invalid auth, or no account matches the Firebase UID (controller maps lookup failure to `401`)
 
-Create-report does not return `403` for climber/setter: any authenticated role may submit a report. Admin inbox fan-out is a side effect, not an access check on create/poll. Queue/detail **does** require admin `VIEW_REPORTS`. Resolve **does** require admin `MODERATE_REPORT`.
+Mark-read errors (`PATCH /api/notification/short?notificationId=`):
+
+- `400` — missing `notificationId`
+- `404` — missing auth context, missing account, unknown id, or the row belongs to another user
+- `200` with empty body — success, including when the row was already read
+
+Create-report does not return `403` for climber/setter: any authenticated role may submit a report. Admin inbox fan-out is a side effect, not an access check on create/poll. Queue/detail **does** require admin `VIEW_REPORTS`. Resolve **does** require admin `MODERATE_REPORT`. Inbox mark-read is own-row only.
 
 ## Practical Error Payload Notes
 

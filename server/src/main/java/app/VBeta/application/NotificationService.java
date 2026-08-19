@@ -24,8 +24,9 @@ import java.util.*;
  * {@code NotificationService} is the orchestration layer for in-app moderation notifications.
  * <p>
  * It records {@code REPORT_CREATED} events and fans out inbox rows to admin recipients,
- * records report-queue outcome events for reporters and owners, and maps unread
- * notifications into lightweight DTOs for the client.
+ * records report-queue outcome events for reporters and owners, maps unread
+ * notifications into {@link QuickNotificationDTO} (including click metadata),
+ * and marks a caller's notification as read.
  */
 @Service
 @Transactional
@@ -37,7 +38,7 @@ public class NotificationService {
     /**
      * Constructs a new {@code NotificationService} with required collaborators.
      *
-     * @param notificationManager manager for inbox persistence and unread reads
+     * @param notificationManager manager for inbox persistence, unread reads, and mark-read
      * @param eventManager manager for event persistence
      * @param userAccountManager manager for recipient account lookups
      */
@@ -85,9 +86,14 @@ public class NotificationService {
 
     /**
      * Returns unread notification summaries for a user identified by Firebase UID.
+     * <p>
+     * Each item includes {@code notificationId}, catalog {@code summary}, a
+     * {@link NotificationClickDTO} derived from the event target, and {@code createdAt}.
+     * Only the caller's unread rows are returned. The payload does not include
+     * report reason or admin notes.
      *
      * @param firebaseUid Firebase UID of the inbox owner
-     * @return unread notification DTOs
+     * @return unread notification DTOs (empty when none)
      * @throws RuntimeException when no account matches the UID
      */
     public List<QuickNotificationDTO> getQuickNotifications(String firebaseUid) {
@@ -100,6 +106,17 @@ public class NotificationService {
         return notifications.stream().map(this::createQuickNotificationDTO).toList();
     }
 
+    /**
+     * Marks one notification read when it belongs to {@code firebaseUid}.
+     * <p>
+     * A second call on an already-read row is a no-op. Another user's
+     * notification is treated as missing.
+     *
+     * @param firebaseUid Firebase UID of the inbox owner
+     * @param notificationId inbox row identifier
+     * @throws RuntimeException when the account is missing, or the notification
+     *         is missing or not owned by this user
+     */
     public void updateNotificationToRead(String firebaseUid, Long notificationId){
         UserAccount user = userAccountManager.findUserAccount(firebaseUid);
         if (user == null) {
@@ -119,7 +136,7 @@ public class NotificationService {
      * Maps a persisted notification into the short inbox DTO.
      *
      * @param notification unread notification row
-     * @return event type and created-at summary
+     * @return id, summary, click target, and created-at
      */
     private QuickNotificationDTO createQuickNotificationDTO(Notification notification) {
         return new QuickNotificationDTO(
@@ -143,6 +160,17 @@ public class NotificationService {
         );
     }
 
+    /**
+     * Builds click metadata from the event's typed target.
+     * <p>
+     * Current moderation events use {@code target_type = REPORT}, so
+     * {@code kind} is {@link NotificationClickKind#REPORT_QUEUE} and
+     * {@code reportId} is set. Other kinds are reserved for later event targets.
+     * This does not leak reporter identity or report reason.
+     *
+     * @param event happened-fact row the notification points at
+     * @return click kind and the ids that match that target
+     */
     private NotificationClickDTO createNotificationRedirection(Events event){
         NotificationClickKind click = null;
         Long wallSectionId = null, climbingProblemId = null, discussionId = null,

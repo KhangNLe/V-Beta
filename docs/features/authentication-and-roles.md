@@ -43,7 +43,7 @@ This section documents the authentication and authorization features that are cu
   - Cannot perform authenticated actions (comment, beta upload, content report, notifications, account-only actions).
 - **Climber**
   - Authenticated features such as comments, beta uploads, grade suggestions, and content reports.
-  - Can poll `GET /api/notification/short`. `REPORT_CREATED` inbox rows are not written for this role; queue-resolve can write `REPORT_DISMISSED`, `REPORT_APPROVED`, or `CONTENT_REMOVED`.
+  - Can poll `GET /api/notification/short` and mark own rows read with `PATCH /api/notification/short?notificationId=`. `REPORT_CREATED` inbox rows are not written for this role; queue-resolve can write `REPORT_DISMISSED`, `REPORT_APPROVED`, or `CONTENT_REMOVED`.
   - Can access own account page and self-service account actions.
 - **Setter**
   - Includes climber capabilities.
@@ -74,7 +74,8 @@ This section documents the authentication and authorization features that are cu
 - Create report: `POST /api/report/create` (authenticated; not action-gated; no `CREATE_REPORT`; success `200`).
 - Admin queue/detail: `GET /api/report/reports` (action-gated `VIEW_REPORTS`; admin only). Optional `reportId` returns one OPEN case.
 - Admin resolve: `POST /api/moderate/report` (action-gated `MODERATE_REPORT`; admin only). Dismiss or remove discussion reports; appeals are not accepted here.
-- Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated).
+- Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated). Includes `notificationId` and `click` metadata (`kind` + target ids). Current moderation events use `click.kind = REPORT_QUEUE`.
+- Mark read: `PATCH /api/notification/short?notificationId=` (authenticated; own row only; already-read is a no-op).
 - See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.
 
 ## Key Files

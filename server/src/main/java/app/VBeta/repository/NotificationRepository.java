@@ -24,5 +24,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     )
     List<Notification> findAllUnreadByRecipientUser(@Param("user") UserAccount user);
 
+    /**
+     * Returns a notification by id when {@code user} is the recipient.
+     *
+     * @param id notification identifier
+     * @param user expected recipient
+     * @return matching row, or empty when missing or not owned by {@code user}
+     */
     Optional<Notification> findByNotificationIdAndRecipient(Long id, UserAccount user);
 }

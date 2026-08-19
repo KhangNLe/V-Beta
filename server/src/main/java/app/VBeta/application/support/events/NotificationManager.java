@@ -51,10 +51,22 @@ public class NotificationManager {
         return notificationRepository.findAllUnreadByRecipientUser(user);
     }
 
+    /**
+     * Returns a notification by id when it belongs to {@code user}.
+     *
+     * @param id notification identifier
+     * @param user expected recipient
+     * @return matching row, or empty when missing or owned by someone else
+     */
     public Optional<Notification> findNotificationByIdAndOwner(Long id, UserAccount user) {
         return notificationRepository.findByNotificationIdAndRecipient(id, user);
     }
 
+    /**
+     * Persists notification changes (for example {@code readAt}).
+     *
+     * @param notification inbox row to save
+     */
     public void save(Notification notification){
         notificationRepository.save(notification);
     }

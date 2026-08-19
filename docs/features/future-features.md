@@ -76,7 +76,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Effort:** Medium
 - **Area:** Trust and Safety
 - **Target sprint:** Sprint 5 (in progress)
-- **Current Gap:** Users cannot flag inappropriate comments or beta content in the current UI. Backend create-report (`POST /api/report/create`), admin queue/detail (`GET /api/report/reports`, `VIEW_REPORTS`), admin resolve (`POST /api/moderate/report`, `MODERATE_REPORT`), and unread notification poll (`GET /api/notification/short`) are implemented. Appeal/restore is not.
+- **Current Gap:** Users cannot flag inappropriate comments or beta content in the current UI. Backend create-report, admin queue/detail/resolve, unread inbox poll with click metadata (`GET /api/notification/short`), and mark-read (`PATCH /api/notification/short`) are implemented. Notification UI and appeal/restore are not.
 - **Potential Work:** Add report actions on comments and solution betas, including reason selection and moderation review workflow.
 - **Dependencies:** Report data model, report API endpoints, moderation/admin handling flow.
 

@@ -40,7 +40,8 @@ All routes below are under `/api`.
 | `GET /api/report/reports` | No | No | No | Yes | Action-gated (`VIEW_REPORTS`) |
 | `GET /api/report/reports?reportId=` | No | No | No | Yes | Action-gated (`VIEW_REPORTS`) |
 | `POST /api/moderate/report` | No | No | No | Yes | Action-gated (`MODERATE_REPORT`) |
-| `GET /api/notification/short` | No | Yes | Yes | Yes | Authenticated (not action-gated). Admins receive `REPORT_CREATED`; reporters/owners receive queue-outcome rows |
+| `GET /api/notification/short` | No | Yes | Yes | Yes | Authenticated (not action-gated). Own unread rows only |
+| `PATCH /api/notification/short?notificationId=` | No | Yes | Yes | Yes | Authenticated (not action-gated). Own row only |
 
 `Yes*` means backend action permission allows it; specific frontend UI exposure may differ by current role-based UI gating.
 
@@ -65,8 +66,9 @@ All routes below are under `/api`.
 
 - Final permission results are role-permission table driven in the database.
 - Some discussion endpoints are authenticated but not action-gated at controller level.
-- `POST /api/report/create` and `GET /api/notification/short` are authenticated only. Guest `401` comes from Spring Security. There is no `CREATE_REPORT` action. Queue/detail uses `VIEW_REPORTS` (admin). Resolve uses `MODERATE_REPORT` (admin).
+- `POST /api/report/create`, `GET /api/notification/short`, and `PATCH /api/notification/short` are authenticated only. Guest `401` comes from Spring Security. There is no `CREATE_REPORT` action. Queue/detail uses `VIEW_REPORTS` (admin). Resolve uses `MODERATE_REPORT` (admin). Inbox mark-read is own-row only (another user's id is **404**).
 - Create-report notifies **admins** of `REPORT_CREATED`. Climber/setter callers still get `200`; they do not receive that inbox event. If the reporter is an admin, they are skipped as a recipient.
+- `GET /api/notification/short` returns the caller's unread rows with `notificationId`, catalog `summary`, and `click` metadata. Current moderation events map to `click.kind = REPORT_QUEUE` and `click.reportId`. Report reason and admin notes are omitted.
 - `GET /api/report/reports` returns grouped OPEN cases ranked by `Σ (weight × count)`. Climber/setter and missing `VIEW_REPORTS` currently map to **404**. An admin does not see reports on their own discussion (or a user-account report targeting themselves); that is a `200` with an empty `reports` list, not 404.
 - `POST /api/moderate/report` requires `MODERATE_REPORT`. Climber/setter and missing permission currently map to **404**. The acting admin cannot close a report they filed, and cannot close reports on their own discussion; those ids are skipped (the request can still `200`). Appeal decisions (`APPEAL_APPROVED` / `APPEAL_DENIED`) are rejected before any report is closed.
 - Queue-resolve notifications: dismiss writes `REPORT_DISMISSED` to each reporter (owner is not notified). Remove writes `REPORT_APPROVED` to each reporter and `CONTENT_REMOVED` once to the owner. Event actor is the admin.
