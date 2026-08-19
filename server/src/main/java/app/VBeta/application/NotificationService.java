@@ -1,6 +1,8 @@
 package app.VBeta.application;
 
 import app.VBeta.api.dto.notification.EventTypeDTO;
+import app.VBeta.api.dto.notification.NotificationClickDTO;
+import app.VBeta.api.dto.notification.NotificationClickKind;
 import app.VBeta.api.dto.notification.QuickNotificationDTO;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.events.EventsManager;
@@ -15,6 +17,7 @@ import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -97,6 +100,21 @@ public class NotificationService {
         return notifications.stream().map(this::createQuickNotificationDTO).toList();
     }
 
+    public void updateNotificationToRead(String firebaseUid, Long notificationId){
+        UserAccount user = userAccountManager.findUserAccount(firebaseUid);
+        if (user == null) {
+            throw new RuntimeException("User is not found");
+        }
+        Notification notification = notificationManager.findNotificationByIdAndOwner(notificationId, user)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+
+        if (notification.getReadAt() != null) {
+            return;
+        }
+
+        notification.setReadAt(Instant.now());
+        notificationManager.save(notification);
+    }
     /**
      * Maps a persisted notification into the short inbox DTO.
      *
@@ -105,7 +123,9 @@ public class NotificationService {
      */
     private QuickNotificationDTO createQuickNotificationDTO(Notification notification) {
         return new QuickNotificationDTO(
+                notification.getNotificationId(),
                 createEventTypeDTO(notification.getEvent()),
+                createNotificationRedirection(notification.getEvent()),
                 notification.getCreatedAt()
         );
     }
@@ -120,6 +140,46 @@ public class NotificationService {
         return new EventTypeDTO(
                 event.getEventType().getEventTypeName().name(),
                 event.getEventType().getDescription()
+        );
+    }
+
+    private NotificationClickDTO createNotificationRedirection(Events event){
+        NotificationClickKind click = null;
+        Long wallSectionId = null, climbingProblemId = null, discussionId = null,
+                userId = null, reportId = null;
+
+        switch(event.getTargetType()){
+            case REPORT:
+                click = NotificationClickKind.REPORT_QUEUE;
+                reportId = event.getReport().getReportId();
+                break;
+            case WALL_SECTION:
+                click = NotificationClickKind.WALL_SECTION;
+                wallSectionId = event.getWallSection().getId();
+                break;
+            case CLIMBING_PROBLEM:
+                click = NotificationClickKind.PROBLEM;
+                wallSectionId = event.getProblem().getWallSection().getId();
+                climbingProblemId = event.getWallSection().getId();
+                break;
+            case DISCUSSION:
+                click = NotificationClickKind.PROBLEM_DISCUSSION;
+                wallSectionId = event.getWallSection().getId();
+                climbingProblemId = event.getWallSection().getId();
+                discussionId = event.getWallSection().getId();
+                break;
+            case USER_ACCOUNT:
+                userId = event.getUser().getId();
+                break;
+        }
+
+        return new NotificationClickDTO(
+                click,
+                reportId,
+                wallSectionId,
+                climbingProblemId,
+                discussionId,
+                userId
         );
     }
 }

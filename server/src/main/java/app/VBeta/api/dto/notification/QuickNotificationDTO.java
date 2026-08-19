@@ -1,6 +1,6 @@
 package app.VBeta.api.dto.notification;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Short inbox item returned to the client for unread notifications.
@@ -8,10 +8,12 @@ import java.time.LocalDateTime;
  * Click routing uses {@code event.eventTypeName}. This DTO does not include
  * {@code notificationId}, {@code reportId}, or admin notes.
  *
- * @param event event type name and description
+ * @param summary event type name and description
  * @param createdAt notification created-at timestamp
  */
 public record QuickNotificationDTO(
-    EventTypeDTO event,
-    LocalDateTime createdAt
+        Long notificationId,
+        EventTypeDTO summary,
+        NotificationClickDTO click,
+        Instant createdAt
 ) {}

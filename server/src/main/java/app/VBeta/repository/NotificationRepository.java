@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository for {@link Notification} entities.
@@ -22,4 +23,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             "SELECT noti FROM Notification noti WHERE noti.recipient = :user AND noti.readAt IS NULL"
     )
     List<Notification> findAllUnreadByRecipientUser(@Param("user") UserAccount user);
+
+    Optional<Notification> findByNotificationIdAndRecipient(Long id, UserAccount user);
 }

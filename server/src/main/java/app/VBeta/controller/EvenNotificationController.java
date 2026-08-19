@@ -3,6 +3,7 @@ package app.VBeta.controller;
 import app.VBeta.api.dto.notification.QuickNotificationDTO;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.NotificationService;
+import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.*;
 
@@ -50,6 +51,19 @@ public class EvenNotificationController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED);
         } catch (Exception e){
             return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PatchMapping("/short")
+    public ResponseEntity<?> updateNotificationToRead(@RequestParam() Long notificationId){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            notificationService.updateNotificationToRead(firebaseUid, notificationId);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

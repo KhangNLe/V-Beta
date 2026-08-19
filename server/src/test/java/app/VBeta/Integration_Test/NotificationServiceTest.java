@@ -34,6 +34,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -205,9 +206,9 @@ public class NotificationServiceTest {
                 notificationService.getQuickNotifications("testFirebaseUid3");
 
         assertEquals(1, inbox.size());
-        assertEquals(EventTypeName.REPORT_CREATED.name(), inbox.get(0).event().eventTypeName());
-        assertNotNull(inbox.get(0).event().description());
-        assertFalse(inbox.get(0).event().description().contains(secretReason));
+        assertEquals(EventTypeName.REPORT_CREATED.name(), inbox.get(0).summary().eventTypeName());
+        assertNotNull(inbox.get(0).summary().description());
+        assertFalse(inbox.get(0).summary().description().contains(secretReason));
         assertNotNull(inbox.get(0).createdAt());
     }
 
@@ -308,10 +309,112 @@ public class NotificationServiceTest {
         assertEquals(1, unread.size());
 
         Notification notification = unread.get(0);
-        notification.setReadAt(LocalDateTime.now());
+        notification.setReadAt(Instant.now());
         notificationRepository.saveAndFlush(notification);
 
         List<Notification> afterRead = notificationManager.getUserUnreadNotifications(admin);
         assertEquals(0, afterRead.size());
+    }
+
+    @Test
+    @DisplayName("User read notification")
+    void testUserReadNotification(){
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        DiscussionRoot discussionRoot = createDiscussionRoot("testFirebaseUid", 1L, DiscussionType.BETA);
+        reportService.createNewReport(
+                new ReportRequest(
+                        ReportTargetType.DISCUSSION,
+                        "test",
+                        ReportCategoryName.SPAM,
+                        discussionRoot.getDiscussionId()
+                ),
+                "testFirebaseUid2"
+        );
+
+        List<Notification> unread = notificationManager.getUserUnreadNotifications(admin);
+        assertEquals(1, unread.size());
+
+        Notification unReadNoti = unread.get(0);
+        assertNull(unReadNoti.getReadAt());
+        assertEquals(unReadNoti.getRecipient(), admin);
+        notificationService.updateNotificationToRead(admin.getFirebaseUid(), unReadNoti.getNotificationId());
+
+        List<Notification> afterRead = notificationManager.getUserUnreadNotifications(admin);
+        assertTrue(afterRead.isEmpty());
+
+        Notification readNoti = notificationRepository.findById(unReadNoti.getNotificationId()).orElse(null);
+        assertNotNull(readNoti);
+        assertNotNull(readNoti.getReadAt());
+        assertEquals(unReadNoti.getNotificationId(), readNoti.getNotificationId());
+        assertEquals(unReadNoti.getEvent(), readNoti.getEvent());
+        assertEquals(unReadNoti.getRecipient(), readNoti.getRecipient());
+    }
+
+    @Test
+    @DisplayName("User attempt to mark notification that is not theirs as read")
+    void testUserAttemptToMarkNotificationThatIsNotTheirsAsRead(){
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        DiscussionRoot discussionRoot = createDiscussionRoot("testFirebaseUid", 1L, DiscussionType.BETA);
+        reportService.createNewReport(
+                new ReportRequest(
+                        ReportTargetType.DISCUSSION,
+                        "test",
+                        ReportCategoryName.SPAM,
+                        discussionRoot.getDiscussionId()
+                ),
+                "testFirebaseUid2"
+        );
+
+        List<Notification> unread = notificationManager.getUserUnreadNotifications(admin);
+        assertEquals(1, unread.size());
+
+        assertThrows(RuntimeException.class, () ->
+                notificationService.updateNotificationToRead(
+                        "testFirebaseUid2", unread.get(0).getNotificationId()
+                )
+        );
+
+        Notification notification = notificationRepository.findById(unread.get(0).getNotificationId()).orElse(null);
+        assertNotNull(notification);
+        assertNull(notification.getReadAt());
+    }
+
+    @Test
+    @DisplayName("User send update read notification attempt twice")
+    void testUserSendUpdateReadNotification(){
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        DiscussionRoot discussionRoot = createDiscussionRoot("testFirebaseUid", 1L, DiscussionType.BETA);
+        reportService.createNewReport(
+                new ReportRequest(
+                        ReportTargetType.DISCUSSION,
+                        "test",
+                        ReportCategoryName.SPAM,
+                        discussionRoot.getDiscussionId()
+                ),
+                "testFirebaseUid2"
+        );
+
+        List<Notification> unread = notificationManager.getUserUnreadNotifications(admin);
+        assertEquals(1, unread.size());
+
+        notificationService.updateNotificationToRead(admin.getFirebaseUid(), unread.get(0).getNotificationId());
+        Notification readNoti = notificationRepository.findById(unread.get(0).getNotificationId()).orElse(null);
+        assertNotNull(readNoti);
+        assertNotNull(readNoti.getReadAt());
+
+        assertDoesNotThrow(() -> notificationService.updateNotificationToRead(
+                admin.getFirebaseUid(), readNoti.getNotificationId())
+        );
+
+        Notification updateNoti = notificationRepository.findById(readNoti.getNotificationId()).orElse(null);
+        assertNotNull(updateNoti);
+        assertNotNull(updateNoti.getReadAt());
+        assertEquals(readNoti.getReadAt(), updateNoti.getReadAt());
+    }
+
+    @Test
+    @DisplayName("User attempt to read an unknown notification")
+    void testUserAttemptToReadUnknownNotification(){
+        assertThrows(RuntimeException.class, () -> notificationService.updateNotificationToRead("testFirebaseUid", 999L));
     }
 }
