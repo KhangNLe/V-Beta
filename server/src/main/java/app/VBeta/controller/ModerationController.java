@@ -1,5 +1,6 @@
 package app.VBeta.controller;
 
+import app.VBeta.api.dto.moderation.ModerationPayload;
 import app.VBeta.api.dto.moderation.ModerationRequest;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ModerationService;
@@ -52,6 +53,28 @@ public class ModerationController {
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/logbook")
+    public ResponseEntity<?> getLogbook(@RequestParam(required = false) Long moderationId,
+                                        @RequestParam(defaultValue = "1") int offSetPlace) {
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            if (offSetPlace <= 0){
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+            ModerationPayload payload;
+            if (moderationId != null) {
+                payload = moderationService.getModerationLog(firebaseUid, moderationId);
+            } else {
+                payload = moderationService.getLogbook(firebaseUid, offSetPlace);
+            }
+            return new ResponseEntity<>(payload, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return  new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }

@@ -1,5 +1,7 @@
 package app.VBeta.application;
 
+import app.VBeta.api.dto.moderation.ModerationDTO;
+import app.VBeta.api.dto.moderation.ModerationPayload;
 import app.VBeta.api.dto.moderation.ModerationRequest;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
@@ -16,8 +18,10 @@ import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.stream.Collectors;
 
 /**
  * {@code ModerationService} is the orchestration layer for admin report-queue
@@ -37,6 +41,7 @@ public class ModerationService {
     private final UserAccountManager userAccountManager;
     private final ReportManager reportManager;
     private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
+    private final ReportService reportService;
 
     /**
      * Constructs a new {@code ModerationService} with required collaborators.
@@ -53,13 +58,14 @@ public class ModerationService {
                              NotificationService notificationService,
                              UserAccountManager userAccountManager,
                              ReportManager reportManager,
-                             ClimbingProblemDiscussionManager climbingProblemDiscussionManager) {
+                             ClimbingProblemDiscussionManager climbingProblemDiscussionManager, ReportService reportService) {
         this.moderationManager = moderationManager;
         this.authorizationService = authorizationService;
         this.notificationService = notificationService;
         this.userAccountManager = userAccountManager;
         this.reportManager = reportManager;
         this.climbingProblemDiscussionManager = climbingProblemDiscussionManager;
+        this.reportService = reportService;
     }
 
     /**
@@ -97,6 +103,28 @@ public class ModerationService {
             }
             createModerationForReport(moderationRequest, admin, report, removedDiscussionIds);
         }
+    }
+
+    public ModerationPayload getModerationLog(String firebaseUid, Long moderationId){
+        UserAccount admin = userAccountManager.findUserAccount(firebaseUid);
+        if (admin == null){
+            throw new RuntimeException("User not found");
+        }
+
+        authorizationService.authorize(admin, ActionDefinition.VIEW_MODERATION_LOGS);
+        ModerationAction decision = moderationManager.findById(moderationId)
+                .orElseThrow(() -> new RuntimeException("Moderation not found"));
+        return createModerationPayload(List.of(decision));
+    }
+
+    public ModerationPayload getLogbook(String firebaseUid, int offSetPlace){
+        UserAccount admin = userAccountManager.findUserAccount(firebaseUid);
+        if (admin == null){
+            throw new RuntimeException("User not found");
+        }
+        authorizationService.authorize(admin, ActionDefinition.VIEW_MODERATION_LOGS);
+        List<ModerationAction> decisions = moderationManager.findLogsByOffset(offSetPlace);
+        return createModerationPayload(decisions);
     }
 
     /**
@@ -181,5 +209,20 @@ public class ModerationService {
         climbingProblemDiscussionManager.softDeleteDiscussionRoot(admin, discussionId, removedReason);
         notificationService.sendReportModerationNotification(decision, report.getDiscussion().getUserAccount(),
                 report, EventTypeName.CONTENT_REMOVED);
+    }
+
+    private ModerationPayload createModerationPayload(List<ModerationAction> decisions){
+        return new ModerationPayload(decisions.stream().map(this::createModerationDTO).collect(Collectors.toList()));
+    }
+
+    private ModerationDTO createModerationDTO(ModerationAction decision){
+        return new ModerationDTO(
+                decision.getActionId(),
+                reportService.toReportDTO(List.of(decision.getReport())),
+                userAccountManager.getUserAccountDTO(decision.getAdminUser()),
+                decision.getModerateActionType(),
+                decision.getAdminNotes(),
+                decision.getCreatedAt()
+        );
     }
 }

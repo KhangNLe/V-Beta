@@ -155,7 +155,7 @@ public class ReportService {
         return new ReportPriorityDTO(report, categories, queueScore);
     }
 
-    private ReportDTO toReportDTO(List<Report> reportsOnTarget) {
+    public ReportDTO toReportDTO(List<Report> reportsOnTarget) {
         Report first = reportsOnTarget.get(0);
         List<ReportUserDTO> reporters = reportsOnTarget.stream()
                 .map(this::toReportUserDTO)

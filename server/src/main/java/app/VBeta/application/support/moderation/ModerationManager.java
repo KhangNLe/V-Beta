@@ -8,6 +8,7 @@ import app.VBeta.repository.ModerationRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -64,5 +65,10 @@ public class ModerationManager {
                 .adminNotes(moderationRequest.reason())
                 .build()
         );
+    }
+
+    public List<ModerationAction> findLogsByOffset(int offSetPlace) {
+        int offSetNum = 25 * offSetPlace;
+        return moderationRepository.findAllByOrderByCreatedAtDesc(offSetNum);
     }
 }

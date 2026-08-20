@@ -333,7 +333,8 @@ VALUES ('CLIMBER'), ('SETTER'), ('ADMIN');
 INSERT INTO Gym_Action (action_definition)
 VALUES ('CREATE_BETA'), ('DELETE_BETA'), ('CREATE_COMMENT'), ('DELETE_COMMENT'),
        ('CREATE_PROBLEM'), ('DELETE_PROBLEM'), ('RESET_WALL'), ('CREATE_WALL'), ('DELETE_WALL'),
-       ('CHANGE_ROLE'), ('GRADE_PROBLEM'), ('VIEW_ACCOUNTS'), ('VIEW_REPORTS'), ('MODERATE_REPORT');
+       ('CHANGE_ROLE'), ('GRADE_PROBLEM'), ('VIEW_ACCOUNTS'), ('VIEW_REPORTS'), ('MODERATE_REPORT'),
+       ('VIEW_MODERATION_LOGS');
 
 INSERT INTO Climbing_Grade(grade)
 VALUES ('VB'), ('V0'), ('V1'), ('V2'), ('V3'), ('V4'),
@@ -344,7 +345,8 @@ INSERT INTO Role_Permission (role_id, action_id)
 VALUES (1, 1), (1, 2), (1, 3), (1, 4), (1, 11),
        (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6),
        (2, 7), (2, 11), (3, 1), (3, 2), (3, 3), (3, 4),
-       (3, 8), (3, 9), (3, 10), (3, 11), (3, 12), (3, 13), (3, 14);
+       (3, 8), (3, 9), (3, 10), (3, 11), (3, 12), (3, 13),
+       (3, 14), (3, 15);
 
 
 INSERT INTO Wall_Section (info, wall_section_name)
