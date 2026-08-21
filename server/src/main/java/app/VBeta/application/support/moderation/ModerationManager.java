@@ -8,6 +8,7 @@ import app.VBeta.repository.ModerationRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -64,5 +65,19 @@ public class ModerationManager {
                 .adminNotes(moderationRequest.reason())
                 .build()
         );
+    }
+
+    /**
+     * Returns one 25-row page of logbook rows newest-first.
+     * <p>
+     * {@code offSetPlace} is 1-based. Page {@code n} uses SQL offset
+     * {@code 25 × (n - 1)}.
+     *
+     * @param offSetPlace 1-based page number
+     * @return up to 25 actions (empty when the page is past the last row)
+     */
+    public List<ModerationAction> findLogsByOffset(int offSetPlace) {
+        int offSetNum = 25 * (offSetPlace - 1);
+        return moderationRepository.findAllByOrderByCreatedAtDesc(offSetNum);
     }
 }

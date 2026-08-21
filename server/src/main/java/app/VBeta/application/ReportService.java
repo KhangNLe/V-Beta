@@ -155,7 +155,14 @@ public class ReportService {
         return new ReportPriorityDTO(report, categories, queueScore);
     }
 
-    private ReportDTO toReportDTO(List<Report> reportsOnTarget) {
+    /**
+     * Maps one or more reports on the same target into a {@link ReportDTO}.
+     * Logbook reads pass a single-report list (the decided reporter row).
+     *
+     * @param reportsOnTarget reports sharing one typed target
+     * @return target snapshot plus {@code reporters}
+     */
+    public ReportDTO toReportDTO(List<Report> reportsOnTarget) {
         Report first = reportsOnTarget.get(0);
         List<ReportUserDTO> reporters = reportsOnTarget.stream()
                 .map(this::toReportUserDTO)

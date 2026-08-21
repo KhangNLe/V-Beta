@@ -18,6 +18,7 @@ Errors come from three main layers:
   - Blank or over-length report reason / missing report enums
   - Blank moderation `reason` / missing `reportIds` or `decision`
   - Missing `notificationId` on `PATCH /api/notification/short`
+  - `offSetPlace <= 0` on `GET /api/moderate/logbook`
   - Wall/problem write `RuntimeException`s (create/delete/reset), including authorization failures on those routes
 - **401 Unauthorized**
   - Missing/invalid bearer token for protected routes (Spring Security or `FirebaseAuthFilter`)
@@ -63,7 +64,7 @@ How that surfaces depends on the controller:
 
 When the user is authenticated but not allowed, `AuthorizationService` throws `RuntimeException` (`Role <ROLE> is not allowed to perform action <ACTION>` or no valid role). Controllers currently map those to **404** or **400**, not 403.
 
-This applies to action-gated endpoints (for example account list/role-change, wall/problem management, grade suggestion, comment delete, `GET /api/report/reports`, and `POST /api/moderate/report`).
+This applies to action-gated endpoints (for example account list/role-change, wall/problem management, grade suggestion, comment delete, `GET /api/report/reports`, `POST /api/moderate/report`, and `GET /api/moderate/logbook`).
 
 ## Validation and Domain Errors
 
@@ -78,7 +79,7 @@ Clients should not hardcode one exact JSON shape for all non-auth errors.
 
 `POST /api/report/create`, `GET /api/notification/short`, and `PATCH /api/notification/short` are authenticated, not action-gated. Missing bearer tokens are rejected by Spring Security (`401`). Invalid/expired tokens still use the filter payload above.
 
-`GET /api/report/reports` is action-gated (`VIEW_REPORTS`). `POST /api/moderate/report` is action-gated (`MODERATE_REPORT`). Guest callers are `401`. Climber/setter and other authorization failures currently map to **404**.
+`GET /api/report/reports` is action-gated (`VIEW_REPORTS`). `POST /api/moderate/report` is action-gated (`MODERATE_REPORT`). `GET /api/moderate/logbook` is action-gated (`VIEW_MODERATION_LOGS`). Guest callers are `401`. Climber/setter and other authorization failures currently map to **404**.
 
 Create-report domain errors:
 
@@ -96,6 +97,12 @@ Admin resolve errors (`POST /api/moderate/report`):
 - `404` — missing account, missing `MODERATE_REPORT`, or appeal `decision` (`Appeal decisions are not supported on this endpoint.`)
 - `200` with empty body — success, including when every id was skipped (unknown, already closed, filed by the acting admin, or on a discussion the admin owns)
 
+Admin logbook errors (`GET /api/moderate/logbook`):
+
+- `400` — `offSetPlace <= 0`
+- `404` — missing account, missing `VIEW_MODERATION_LOGS`, or unknown `moderationId` (`Moderation not found`)
+- `200` with `"moderationLogs": []` — no decisions yet, or the requested page is past the last row
+
 Unread notification errors (`GET /api/notification/short`):
 
 - `401` — missing/invalid auth, or no account matches the Firebase UID (controller maps lookup failure to `401`)
@@ -106,7 +113,7 @@ Mark-read errors (`PATCH /api/notification/short?notificationId=`):
 - `404` — missing auth context, missing account, unknown id, or the row belongs to another user
 - `200` with empty body — success, including when the row was already read
 
-Create-report does not return `403` for climber/setter: any authenticated role may submit a report. Admin inbox fan-out is a side effect, not an access check on create/poll. Queue/detail **does** require admin `VIEW_REPORTS`. Resolve **does** require admin `MODERATE_REPORT`. Inbox mark-read is own-row only.
+Create-report does not return `403` for climber/setter: any authenticated role may submit a report. Admin inbox fan-out is a side effect, not an access check on create/poll. Queue/detail **does** require admin `VIEW_REPORTS`. Resolve **does** require admin `MODERATE_REPORT`. Logbook **does** require admin `VIEW_MODERATION_LOGS`. Inbox mark-read is own-row only.
 
 ## Practical Error Payload Notes
 

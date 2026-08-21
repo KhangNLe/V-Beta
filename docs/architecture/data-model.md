@@ -86,6 +86,7 @@ Defined in runtime/test SQL. Closed workflow values use PostgreSQL enums; extens
   - Append-only admin logbook rows for a report (action type + required notes).
   - Multiple actions per report are allowed (for example remove, then later appeal decision).
   - Queue resolve writes one row per closed reporter; notes are not copied onto `Events`.
+  - Admin list/detail is `GET /api/moderate/logbook` (`VIEW_MODERATION_LOGS`); pages of 25 newest-first, or one row by `moderationId`.
 
 #### Events and inbox
 
@@ -143,7 +144,7 @@ Action-level authorization uses:
 
 This model enables action-gated endpoint checks beyond simple authenticated/unauthenticated access.
 
-Dedicated moderation permissions: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. `MODERATE_REPORT` gates `POST /api/moderate/report` (dismiss or remove OPEN discussion reports). Create-report and notification inbox (`GET`/`PATCH /api/notification/short`) stay authenticated only (no `CREATE_REPORT`). Appeals are not accepted on the resolve endpoint.
+Dedicated moderation permissions: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. `MODERATE_REPORT` gates `POST /api/moderate/report` (dismiss or remove OPEN discussion reports). `VIEW_MODERATION_LOGS` gates `GET /api/moderate/logbook` (paged list or `?moderationId=`). Create-report and notification inbox (`GET`/`PATCH /api/notification/short`) stay authenticated only (no `CREATE_REPORT`). Appeals are not accepted on the resolve endpoint.
 
 ## Schema Management Notes
 

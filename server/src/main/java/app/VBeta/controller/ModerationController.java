@@ -1,5 +1,6 @@
 package app.VBeta.controller;
 
+import app.VBeta.api.dto.moderation.ModerationPayload;
 import app.VBeta.api.dto.moderation.ModerationRequest;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ModerationService;
@@ -9,10 +10,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * {@code ModerationController} accepts admin decisions on OPEN report-queue rows.
+ * {@code ModerationController} accepts admin report-queue decisions and exposes
+ * the append-only moderation logbook.
  * <p>
  * Resolve is action-gated with
  * {@link app.VBeta.domain.model.actions.ActionDefinition#MODERATE_REPORT}.
+ * Logbook reads are action-gated with
+ * {@link app.VBeta.domain.model.actions.ActionDefinition#VIEW_MODERATION_LOGS}.
  * Caller identity is taken from {@link AuthorizationService}, not the request body.
  */
 @RestController
@@ -25,7 +29,7 @@ public class ModerationController {
      * Constructs a new {@code ModerationController} with required services.
      *
      * @param authorizationService service for authentication context
-     * @param moderationService service for report-queue resolve
+     * @param moderationService service for report-queue resolve and logbook reads
      */
     public ModerationController(AuthorizationService authorizationService,
                                 ModerationService moderationService) {
@@ -52,6 +56,41 @@ public class ModerationController {
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Returns moderation logbook rows for an admin.
+     * <p>
+     * With {@code moderationId}, the response is that one row. Without it, the
+     * response is a page of 25 rows newest-first ({@code offSetPlace} is 1-based;
+     * page {@code n} skips {@code 25 × (n - 1)} rows). {@code offSetPlace <= 0}
+     * is {@code 400}. {@code RuntimeException} is mapped to {@code 404}
+     * (missing account, missing {@code VIEW_MODERATION_LOGS}, or unknown id).
+     *
+     * @param moderationId optional logbook row id
+     * @param offSetPlace 1-based page when listing (default {@code 1})
+     * @return {@link ModerationPayload}; empty {@code moderationLogs} when the page has no rows
+     */
+    @GetMapping("/logbook")
+    public ResponseEntity<?> getLogbook(@RequestParam(required = false) Long moderationId,
+                                        @RequestParam(defaultValue = "1") int offSetPlace) {
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            if (offSetPlace <= 0){
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+            ModerationPayload payload;
+            if (moderationId != null) {
+                payload = moderationService.getModerationLog(firebaseUid, moderationId);
+            } else {
+                payload = moderationService.getLogbook(firebaseUid, offSetPlace);
+            }
+            return new ResponseEntity<>(payload, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return  new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
