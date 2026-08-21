@@ -11,6 +11,13 @@ import java.util.List;
  * Repository for {@link ModerationAction} logbook rows.
  */
 public interface ModerationRepository extends JpaRepository<ModerationAction, Long> {
+    /**
+     * Returns up to 25 logbook rows ordered by {@code createdAt} descending,
+     * skipping {@code offSetNum} rows.
+     *
+     * @param offSetNum SQL offset ({@code 0} for the newest page)
+     * @return matching logbook rows
+     */
     @Query("Select ma From ModerationAction ma Order By ma.createdAt Desc Limit 25 Offset :offSetNum")
     List<ModerationAction> findAllByOrderByCreatedAtDesc(@Param("offSetNum") int offSetNum);
 }

@@ -25,12 +25,14 @@ import java.util.stream.Collectors;
 
 /**
  * {@code ModerationService} is the orchestration layer for admin report-queue
- * decisions ({@code POST /api/moderate/report}).
+ * decisions ({@code POST /api/moderate/report}) and logbook reads
+ * ({@code GET /api/moderate/logbook}).
  * <p>
- * It authorizes {@link ActionDefinition#MODERATE_REPORT}, writes a
+ * Resolve authorizes {@link ActionDefinition#MODERATE_REPORT}, writes a
  * {@link ModerationAction} logbook row per eligible report, closes that reporter
  * row, and notifies the reporter. {@code CONTENT_REMOVED} also soft-deletes the
  * shared discussion once and notifies the owner once. Appeals are rejected.
+ * Logbook reads authorize {@link ActionDefinition#VIEW_MODERATION_LOGS}.
  */
 @Service
 @Transactional
@@ -47,11 +49,12 @@ public class ModerationService {
      * Constructs a new {@code ModerationService} with required collaborators.
      *
      * @param moderationManager manager for append-only logbook rows
-     * @param authorizationService service for {@code MODERATE_REPORT} checks
+     * @param authorizationService service for {@code MODERATE_REPORT} and {@code VIEW_MODERATION_LOGS} checks
      * @param notificationService service for reporter/owner outcome inbox writes
      * @param userAccountManager manager for admin account lookups
      * @param reportManager manager for open-report lookup and status updates
      * @param climbingProblemDiscussionManager manager for discussion soft-delete
+     * @param reportService service used to map the moderated report into a {@code ReportDTO}
      */
     public ModerationService(ModerationManager moderationManager,
                              AuthorizationService authorizationService,
@@ -105,6 +108,18 @@ public class ModerationService {
         }
     }
 
+    /**
+     * Returns one logbook row by identifier.
+     * <p>
+     * Requires {@link ActionDefinition#VIEW_MODERATION_LOGS}. The payload
+     * {@code moderationLogs} list has a single {@link ModerationDTO}.
+     *
+     * @param firebaseUid Firebase UID of the requesting admin
+     * @param moderationId logbook row identifier
+     * @return payload with that one decision
+     * @throws RuntimeException when the account is missing, unauthorized, or
+     *         {@code moderationId} does not exist
+     */
     public ModerationPayload getModerationLog(String firebaseUid, Long moderationId){
         UserAccount admin = userAccountManager.findUserAccount(firebaseUid);
         if (admin == null){
@@ -117,6 +132,17 @@ public class ModerationService {
         return createModerationPayload(List.of(decision));
     }
 
+    /**
+     * Returns one page of logbook rows newest-first.
+     * <p>
+     * Requires {@link ActionDefinition#VIEW_MODERATION_LOGS}. Page size is 25.
+     * {@code offSetPlace} is 1-based (page {@code 1} is the newest 25 rows).
+     *
+     * @param firebaseUid Firebase UID of the requesting admin
+     * @param offSetPlace 1-based page number
+     * @return payload of up to 25 decisions (empty list when the page has no rows)
+     * @throws RuntimeException when the account is missing or unauthorized
+     */
     public ModerationPayload getLogbook(String firebaseUid, int offSetPlace){
         UserAccount admin = userAccountManager.findUserAccount(firebaseUid);
         if (admin == null){
@@ -211,10 +237,23 @@ public class ModerationService {
                 report, EventTypeName.CONTENT_REMOVED);
     }
 
+    /**
+     * Maps logbook entities into the API payload.
+     *
+     * @param decisions persisted actions to serialize
+     * @return payload whose {@code moderationLogs} list matches {@code decisions}
+     */
     private ModerationPayload createModerationPayload(List<ModerationAction> decisions){
         return new ModerationPayload(decisions.stream().map(this::createModerationDTO).collect(Collectors.toList()));
     }
 
+    /**
+     * Maps one logbook row to a DTO: action id, the moderated report snapshot,
+     * deciding admin, decision type, notes, and created-at.
+     *
+     * @param decision persisted logbook row
+     * @return API logbook item
+     */
     private ModerationDTO createModerationDTO(ModerationAction decision){
         return new ModerationDTO(
                 decision.getActionId(),

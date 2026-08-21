@@ -181,7 +181,7 @@ Create-report is **authenticated, not action-gated**. There is no `CREATE_REPORT
     - `404` when the reporter account is missing, the target is missing/deleted, the reporter owns the discussion / is the reported user, or a duplicate report already exists
   - Product note: Sprint 5 UI scope is discussion comments/betas (`DISCUSSION`). The API also accepts wall, problem, and user targets.
 
-Admin queue and detail are action-gated (`VIEW_REPORTS`). Resolve is action-gated (`MODERATE_REPORT`). See Action-Gated Endpoints below.
+Admin queue and detail are action-gated (`VIEW_REPORTS`). Resolve is action-gated (`MODERATE_REPORT`). Logbook is action-gated (`VIEW_MODERATION_LOGS`). See Action-Gated Endpoints below.
 
 ### Notifications (Authenticated)
 
@@ -326,6 +326,28 @@ There is no mark-all-read endpoint in this slice.
     - `401` when unauthenticated or the Firebase token is invalid
     - `404` when the account is missing, the caller lacks `MODERATE_REPORT`, or `decision` is `APPEAL_APPROVED` / `APPEAL_DENIED` (`Appeal decisions are not supported on this endpoint.`)
   - Product note: Sprint 5 resolve is discussion comments and betas only. Appeals are out of this endpoint.
+
+- `GET /api/moderate/logbook`
+  - Required action: `VIEW_MODERATION_LOGS` (admin)
+  - Purpose: read append-only `Moderation_Action` rows written by resolve (dismiss/remove). Newest first.
+  - Query params:
+    - none — page 1 (25 newest rows)
+    - `offSetPlace` (optional, default `1`) — 1-based page; page `n` skips `25 × (n - 1)` rows
+    - `moderationId` (optional) — one logbook row; when set, `offSetPlace` is ignored
+  - Response: `200` `ModerationPayload`:
+    - `moderationLogs[]` (`ModerationDTO`)
+      - `moderationId`
+      - `report` (`ReportDTO`): `targetType`, discussion/problem/wall/user snapshot, `reporters[]` for **that decided report only**
+      - `resolvedBy` (`UserAccountDTO`)
+      - `decision` (`REPORT_DISMISSED` or `CONTENT_REMOVED`)
+      - `adminNote`
+      - `createdAt`
+  - Empty `moderationLogs` is a valid `200` (no decisions yet, or the page is past the last row).
+  - Errors:
+    - `400` when `offSetPlace` is `<= 0`
+    - `401` when unauthenticated or the Firebase token is invalid
+    - `404` when the account is missing, the caller lacks `VIEW_MODERATION_LOGS`, or `moderationId` does not exist (`Moderation not found`)
+  - Product note: no report-id or date filter in this slice. Appeals are not written here until an appeal endpoint exists.
 
 ## Related Docs
 

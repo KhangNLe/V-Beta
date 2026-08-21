@@ -691,3 +691,88 @@ Empty body.
 - `400` when `notificationId` is missing
 - `401` when the caller is a guest or the Firebase token is invalid
 - `404` when the account is missing, the id does not exist, or the row belongs to another user
+
+## 20) Get Moderation Logbook (Action-gated)
+
+Requires `VIEW_MODERATION_LOGS`. Newest logbook rows first. Page size is 25. `offSetPlace` is 1-based (default `1`). When `moderationId` is set, the response is that one row.
+
+### Request — page 1
+
+```http
+GET /api/moderate/logbook
+Authorization: Bearer <firebase_id_token>
+```
+
+### Request — later page
+
+```http
+GET /api/moderate/logbook?offSetPlace=2
+Authorization: Bearer <firebase_id_token>
+```
+
+### Request — one row
+
+```http
+GET /api/moderate/logbook?moderationId=40
+Authorization: Bearer <firebase_id_token>
+```
+
+### Response (200)
+
+```json
+{
+  "moderationLogs": [
+    {
+      "moderationId": 40,
+      "report": {
+        "targetType": "DISCUSSION",
+        "discussion": {
+          "discussionId": 301,
+          "userId": 8,
+          "username": "alex",
+          "parentCommentId": null,
+          "discussionType": "COMMENT",
+          "discussionContent": "hello",
+          "createdDate": "2026-08-16T10:00:00"
+        },
+        "climbingProblem": null,
+        "wallSection": null,
+        "user": null,
+        "reporters": [
+          {
+            "reportId": 11,
+            "reporter": {
+              "userId": 2,
+              "username": "sam",
+              "email": "sam@example.com",
+              "role": "CLIMBER"
+            },
+            "categoryName": "SPAM",
+            "reportReason": "Spammy comment",
+            "createdAt": "2026-08-16T15:00:00Z"
+          }
+        ]
+      },
+      "resolvedBy": {
+        "userId": 3,
+        "username": "testAdmin",
+        "email": "testAdmin@gmail.com",
+        "role": "ADMIN"
+      },
+      "decision": "REPORT_DISMISSED",
+      "adminNote": "Does not violate gym guidelines.",
+      "createdAt": "2026-08-18T18:05:00Z"
+    }
+  ]
+}
+```
+
+`discussion` may be `null` when the discussion root has no comment/beta child row. `reporters` is the decided report only, not every sibling on that target.
+
+Empty logbook or a page past the last row is `200` with `"moderationLogs": []`, not 404.
+
+### Error examples
+
+- `400` when `offSetPlace` is `0` or negative
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when the account is missing, the caller is not allowed `VIEW_MODERATION_LOGS`, or `moderationId` does not exist

@@ -67,6 +67,15 @@ public class ModerationManager {
         );
     }
 
+    /**
+     * Returns one 25-row page of logbook rows newest-first.
+     * <p>
+     * {@code offSetPlace} is 1-based. Page {@code n} uses SQL offset
+     * {@code 25 × (n - 1)}.
+     *
+     * @param offSetPlace 1-based page number
+     * @return up to 25 actions (empty when the page is past the last row)
+     */
     public List<ModerationAction> findLogsByOffset(int offSetPlace) {
         int offSetNum = 25 * (offSetPlace - 1);
         return moderationRepository.findAllByOrderByCreatedAtDesc(offSetNum);
