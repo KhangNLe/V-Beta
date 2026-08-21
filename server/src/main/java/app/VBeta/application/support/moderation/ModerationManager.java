@@ -68,7 +68,7 @@ public class ModerationManager {
     }
 
     public List<ModerationAction> findLogsByOffset(int offSetPlace) {
-        int offSetNum = 25 * offSetPlace;
+        int offSetNum = 25 * (offSetPlace - 1);
         return moderationRepository.findAllByOrderByCreatedAtDesc(offSetNum);
     }
 }

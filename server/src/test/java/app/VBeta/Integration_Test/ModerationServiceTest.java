@@ -1,5 +1,7 @@
 package app.VBeta.Integration_Test;
 
+import app.VBeta.api.dto.moderation.ModerationDTO;
+import app.VBeta.api.dto.moderation.ModerationPayload;
 import app.VBeta.api.dto.moderation.ModerationRequest;
 import app.VBeta.api.dto.report.ReportRequest;
 import app.VBeta.application.ModerationService;
@@ -332,5 +334,125 @@ public class ModerationServiceTest {
                         "missing-uid"
                 ));
         assertEquals("User not found", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Admin logbook is empty when no decisions have been recorded")
+    void returnsEmptyLogbookWhenNoDecisionsExist() {
+        ModerationPayload payload = moderationService.getLogbook(ADMIN_UID, 1);
+
+        assertNotNull(payload);
+        assertNotNull(payload.moderationLogs());
+        assertTrue(payload.moderationLogs().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Admin logbook returns decisions newest first with report snapshot and notes")
+    void returnsLogbookEntriesNewestFirst() {
+        UserAccount owner = createClimber("owner-" + UUID.randomUUID());
+        DiscussionRoot discussion = discussionRootManager.createNewDiscussion(
+                owner, getClimbingProblem(1L), DiscussionType.COMMENT);
+        Report reportA = createReport(discussion, getUserAccount(CLIMBER_UID));
+        Report reportB = createReport(
+                discussionRootManager.createNewDiscussion(owner, getClimbingProblem(1L), DiscussionType.COMMENT),
+                getUserAccount(SETTER_UID)
+        );
+
+        moderate(List.of(reportA.getReportId()), ModerateActionType.REPORT_DISMISSED);
+        moderate(List.of(reportB.getReportId()), ModerateActionType.CONTENT_REMOVED);
+
+        ModerationAction first = actionsFor(reload(reportA)).get(0);
+        ModerationAction second = actionsFor(reload(reportB)).get(0);
+
+        ModerationPayload payload = moderationService.getLogbook(ADMIN_UID, 1);
+        assertEquals(2, payload.moderationLogs().size());
+
+        ModerationDTO newest = payload.moderationLogs().get(0);
+        ModerationDTO older = payload.moderationLogs().get(1);
+        assertEquals(second.getActionId(), newest.moderationId());
+        assertEquals(first.getActionId(), older.moderationId());
+        assertFalse(newest.createdAt().isBefore(older.createdAt()));
+
+        assertEquals(ModerateActionType.CONTENT_REMOVED, newest.decision());
+        assertEquals(ADMIN_NOTES, newest.adminNote());
+        assertEquals(getUserAccount(ADMIN_UID).getId(), newest.resolvedBy().userId());
+        assertEquals(ReportTargetType.DISCUSSION, newest.report().targetType());
+        assertEquals(1, newest.report().reporters().size());
+        assertEquals(reportB.getReportId(), newest.report().reporters().get(0).reportId());
+
+        assertEquals(ModerateActionType.REPORT_DISMISSED, older.decision());
+        assertEquals(reportA.getReportId(), older.report().reporters().get(0).reportId());
+    }
+
+    @Test
+    @DisplayName("Admin logbook page two is empty when fewer than 25 decisions exist")
+    void returnsEmptyLogbookOnLaterPage() {
+        UserAccount owner = createClimber("owner-" + UUID.randomUUID());
+        DiscussionRoot discussion = discussionRootManager.createNewDiscussion(
+                owner, getClimbingProblem(1L), DiscussionType.COMMENT);
+        Report report = createReport(discussion, getUserAccount(CLIMBER_UID));
+        moderate(List.of(report.getReportId()), ModerateActionType.REPORT_DISMISSED);
+
+        ModerationPayload pageOne = moderationService.getLogbook(ADMIN_UID, 1);
+        ModerationPayload pageTwo = moderationService.getLogbook(ADMIN_UID, 2);
+
+        assertEquals(1, pageOne.moderationLogs().size());
+        assertTrue(pageTwo.moderationLogs().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Admin can load one logbook row by moderation id")
+    void returnsSingleLogByModerationId() {
+        UserAccount owner = createClimber("owner-" + UUID.randomUUID());
+        DiscussionRoot discussion = discussionRootManager.createNewDiscussion(
+                owner, getClimbingProblem(1L), DiscussionType.COMMENT);
+        Report report = createReport(discussion, getUserAccount(CLIMBER_UID));
+        moderate(List.of(report.getReportId()), ModerateActionType.REPORT_DISMISSED);
+
+        Long moderationId = actionsFor(reload(report)).get(0).getActionId();
+        ModerationPayload payload = moderationService.getModerationLog(ADMIN_UID, moderationId);
+
+        assertEquals(1, payload.moderationLogs().size());
+        ModerationDTO log = payload.moderationLogs().get(0);
+        assertEquals(moderationId, log.moderationId());
+        assertEquals(ModerateActionType.REPORT_DISMISSED, log.decision());
+        assertEquals(ADMIN_NOTES, log.adminNote());
+        assertEquals(getUserAccount(ADMIN_UID).getId(), log.resolvedBy().userId());
+        assertEquals(ReportTargetType.DISCUSSION, log.report().targetType());
+        assertEquals(report.getReportId(), log.report().reporters().get(0).reportId());
+        assertEquals(ReportCategoryName.SPAM, log.report().reporters().get(0).categoryName());
+        assertEquals("Spammy", log.report().reporters().get(0).reportReason());
+    }
+
+    @Test
+    @DisplayName("Unknown moderation id fails after authorization")
+    void rejectsUnknownModerationId() {
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                moderationService.getModerationLog(ADMIN_UID, 999_999L));
+        assertEquals("Moderation not found", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Climber cannot view the moderation logbook")
+    void rejectsClimberLogbookViewer() {
+        RuntimeException listEx = assertThrows(RuntimeException.class, () ->
+                moderationService.getLogbook(CLIMBER_UID, 1));
+        assertTrue(listEx.getMessage().contains("not allowed to perform action"));
+
+        RuntimeException detailEx = assertThrows(RuntimeException.class, () ->
+                moderationService.getModerationLog(CLIMBER_UID, 1L));
+        assertTrue(detailEx.getMessage().contains("not allowed to perform action"));
+    }
+
+    @Test
+    @DisplayName("Unknown firebase uid cannot view the moderation logbook")
+    void rejectsUnknownUidForLogbook() {
+        RuntimeException listEx = assertThrows(RuntimeException.class, () ->
+                moderationService.getLogbook("missing-uid", 1));
+        assertEquals("User not found", listEx.getMessage());
+
+        RuntimeException detailEx = assertThrows(RuntimeException.class, () ->
+                moderationService.getModerationLog("missing-uid", 1L));
+        assertEquals("User not found", detailEx.getMessage());
     }
 }
