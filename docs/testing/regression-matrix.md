@@ -21,6 +21,7 @@ Use this together with:
 | Perceived Grade | submit perceived grade and verify reflected result | DISC-03 | Medium |
 | Problem Discovery | grade-range filter, asc/desc sort, invalid range/missing wall behavior | DISC-04 | High |
 | Problem Discovery UI | wall Filter dialog, most recent/easiest/hardest, clear filters | DISC-05 | High |
+| Discussion Report UI | ⋮ Report on comments/betas, category + reason validation, guest/owner gating | DISC-06 | High |
 | API Reliability | health/meta, unauthorized/invalid token behavior | API-01, API-02 | Medium |
 | Theming and UX Stability | critical page render in light/dark mode, key nav interactions | visual sanity pass during smoke | Medium |
 
@@ -41,6 +42,8 @@ When code changes in these areas, minimum regression scope should include:
   - Re-run DISC-05 and `wall-page.test.js` filter cases.
 - **Discussion/beta APIs changed**:
   - Re-run DISC-01/02 fully.
+- **Discussion report UI changed** (`problem/[problemId]/page.js`, `src/api/reports.js`):
+  - Re-run DISC-06 and `problem-page.test.js` report cases.
 - **Routing/navigation/layout changed**:
   - Re-run guest browse + account/wall/problem entry points.
 

@@ -448,6 +448,8 @@ Authorization: Bearer <firebase_id_token>
 
 `reportReason` is required and at most 250 characters.
 
+The problem-page Report dialog is the current UI for this endpoint (`DISCUSSION` only). Category must be selected; submit is disabled until category and reason are valid.
+
 ### Response (200)
 
 Empty body.

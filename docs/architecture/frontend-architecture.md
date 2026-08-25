@@ -18,7 +18,7 @@
 - `src/components/ui/`
   - Shared UI primitives (button, card, dialog, etc.)
 - `src/api/`
-  - Backend API calls grouped by domain (`account`, `accounts`, `promoteOrDemote`, `wallSections`, `comments`, `solutionBeta`)
+  - Backend API calls grouped by domain (`account`, `accounts`, `promoteOrDemote`, `wallSections`, `comments`, `solutionBeta`, `reports`)
 - `src/hooks/`
   - Auth/session hook (`useRequireAuth`)
 - `src/lib/`
@@ -78,7 +78,9 @@ Supporting auth/session modules:
   - `src/api/wallSections.js`
   - `src/api/comments.js`
   - `src/api/solutionBeta.js`
+  - `src/api/reports.js`
 - Comment/beta delete helpers send a reason (`deletedReason` / `deleteReason`) from `src/lib/discussionDeletion.js`.
+- Discussion Report on the problem page calls `createContentReport` (`POST /api/report/create`) with `DISCUSSION` + discussion id.
 - Account list/session helpers map `UserAccountDTO` (`userId`, `role`) onto the existing client session shape (`id`, `roleName`).
 
 ## Constraints and Considerations

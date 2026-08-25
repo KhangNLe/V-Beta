@@ -12,9 +12,10 @@ This section documents wall section and climbing problem features currently avai
 - Admin wall section creation and deletion
 - Setter problem creation and deletion
 - Setter wall section reset/archive operation
-- Authenticated discussion actions (comments, beta upload, grade suggestion)
+- Authenticated discussion actions (comments, beta upload, grade suggestion, content report)
 - Guest browsing mode with read-only wall/problem access and banner messaging
 - Owner/admin **soft-delete** for comments and solution betas (`Discussion_Root.deleted_at` / `deleted_by` / `deleted_reason`)
+- Signed-in **Report** action on the discussion ⋮ menu (comments and solution betas) via `POST /api/report/create`
 - Backend discovery: filter active problems by inclusive grade range within a wall section
 - Backend discovery: sort filtered problems by assigned grade ascending or descending
 - Wall section Filter UI: grade range (min–max), sort by most recent / easiest / hardest, Apply / Clear
@@ -57,6 +58,7 @@ Keyword/text search is deferred to a later sprint (completed Sprint 4 delivered 
 3. User can upload a beta video and save metadata.
 4. User can submit perceived grade.
 5. Comment/solution beta **soft-delete** is allowed for owner or admin (when checks pass). Deleted items disappear from the problem timeline after refresh.
+6. Signed-in users who do **not** own the discussion can open **Report** from the ⋮ menu, choose a category, enter a reason (required, max 250 characters), and submit. Guests do not see the menu. Owners see Delete only (self-report is rejected by the API).
 
 Current discussion payload contract is unified through `DiscussionRoot` metadata:
 
@@ -71,6 +73,7 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 - Mutating wall/problem management operations require role-qualified users.
 - Setter-gated UI controls are used for problem create/delete/reset actions.
 - Deletion of user-generated discussion content is restricted to owner/admin patterns.
+- Reporting discussion content is available to any signed-in role except the discussion owner. Guests have no Report control.
 
 ## Key Files
 
@@ -82,6 +85,7 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
     - `v-beta/src/api/wallSections.js`
     - `v-beta/src/api/comments.js`
     - `v-beta/src/api/solutionBeta.js`
+    - `v-beta/src/api/reports.js`
     - `v-beta/src/lib/discussionDeletion.js`
 - Backend controllers/services:
     - `server/src/main/java/app/VBeta/controller/WallSectionController.java`
@@ -97,6 +101,8 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 - Problem delete is `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`.
 - Wall reset is `PATCH /api/home/wall-section/{wallSectionId}/reset`.
 - UI gating and backend authorization should both be revalidated when role logic changes.
+- Problem-page Report submits `reportTargetType: DISCUSSION` and `targetId` = discussion id. Category is required (`INAPPROPRIATE_CONTENT`, `HARASSMENT_BULLYING`, `SPAM`, `OFF_TOPIC`). Reason is required and capped at 250 characters (API max; not 255).
+- Duplicate open reports and self-reports return `404` from create-report; the dialog shows an error toast.
 - Discovery grade-range endpoints use `/api/search/{wallSectionId}?min=&max=&sort=`.
 - CORS allows `/api/**` for the frontend origin (covers `/api/home/**` and `/api/search/**`).
 - Keyword/text search is deferred to a later sprint (roadmap Sprint 9); Sprint 4 discovery (grade filter/sort) is complete.
