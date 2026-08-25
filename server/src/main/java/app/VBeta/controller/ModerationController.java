@@ -1,9 +1,6 @@
 package app.VBeta.controller;
 
-import app.VBeta.api.dto.moderation.AppealPayload;
-import app.VBeta.api.dto.moderation.AppealRequest;
-import app.VBeta.api.dto.moderation.ModerationPayload;
-import app.VBeta.api.dto.moderation.ModerationRequest;
+import app.VBeta.api.dto.moderation.*;
 import app.VBeta.application.AppealService;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ModerationService;
@@ -22,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
  * {@link app.VBeta.domain.model.actions.ActionDefinition#VIEW_MODERATION_LOGS}.
  * Appeal create is authenticated only. Appeal queue and detail are action-gated
  * with {@link app.VBeta.domain.model.actions.ActionDefinition#VIEW_APPEALS}.
+ * Appeal resolve is action-gated with
+ * {@link app.VBeta.domain.model.actions.ActionDefinition#MODERATE_APPEAL}.
  * Caller identity is taken from {@link AuthorizationService}, not the request body.
  */
 @RestController
@@ -153,6 +152,30 @@ public class ModerationController {
                 payload = appealService.getUserAppeal(appealId, firebaseUid);
             }
             return new ResponseEntity<>(payload, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Applies an approve or deny decision to one OPEN appeal.
+     * <p>
+     * On success the response is {@code 200} with an empty body.
+     * {@code RuntimeException} is mapped to {@code 404} (missing account,
+     * missing {@code MODERATE_APPEAL}, unknown/hidden id, or a non-OPEN appeal).
+     * Bean validation failures still return {@code 400}.
+     *
+     * @param moderateAppealRequest appeal id, {@code APPROVED} or {@code DENIED}, and admin notes
+     * @return empty {@code 200} on success
+     */
+    @PatchMapping("/appeal")
+    public ResponseEntity<?> moderateAppeal(@Valid @RequestBody ModerateAppealRequest moderateAppealRequest) {
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            appealService.moderateAppeal(moderateAppealRequest, firebaseUid);
+            return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {

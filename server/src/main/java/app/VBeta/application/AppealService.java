@@ -3,11 +3,18 @@ package app.VBeta.application;
 import app.VBeta.api.dto.moderation.AppealDTO;
 import app.VBeta.api.dto.moderation.AppealPayload;
 import app.VBeta.api.dto.moderation.AppealRequest;
+import app.VBeta.api.dto.moderation.ModerateAppealRequest;
 import app.VBeta.application.support.account.UserAccountManager;
+import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.moderation.AppealManager;
+import app.VBeta.application.support.moderation.ModerationManager;
 import app.VBeta.application.support.report.ReportManager;
 import app.VBeta.domain.model.actions.ActionDefinition;
 import app.VBeta.domain.model.appeal.Appeal;
+import app.VBeta.domain.model.appeal.AppealStatus;
+import app.VBeta.domain.model.moderation.ModerateActionType;
+import app.VBeta.domain.model.moderation.ModerationAction;
+import app.VBeta.domain.model.notification.EventTypeName;
 import app.VBeta.domain.model.report.Report;
 import app.VBeta.domain.model.report.ReportStatus;
 import app.VBeta.domain.model.report.ReportTargetType;
@@ -15,16 +22,19 @@ import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * {@code AppealService} is the orchestration layer for content-owner appeals
- * ({@code POST /api/moderate/appeal}) and admin appeal-queue reads
- * ({@code GET /api/moderate/appeal}).
+ * ({@code POST /api/moderate/appeal}), admin appeal-queue reads
+ * ({@code GET /api/moderate/appeal}), and admin appeal resolve
+ * ({@code PATCH /api/moderate/appeal}).
  * <p>
  * Create is authenticated only: the caller must own the removed discussion.
  * Queue and detail authorize {@link ActionDefinition#VIEW_APPEALS}.
+ * Resolve authorizes {@link ActionDefinition#MODERATE_APPEAL}.
  */
 @Service
 @Transactional
@@ -35,6 +45,8 @@ public class AppealService {
     private final ReportManager reportManager;
     private final ReportService reportService;
     private final NotificationService notificationService;
+    private final ModerationManager moderationManager;
+    private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
 
     /**
      * Constructs a new {@code AppealService} with required collaborators.
@@ -44,20 +56,26 @@ public class AppealService {
      * @param authorizationService service for {@code VIEW_APPEALS} checks
      * @param reportManager manager for report lookup and status updates
      * @param reportService service used to map the appealed report into a {@code ReportDTO}
-     * @param notificationService service for {@code APPEAL_SUBMITTED} admin inbox writes
+     * @param notificationService service for appeal inbox writes
+     * @param moderationManager manager for append-only logbook rows
+     * @param climbingProblemDiscussionManager manager for discussion restore on approve
      */
     public AppealService(UserAccountManager userAccountManager,
                          AppealManager appealManager,
                          AuthorizationService authorizationService,
                          ReportManager reportManager,
                          ReportService reportService,
-                         NotificationService notificationService) {
+                         NotificationService notificationService,
+                         ModerationManager moderationManager,
+                         ClimbingProblemDiscussionManager climbingProblemDiscussionManager) {
         this.userAccountManager = userAccountManager;
         this.appealManager = appealManager;
         this.authorizationService = authorizationService;
         this.reportManager = reportManager;
         this.reportService = reportService;
         this.notificationService = notificationService;
+        this.moderationManager = moderationManager;
+        this.climbingProblemDiscussionManager = climbingProblemDiscussionManager;
     }
 
     /**
@@ -128,6 +146,70 @@ public class AppealService {
                 .filter(appeal -> !isHiddenFromViewer(appeal, admin))
                 .toList();
         return toPayload(appeals);
+    }
+
+    /**
+     * Applies an {@code APPROVED} or {@code DENIED} decision to one OPEN appeal.
+     * <p>
+     * Requires {@link ActionDefinition#MODERATE_APPEAL}. Approve restores the
+     * discussion, sets the report to {@link ReportStatus#CONTENT_RESTORED}, and
+     * notifies the owner with {@link EventTypeName#CONTENT_RESTORED}. Deny sets
+     * the report to {@link ReportStatus#APPEAL_DENIED} and notifies the owner
+     * with {@link EventTypeName#APPEAL_DENIED}. Both paths write a logbook row.
+     *
+     * @param moderateAppealRequest appeal id, decision, and required admin notes
+     * @param firebaseUid Firebase UID of the acting admin
+     * @throws RuntimeException when the account is missing, unauthorized, the
+     *         appeal is missing/hidden, or the appeal is not {@code OPEN}
+     */
+    public void moderateAppeal(ModerateAppealRequest moderateAppealRequest, String firebaseUid) {
+        UserAccount admin = userAccountManager.findUserAccount(firebaseUid);
+        if (admin == null) {
+            throw new RuntimeException("User not found");
+        }
+        authorizationService.authorize(admin, ActionDefinition.MODERATE_APPEAL);
+
+        Appeal appeal = appealManager.findById(moderateAppealRequest.appealId())
+                .orElseThrow(() -> new RuntimeException("Appeal not found"));
+        if (isHiddenFromViewer(appeal, admin) || appeal.getAppealStatus() != AppealStatus.OPEN) {
+            throw new RuntimeException("Appeal not found");
+        }
+
+        appeal.setAppealStatus(moderateAppealRequest.appealStatus());
+        appeal.setAdminNote(moderateAppealRequest.adminReason());
+        appeal.setReviewedBy(admin);
+        appeal.setResolvedAt(Instant.now());
+        appealManager.save(appeal);
+
+        applyAppealDecision(appeal, admin, moderateAppealRequest);
+    }
+
+    /**
+     * Updates the report, optional restore, logbook, and owner notification for
+     * one resolved appeal.
+     *
+     * @param appeal persisted appeal whose status is already {@code APPROVED} or {@code DENIED}
+     * @param admin acting admin used as logbook actor and event actor
+     * @param request appeal-resolve payload supplying notes
+     */
+    private void applyAppealDecision(Appeal appeal, UserAccount admin, ModerateAppealRequest request) {
+        Report report = appeal.getReport();
+        if (appeal.getAppealStatus() == AppealStatus.APPROVED) {
+            if (report.getDiscussion() != null) {
+                climbingProblemDiscussionManager.restoreDiscussionRoot(report.getDiscussion().getDiscussionId());
+            }
+            reportManager.updateReportStatus(report, ReportStatus.CONTENT_RESTORED);
+            ModerationAction decision = moderationManager.createAppealDecision(
+                    report, admin, ModerateActionType.APPEAL_APPROVED, request.adminReason());
+            notificationService.sendReportModerationNotification(decision, appeal.getAppealUser(), report,
+                    EventTypeName.CONTENT_RESTORED);
+        } else {
+            reportManager.updateReportStatus(report, ReportStatus.APPEAL_DENIED);
+            ModerationAction decision = moderationManager.createAppealDecision(
+                    report, admin, ModerateActionType.APPEAL_DENIED, request.adminReason());
+            notificationService.sendReportModerationNotification(decision, appeal.getAppealUser(), report,
+                    EventTypeName.APPEAL_DENIED);
+        }
     }
 
     /**

@@ -185,6 +185,25 @@ public class ClimbingProblemDiscussionManager {
     }
 
     /**
+     * Clears soft-delete metadata so a discussion root is visible on timelines again.
+     * <p>
+     * If {@code deletedAt} is already unset, the method returns without a second write.
+     *
+     * @param discussionRootId discussion identifier to restore
+     * @throws RuntimeException when the discussion is missing
+     */
+    public void restoreDiscussionRoot(Long discussionRootId) {
+        DiscussionRoot discussionRoot = getDiscussionNode(discussionRootId);
+        if (discussionRoot.getDeletedAt() == null) {
+            return;
+        }
+        discussionRoot.setDeletedAt(null);
+        discussionRoot.setDeletedBy(null);
+        discussionRoot.setDeletedReason(null);
+        discussionRootManager.updateDiscussionRoot(discussionRoot);
+    }
+
+    /**
      * Maps a discussion root to a timeline DTO. Does not apply soft-delete filtering;
      * callers that build public timelines should skip roots with {@code deletedAt} set.
      *

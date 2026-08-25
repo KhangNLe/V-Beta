@@ -36,6 +36,6 @@ public enum ActionDefinition {
     VIEW_MODERATION_LOGS,
     /** Permission to read the admin appeal queue and appeal detail ({@code GET /api/moderate/appeal}). */
     VIEW_APPEALS,
-    /** Permission to approve or deny an appeal. Reserved for the appeal-resolve endpoint. */
+    /** Permission to approve or deny an appeal ({@code PATCH /api/moderate/appeal}). */
     MODERATE_APPEAL
 }
