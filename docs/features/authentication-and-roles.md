@@ -52,7 +52,7 @@ This section documents the authentication and authorization features that are cu
   - Includes climber capabilities, including creating content reports.
   - Receives `REPORT_CREATED` unread inbox rows (unless they are the reporter).
   - Can view all accounts and promote/demote account roles.
-  - Can view the ranked report queue (`VIEW_REPORTS`), resolve OPEN discussion reports (`MODERATE_REPORT`), and read the moderation logbook (`VIEW_MODERATION_LOGS`).
+  - Can view the ranked report queue (`VIEW_REPORTS`), resolve OPEN discussion reports (`MODERATE_REPORT`), read the moderation logbook (`VIEW_MODERATION_LOGS`), and read the appeal queue (`VIEW_APPEALS`).
   - Can manage wall sections (create/delete).
   - Can perform moderation-style actions such as deleting comments/betas where admin checks are enforced.
   - Can access admin navigation/account-management workflow.
@@ -66,7 +66,8 @@ This section documents the authentication and authorization features that are cu
 - Report queue and detail are backed by `GET /api/report/reports` (`ActionDefinition.VIEW_REPORTS`).
 - Report resolve is backed by `POST /api/moderate/report` (`ActionDefinition.MODERATE_REPORT`).
 - Logbook is backed by `GET /api/moderate/logbook` (`ActionDefinition.VIEW_MODERATION_LOGS`).
-- Backend authorization for these actions is enforced through `ActionDefinition.VIEW_ACCOUNTS`, `ActionDefinition.CHANGE_ROLE`, `ActionDefinition.VIEW_REPORTS`, `ActionDefinition.MODERATE_REPORT`, and `ActionDefinition.VIEW_MODERATION_LOGS`.
+- Appeal queue and detail are backed by `GET /api/moderate/appeal` (`ActionDefinition.VIEW_APPEALS`).
+- Backend authorization for these actions is enforced through `ActionDefinition.VIEW_ACCOUNTS`, `ActionDefinition.CHANGE_ROLE`, `ActionDefinition.VIEW_REPORTS`, `ActionDefinition.MODERATE_REPORT`, `ActionDefinition.VIEW_MODERATION_LOGS`, and `ActionDefinition.VIEW_APPEALS`.
 - The frontend exposes admin navigation for account-management workflow.
 - Admin role changes should be validated end-to-end (UI + API + permission checks) whenever role logic changes.
 
@@ -76,6 +77,8 @@ This section documents the authentication and authorization features that are cu
 - Admin queue/detail: `GET /api/report/reports` (action-gated `VIEW_REPORTS`; admin only). Optional `reportId` returns one OPEN case.
 - Admin resolve: `POST /api/moderate/report` (action-gated `MODERATE_REPORT`; admin only). Dismiss or remove discussion reports; appeals are not accepted here.
 - Admin logbook: `GET /api/moderate/logbook` (action-gated `VIEW_MODERATION_LOGS`; admin only). Optional `moderationId` returns one row; `offSetPlace` pages 25 newest-first.
+- Owner appeal create: `POST /api/moderate/appeal` (authenticated; not action-gated). One appeal per `CONTENT_REMOVED` discussion report owned by the caller.
+- Admin appeal queue/detail: `GET /api/moderate/appeal` (action-gated `VIEW_APPEALS`; admin only). Optional `appealId` returns one row.
 - Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated). Includes `notificationId` and `click` metadata (`kind` + target ids). Current moderation events use `click.kind = REPORT_QUEUE`.
 - Mark read: `PATCH /api/notification/short?notificationId=` (authenticated; own row only; already-read is a no-op).
 - See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.

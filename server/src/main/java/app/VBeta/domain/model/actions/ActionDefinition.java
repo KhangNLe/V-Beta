@@ -33,5 +33,9 @@ public enum ActionDefinition {
     /** Permission to dismiss or remove reported discussion content ({@code POST /api/moderate/report}). */
     MODERATE_REPORT,
     /** Permission to read the append-only moderation logbook ({@code GET /api/moderate/logbook}). */
-    VIEW_MODERATION_LOGS
+    VIEW_MODERATION_LOGS,
+    /** Permission to read the admin appeal queue and appeal detail ({@code GET /api/moderate/appeal}). */
+    VIEW_APPEALS,
+    /** Permission to approve or deny an appeal. Reserved for the appeal-resolve endpoint. */
+    MODERATE_APPEAL
 }

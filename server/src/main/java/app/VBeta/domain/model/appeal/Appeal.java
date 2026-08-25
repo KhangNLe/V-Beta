@@ -3,13 +3,11 @@ package app.VBeta.domain.model.appeal;
 import app.VBeta.domain.model.report.Report;
 import app.VBeta.domain.model.user.UserAccount;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Setter;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 /**
@@ -23,6 +21,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Appeal {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,10 +45,10 @@ public class Appeal {
     private AppealStatus appealStatus;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "resolved_at")
-    private LocalDateTime resolvedAt;
+    private Instant resolvedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewed_by", referencedColumnName = "user_id")
@@ -65,7 +64,7 @@ public class Appeal {
         }
 
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = Instant.now();
         }
     }
 }

@@ -79,7 +79,7 @@ Clients should not hardcode one exact JSON shape for all non-auth errors.
 
 `POST /api/report/create`, `GET /api/notification/short`, and `PATCH /api/notification/short` are authenticated, not action-gated. Missing bearer tokens are rejected by Spring Security (`401`). Invalid/expired tokens still use the filter payload above.
 
-`GET /api/report/reports` is action-gated (`VIEW_REPORTS`). `POST /api/moderate/report` is action-gated (`MODERATE_REPORT`). `GET /api/moderate/logbook` is action-gated (`VIEW_MODERATION_LOGS`). Guest callers are `401`. Climber/setter and other authorization failures currently map to **404**.
+`GET /api/report/reports` is action-gated (`VIEW_REPORTS`). `POST /api/moderate/report` is action-gated (`MODERATE_REPORT`). `GET /api/moderate/logbook` is action-gated (`VIEW_MODERATION_LOGS`). `GET /api/moderate/appeal` is action-gated (`VIEW_APPEALS`). `POST /api/moderate/appeal` is authenticated only. Guest callers are `401`. Climber/setter and other authorization failures currently map to **404**.
 
 Create-report domain errors:
 
@@ -103,6 +103,17 @@ Admin logbook errors (`GET /api/moderate/logbook`):
 - `404` — missing account, missing `VIEW_MODERATION_LOGS`, or unknown `moderationId` (`Moderation not found`)
 - `200` with `"moderationLogs": []` — no decisions yet, or the requested page is past the last row
 
+Owner appeal create errors (`POST /api/moderate/appeal`):
+
+- `400` — missing `reportId`, or blank `appealReason`
+- `404` — missing account, ineligible report (`Appeal is not allowed`), or duplicate appeal (`Appeal already exists`)
+- `201` with empty body — success
+
+Admin appeal queue/detail errors (`GET /api/moderate/appeal`):
+
+- `404` — missing account, missing `VIEW_APPEALS`, or unknown / hidden `appealId` (`Appeal not found`)
+- `200` with `"appeals": []` — no OPEN appeals, or every OPEN appeal was filed by the viewing admin
+
 Unread notification errors (`GET /api/notification/short`):
 
 - `401` — missing/invalid auth, or no account matches the Firebase UID (controller maps lookup failure to `401`)
@@ -113,7 +124,7 @@ Mark-read errors (`PATCH /api/notification/short?notificationId=`):
 - `404` — missing auth context, missing account, unknown id, or the row belongs to another user
 - `200` with empty body — success, including when the row was already read
 
-Create-report does not return `403` for climber/setter: any authenticated role may submit a report. Admin inbox fan-out is a side effect, not an access check on create/poll. Queue/detail **does** require admin `VIEW_REPORTS`. Resolve **does** require admin `MODERATE_REPORT`. Logbook **does** require admin `VIEW_MODERATION_LOGS`. Inbox mark-read is own-row only.
+Create-report does not return `403` for climber/setter: any authenticated role may submit a report. Admin inbox fan-out is a side effect, not an access check on create/poll. Queue/detail **does** require admin `VIEW_REPORTS`. Resolve **does** require admin `MODERATE_REPORT`. Logbook **does** require admin `VIEW_MODERATION_LOGS`. Appeal queue/detail **does** require admin `VIEW_APPEALS`. Inbox mark-read is own-row only.
 
 ## Practical Error Payload Notes
 

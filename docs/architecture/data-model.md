@@ -144,7 +144,7 @@ Action-level authorization uses:
 
 This model enables action-gated endpoint checks beyond simple authenticated/unauthenticated access.
 
-Dedicated moderation permissions: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. `MODERATE_REPORT` gates `POST /api/moderate/report` (dismiss or remove OPEN discussion reports). `VIEW_MODERATION_LOGS` gates `GET /api/moderate/logbook` (paged list or `?moderationId=`). Create-report and notification inbox (`GET`/`PATCH /api/notification/short`) stay authenticated only (no `CREATE_REPORT`). Appeals are not accepted on the resolve endpoint.
+Dedicated moderation permissions: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. `MODERATE_REPORT` gates `POST /api/moderate/report` (dismiss or remove OPEN discussion reports). `VIEW_MODERATION_LOGS` gates `GET /api/moderate/logbook` (paged list or `?moderationId=`). `VIEW_APPEALS` gates `GET /api/moderate/appeal` (OPEN queue or `?appealId=`). Create-report, owner appeal create, and notification inbox (`GET`/`PATCH /api/notification/short`) stay authenticated only (no `CREATE_REPORT`). Appeals are not accepted on the resolve endpoint.
 
 ## Schema Management Notes
 
