@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import ProblemPage from "./page";
 import { fetchProblemForUser } from "@/api/wallSections";
 import { addUserSuggestedGrade, deleteUserComment, postCommentForUser } from "@/api/comments";
+import { createContentReport } from "@/api/reports";
 import {
   deleteSolutionBetaFromDatabase,
   requestSignedUploadUrl,
@@ -25,6 +26,17 @@ jest.mock("@/api/comments", () => ({
   addUserSuggestedGrade: jest.fn(),
   deleteUserComment: jest.fn(),
   postCommentForUser: jest.fn(),
+}));
+
+jest.mock("@/api/reports", () => ({
+  createContentReport: jest.fn(),
+  REPORT_CATEGORIES: [
+    { value: "INAPPROPRIATE_CONTENT", label: "Inappropriate content" },
+    { value: "HARASSMENT_BULLYING", label: "Harassment or bullying" },
+    { value: "SPAM", label: "Spam" },
+    { value: "OFF_TOPIC", label: "Off-topic" },
+  ],
+  REPORT_REASON_MAX_LENGTH: 250,
 }));
 
 jest.mock("@/api/solutionBeta", () => ({
@@ -95,8 +107,18 @@ jest.mock("@/components/ui/dropdown-menu", () => {
         {children}
       </button>
     ),
+    DropdownMenuSeparator: () => <hr />,
   };
 });
+
+jest.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children, open }) => (open ? <div data-testid="report-dialog">{children}</div> : null),
+  DialogContent: ({ children, ...props }) => <div {...props}>{children}</div>,
+  DialogHeader: ({ children, ...props }) => <div {...props}>{children}</div>,
+  DialogTitle: ({ children, ...props }) => <h3 {...props}>{children}</h3>,
+  DialogDescription: ({ children, ...props }) => <p {...props}>{children}</p>,
+  DialogFooter: ({ children, ...props }) => <div {...props}>{children}</div>,
+}));
 
 const mockPush = jest.fn();
 const user = { uid: "firebase-uid", email: "tester@example.com" };
@@ -170,10 +192,15 @@ describe("ProblemPage coverage", () => {
     });
 
     it("shows guest banner and disabled signed-in controls for guest", async () => {
-      renderProblemPage({ authUser: null, account: null });
+      renderProblemPage({
+        authUser: null,
+        account: null,
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
       expect(await screen.findByTestId("guest-banner")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Suggest Grade" })).toBeDisabled();
       expect(screen.getByRole("button", { name: "Post Comment" })).toBeDisabled();
+      expect(screen.queryByLabelText("Comment actions")).not.toBeInTheDocument();
     });
   });
 
@@ -250,13 +277,188 @@ describe("ProblemPage coverage", () => {
       });
     });
 
-    it("shows delete actions only for owner/admin", async () => {
+    it("shows report but not delete for another user's comment", async () => {
       renderProblemPage({
         account: { id: 999, roleName: "CLIMBER" },
         problem: { ...baseProblem, discussion: [commentByOwner] },
       });
       expect(await screen.findByText("Try heel hook")).toBeInTheDocument();
-      expect(screen.queryByLabelText("Comment actions")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      expect(screen.getByRole("button", { name: "Report" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Delete Comment" })).not.toBeInTheDocument();
+    });
+
+    it("hides report on the owner's own comment", async () => {
+      renderProblemPage({
+        account: ownerAccount,
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      await screen.findByText("Try heel hook");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      expect(screen.getByRole("button", { name: "Delete Comment" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Report" })).not.toBeInTheDocument();
+    });
+
+    it("lets an admin delete or report another user's comment", async () => {
+      renderProblemPage({
+        account: adminAccount,
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      await screen.findByText("Try heel hook");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      expect(screen.getByRole("button", { name: "Report" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Delete Comment" })).toBeInTheDocument();
+    });
+
+    it("shows report on another user's solution beta", async () => {
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: { ...baseProblem, discussion: [betaByOwner] },
+      });
+      await screen.findByText("Watch Beta");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      expect(screen.getByRole("button", { name: "Report" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Delete Solution Beta" })).not.toBeInTheDocument();
+    });
+
+    it("requires category and reason before submitting a report", async () => {
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      await screen.findByText("Try heel hook");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Report" }));
+      expect(await screen.findByTestId("report-dialog")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Submit Report" })).toBeDisabled();
+
+      fireEvent.change(screen.getByLabelText("Report reason"), {
+        target: { value: "Spammy comment" },
+      });
+      expect(screen.getByRole("button", { name: "Submit Report" })).toBeDisabled();
+      fireEvent.click(screen.getByRole("button", { name: "Submit Report" }));
+      expect(createContentReport).not.toHaveBeenCalled();
+
+      fireEvent.change(screen.getByLabelText("Report category"), {
+        target: { value: "SPAM" },
+      });
+      fireEvent.change(screen.getByLabelText("Report reason"), {
+        target: { value: "   " },
+      });
+      expect(screen.getByRole("button", { name: "Submit Report" })).toBeDisabled();
+    });
+
+    it("blocks report reasons over 250 characters", async () => {
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      await screen.findByText("Try heel hook");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Report" }));
+      fireEvent.change(screen.getByLabelText("Report category"), {
+        target: { value: "SPAM" },
+      });
+      fireEvent.change(screen.getByLabelText("Report reason"), {
+        target: { value: "a".repeat(251) },
+      });
+      expect(screen.getByText("251/250")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Submit Report" })).toBeDisabled();
+      fireEvent.click(screen.getByRole("button", { name: "Submit Report" }));
+      expect(createContentReport).not.toHaveBeenCalled();
+    });
+
+    it("allows a 250 character report reason", async () => {
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      await screen.findByText("Try heel hook");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Report" }));
+      fireEvent.change(screen.getByLabelText("Report category"), {
+        target: { value: "OFF_TOPIC" },
+      });
+      fireEvent.change(screen.getByLabelText("Report reason"), {
+        target: { value: "a".repeat(250) },
+      });
+      expect(screen.getByText("250/250")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Submit Report" })).not.toBeDisabled();
+    });
+
+    it("submits a discussion report from the actions menu", async () => {
+      createContentReport.mockResolvedValue(undefined);
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      await screen.findByText("Try heel hook");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Report" }));
+      expect(await screen.findByTestId("report-dialog")).toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText("Report category"), {
+        target: { value: "SPAM" },
+      });
+      fireEvent.change(screen.getByLabelText("Report reason"), {
+        target: { value: "Spammy comment" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Submit Report" }));
+      await waitFor(() => {
+        expect(createContentReport).toHaveBeenCalledWith(user, {
+          reportTargetType: "DISCUSSION",
+          reportReason: "Spammy comment",
+          reportCategoryName: "SPAM",
+          targetId: 301,
+        });
+      });
+      expect(toast.success).toHaveBeenCalledWith("Report submitted.");
+    });
+
+    it("submits a report against another user's solution beta", async () => {
+      createContentReport.mockResolvedValue(undefined);
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: { ...baseProblem, discussion: [betaByOwner] },
+      });
+      await screen.findByText("Watch Beta");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Report" }));
+      fireEvent.change(screen.getByLabelText("Report category"), {
+        target: { value: "HARASSMENT_BULLYING" },
+      });
+      fireEvent.change(screen.getByLabelText("Report reason"), {
+        target: { value: "Harassment in this beta" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Submit Report" }));
+      await waitFor(() => {
+        expect(createContentReport).toHaveBeenCalledWith(user, {
+          reportTargetType: "DISCUSSION",
+          reportReason: "Harassment in this beta",
+          reportCategoryName: "HARASSMENT_BULLYING",
+          targetId: 302,
+        });
+      });
+    });
+
+    it("shows an error when report submit fails", async () => {
+      createContentReport.mockRejectedValue(new Error("Report already exists"));
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      await screen.findByText("Try heel hook");
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Report" }));
+      fireEvent.change(screen.getByLabelText("Report category"), {
+        target: { value: "SPAM" },
+      });
+      fireEvent.change(screen.getByLabelText("Report reason"), {
+        target: { value: "Spammy comment" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Submit Report" }));
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to submit report: Report already exists");
+      });
     });
 
     it("uses correct payload for owner comment deletion", async () => {
