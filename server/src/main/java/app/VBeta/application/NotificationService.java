@@ -23,10 +23,11 @@ import java.util.*;
 /**
  * {@code NotificationService} is the orchestration layer for in-app moderation notifications.
  * <p>
- * It records {@code REPORT_CREATED} events and fans out inbox rows to admin recipients,
- * records report-queue outcome events for reporters and owners, maps unread
- * notifications into {@link QuickNotificationDTO} (including click metadata),
- * and marks a caller's notification as read.
+ * It records {@code REPORT_CREATED} and {@code APPEAL_SUBMITTED} events and fans
+ * out inbox rows to admin recipients, records report-queue outcome events for
+ * reporters and owners, maps unread notifications into
+ * {@link QuickNotificationDTO} (including click metadata), and marks a caller's
+ * notification as read.
  */
 @Service
 @Transactional
@@ -59,6 +60,22 @@ public class NotificationService {
         Events event = eventManager.createReportEvent(report);
         for (UserAccount admin : userAccountManager.findUsersOfRole(RoleType.ADMIN)) {
             if (Objects.equals(admin.getId(), report.getReporter().getId())) {
+                continue;
+            }
+            notificationManager.pushNotification(event, admin);
+        }
+    }
+
+    /**
+     * Records an {@code APPEAL_SUBMITTED} event and notifies admins, skipping the appellant.
+     *
+     * @param report report whose removal is being appealed
+     * @param appealUser content owner who submitted the appeal
+     */
+    public void saveAppealSubmittedNotification(Report report, UserAccount appealUser) {
+        Events event = eventManager.createAppealSubmittedEvent(report, appealUser);
+        for (UserAccount admin : userAccountManager.findUsersOfRole(RoleType.ADMIN)) {
+            if (Objects.equals(admin.getId(), appealUser.getId())) {
                 continue;
             }
             notificationManager.pushNotification(event, admin);

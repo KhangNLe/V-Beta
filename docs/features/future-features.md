@@ -76,7 +76,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Effort:** Medium
 - **Area:** Trust and Safety
 - **Target sprint:** Sprint 5 (in progress)
-- **Current Gap:** Users cannot flag inappropriate comments or beta content in the current UI. Backend create-report, admin queue/detail/resolve, unread inbox poll with click metadata (`GET /api/notification/short`), and mark-read (`PATCH /api/notification/short`) are implemented. Notification UI and appeal/restore are not.
+- **Current Gap:** Users cannot flag inappropriate comments or beta content in the current UI. Backend create-report, admin queue/detail/resolve, unread inbox poll with click metadata (`GET /api/notification/short`), mark-read (`PATCH /api/notification/short`), owner appeal create, admin appeal queue/detail, and appeal approve/deny restore are implemented. Notification UI and appeal/restore UI are not.
 - **Potential Work:** Add report actions on comments and solution betas, including reason selection and moderation review workflow.
 - **Dependencies:** Report data model, report API endpoints, moderation/admin handling flow.
 

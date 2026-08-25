@@ -2,17 +2,22 @@ package app.VBeta.mvc;
 
 import app.VBeta.api.dto.account.UserAccountDTO;
 import app.VBeta.api.dto.discussions.UserDiscussionData;
+import app.VBeta.api.dto.moderation.AppealDTO;
+import app.VBeta.api.dto.moderation.AppealPayload;
+import app.VBeta.api.dto.moderation.AppealRequest;
+import app.VBeta.api.dto.moderation.ModerateAppealRequest;
 import app.VBeta.api.dto.moderation.ModerationDTO;
 import app.VBeta.api.dto.moderation.ModerationPayload;
 import app.VBeta.api.dto.moderation.ModerationRequest;
 import app.VBeta.api.dto.report.ReportDTO;
 import app.VBeta.api.dto.report.ReportUserDTO;
+import app.VBeta.application.AppealService;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ModerationService;
 import app.VBeta.controller.ModerationController;
+import app.VBeta.domain.model.appeal.AppealStatus;
 import app.VBeta.domain.model.discussions.DiscussionType;
 import app.VBeta.domain.model.moderation.ModerateActionType;
-import app.VBeta.domain.model.moderation.ModerationAction;
 import app.VBeta.domain.model.report.ReportCategoryName;
 import app.VBeta.domain.model.report.ReportTargetType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +37,7 @@ import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -48,6 +54,9 @@ public class ModerationControllerTest {
 
     @MockitoBean
     private ModerationService moderationService;
+
+    @MockitoBean
+    private AppealService appealService;
 
     @MockitoBean
     private AuthorizationService authorizationService;
@@ -263,5 +272,267 @@ public class ModerationControllerTest {
         verify(authorizationService, times(1)).getAuthenticatedFirebaseUid();
         verify(moderationService, times(1)).getModerationLog("testFirebaseUid3", 1L);
         verify(moderationService, times(0)).getLogbook("testFirebaseUid3", 1);
+    }
+
+    private AppealDTO sampleAppealDTO() {
+        return new AppealDTO(
+                7L,
+                new ReportDTO(
+                        ReportTargetType.DISCUSSION,
+                        new UserDiscussionData(
+                                1L,
+                                45L,
+                                "spammyUser",
+                                null,
+                                DiscussionType.COMMENT,
+                                "This is a spam comment",
+                                LocalDateTime.now()
+                        ),
+                        null,
+                        null,
+                        null,
+                        List.of(new ReportUserDTO(
+                                99L,
+                                new UserAccountDTO(
+                                        123L,
+                                        "testUser",
+                                        "testUser@gmail.com",
+                                        "CLIMBER"
+                                ),
+                                ReportCategoryName.SPAM,
+                                "It's spammy",
+                                Instant.now()
+                        ))
+                ),
+                new UserAccountDTO(
+                        45L,
+                        "spammyUser",
+                        "spammyUser@gmail.com",
+                        "CLIMBER"
+                ),
+                "This was a joke, please restore."
+        );
+    }
+
+    private AppealPayload sampleAppealPayload() {
+        return new AppealPayload(List.of(sampleAppealDTO()));
+    }
+
+    @Test
+    @DisplayName("POST /api/moderate/appeal returns 201 after owner submits an appeal")
+    void returns201_whenAuthenticatedOwnerCreatesAppeal() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        doNothing().when(appealService).createAppeal(
+                org.mockito.ArgumentMatchers.any(AppealRequest.class),
+                org.mockito.ArgumentMatchers.eq("testFirebaseUid")
+        );
+
+        AppealRequest request = new AppealRequest(99L, "This was a joke, please restore.");
+
+        mockMvc.perform(post("/api/moderate/appeal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        verify(appealService, times(1)).createAppeal(request, "testFirebaseUid");
+    }
+
+    @Test
+    @DisplayName("POST /api/moderate/appeal returns 400 when reason is blank")
+    void returns400_whenAppealReasonIsBlank() throws Exception {
+        AppealRequest request = new AppealRequest(99L, " ");
+
+        mockMvc.perform(post("/api/moderate/appeal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(appealService);
+    }
+
+    @Test
+    @DisplayName("POST /api/moderate/appeal returns 404 when the service rejects the appeal")
+    void returns404_whenAppealCreateFails() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        doThrow(new RuntimeException("Appeal is not allowed")).when(appealService)
+                .createAppeal(org.mockito.ArgumentMatchers.any(AppealRequest.class),
+                        org.mockito.ArgumentMatchers.eq("testFirebaseUid"));
+
+        AppealRequest request = new AppealRequest(99L, "This was a joke, please restore.");
+
+        mockMvc.perform(post("/api/moderate/appeal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /api/moderate/appeal?appealId= returns the matching appeal")
+    void returns200_whenAdminRequestsAppealById() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
+        when(appealService.getUserAppeal(7L, "testFirebaseUid3")).thenReturn(sampleAppealPayload());
+
+        mockMvc.perform(get("/api/moderate/appeal").param("appealId", "7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.appeals[0].appealId").value(7))
+                .andExpect(jsonPath("$.appeals[0].report.targetType").value(ReportTargetType.DISCUSSION.name()))
+                .andExpect(jsonPath("$.appeals[0].appealUser.username").value("spammyUser"))
+                .andExpect(jsonPath("$.appeals[0].appealReason").value("This was a joke, please restore."));
+
+        verify(appealService, times(1)).getUserAppeal(7L, "testFirebaseUid3");
+        verify(appealService, times(0)).getAppeals("testFirebaseUid3");
+    }
+
+    @Test
+    @DisplayName("GET /api/moderate/appeal returns the open appeal queue")
+    void returns200_whenAdminRequestsAppealQueue() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
+        when(appealService.getAppeals("testFirebaseUid3")).thenReturn(sampleAppealPayload());
+
+        mockMvc.perform(get("/api/moderate/appeal"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.appeals[0].appealId").value(7))
+                .andExpect(jsonPath("$.appeals[0].appealUser.username").value("spammyUser"));
+
+        verify(appealService, times(1)).getAppeals("testFirebaseUid3");
+        verify(appealService, times(0)).getUserAppeal(org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    @DisplayName("GET /api/moderate/appeal returns 404 when missing authentication token")
+    void returns404_whenAppealQueueMissingAuth() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenThrow(RuntimeException.class);
+
+        mockMvc.perform(get("/api/moderate/appeal"))
+                .andExpect(status().isNotFound());
+
+        verifyNoInteractions(appealService);
+    }
+
+    @Test
+    @DisplayName("GET /api/moderate/appeal?appealId= returns 404 when the appeal is missing")
+    void returns404_whenAppealIdIsUnknown() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
+        when(appealService.getUserAppeal(7L, "testFirebaseUid3"))
+                .thenThrow(new RuntimeException("Appeal not found"));
+
+        mockMvc.perform(get("/api/moderate/appeal").param("appealId", "7"))
+                .andExpect(status().isNotFound());
+
+        verify(appealService, times(1)).getUserAppeal(7L, "testFirebaseUid3");
+        verify(appealService, times(0)).getAppeals("testFirebaseUid3");
+    }
+
+    @Test
+    @DisplayName("PATCH /api/moderate/appeal returns 200 after admin approves an appeal")
+    void returns200_whenAdminApprovesAppeal() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
+        doNothing().when(appealService).moderateAppeal(
+                org.mockito.ArgumentMatchers.any(ModerateAppealRequest.class),
+                org.mockito.ArgumentMatchers.eq("testFirebaseUid3")
+        );
+
+        ModerateAppealRequest request = new ModerateAppealRequest(
+                7L, AppealStatus.APPROVED, "Restored after review.");
+
+        mockMvc.perform(patch("/api/moderate/appeal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        verify(appealService, times(1)).moderateAppeal(request, "testFirebaseUid3");
+    }
+
+    @Test
+    @DisplayName("PATCH /api/moderate/appeal returns 200 after admin denies an appeal")
+    void returns200_whenAdminDeniesAppeal() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
+        doNothing().when(appealService).moderateAppeal(
+                org.mockito.ArgumentMatchers.any(ModerateAppealRequest.class),
+                org.mockito.ArgumentMatchers.eq("testFirebaseUid3")
+        );
+
+        ModerateAppealRequest request = new ModerateAppealRequest(
+                7L, AppealStatus.DENIED, "Removal stands.");
+
+        mockMvc.perform(patch("/api/moderate/appeal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        verify(appealService, times(1)).moderateAppeal(request, "testFirebaseUid3");
+    }
+
+    @Test
+    @DisplayName("PATCH /api/moderate/appeal returns 400 when admin notes are blank")
+    void returns400_whenAppealDecisionReasonIsBlank() throws Exception {
+        ModerateAppealRequest request = new ModerateAppealRequest(7L, AppealStatus.DENIED, " ");
+
+        mockMvc.perform(patch("/api/moderate/appeal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(appealService);
+    }
+
+    @Test
+    @DisplayName("PATCH /api/moderate/appeal returns 400 when appeal id is missing")
+    void returns400_whenAppealDecisionIdIsMissing() throws Exception {
+        ModerateAppealRequest request = new ModerateAppealRequest(null, AppealStatus.APPROVED, "Restored.");
+
+        mockMvc.perform(patch("/api/moderate/appeal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(appealService);
+    }
+
+    @Test
+    @DisplayName("PATCH /api/moderate/appeal returns 400 when status is OPEN")
+    void returns400_whenAppealDecisionStatusIsOpen() throws Exception {
+        mockMvc.perform(patch("/api/moderate/appeal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"appealId":7,"appealStatus":"OPEN","adminReason":"Not a decision."}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(appealService);
+    }
+
+    @Test
+    @DisplayName("PATCH /api/moderate/appeal returns 404 when the service rejects the decision")
+    void returns404_whenAppealDecisionFails() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
+        doThrow(new RuntimeException("Appeal not found")).when(appealService)
+                .moderateAppeal(org.mockito.ArgumentMatchers.any(ModerateAppealRequest.class),
+                        org.mockito.ArgumentMatchers.eq("testFirebaseUid3"));
+
+        ModerateAppealRequest request = new ModerateAppealRequest(
+                7L, AppealStatus.APPROVED, "Restored after review.");
+
+        mockMvc.perform(patch("/api/moderate/appeal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/moderate/appeal returns 404 when missing authentication token")
+    void returns404_whenAppealDecisionMissingAuth() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenThrow(RuntimeException.class);
+
+        ModerateAppealRequest request = new ModerateAppealRequest(
+                7L, AppealStatus.DENIED, "Removal stands.");
+
+        mockMvc.perform(patch("/api/moderate/appeal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+
+        verifyNoInteractions(appealService);
     }
 }

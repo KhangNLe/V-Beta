@@ -1,6 +1,7 @@
 package app.VBeta.application.support.moderation;
 
 import app.VBeta.api.dto.moderation.ModerationRequest;
+import app.VBeta.domain.model.moderation.ModerateActionType;
 import app.VBeta.domain.model.moderation.ModerationAction;
 import app.VBeta.domain.model.report.Report;
 import app.VBeta.domain.model.user.UserAccount;
@@ -63,6 +64,26 @@ public class ModerationManager {
                 .adminUser(user)
                 .moderateActionType(moderationRequest.decision())
                 .adminNotes(moderationRequest.reason())
+                .build()
+        );
+    }
+
+    /**
+     * Creates a logbook row for an appeal approve or deny decision.
+     *
+     * @param report report whose appeal was decided
+     * @param admin acting admin stored as {@code adminUser}
+     * @param decision {@code APPEAL_APPROVED} or {@code APPEAL_DENIED}
+     * @param adminNotes required notes from the appeal-resolve request
+     * @return saved logbook row
+     */
+    public ModerationAction createAppealDecision(Report report, UserAccount admin, ModerateActionType decision,
+                                                 String adminNotes) {
+        return save(ModerationAction.builder()
+                .report(report)
+                .adminUser(admin)
+                .moderateActionType(decision)
+                .adminNotes(adminNotes)
                 .build()
         );
     }

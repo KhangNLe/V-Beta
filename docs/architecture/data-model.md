@@ -47,7 +47,7 @@ Located in `domain/model/discussions/` and `domain/model/user/`:
   - Unified discussion anchor row for comments and solution betas.
   - Supports future nested discussion via nullable self-reference (`parent_discussion_id`).
   - Stores discussion type (`COMMENT` / `BETA`) and soft-delete metadata (`deleted_by`, `deleted_reason`, `deleted_at`).
-  - Owner/admin delete endpoints set those fields and hide the row from problem timelines. Comment/beta child rows are not removed. Admin restore and delayed GCS purge remain future work.
+  - Owner/admin delete endpoints set those fields and hide the row from problem timelines. Comment/beta child rows are not removed. Appeal approve clears those fields so the row is visible again. Delayed GCS purge remains future work.
 - `UserComment`
   - User-to-problem comment anchor.
 - `DiscussionComment`
@@ -82,10 +82,12 @@ Defined in runtime/test SQL. Closed workflow values use PostgreSQL enums; extens
   - Partial unique index `uq_one_open_report_per_user_target` prevents duplicate open reports per user/target.
 - `Appeal`
   - One appeal per report (`report_id` unique), appellant user, reason, `appeal_status`, review metadata.
+  - Owner create is `POST /api/moderate/appeal` (authenticated). Admin list/detail is `GET /api/moderate/appeal` (`VIEW_APPEALS`); OPEN newest-first, or one row by `appealId`.
+  - Admin resolve is `PATCH /api/moderate/appeal` (`MODERATE_APPEAL`): `APPROVED` restores the discussion and sets the report to `CONTENT_RESTORED`; `DENIED` keeps it deleted and sets the report to `APPEAL_DENIED`.
 - `Moderation_Action`
   - Append-only admin logbook rows for a report (action type + required notes).
   - Multiple actions per report are allowed (for example remove, then later appeal decision).
-  - Queue resolve writes one row per closed reporter; notes are not copied onto `Events`.
+  - Queue resolve writes one row per closed reporter; appeal resolve writes `APPEAL_APPROVED` or `APPEAL_DENIED`. Notes are not copied onto `Events`.
   - Admin list/detail is `GET /api/moderate/logbook` (`VIEW_MODERATION_LOGS`); pages of 25 newest-first, or one row by `moderationId`.
 
 #### Events and inbox
@@ -93,7 +95,7 @@ Defined in runtime/test SQL. Closed workflow values use PostgreSQL enums; extens
 - `Events`
   - Happened-fact row: event type, optional `actor_user_id`, `event_target_type`, and typed target FKs with a one-target CHECK.
   - No JSON payload; consumers join related rows for display context.
-  - Sprint 5 moderation notifications typically target `REPORT`. Create uses the reporter as actor; queue resolve uses the deciding admin (never the reporter).
+  - Sprint 5 moderation notifications typically target `REPORT`. Create uses the reporter as actor; appeal submit uses the content owner; queue/appeal resolve uses the deciding admin (never the reporter).
 - `Notification`
   - Per-recipient inbox row for an event (`read_at` nullable).
   - Unique on `(event_id, recipient_user_id)`.
@@ -144,7 +146,7 @@ Action-level authorization uses:
 
 This model enables action-gated endpoint checks beyond simple authenticated/unauthenticated access.
 
-Dedicated moderation permissions: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. `MODERATE_REPORT` gates `POST /api/moderate/report` (dismiss or remove OPEN discussion reports). `VIEW_MODERATION_LOGS` gates `GET /api/moderate/logbook` (paged list or `?moderationId=`). Create-report and notification inbox (`GET`/`PATCH /api/notification/short`) stay authenticated only (no `CREATE_REPORT`). Appeals are not accepted on the resolve endpoint.
+Dedicated moderation permissions: `VIEW_REPORTS` gates `GET /api/report/reports` (queue and `?reportId=` detail) for admins. `MODERATE_REPORT` gates `POST /api/moderate/report` (dismiss or remove OPEN discussion reports). `VIEW_MODERATION_LOGS` gates `GET /api/moderate/logbook` (paged list or `?moderationId=`). `VIEW_APPEALS` gates `GET /api/moderate/appeal` (OPEN queue or `?appealId=`). `MODERATE_APPEAL` gates `PATCH /api/moderate/appeal` (approve restore or deny). Create-report, owner appeal create, and notification inbox (`GET`/`PATCH /api/notification/short`) stay authenticated only (no `CREATE_REPORT`). Appeals are not accepted on the report-queue resolve endpoint.
 
 ## Schema Management Notes
 

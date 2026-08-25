@@ -587,7 +587,7 @@ Dismiss notifies each reporter (`REPORT_DISMISSED`) and does not notify the owne
 
 Poll unread inbox rows (`readAt` is null). Each item includes `notificationId`, catalog `summary`, `click` metadata, and `createdAt`. It does not include the report reason or admin notes.
 
-Any authenticated role may call this endpoint. Callers only receive their own rows. `REPORT_CREATED` inbox rows are written for admins only (the reporter is skipped if they are an admin). Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner.
+Any authenticated role may call this endpoint. Callers only receive their own rows. `REPORT_CREATED` and `APPEAL_SUBMITTED` inbox rows are written for admins only (the reporter/appellant is skipped if they are an admin). Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner. Appeal resolve writes `CONTENT_RESTORED` or `APPEAL_DENIED` to the owner.
 
 Current moderation events have `target_type = REPORT`, so `click.kind` is `REPORT_QUEUE` and `click.reportId` is set. Unused click ids are `null`.
 
@@ -776,3 +776,152 @@ Empty logbook or a page past the last row is `200` with `"moderationLogs": []`, 
 - `400` when `offSetPlace` is `0` or negative
 - `401` when the caller is a guest or the Firebase token is invalid
 - `404` when the account is missing, the caller is not allowed `VIEW_MODERATION_LOGS`, or `moderationId` does not exist
+
+## 21) Create Appeal (Authenticated)
+
+Any authenticated role may call this endpoint. The caller must own the `CONTENT_REMOVED` discussion. Success is `201` with an empty body.
+
+### Request
+
+```http
+POST /api/moderate/appeal
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "reportId": 11,
+  "appealReason": "This was a joke, please restore."
+}
+```
+
+Sets the report to `APPEAL_PENDING` and notifies admins (`APPEAL_SUBMITTED`), skipping the appellant if they are an admin.
+
+### Response (201)
+
+Empty body.
+
+### Error examples
+
+- `400` when `reportId` is missing or `appealReason` is blank
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when the account is missing, the report is ineligible (`Appeal is not allowed`), or an appeal already exists (`Appeal already exists`)
+
+## 22) Get Appeals (Action-gated)
+
+Requires `VIEW_APPEALS`. With no `appealId`, the response is OPEN appeals newest-first. With `appealId`, the response is that one row (any status). Appeals filed by the viewing admin are omitted from the queue and treated as missing on get-by-id.
+
+### Request — queue
+
+```http
+GET /api/moderate/appeal
+Authorization: Bearer <firebase_id_token>
+```
+
+### Request — one row
+
+```http
+GET /api/moderate/appeal?appealId=7
+Authorization: Bearer <firebase_id_token>
+```
+
+### Response (200)
+
+```json
+{
+  "appeals": [
+    {
+      "appealId": 7,
+      "report": {
+        "targetType": "DISCUSSION",
+        "discussion": {
+          "discussionId": 301,
+          "userId": 8,
+          "username": "alex",
+          "parentCommentId": null,
+          "discussionType": "COMMENT",
+          "discussionContent": "hello",
+          "createdDate": "2026-08-16T10:00:00"
+        },
+        "climbingProblem": null,
+        "wallSection": null,
+        "user": null,
+        "reporters": [
+          {
+            "reportId": 11,
+            "reporter": {
+              "userId": 2,
+              "username": "sam",
+              "email": "sam@example.com",
+              "role": "CLIMBER"
+            },
+            "categoryName": "SPAM",
+            "reportReason": "Spammy comment",
+            "createdAt": "2026-08-16T15:00:00Z"
+          }
+        ]
+      },
+      "appealUser": {
+        "userId": 8,
+        "username": "alex",
+        "email": "alex@example.com",
+        "role": "CLIMBER"
+      },
+      "appealReason": "This was a joke, please restore."
+    }
+  ]
+}
+```
+
+Empty queue is `200` with `"appeals": []`, not 404.
+
+### Error examples
+
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when the account is missing, the caller is not allowed `VIEW_APPEALS`, or `appealId` does not exist / was filed by the viewing admin
+
+## 23) Resolve Appeal (Action-gated)
+
+Requires `MODERATE_APPEAL`. Success is `200` with an empty body. Only `OPEN` appeals can be decided. `OPEN` is not a valid decision status.
+
+### Request — approve restore
+
+```http
+PATCH /api/moderate/appeal
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "appealId": 7,
+  "appealStatus": "APPROVED",
+  "adminReason": "Restored after review."
+}
+```
+
+Approve restores the discussion, sets the report to `CONTENT_RESTORED`, writes logbook `APPEAL_APPROVED`, and notifies the owner (`CONTENT_RESTORED`).
+
+### Request — deny
+
+```json
+{
+  "appealId": 7,
+  "appealStatus": "DENIED",
+  "adminReason": "Removal stands."
+}
+```
+
+Deny keeps the discussion deleted, sets the report to `APPEAL_DENIED`, writes logbook `APPEAL_DENIED`, and notifies the owner (`APPEAL_DENIED`).
+
+### Response (200)
+
+Empty body.
+
+### Error examples
+
+- `400` when `appealId` is missing, `appealStatus` is missing/`OPEN`, or `adminReason` is blank
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when the account is missing, the caller is not allowed `MODERATE_APPEAL`, or the appeal is missing / already decided / filed by the acting admin
+

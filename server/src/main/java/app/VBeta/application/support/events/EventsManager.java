@@ -15,7 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code EventsManager} persists domain event rows used by in-app notifications.
  * <p>
  * Report-lifecycle events target a {@link Report} ({@code target_type = REPORT}).
- * Create uses the reporter as actor; queue resolve uses the deciding admin.
+ * Create uses the reporter as actor; appeal submit uses the content owner;
+ * queue resolve uses the deciding admin.
  */
 @Transactional
 @Service
@@ -51,6 +52,29 @@ public class EventsManager {
                                 .orElseThrow(() -> new RuntimeException("REPORT_CREATED event type is missing"))
                 )
                 .actorUser(report.getReporter())
+                .targetType(EventTargetType.REPORT)
+                .report(report)
+                .build()
+        );
+    }
+
+    /**
+     * Creates an {@code APPEAL_SUBMITTED} event for the given report.
+     * <p>
+     * The actor is the content owner and the event target is the report itself.
+     *
+     * @param report persisted report whose removal is being appealed
+     * @param appealUser content owner who submitted the appeal
+     * @return saved event
+     * @throws RuntimeException when the {@code APPEAL_SUBMITTED} event type is missing
+     */
+    public Events createAppealSubmittedEvent(Report report, UserAccount appealUser) {
+        return eventsRepository.save(Events.builder()
+                .eventType(
+                        eventTypeRepository.findByEventTypeName(EventTypeName.APPEAL_SUBMITTED)
+                                .orElseThrow(() -> new RuntimeException("APPEAL_SUBMITTED event type is missing"))
+                )
+                .actorUser(appealUser)
                 .targetType(EventTargetType.REPORT)
                 .report(report)
                 .build()
