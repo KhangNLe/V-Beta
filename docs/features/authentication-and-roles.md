@@ -42,17 +42,17 @@ This section documents the authentication and authorization features that are cu
   - Can browse core wall/problem pages.
   - Cannot perform authenticated actions (comment, beta upload, content report, notifications, account-only actions).
 - **Climber**
-  - Authenticated features such as comments, beta uploads, grade suggestions, and content reports.
-  - Can poll `GET /api/notification/short` and mark own rows read with `PATCH /api/notification/short?notificationId=`. `REPORT_CREATED` inbox rows are not written for this role; queue-resolve can write `REPORT_DISMISSED`, `REPORT_APPROVED`, or `CONTENT_REMOVED`.
+  - Authenticated features such as comments, beta uploads, grade suggestions, content reports, and one-time appeals after removal.
+  - Can poll `GET /api/notification/short` and mark own rows read with `PATCH /api/notification/short?notificationId=`. `REPORT_CREATED` inbox rows are not written for this role; queue-resolve can write `REPORT_DISMISSED`, `REPORT_APPROVED`, or `CONTENT_REMOVED`. Appeal resolve can write `CONTENT_RESTORED` or `APPEAL_DENIED`.
   - Can access own account page and self-service account actions.
 - **Setter**
   - Includes climber capabilities.
   - Can create/delete climbing problems and reset wall sections (where role checks are enforced).
 - **Admin**
   - Includes climber capabilities, including creating content reports.
-  - Receives `REPORT_CREATED` unread inbox rows (unless they are the reporter).
+  - Receives `REPORT_CREATED` and `APPEAL_SUBMITTED` unread inbox rows (unless they are the reporter/appellant).
   - Can view all accounts and promote/demote account roles.
-  - Can view the ranked report queue (`VIEW_REPORTS`), resolve OPEN discussion reports (`MODERATE_REPORT`), read the moderation logbook (`VIEW_MODERATION_LOGS`), and read the appeal queue (`VIEW_APPEALS`).
+  - Can view the ranked report queue (`VIEW_REPORTS`), resolve OPEN discussion reports (`MODERATE_REPORT`), read the moderation logbook (`VIEW_MODERATION_LOGS`), read the appeal queue (`VIEW_APPEALS`), and approve or deny appeals (`MODERATE_APPEAL`).
   - Can manage wall sections (create/delete).
   - Can perform moderation-style actions such as deleting comments/betas where admin checks are enforced.
   - Can access admin navigation/account-management workflow.
@@ -67,7 +67,8 @@ This section documents the authentication and authorization features that are cu
 - Report resolve is backed by `POST /api/moderate/report` (`ActionDefinition.MODERATE_REPORT`).
 - Logbook is backed by `GET /api/moderate/logbook` (`ActionDefinition.VIEW_MODERATION_LOGS`).
 - Appeal queue and detail are backed by `GET /api/moderate/appeal` (`ActionDefinition.VIEW_APPEALS`).
-- Backend authorization for these actions is enforced through `ActionDefinition.VIEW_ACCOUNTS`, `ActionDefinition.CHANGE_ROLE`, `ActionDefinition.VIEW_REPORTS`, `ActionDefinition.MODERATE_REPORT`, `ActionDefinition.VIEW_MODERATION_LOGS`, and `ActionDefinition.VIEW_APPEALS`.
+- Appeal resolve is backed by `PATCH /api/moderate/appeal` (`ActionDefinition.MODERATE_APPEAL`).
+- Backend authorization for these actions is enforced through `ActionDefinition.VIEW_ACCOUNTS`, `ActionDefinition.CHANGE_ROLE`, `ActionDefinition.VIEW_REPORTS`, `ActionDefinition.MODERATE_REPORT`, `ActionDefinition.VIEW_MODERATION_LOGS`, `ActionDefinition.VIEW_APPEALS`, and `ActionDefinition.MODERATE_APPEAL`.
 - The frontend exposes admin navigation for account-management workflow.
 - Admin role changes should be validated end-to-end (UI + API + permission checks) whenever role logic changes.
 
@@ -78,7 +79,8 @@ This section documents the authentication and authorization features that are cu
 - Admin resolve: `POST /api/moderate/report` (action-gated `MODERATE_REPORT`; admin only). Dismiss or remove discussion reports; appeals are not accepted here.
 - Admin logbook: `GET /api/moderate/logbook` (action-gated `VIEW_MODERATION_LOGS`; admin only). Optional `moderationId` returns one row; `offSetPlace` pages 25 newest-first.
 - Owner appeal create: `POST /api/moderate/appeal` (authenticated; not action-gated). One appeal per `CONTENT_REMOVED` discussion report owned by the caller.
-- Admin appeal queue/detail: `GET /api/moderate/appeal` (action-gated `VIEW_APPEALS`; admin only). Optional `appealId` returns one row.
+- Admin appeal queue/detail: `GET /api/moderate/appeal` (action-gated `VIEW_APPEALS`; admin only). Optional `appealId` returns one row (any status). Appeals filed by the viewing admin are hidden.
+- Admin appeal resolve: `PATCH /api/moderate/appeal` (action-gated `MODERATE_APPEAL`; admin only). `APPROVED` restores the discussion; `DENIED` keeps it removed. Both write a logbook row and notify the owner.
 - Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated). Includes `notificationId` and `click` metadata (`kind` + target ids). Current moderation events use `click.kind = REPORT_QUEUE`.
 - Mark read: `PATCH /api/notification/short?notificationId=` (authenticated; own row only; already-read is a no-op).
 - See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.

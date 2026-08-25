@@ -105,6 +105,7 @@ Access model types:
 - Admin **logbook** (`GET /api/moderate/logbook`) is action-gated with `VIEW_MODERATION_LOGS`.
 - Owner **appeal create** (`POST /api/moderate/appeal`) is authenticated only.
 - Admin **appeal queue/detail** (`GET /api/moderate/appeal`) is action-gated with `VIEW_APPEALS`.
+- Admin **appeal resolve** (`PATCH /api/moderate/appeal`) is action-gated with `MODERATE_APPEAL`.
 
 ## Constraints and Technical Debt Notes
 
