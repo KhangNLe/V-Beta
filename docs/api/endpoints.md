@@ -179,7 +179,7 @@ Create-report is **authenticated, not action-gated**. There is no `CREATE_REPORT
     - `400` when required fields are missing/invalid (blank reason, missing enums/`targetId`)
     - `401` when unauthenticated or the Firebase token is invalid
     - `404` when the reporter account is missing, the target is missing/deleted, the reporter owns the discussion / is the reported user, or a duplicate report already exists
-  - Product note: Sprint 5 UI scope is discussion comments/betas (`DISCUSSION`). The API also accepts wall, problem, and user targets.
+  - Product note: Sprint 5 UI on the problem page submits discussion comments/betas (`DISCUSSION`) via `v-beta/src/api/reports.js`. Category and reason are required; reason max is 250. Own discussions are not reportable. The API also accepts wall, problem, and user targets.
 
 Admin queue and detail are action-gated (`VIEW_REPORTS`). Resolve is action-gated (`MODERATE_REPORT`). Logbook is action-gated (`VIEW_MODERATION_LOGS`). Appeal create is authenticated only. Appeal queue/detail are action-gated (`VIEW_APPEALS`). Appeal resolve is action-gated (`MODERATE_APPEAL`). See Action-Gated Endpoints below.
 

@@ -25,6 +25,7 @@ Guests can view content but cannot perform authenticated actions.
 - Cannot post comments
 - Cannot upload beta videos
 - Cannot submit perceived grades
+- Cannot report discussion content
 - Cannot access account-only or admin-only pages
 
 ## 3) Climber Flow (Login, Comment, Submit Beta, Suggest Grade)
@@ -46,6 +47,12 @@ Climber users can participate in problem discussion and feedback.
 1. On a problem page, open the actions menu on a comment you own (or, as admin, on another user's comment).
 2. Choose Delete Comment.
 3. Verify the comment disappears from the discussion after refresh.
+
+### B3) Report a Comment or Beta
+1. Sign in and open a problem page.
+2. Open the ⋮ menu on another user's comment or beta (not your own).
+3. Choose **Report**, pick a category, enter a reason (required, at most 250 characters), and submit.
+4. Verify a success toast. Duplicate or invalid reports show an error toast.
 
 ### C) Submit a Beta Video
 1. On a problem page, choose beta upload flow.

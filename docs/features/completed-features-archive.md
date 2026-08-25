@@ -108,6 +108,24 @@ Related docs:
 - `docs/features/wall-and-problems.md`
 - `docs/architecture/data-model.md`
 
+### G) Discussion Report UI (Problem Page)
+
+Status: Completed (frontend slice; admin queue/notification/appeal UIs still future)
+
+Highlights:
+
+- Signed-in users see a ⋮ menu on every discussion row (comment and beta). Guests do not.
+- **Report** is shown for other users' content; **Delete** remains owner/admin.
+- Report dialog requires a category and a reason (max 250 characters) and calls `POST /api/report/create` with `DISCUSSION` + discussion id.
+- Submit is disabled while pending or when category/reason are invalid; success and API errors use toasts.
+- Covered by `problem-page.test.js` report cases.
+
+Related docs:
+
+- `docs/features/wall-and-problems.md`
+- `docs/testing/manual-test-cases.md` (DISC-06)
+- `docs/api/endpoints.md`
+
 ## Moved Out of Future Queue
 
 The following future backlog topics were completed and removed from `future-features.md`:

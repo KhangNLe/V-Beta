@@ -157,6 +157,23 @@ This document defines the manual regression checklist for validating core user f
   - Most Recent uses `/api/search` without sort and orders by newest `createdDate`
   - Clear returns to the default wall problems fetch
 
+### DISC-06: Report Comment or Solution Beta (UI)
+
+- Steps:
+  1. As a guest, open a problem with discussion and confirm there is no ⋮ menu
+  2. As a signed-in climber who does not own the row, open ⋮ on a comment and on a beta
+  3. Confirm **Report** is present and **Delete** is not
+  4. Open Report with no category/reason and confirm Submit is disabled
+  5. Enter a 251-character reason and confirm Submit stays disabled
+  6. Submit a valid category + reason (≤250 characters)
+  7. As the content owner, open ⋮ and confirm **Report** is hidden and **Delete** is present
+- Expected:
+  - guests cannot report
+  - signed-in users can report others' comments and betas
+  - category is required; reason is required and capped at 250 characters
+  - successful submit calls `POST /api/report/create` with `reportTargetType: DISCUSSION`
+  - owner cannot report their own discussion; duplicate reports surface an error toast
+
 ### ACCOUNT-01: View Account Profile
 
 - Steps:
