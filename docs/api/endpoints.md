@@ -27,6 +27,7 @@ Most controllers catch service failures themselves (plain-text body, not a JSON 
 - `RuntimeException` → typically **404**
   - wall/problem write endpoints (`create`/`delete`/`reset`) → **400**
   - `GET /api/notification/short` → **401**
+  - `GET /api/notification/all` → **404**
   - `PATCH /api/notification/short` → **404**
 - uncaught `Exception` → **500**
 - bean-validation failures (`@Valid`) still return **400** from Spring
@@ -199,6 +200,18 @@ Inbox APIs are **authenticated, not action-gated**. Any signed-in role may call 
   - Delivery: client polling is sufficient for Sprint 5 (no WebSocket/SSE/FCM). The client builds the frontend path from `click.kind` and the filled ids.
   - Errors:
     - `401` when unauthenticated, the Firebase token is invalid, or no account matches the UID
+
+- `GET /api/notification/all`
+  - Purpose: page of the caller's inbox including **read and unread** rows, newest first.
+  - Query params:
+    - `offset` (optional, 1-based page number, default `1`)
+  - Page size is 10 (`offset=1` is rows 1–10, `offset=2` is 11–20).
+  - Response: `200` array of `QuickNotificationDTO` (same shape as `/short`: `notificationId`, `summary`, `click`, `createdAt`). Empty array is a valid `200` when the page has no rows.
+  - `readAt` is **not** included in the DTO; the page mixes read and unread rows without a read flag.
+  - Errors:
+    - `400` when `offset` is not an integer
+    - `401` when unauthenticated or the Firebase token is invalid (Spring Security)
+    - `404` when auth context is missing or no account matches the UID (controller maps `RuntimeException` to not-found)
 
 - `PATCH /api/notification/short?notificationId={id}`
   - Purpose: mark one of the caller's notifications as read (`readAt` set). Already-read rows succeed as a no-op.

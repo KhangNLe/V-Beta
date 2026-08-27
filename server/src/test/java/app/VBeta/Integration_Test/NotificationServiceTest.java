@@ -1,5 +1,6 @@
 package app.VBeta.Integration_Test;
 
+import app.VBeta.api.dto.notification.NotificationClickKind;
 import app.VBeta.api.dto.notification.QuickNotificationDTO;
 import app.VBeta.api.dto.report.ReportRequest;
 import app.VBeta.application.ReportService;
@@ -410,6 +411,47 @@ public class NotificationServiceTest {
         assertNotNull(updateNoti);
         assertNotNull(updateNoti.getReadAt());
         assertEquals(readNoti.getReadAt(), updateNoti.getReadAt());
+    }
+
+    @Test
+    @DisplayName("All-inbox page includes a notification after it is marked read")
+    void testGetAllQuickNotificationsIncludesReadRows(){
+        UserAccount admin = getUserAccount("testFirebaseUid3");
+        DiscussionRoot discussionRoot = createDiscussionRoot("testFirebaseUid", 1L, DiscussionType.COMMENT);
+
+        reportService.createNewReport(
+                new ReportRequest(
+                        ReportTargetType.DISCUSSION,
+                        "test",
+                        ReportCategoryName.OFF_TOPIC,
+                        discussionRoot.getDiscussionId()),
+                "testFirebaseUid2");
+
+        List<QuickNotificationDTO> unreadBefore =
+                notificationService.getQuickNotifications(admin.getFirebaseUid());
+        assertEquals(1, unreadBefore.size());
+
+        notificationService.updateNotificationToRead(
+                admin.getFirebaseUid(), unreadBefore.get(0).notificationId());
+
+        assertTrue(notificationService.getQuickNotifications(admin.getFirebaseUid()).isEmpty());
+
+        List<QuickNotificationDTO> allInbox =
+                notificationService.getAllQuickNotifications(admin.getFirebaseUid(), 1);
+        assertEquals(1, allInbox.size());
+        assertEquals(unreadBefore.get(0).notificationId(), allInbox.get(0).notificationId());
+        assertEquals(EventTypeName.REPORT_CREATED.name(), allInbox.get(0).summary().eventTypeName());
+        assertEquals(NotificationClickKind.REPORT_QUEUE, allInbox.get(0).click().kind());
+        assertNotNull(allInbox.get(0).click().reportId());
+    }
+
+    @Test
+    @DisplayName("All-inbox unknown user throws")
+    void testGetAllQuickNotificationsUnknownUser(){
+        assertThrows(
+                RuntimeException.class,
+                () -> notificationService.getAllQuickNotifications("fakeUid", 1)
+        );
     }
 
     @Test
