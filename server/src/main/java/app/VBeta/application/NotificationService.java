@@ -123,6 +123,16 @@ public class NotificationService {
         return notifications.stream().map(this::createQuickNotificationDTO).toList();
     }
 
+    public List<QuickNotificationDTO> getAllQuickNotifications(String firebaseUid, int offsetVal) {
+        UserAccount user = userAccountManager.findUserAccount(firebaseUid);
+        if (user == null) {
+            throw new RuntimeException("User is not found");
+        }
+
+        List<Notification> notifications = notificationManager.getAllUserNotifications(user, offsetVal);
+        return notifications.stream().map(this::createQuickNotificationDTO).toList();
+    }
+
     /**
      * Marks one notification read when it belongs to {@code firebaseUid}.
      * <p>

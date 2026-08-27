@@ -78,4 +78,18 @@ public class EvenNotificationController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllQuickNotifications(@RequestParam(defaultValue = "1") Integer offset){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            return new  ResponseEntity<>(
+                    notificationService.getAllQuickNotifications(firebaseUid, offset), HttpStatus.OK
+            );
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

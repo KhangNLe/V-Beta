@@ -32,4 +32,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * @return matching row, or empty when missing or not owned by {@code user}
      */
     Optional<Notification> findByNotificationIdAndRecipient(Long id, UserAccount user);
+
+    @Query("SELECT noti FROM Notification noti WHERE noti.recipient = :user ORDER BY noti.createdAt DESC LIMIT 10 OFFSET :offSetNum")
+    List<Notification> findAllByRecipientOrderByCreatedAtDesc(@Param("user") UserAccount user,
+                                                              @Param("offSetNum") Integer offSetNum);
 }

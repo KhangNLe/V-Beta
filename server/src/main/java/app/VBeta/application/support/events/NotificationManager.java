@@ -70,4 +70,9 @@ public class NotificationManager {
     public void save(Notification notification){
         notificationRepository.save(notification);
     }
+
+    public List<Notification> getAllUserNotifications(UserAccount user, int offsetVal) {
+        int startPoint = 10 * (offsetVal - 1);
+        return notificationRepository.findAllByRecipientOrderByCreatedAtDesc(user, startPoint);
+    }
 }
