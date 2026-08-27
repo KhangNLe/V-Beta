@@ -119,4 +119,144 @@ public class EvenNotificationControllerTest {
         verify(authorizationService, times(1)).getAuthenticatedFirebaseUid();
         verifyNoInteractions(notificationService);
     }
+
+    @Test
+    @DisplayName("PATCH /api/notification/short maps missing notification to 404")
+    void returns404_whenMarkReadNotificationIsMissing() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        doThrow(new RuntimeException("Notification not found"))
+                .when(notificationService)
+                .updateNotificationToRead("testFirebaseUid", 99L);
+
+        mockMvc.perform(patch("/api/notification/short").param("notificationId", "99"))
+                .andExpect(status().isNotFound());
+
+        verify(notificationService, times(1)).updateNotificationToRead("testFirebaseUid", 99L);
+    }
+
+    @Test
+    @DisplayName("GET /api/notification/all returns paged inbox with default offset 1")
+    void returns200_whenGetAllNotificationsUsesDefaultOffset() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("adminUid");
+        when(notificationService.getAllQuickNotifications("adminUid", 1)).thenReturn(List.of(
+                sampleQuickNotification(
+                        81L,
+                        "REPORT_CREATED",
+                        "A user submitted a content report",
+                        11L
+                )
+        ));
+
+        mockMvc.perform(get("/api/notification/all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].notificationId").value(81))
+                .andExpect(jsonPath("$[0].summary.eventTypeName").value("REPORT_CREATED"))
+                .andExpect(jsonPath("$[0].click.kind").value("REPORT_QUEUE"))
+                .andExpect(jsonPath("$[0].click.reportId").value(11));
+
+        verify(notificationService, times(1)).getAllQuickNotifications("adminUid", 1);
+    }
+
+    @Test
+    @DisplayName("GET /api/notification/all?offset=2 forwards the page offset")
+    void returns200_whenGetAllNotificationsUsesExplicitOffset() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("climberUid");
+        when(notificationService.getAllQuickNotifications("climberUid", 2)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/notification/all").param("offset", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+
+        verify(notificationService, times(1)).getAllQuickNotifications("climberUid", 2);
+    }
+
+    @Test
+    @DisplayName("GET /api/notification/all returns mixed report and appeal event types")
+    void returns200_whenGetAllNotificationsIncludesReportAndAppealTypes() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("adminUid");
+        when(notificationService.getAllQuickNotifications("adminUid", 1)).thenReturn(List.of(
+                sampleQuickNotification(
+                        81L,
+                        "REPORT_CREATED",
+                        "A user submitted a content report",
+                        11L
+                ),
+                sampleQuickNotification(
+                        83L,
+                        "CONTENT_REMOVED",
+                        "One of your content had been reported and removed.",
+                        11L
+                )
+        ));
+
+        mockMvc.perform(get("/api/notification/all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].summary.eventTypeName").value("REPORT_CREATED"))
+                .andExpect(jsonPath("$[1].summary.eventTypeName").value("CONTENT_REMOVED"))
+                .andExpect(jsonPath("$[1].click.kind").value("REPORT_QUEUE"));
+    }
+
+    @Test
+    @DisplayName("GET /api/notification/all returns empty list when inbox is empty")
+    void returns200_withEmptyList_whenGetAllNotificationsHasNoRows() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("climberUid");
+        when(notificationService.getAllQuickNotifications("climberUid", 1)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/notification/all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    @DisplayName("GET /api/notification/all maps missing account to 404")
+    void returns404_whenGetAllNotificationsUserIsMissing() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("missingUid");
+        when(notificationService.getAllQuickNotifications("missingUid", 1))
+                .thenThrow(new RuntimeException("User is not found"));
+
+        mockMvc.perform(get("/api/notification/all"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /api/notification/all maps auth failure to 404")
+    void returns404_whenGetAllNotificationsAuthenticationFails() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid())
+                .thenThrow(new RuntimeException("Missing or invalid authentication token"));
+
+        mockMvc.perform(get("/api/notification/all"))
+                .andExpect(status().isNotFound());
+
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    @DisplayName("GET /api/notification/all returns 400 for a non-numeric offset")
+    void returns400_whenGetAllNotificationsOffsetIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/notification/all").param("offset", "abc"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(notificationService);
+        verifyNoInteractions(authorizationService);
+    }
+
+    private static QuickNotificationDTO sampleQuickNotification(
+            Long notificationId,
+            String eventTypeName,
+            String description,
+            Long reportId
+    ) {
+        return new QuickNotificationDTO(
+                notificationId,
+                new EventTypeDTO(eventTypeName, description),
+                new NotificationClickDTO(
+                        NotificationClickKind.REPORT_QUEUE,
+                        reportId, null, null, null, null
+                ),
+                Instant.parse("2026-08-14T19:11:00Z")
+        );
+    }
 }
