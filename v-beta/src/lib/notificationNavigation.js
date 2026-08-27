@@ -37,6 +37,8 @@ export function getNotificationId(notification) {
 
 /**
  * Unread when `readAt` is missing or null. Unread poll payloads omit `readAt`.
+ * All-inbox rows from `GET /all` also omit `readAt`; overlay unread ids from
+ * `/short` via {@link annotateInboxReadState} before rendering.
  *
  * @param {unknown} notification
  * @returns {boolean}
@@ -45,6 +47,38 @@ export function isNotificationUnread(notification) {
   if (!notification || typeof notification !== "object") return true;
   const readAt = /** @type {Record<string, unknown>} */ (notification).readAt;
   return readAt == null || readAt === "";
+}
+
+/**
+ * Marks all-inbox rows read/unread using ids from the unread poll.
+ * `GET /api/notification/all` does not include `readAt`.
+ *
+ * @param {Array<Record<string, unknown>>} items
+ * @param {Array<Record<string, unknown>>} unreadItems
+ * @returns {Array<Record<string, unknown>>}
+ */
+export function annotateInboxReadState(items, unreadItems) {
+  if (!Array.isArray(items)) return [];
+  const unreadIds = new Set(
+    (Array.isArray(unreadItems) ? unreadItems : [])
+      .map(getNotificationId)
+      .filter((id) => id != null),
+  );
+  return items.map((row) => {
+    const id = getNotificationId(row);
+    if (id != null && unreadIds.has(id)) {
+      return { ...row, readAt: null };
+    }
+    if (
+      row &&
+      typeof row === "object" &&
+      /** @type {Record<string, unknown>} */ (row).readAt != null &&
+      /** @type {Record<string, unknown>} */ (row).readAt !== ""
+    ) {
+      return row;
+    }
+    return { ...row, readAt: "read" };
+  });
 }
 
 /**

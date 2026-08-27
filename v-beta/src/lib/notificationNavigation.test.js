@@ -1,4 +1,5 @@
 import {
+  annotateInboxReadState,
   getNotificationHref,
   getNotificationTypeLabel,
   isNotificationUnread,
@@ -100,5 +101,14 @@ describe("notificationNavigation", () => {
   it("treats missing readAt as unread", () => {
     expect(isNotificationUnread(reportCreated)).toBe(true);
     expect(isNotificationUnread({ ...reportCreated, readAt: "2026-08-14T20:00:00Z" })).toBe(false);
+  });
+
+  it("overlays unread ids from the short poll onto all-inbox rows", () => {
+    const annotated = annotateInboxReadState(
+      [reportCreated, contentRemoved],
+      [reportCreated],
+    );
+    expect(isNotificationUnread(annotated[0])).toBe(true);
+    expect(isNotificationUnread(annotated[1])).toBe(false);
   });
 });

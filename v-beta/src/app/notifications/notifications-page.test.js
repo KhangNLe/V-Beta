@@ -11,6 +11,11 @@ import { toast } from "react-toastify";
 jest.mock("@/api/notifications", () => ({
   fetchAllNotifications: jest.fn(),
   markNotificationRead: jest.fn(),
+  ALL_NOTIFICATIONS_PAGE_SIZE: 10,
+}));
+
+jest.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }) => <button {...props}>{children}</button>,
 }));
 
 jest.mock("@/hooks/useRequireAuth", () => ({
@@ -95,6 +100,8 @@ describe("NotificationsPage", () => {
     fetchAllNotifications.mockResolvedValue([]);
     render(<NotificationsPage />);
     expect(await screen.findByText("No notifications.")).toBeInTheDocument();
+    expect(fetchAllNotifications).toHaveBeenCalledWith(user, 1);
+    expect(screen.queryByRole("button", { name: "Next" })).not.toBeInTheDocument();
   });
 
   it("lists unread and read items", async () => {
@@ -161,5 +168,27 @@ describe("NotificationsPage", () => {
     expect(await screen.findByText("Error loading notifications")).toBeInTheDocument();
     expect(screen.getByText("Unauthorized")).toBeInTheDocument();
     expect(toast.error).toHaveBeenCalledWith("Failed to load notifications");
+  });
+
+  it("loads the next page of the all-inbox", async () => {
+    const pageOne = Array.from({ length: 10 }, (_, index) => ({
+      ...reportCreated,
+      notificationId: index + 1,
+      summary: {
+        eventTypeName: "REPORT_CREATED",
+        description: `Report ${index + 1}`,
+      },
+    }));
+    fetchAllNotifications
+      .mockResolvedValueOnce(pageOne)
+      .mockResolvedValueOnce([contentRemoved]);
+    render(<NotificationsPage />);
+    expect(await screen.findByText("Report 1")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(fetchAllNotifications).toHaveBeenLastCalledWith(user, 2);
+    });
+    expect(await screen.findByText("Content removed")).toBeInTheDocument();
+    expect(screen.getByText("Page 2")).toBeInTheDocument();
   });
 });

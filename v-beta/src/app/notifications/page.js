@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  ALL_NOTIFICATIONS_PAGE_SIZE,
   fetchAllNotifications,
   markNotificationRead,
 } from "@/api/notifications";
+import { Button } from "@/components/ui/button";
 import PageLoader from "@/components/ui/PageLoader";
 import {
   Card,
@@ -33,6 +35,7 @@ export default function NotificationsPage() {
     requireEmailVerified: true,
   });
   const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openingId, setOpeningId] = useState(null);
@@ -45,7 +48,7 @@ export default function NotificationsPage() {
       try {
         setLoading(true);
         setError(null);
-        const inbox = await fetchAllNotifications(user);
+        const inbox = await fetchAllNotifications(user, page);
         if (!cancelled) setItems(inbox);
       } catch (err) {
         if (cancelled) return;
@@ -61,7 +64,7 @@ export default function NotificationsPage() {
     return () => {
       cancelled = true;
     };
-  }, [ready, user]);
+  }, [ready, user, page]);
 
   const handleOpenNotification = async (item) => {
     const notificationId = getNotificationId(item);
@@ -109,6 +112,9 @@ export default function NotificationsPage() {
       </div>
     );
   }
+
+  const hasPrevious = page > 1;
+  const hasNext = items.length >= ALL_NOTIFICATIONS_PAGE_SIZE;
 
   return (
     <div className="container mx-auto min-h-screen p-4">
@@ -177,6 +183,27 @@ export default function NotificationsPage() {
               })}
             </ul>
           )}
+          {hasPrevious || hasNext ? (
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!hasPrevious}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">Page {page}</span>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!hasNext}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>

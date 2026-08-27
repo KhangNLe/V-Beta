@@ -1,4 +1,8 @@
 import { API_BASE_URL } from "@/app/envExports";
+import { annotateInboxReadState } from "@/lib/notificationNavigation";
+
+/** Page size for `GET /api/notification/all` (1-based `offset`). */
+export const ALL_NOTIFICATIONS_PAGE_SIZE = 10;
 
 /**
  * @param {Response} response
@@ -18,14 +22,14 @@ async function readErrorDetail(response, fallback) {
 }
 
 /**
- * Poll unread inbox items for the authenticated user.
- *
  * @param {import("firebase/auth").User} user
+ * @param {string} pathWithQuery
+ * @param {string} fallback
  * @returns {Promise<Array<Record<string, unknown>>>}
  */
-export async function fetchUnreadNotifications(user) {
+async function fetchNotificationArray(user, pathWithQuery, fallback) {
   const idToken = await user.getIdToken();
-  const response = await fetch(`${API_BASE_URL}/api/notification/short`, {
+  const response = await fetch(`${API_BASE_URL}${pathWithQuery}`, {
     headers: {
       Authorization: `Bearer ${idToken}`,
     },
@@ -33,10 +37,7 @@ export async function fetchUnreadNotifications(user) {
 
   if (!response.ok) {
     throw new Error(
-      await readErrorDetail(
-        response,
-        `Failed to load notifications: ${response.status}`,
-      ),
+      await readErrorDetail(response, `${fallback}: ${response.status}`),
     );
   }
 
@@ -45,17 +46,59 @@ export async function fetchUnreadNotifications(user) {
 }
 
 /**
- * Fetch all inbox items (read and unread).
- * <p>
- * The all-notifications endpoint is not wired yet. Until it exists this
- * returns the unread poll so the notifications page can render. Replace the
- * body of this function when the all-inbox API is available.
+ * @param {unknown} offset
+ * @returns {number}
+ */
+function normalizeAllInboxOffset(offset) {
+  const parsed = Number(offset);
+  return Number.isInteger(parsed) && parsed >= 1 ? parsed : 1;
+}
+
+/**
+ * Poll unread inbox items for the authenticated user.
  *
  * @param {import("firebase/auth").User} user
  * @returns {Promise<Array<Record<string, unknown>>>}
  */
-export async function fetchAllNotifications(user) {
-  return fetchUnreadNotifications(user);
+export async function fetchUnreadNotifications(user) {
+  return fetchNotificationArray(
+    user,
+    "/api/notification/short",
+    "Failed to load notifications",
+  );
+}
+
+/**
+ * Fetch one page of inbox items (read and unread).
+ *
+ * Calls `GET /api/notification/all?offset=` (1-based, 10 rows). The payload
+ * omits `readAt`, so unread ids from `GET /short` are overlaid when that
+ * poll succeeds.
+ *
+ * @param {import("firebase/auth").User} user
+ * @param {number} [offset=1]
+ * @returns {Promise<Array<Record<string, unknown>>>}
+ */
+export async function fetchAllNotifications(user, offset = 1) {
+  const page = normalizeAllInboxOffset(offset);
+  const [pageResult, unreadResult] = await Promise.allSettled([
+    fetchNotificationArray(
+      user,
+      `/api/notification/all?offset=${encodeURIComponent(String(page))}`,
+      "Failed to load notifications",
+    ),
+    fetchUnreadNotifications(user),
+  ]);
+
+  if (pageResult.status === "rejected") {
+    throw pageResult.reason;
+  }
+
+  const items = pageResult.value;
+  if (unreadResult.status !== "fulfilled") {
+    return items;
+  }
+  return annotateInboxReadState(items, unreadResult.value);
 }
 
 /**
