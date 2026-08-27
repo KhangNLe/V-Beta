@@ -21,8 +21,8 @@ This document reflects the current repository state on `package_sub` and compari
 
 ### 4) No unified global API error envelope
 - Server error responses are not fully standardized via a single global exception handler contract.
-- Controllers catch `RuntimeException` and usually return **404** (wall/problem writes **400**; notification GET **401**) with a plain-text message.
-- Impact: clients must handle varying error payload shapes. Action-gated permission failures and duplicate reports currently look like 404/400 rather than 403/409.
+- Controllers catch `RuntimeException` and usually return **404** (wall/problem writes **400**; unread notification GET `/short` **401**; all-inbox GET `/all` **404**) with a plain-text message.
+- Impact: clients must handle varying error payload shapes. Action-gated permission failures and duplicate reports currently look like 404/400 rather than 403/409. `GET /api/notification/all` also omits `readAt`; the `/notifications` page infers unread from a parallel `/short` poll.
 
 ## Testing and Quality Limitations
 

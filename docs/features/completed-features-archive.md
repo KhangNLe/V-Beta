@@ -110,7 +110,7 @@ Related docs:
 
 ### G) Discussion Report UI (Problem Page)
 
-Status: Completed (frontend slice; admin queue/notification/appeal UIs still future)
+Status: Completed (frontend slice; admin queue/appeal UIs still future)
 
 Highlights:
 
@@ -124,6 +124,25 @@ Related docs:
 
 - `docs/features/wall-and-problems.md`
 - `docs/testing/manual-test-cases.md` (DISC-06)
+- `docs/api/endpoints.md`
+
+### H) Personal Notifications Inbox UI
+
+Status: Completed (frontend slice; `/reports` and `/appeals` landings are stubs)
+
+Highlights:
+
+- Signed-in navbar bell polls unread rows with `GET /api/notification/short`, marks one read with `PATCH /api/notification/short?notificationId=`, and deep-links by event type.
+- `/notifications` pages the full inbox with `GET /api/notification/all?offset=` (1-based, 10 rows). Previous/Next appear when a page is full.
+- `QuickNotificationDTO` omits `readAt`; the client overlays unread ids from `/short` so the all-inbox list can still show read vs unread.
+- Report-queue event types go to `/reports?reportId=`; appeal/deletion types go to `/appeals?reportId=`.
+- Covered by `notifications.test.js`, `notifications-page.test.js`, `NotificationBell.test.js`, and `notificationNavigation.test.js`.
+
+Related docs:
+
+- `docs/features/authentication-and-roles.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/testing/manual-test-cases.md` (NOTIF-01)
 - `docs/api/endpoints.md`
 
 ## Moved Out of Future Queue

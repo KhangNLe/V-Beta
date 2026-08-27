@@ -13,6 +13,7 @@ This section documents the authentication and authorization features that are cu
 - Backend account session sync after successful Firebase auth (`POST /api/accounts/session` → `UserAccountDTO`)
 - Role-aware navigation and role-gated UI actions
 - Admin account-management capabilities (view accounts, promote/demote roles)
+- Signed-in notification bell (unread poll) and `/notifications` all-inbox page (paged `GET /all`)
 
 ## User Flows
 
@@ -43,7 +44,7 @@ This section documents the authentication and authorization features that are cu
   - Cannot perform authenticated actions (comment, beta upload, content report, notifications, account-only actions).
 - **Climber**
   - Authenticated features such as comments, beta uploads, grade suggestions, content reports, and one-time appeals after removal.
-  - Can poll `GET /api/notification/short`, page the full inbox with `GET /api/notification/all`, and mark own rows read with `PATCH /api/notification/short?notificationId=`. `REPORT_CREATED` inbox rows are not written for this role; queue-resolve can write `REPORT_DISMISSED`, `REPORT_APPROVED`, or `CONTENT_REMOVED`. Appeal resolve can write `CONTENT_RESTORED` or `APPEAL_DENIED`.
+  - Can poll `GET /api/notification/short` (navbar bell), page the full inbox on `/notifications` with `GET /api/notification/all`, and mark own rows read with `PATCH /api/notification/short?notificationId=`. `REPORT_CREATED` inbox rows are not written for this role; queue-resolve can write `REPORT_DISMISSED`, `REPORT_APPROVED`, or `CONTENT_REMOVED`. Appeal resolve can write `CONTENT_RESTORED` or `APPEAL_DENIED`.
   - Can access own account page and self-service account actions.
 - **Setter**
   - Includes climber capabilities.
@@ -81,9 +82,10 @@ This section documents the authentication and authorization features that are cu
 - Owner appeal create: `POST /api/moderate/appeal` (authenticated; not action-gated). One appeal per `CONTENT_REMOVED` discussion report owned by the caller.
 - Admin appeal queue/detail: `GET /api/moderate/appeal` (action-gated `VIEW_APPEALS`; admin only). Optional `appealId` returns one row (any status). Appeals filed by the viewing admin are hidden.
 - Admin appeal resolve: `PATCH /api/moderate/appeal` (action-gated `MODERATE_APPEAL`; admin only). `APPROVED` restores the discussion; `DENIED` keeps it removed. Both write a logbook row and notify the owner.
-- Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated). Includes `notificationId` and `click` metadata (`kind` + target ids). Current moderation events use `click.kind = REPORT_QUEUE`.
-- All-inbox page: `GET /api/notification/all` (authenticated; not action-gated). 10 rows per page, `offset` 1-based, read and unread. Same DTO as `/short` (`readAt` omitted).
-- Mark read: `PATCH /api/notification/short?notificationId=` (authenticated; own row only; already-read is a no-op).
+- Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated). Includes `notificationId` and `click` metadata (`kind` + target ids). Current moderation events use `click.kind = REPORT_QUEUE`. The navbar bell uses this poll.
+- All-inbox page: `GET /api/notification/all` (authenticated; not action-gated). 10 rows per page, `offset` 1-based, read and unread. Same DTO as `/short` (`readAt` omitted). `/notifications` calls this with Previous/Next and overlays unread ids from `/short` so rows can still render as read vs unread.
+- Mark read: `PATCH /api/notification/short?notificationId=` (authenticated; own row only; already-read is a no-op). Bell and all-inbox both call this before navigating.
+- Click routing: `REPORT_CREATED` / `REPORT_DISMISSED` / `REPORT_APPROVED` → `/reports?reportId=`; `CONTENT_REMOVED` / `APPEAL_SUBMITTED` / `CONTENT_RESTORED` / `APPEAL_DENIED` → `/appeals?reportId=`. Those routes are stub landings until queue/appeal UI ships.
 - See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.
 
 ## Key Files
@@ -102,6 +104,10 @@ This section documents the authentication and authorization features that are cu
   - `server/src/main/java/app/VBeta/application/AuthorizationService.java`
 - Content report and notification APIs:
   - `v-beta/src/api/reports.js`
+  - `v-beta/src/api/notifications.js`
+  - `v-beta/src/lib/notificationNavigation.js`
+  - `v-beta/src/components/NotificationBell.js`
+  - `v-beta/src/app/notifications/page.js`
   - `v-beta/src/app/wall/[wallSectionID]/problem/[problemId]/page.js`
   - `server/src/main/java/app/VBeta/controller/ContentReportController.java`
   - `server/src/main/java/app/VBeta/controller/ModerationController.java`
@@ -112,6 +118,7 @@ This section documents the authentication and authorization features that are cu
 - Some authorization enforcement is endpoint-specific and may differ by controller/service path.
 - Some UI gating is role-name based, so frontend behavior and backend authorization should both be validated during regression testing.
 - Role permission behavior should be validated during regression testing when adding new actions.
+- `GET /api/notification/all` omits `readAt`. The all-inbox UI infers unread from a parallel `/short` poll; if that poll fails, rows render as unread.
 
 ## Future Enhancements
 

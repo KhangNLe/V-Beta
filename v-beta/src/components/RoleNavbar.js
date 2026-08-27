@@ -6,6 +6,7 @@ import { signOut } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
 
 import { auth } from "@/app/firebase";
+import NotificationBell from "@/components/NotificationBell";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { getAccountRole } from "@/lib/accountSession";
 
@@ -123,6 +124,11 @@ export default function RoleNavbar() {
               </li>
             );
           })}
+          {user && roleType !== "guest" && (
+            <li>
+              <NotificationBell user={user} />
+            </li>
+          )}
           {user && roleType !== "guest" && (
             <li>
               <span

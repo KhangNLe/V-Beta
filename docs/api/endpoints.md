@@ -208,6 +208,7 @@ Inbox APIs are **authenticated, not action-gated**. Any signed-in role may call 
   - Page size is 10 (`offset=1` is rows 1–10, `offset=2` is 11–20).
   - Response: `200` array of `QuickNotificationDTO` (same shape as `/short`: `notificationId`, `summary`, `click`, `createdAt`). Empty array is a valid `200` when the page has no rows.
   - `readAt` is **not** included in the DTO; the page mixes read and unread rows without a read flag.
+  - Frontend: `/notifications` requests this with `offset` (Previous/Next, page size 10) and overlays unread ids from `GET /short` so the UI can still mark read vs unread.
   - Errors:
     - `400` when `offset` is not an integer
     - `401` when unauthenticated or the Firebase token is invalid (Spring Security)

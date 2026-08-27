@@ -26,6 +26,7 @@ Guests can view content but cannot perform authenticated actions.
 - Cannot upload beta videos
 - Cannot submit perceived grades
 - Cannot report discussion content
+- Cannot open the notification bell or `/notifications`
 - Cannot access account-only or admin-only pages
 
 ## 3) Climber Flow (Login, Comment, Submit Beta, Suggest Grade)
@@ -53,6 +54,13 @@ Climber users can participate in problem discussion and feedback.
 2. Open the ⋮ menu on another user's comment or beta (not your own).
 3. Choose **Report**, pick a category, enter a reason (required, at most 250 characters), and submit.
 4. Verify a success toast. Duplicate or invalid reports show an error toast.
+
+### B4) Notifications
+1. Sign in. Confirm the navbar bell is visible (guests do not see it).
+2. Open the bell to list unread items (`GET /api/notification/short`).
+3. Choose **Show all notifications** (or open `/notifications`).
+4. Confirm the page lists read and unread history (`GET /api/notification/all`, 10 per page). Use **Next** / **Previous** when there are more than 10 rows.
+5. Open an item. It is marked read (`PATCH /api/notification/short?notificationId=`) and you land on `/reports?reportId=` or `/appeals?reportId=` depending on the event type.
 
 ### C) Submit a Beta Video
 1. On a problem page, choose beta upload flow.
