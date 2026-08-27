@@ -47,6 +47,7 @@ All routes below are under `/api`.
 | `GET /api/moderate/appeal?appealId=` | No | No | No | Yes | Action-gated (`VIEW_APPEALS`) |
 | `PATCH /api/moderate/appeal` | No | No | No | Yes | Action-gated (`MODERATE_APPEAL`) |
 | `GET /api/notification/short` | No | Yes | Yes | Yes | Authenticated (not action-gated). Own unread rows only |
+| `GET /api/notification/all` | No | Yes | Yes | Yes | Authenticated (not action-gated). Own rows, 10 per page |
 | `PATCH /api/notification/short?notificationId=` | No | Yes | Yes | Yes | Authenticated (not action-gated). Own row only |
 
 `Yes*` means backend action permission allows it; specific frontend UI exposure may differ by current role-based UI gating.
@@ -75,9 +76,10 @@ All routes below are under `/api`.
 
 - Final permission results are role-permission table driven in the database.
 - Some discussion endpoints are authenticated but not action-gated at controller level.
-- `POST /api/report/create`, `POST /api/moderate/appeal`, `GET /api/notification/short`, and `PATCH /api/notification/short` are authenticated only. Guest `401` comes from Spring Security. There is no `CREATE_REPORT` action. Queue/detail uses `VIEW_REPORTS` (admin). Resolve uses `MODERATE_REPORT` (admin). Logbook uses `VIEW_MODERATION_LOGS` (admin). Appeal queue/detail uses `VIEW_APPEALS` (admin). Appeal resolve uses `MODERATE_APPEAL` (admin). Inbox mark-read is own-row only (another user's id is **404**).
+- `POST /api/report/create`, `POST /api/moderate/appeal`, `GET /api/notification/short`, `GET /api/notification/all`, and `PATCH /api/notification/short` are authenticated only. Guest `401` comes from Spring Security. There is no `CREATE_REPORT` action. Queue/detail uses `VIEW_REPORTS` (admin). Resolve uses `MODERATE_REPORT` (admin). Logbook uses `VIEW_MODERATION_LOGS` (admin). Appeal queue/detail uses `VIEW_APPEALS` (admin). Appeal resolve uses `MODERATE_APPEAL` (admin). Inbox mark-read is own-row only (another user's id is **404**).
 - Create-report notifies **admins** of `REPORT_CREATED`. Climber/setter callers still get `200`; they do not receive that inbox event. If the reporter is an admin, they are skipped as a recipient.
 - `GET /api/notification/short` returns the caller's unread rows with `notificationId`, catalog `summary`, and `click` metadata. Current moderation events map to `click.kind = REPORT_QUEUE` and `click.reportId`. Report reason and admin notes are omitted.
+- `GET /api/notification/all` returns a 10-row page of the caller's read **and** unread rows (newest first). `offset` is 1-based (default `1`). Same DTO as `/short`; `readAt` is omitted. Missing account maps to **404**.
 - `GET /api/report/reports` returns grouped OPEN cases ranked by `Σ (weight × count)`. Climber/setter and missing `VIEW_REPORTS` currently map to **404**. An admin does not see reports on their own discussion (or a user-account report targeting themselves); that is a `200` with an empty `reports` list, not 404.
 - `POST /api/moderate/report` requires `MODERATE_REPORT`. Climber/setter and missing permission currently map to **404**. The acting admin cannot close a report they filed, and cannot close reports on their own discussion; those ids are skipped (the request can still `200`). Appeal decisions (`APPEAL_APPROVED` / `APPEAL_DENIED`) are rejected before any report is closed.
 - `GET /api/moderate/logbook` requires `VIEW_MODERATION_LOGS`. Climber/setter and missing permission currently map to **404**. Empty pages are **200** with `"moderationLogs": []`. Unknown `moderationId` is **404**. `offSetPlace <= 0` is **400**.

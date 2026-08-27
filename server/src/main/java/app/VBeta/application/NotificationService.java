@@ -25,9 +25,9 @@ import java.util.*;
  * <p>
  * It records {@code REPORT_CREATED} and {@code APPEAL_SUBMITTED} events and fans
  * out inbox rows to admin recipients, records report-queue outcome events for
- * reporters and owners, maps unread notifications into
- * {@link QuickNotificationDTO} (including click metadata), and marks a caller's
- * notification as read.
+ * reporters and owners, maps inbox rows into
+ * {@link QuickNotificationDTO} (including click metadata) for the unread
+ * poll and the paged all-inbox, and marks a caller's notification as read.
  */
 @Service
 @Transactional
@@ -39,7 +39,7 @@ public class NotificationService {
     /**
      * Constructs a new {@code NotificationService} with required collaborators.
      *
-     * @param notificationManager manager for inbox persistence, unread reads, and mark-read
+     * @param notificationManager manager for inbox persistence, unread/all reads, and mark-read
      * @param eventManager manager for event persistence
      * @param userAccountManager manager for recipient account lookups
      */
@@ -123,6 +123,19 @@ public class NotificationService {
         return notifications.stream().map(this::createQuickNotificationDTO).toList();
     }
 
+    /**
+     * Returns one page of the caller's inbox (read and unread), newest first.
+     * <p>
+     * Page size is 10. {@code offsetVal} is 1-based: {@code 1} starts at row 0,
+     * {@code 2} starts at row 10. Each item uses the same
+     * {@link QuickNotificationDTO} as the unread poll (no {@code readAt} field).
+     * The payload does not include report reason or admin notes.
+     *
+     * @param firebaseUid Firebase UID of the inbox owner
+     * @param offsetVal 1-based page number
+     * @return paged notification DTOs (empty when the page has no rows)
+     * @throws RuntimeException when no account matches the UID
+     */
     public List<QuickNotificationDTO> getAllQuickNotifications(String firebaseUid, int offsetVal) {
         UserAccount user = userAccountManager.findUserAccount(firebaseUid);
         if (user == null) {
@@ -162,7 +175,7 @@ public class NotificationService {
     /**
      * Maps a persisted notification into the short inbox DTO.
      *
-     * @param notification unread notification row
+     * @param notification inbox row (read or unread)
      * @return id, summary, click target, and created-at
      */
     private QuickNotificationDTO createQuickNotificationDTO(Notification notification) {

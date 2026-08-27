@@ -43,7 +43,7 @@ This section documents the authentication and authorization features that are cu
   - Cannot perform authenticated actions (comment, beta upload, content report, notifications, account-only actions).
 - **Climber**
   - Authenticated features such as comments, beta uploads, grade suggestions, content reports, and one-time appeals after removal.
-  - Can poll `GET /api/notification/short` and mark own rows read with `PATCH /api/notification/short?notificationId=`. `REPORT_CREATED` inbox rows are not written for this role; queue-resolve can write `REPORT_DISMISSED`, `REPORT_APPROVED`, or `CONTENT_REMOVED`. Appeal resolve can write `CONTENT_RESTORED` or `APPEAL_DENIED`.
+  - Can poll `GET /api/notification/short`, page the full inbox with `GET /api/notification/all`, and mark own rows read with `PATCH /api/notification/short?notificationId=`. `REPORT_CREATED` inbox rows are not written for this role; queue-resolve can write `REPORT_DISMISSED`, `REPORT_APPROVED`, or `CONTENT_REMOVED`. Appeal resolve can write `CONTENT_RESTORED` or `APPEAL_DENIED`.
   - Can access own account page and self-service account actions.
 - **Setter**
   - Includes climber capabilities.
@@ -82,6 +82,7 @@ This section documents the authentication and authorization features that are cu
 - Admin appeal queue/detail: `GET /api/moderate/appeal` (action-gated `VIEW_APPEALS`; admin only). Optional `appealId` returns one row (any status). Appeals filed by the viewing admin are hidden.
 - Admin appeal resolve: `PATCH /api/moderate/appeal` (action-gated `MODERATE_APPEAL`; admin only). `APPROVED` restores the discussion; `DENIED` keeps it removed. Both write a logbook row and notify the owner.
 - Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated). Includes `notificationId` and `click` metadata (`kind` + target ids). Current moderation events use `click.kind = REPORT_QUEUE`.
+- All-inbox page: `GET /api/notification/all` (authenticated; not action-gated). 10 rows per page, `offset` 1-based, read and unread. Same DTO as `/short` (`readAt` omitted).
 - Mark read: `PATCH /api/notification/short?notificationId=` (authenticated; own row only; already-read is a no-op).
 - See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.
 

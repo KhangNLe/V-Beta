@@ -20,6 +20,7 @@ Errors come from three main layers:
   - Blank appeal `appealReason` / missing `reportId`
   - Blank appeal-resolve `adminReason` / missing `appealId` or `appealStatus`, or `appealStatus` is `OPEN`
   - Missing `notificationId` on `PATCH /api/notification/short`
+  - Non-numeric `offset` on `GET /api/notification/all`
   - `offSetPlace <= 0` on `GET /api/moderate/logbook`
   - Wall/problem write `RuntimeException`s (create/delete/reset), including authorization failures on those routes
 - **401 Unauthorized**
@@ -28,7 +29,7 @@ Errors come from three main layers:
   - `GET /api/notification/short` when auth/account lookup throws `RuntimeException`
 - **404 Not Found**
   - Referenced resource not found (wall/problem/comment/beta/account/report/notification targets)
-  - Most other controller `RuntimeException`s, including action-gated authorization failures, duplicate report creates, unauthorized discussion deletes, deleting an already-deleted discussion, and `PATCH /api/notification/short` failures
+  - Most other controller `RuntimeException`s, including action-gated authorization failures, duplicate report creates, unauthorized discussion deletes, deleting an already-deleted discussion, `GET /api/notification/all` failures, and `PATCH /api/notification/short` failures
 - **500 Internal Server Error**
   - Unhandled exceptions or infrastructure failures (storage/DB/internal service issues)
 
@@ -59,6 +60,7 @@ How that surfaces depends on the controller:
 - most routes → **404** with that message
 - wall/problem writes → **400**
 - `GET /api/notification/short` → **401**
+- `GET /api/notification/all` → **404**
 - `PATCH /api/notification/short` → **404**
 - `POST /api/accounts/session` with no security context → **401** (`ResponseStatusException`)
 
@@ -79,7 +81,7 @@ Clients should not hardcode one exact JSON shape for all non-auth errors.
 
 ## Content Report and Notification Errors
 
-`POST /api/report/create`, `GET /api/notification/short`, and `PATCH /api/notification/short` are authenticated, not action-gated. Missing bearer tokens are rejected by Spring Security (`401`). Invalid/expired tokens still use the filter payload above.
+`POST /api/report/create`, `GET /api/notification/short`, `GET /api/notification/all`, and `PATCH /api/notification/short` are authenticated, not action-gated. Missing bearer tokens are rejected by Spring Security (`401`). Invalid/expired tokens still use the filter payload above.
 
 `GET /api/report/reports` is action-gated (`VIEW_REPORTS`). `POST /api/moderate/report` is action-gated (`MODERATE_REPORT`). `GET /api/moderate/logbook` is action-gated (`VIEW_MODERATION_LOGS`). `GET /api/moderate/appeal` is action-gated (`VIEW_APPEALS`). `PATCH /api/moderate/appeal` is action-gated (`MODERATE_APPEAL`). `POST /api/moderate/appeal` is authenticated only. Guest callers are `401`. Climber/setter and other authorization failures currently map to **404**.
 
@@ -125,6 +127,13 @@ Admin appeal resolve errors (`PATCH /api/moderate/appeal`):
 Unread notification errors (`GET /api/notification/short`):
 
 - `401` — missing/invalid auth, or no account matches the Firebase UID (controller maps lookup failure to `401`)
+
+All-inbox errors (`GET /api/notification/all`):
+
+- `400` — non-numeric `offset`
+- `401` — guest or invalid Firebase token (Spring Security / auth filter)
+- `404` — missing auth context or no account matches the Firebase UID (controller maps lookup failure to `404`)
+- `200` with `[]` — the requested page has no rows
 
 Mark-read errors (`PATCH /api/notification/short?notificationId=`):
 

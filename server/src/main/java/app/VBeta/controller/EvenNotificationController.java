@@ -12,6 +12,8 @@ import java.util.List;
  * {@code EvenNotificationController} exposes the authenticated user's in-app inbox.
  * <p>
  * {@code GET /short} returns unread rows with click metadata.
+ * {@code GET /all} returns a page of the caller's read and unread rows
+ * (newest first, 10 per page).
  * {@code PATCH /short?notificationId=} marks one of the caller's rows read.
  * Identity is resolved through {@link AuthorizationService}. There is no action gate.
  */
@@ -24,7 +26,7 @@ public class EvenNotificationController {
     /**
      * Constructs a new {@code EvenNotificationController} with required services.
      *
-     * @param notificationService service for unread inbox reads and mark-read
+     * @param notificationService service for unread inbox, paged all-inbox, and mark-read
      * @param authorizationService service for authentication context
      */
     public EvenNotificationController(NotificationService notificationService,
@@ -79,6 +81,21 @@ public class EvenNotificationController {
         }
     }
 
+    /**
+     * Returns one page of the authenticated user's inbox (read and unread).
+     * <p>
+     * Rows are newest-first. Page size is 10. {@code offset} is 1-based
+     * (default {@code 1}): page 1 is rows 1–10, page 2 is 11–20, and so on.
+     * The payload is the same {@link QuickNotificationDTO} shape as
+     * {@code GET /short} and does not include {@code readAt}.
+     * On success the response is {@code 200} with an array (empty when the
+     * page has no rows). {@code RuntimeException} is mapped to {@code 404}
+     * (missing auth or missing account). Non-numeric {@code offset} is
+     * {@code 400} from Spring.
+     *
+     * @param offset 1-based page number (default {@code 1})
+     * @return paged notification DTOs for the caller
+     */
     @GetMapping("/all")
     public ResponseEntity<?> getAllQuickNotifications(@RequestParam(defaultValue = "1") Integer offset){
         try {

@@ -33,6 +33,16 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      */
     Optional<Notification> findByNotificationIdAndRecipient(Long id, UserAccount user);
 
+    /**
+     * Returns one page of a recipient's inbox (read and unread), newest first.
+     * <p>
+     * Limited to 10 rows. {@code offSetNum} is the SQL {@code OFFSET} (0 for
+     * page 1, 10 for page 2).
+     *
+     * @param user recipient account
+     * @param offSetNum row offset into the newest-first list
+     * @return up to 10 notifications for that page
+     */
     @Query("SELECT noti FROM Notification noti WHERE noti.recipient = :user ORDER BY noti.createdAt DESC LIMIT 10 OFFSET :offSetNum")
     List<Notification> findAllByRecipientOrderByCreatedAtDesc(@Param("user") UserAccount user,
                                                               @Param("offSetNum") Integer offSetNum);
