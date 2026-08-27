@@ -70,4 +70,19 @@ public class NotificationManager {
     public void save(Notification notification){
         notificationRepository.save(notification);
     }
+
+    /**
+     * Returns one page of a recipient's inbox (read and unread), newest first.
+     * <p>
+     * Page size is 10. {@code offsetVal} is 1-based: the SQL offset is
+     * {@code 10 * (offsetVal - 1)}.
+     *
+     * @param user inbox owner
+     * @param offsetVal 1-based page number
+     * @return up to 10 notification rows for that page
+     */
+    public List<Notification> getAllUserNotifications(UserAccount user, int offsetVal) {
+        int startPoint = 10 * (offsetVal - 1);
+        return notificationRepository.findAllByRecipientOrderByCreatedAtDesc(user, startPoint);
+    }
 }

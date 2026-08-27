@@ -673,7 +673,58 @@ Authorization: Bearer <firebase_id_token>
 
 - `401` when unauthenticated, the Firebase token is invalid, or no account matches the UID
 
-## 19) Mark Notification Read (Authenticated)
+## 19) Get All Notifications (Authenticated)
+
+Paged inbox of the caller's **read and unread** rows, newest first. Page size is 10. `offset` is 1-based (default `1`). Same `QuickNotificationDTO` as `/short` (`notificationId`, catalog `summary`, `click`, `createdAt`). `readAt` is omitted.
+
+Any authenticated role may call this endpoint. Callers only receive their own rows.
+
+### Request — page 1
+
+```http
+GET /api/notification/all
+Authorization: Bearer <firebase_id_token>
+```
+
+### Request — page 2
+
+```http
+GET /api/notification/all?offset=2
+Authorization: Bearer <firebase_id_token>
+```
+
+### Response (200)
+
+```json
+[
+  {
+    "notificationId": 81,
+    "summary": {
+      "eventTypeName": "REPORT_CREATED",
+      "description": "A user submitted a content report"
+    },
+    "click": {
+      "kind": "REPORT_QUEUE",
+      "reportId": 11,
+      "wallSectionId": null,
+      "problemId": null,
+      "discussionId": null,
+      "userId": null
+    },
+    "createdAt": "2026-08-14T19:11:00Z"
+  }
+]
+```
+
+Empty array is a valid `200` when the requested page has no rows.
+
+### Error examples
+
+- `400` when `offset` is not an integer
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when auth context is missing or no account matches the UID
+
+## 20) Mark Notification Read (Authenticated)
 
 Marks one of the caller's notifications as read. Success is `200` with an empty body. A second call on the same id is a no-op.
 
@@ -694,7 +745,7 @@ Empty body.
 - `401` when the caller is a guest or the Firebase token is invalid
 - `404` when the account is missing, the id does not exist, or the row belongs to another user
 
-## 20) Get Moderation Logbook (Action-gated)
+## 21) Get Moderation Logbook (Action-gated)
 
 Requires `VIEW_MODERATION_LOGS`. Newest logbook rows first. Page size is 25. `offSetPlace` is 1-based (default `1`). When `moderationId` is set, the response is that one row.
 
@@ -779,7 +830,7 @@ Empty logbook or a page past the last row is `200` with `"moderationLogs": []`, 
 - `401` when the caller is a guest or the Firebase token is invalid
 - `404` when the account is missing, the caller is not allowed `VIEW_MODERATION_LOGS`, or `moderationId` does not exist
 
-## 21) Create Appeal (Authenticated)
+## 22) Create Appeal (Authenticated)
 
 Any authenticated role may call this endpoint. The caller must own the `CONTENT_REMOVED` discussion. Success is `201` with an empty body.
 
@@ -810,7 +861,7 @@ Empty body.
 - `401` when the caller is a guest or the Firebase token is invalid
 - `404` when the account is missing, the report is ineligible (`Appeal is not allowed`), or an appeal already exists (`Appeal already exists`)
 
-## 22) Get Appeals (Action-gated)
+## 23) Get Appeals (Action-gated)
 
 Requires `VIEW_APPEALS`. With no `appealId`, the response is OPEN appeals newest-first. With `appealId`, the response is that one row (any status). Appeals filed by the viewing admin are omitted from the queue and treated as missing on get-by-id.
 
@@ -883,7 +934,7 @@ Empty queue is `200` with `"appeals": []`, not 404.
 - `401` when the caller is a guest or the Firebase token is invalid
 - `404` when the account is missing, the caller is not allowed `VIEW_APPEALS`, or `appealId` does not exist / was filed by the viewing admin
 
-## 23) Resolve Appeal (Action-gated)
+## 24) Resolve Appeal (Action-gated)
 
 Requires `MODERATE_APPEAL`. Success is `200` with an empty body. Only `OPEN` appeals can be decided. `OPEN` is not a valid decision status.
 
