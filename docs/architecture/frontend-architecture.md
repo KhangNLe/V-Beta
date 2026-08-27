@@ -14,15 +14,15 @@
   - Route pages and global app layout
   - Firebase singleton/config exports
 - `src/components/`
-  - Feature-level UI (navbar, guest banner, auth shell)
+  - Feature-level UI (navbar, guest banner, auth shell, notification bell)
 - `src/components/ui/`
   - Shared UI primitives (button, card, dialog, etc.)
 - `src/api/`
-  - Backend API calls grouped by domain (`account`, `accounts`, `promoteOrDemote`, `wallSections`, `comments`, `solutionBeta`, `reports`)
+  - Backend API calls grouped by domain (`account`, `accounts`, `promoteOrDemote`, `wallSections`, `comments`, `solutionBeta`, `reports`, `notifications`)
 - `src/hooks/`
   - Auth/session hook (`useRequireAuth`)
 - `src/lib/`
-  - Session persistence, email verification helpers, formatting utilities
+  - Session persistence, email verification helpers, formatting utilities, notification click/read helpers
 
 ## Routing Model
 
@@ -33,6 +33,9 @@ Primary routes:
 - `/main-page`
 - `/account`
 - `/accounts`
+- `/notifications`
+- `/reports`
+- `/appeals`
 - `/wall/[wallSectionID]`
 - `/wall/[wallSectionID]/problem/[problemId]`
 
@@ -79,8 +82,11 @@ Supporting auth/session modules:
   - `src/api/comments.js`
   - `src/api/solutionBeta.js`
   - `src/api/reports.js`
+  - `src/api/notifications.js`
 - Comment/beta delete helpers send a reason (`deletedReason` / `deleteReason`) from `src/lib/discussionDeletion.js`.
 - Discussion Report on the problem page calls `createContentReport` (`POST /api/report/create`) with `DISCUSSION` + discussion id.
+- Signed-in navbar renders `NotificationBell`: unread poll is `GET /api/notification/short`; mark-read is `PATCH /api/notification/short?notificationId=`.
+- `/notifications` pages the full inbox with `GET /api/notification/all?offset=` (1-based, 10 rows). `QuickNotificationDTO` omits `readAt`, so the client overlays unread ids from `/short` before styling. Click paths come from `src/lib/notificationNavigation.js` (`/reports?reportId=` vs `/appeals?reportId=` by event type). `/reports` and `/appeals` are thin landings until queue/appeal UI ships.
 - Account list/session helpers map `UserAccountDTO` (`userId`, `role`) onto the existing client session shape (`id`, `roleName`).
 
 ## Constraints and Considerations

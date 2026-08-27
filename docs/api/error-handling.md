@@ -164,3 +164,8 @@ Frontend/API client should handle by status class first:
   - Show field-specific or action-specific validation message
 - **500**
   - Show generic retry/support message and log details client-side
+
+Inbox UI notes:
+
+- `GET /api/notification/short` maps account lookup failure to **401**; `GET /api/notification/all` maps it to **404**.
+- `/notifications` overlays unread ids from `/short` because `/all` omits `readAt`. If the unread poll fails, those rows render as unread.

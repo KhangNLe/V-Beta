@@ -87,7 +87,7 @@ Access model types:
 - **Transactions**
   - Service-layer transaction boundaries coordinate multi-step operations.
 - **Error handling**
-  - Controllers catch `RuntimeException` and return a mapped status with a plain-text message (typically 404; wall writes 400; notification GET 401).
+  - Controllers catch `RuntimeException` and return a mapped status with a plain-text message (typically 404; wall writes 400; unread notification GET `/short` 401; all-inbox GET `/all` 404).
   - `FirebaseAuthFilter` returns JSON `401` for invalid tokens.
   - `POST /api/accounts/session` still uses `ResponseStatusException` for missing auth.
 

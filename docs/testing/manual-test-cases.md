@@ -174,6 +174,23 @@ This document defines the manual regression checklist for validating core user f
   - successful submit calls `POST /api/report/create` with `reportTargetType: DISCUSSION`
   - owner cannot report their own discussion; duplicate reports surface an error toast
 
+### NOTIF-01: Notification Bell and All-Inbox Page
+
+- Steps:
+  1. As a guest, confirm there is no notification bell
+  2. Sign in and confirm the navbar bell is present
+  3. Open the bell and confirm unread items come from `GET /api/notification/short`
+  4. Choose **Show all notifications** and confirm `/notifications` loads `GET /api/notification/all?offset=1`
+  5. When there are more than 10 rows, click **Next** and confirm `offset=2`; **Previous** returns to page 1
+  6. Open an unread row and confirm `PATCH /api/notification/short?notificationId=` then navigation to `/reports?reportId=` or `/appeals?reportId=`
+  7. Return to `/notifications` and confirm that row no longer looks unread
+- Expected:
+  - guests cannot open the inbox
+  - signed-in users can poll unread, page the full inbox, and mark one row read
+  - all-inbox page size is 10; `offset` is 1-based
+  - read vs unread on `/notifications` uses unread ids from `/short` (`readAt` is not on the `/all` DTO)
+  - report-queue event types go to `/reports`; appeal/deletion types go to `/appeals`
+
 ### ACCOUNT-01: View Account Profile
 
 - Steps:

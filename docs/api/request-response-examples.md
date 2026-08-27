@@ -679,6 +679,8 @@ Paged inbox of the caller's **read and unread** rows, newest first. Page size is
 
 Any authenticated role may call this endpoint. Callers only receive their own rows.
 
+The `/notifications` page uses this endpoint. Because `readAt` is omitted, `fetchAllNotifications` also polls `GET /short` and treats ids present there as unread.
+
 ### Request — page 1
 
 ```http
