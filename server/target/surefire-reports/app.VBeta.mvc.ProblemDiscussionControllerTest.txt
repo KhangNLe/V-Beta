@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: app.VBeta.mvc.ProblemDiscussionControllerTest
--------------------------------------------------------------------------------
-Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.02 s -- in app.VBeta.mvc.ProblemDiscussionControllerTest

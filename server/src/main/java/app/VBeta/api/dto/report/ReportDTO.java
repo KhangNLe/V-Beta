@@ -11,15 +11,13 @@ import java.util.List;
 /**
  * Grouped report case for one typed target.
  * <p>
- * The snapshot matching {@code targetType} is always set. Discussion cases
- * also include {@code climbingProblem} and {@code wallSection} from the
- * discussion's problem so the admin queue can show wall/problem context.
- * Problem cases also include {@code wallSection}.
+ * Exactly one of {@code discussion}, {@code climbingProblem}, {@code wallSection},
+ * or {@code user} is non-null, matching {@code targetType}.
  *
  * @param targetType reported entity kind
  * @param discussion comment or beta snapshot when {@code targetType} is {@code DISCUSSION}
- * @param climbingProblem problem snapshot for discussion and problem targets
- * @param wallSection wall snapshot for discussion, problem, and wall targets
+ * @param climbingProblem problem snapshot when {@code targetType} is {@code CLIMBING_PROBLEM}
+ * @param wallSection wall snapshot when {@code targetType} is {@code WALL_SECTION}
  * @param user reported account when {@code targetType} is {@code USER_ACCOUNT}
  * @param reporters OPEN flags on this target (reporter, category, reason, time)
  */

@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: app.VBeta.ProblemDiscussionControllerTest
--------------------------------------------------------------------------------
-Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.109 s -- in app.VBeta.ProblemDiscussionControllerTest
