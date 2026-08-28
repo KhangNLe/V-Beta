@@ -1,15 +1,20 @@
 package app.VBeta.application;
 
+import app.VBeta.api.dto.problems.ClimbingProblemResponse;
 import app.VBeta.api.dto.report.CategoryTallyDTO;
 import app.VBeta.api.dto.report.ReportDTO;
 import app.VBeta.api.dto.report.ReportPriorityDTO;
 import app.VBeta.api.dto.report.ReportRequest;
 import app.VBeta.api.dto.report.ReportUserDTO;
 import app.VBeta.api.dto.report.ReportsPayload;
+import app.VBeta.api.dto.walls.WallSectionResponse;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.report.ReportManager;
 import app.VBeta.domain.model.actions.ActionDefinition;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.climb.WallSection;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.report.Report;
 import app.VBeta.domain.model.report.ReportTargetType;
 import app.VBeta.domain.model.user.UserAccount;
@@ -172,17 +177,42 @@ public class ReportService {
                 first.getTargetType() == ReportTargetType.DISCUSSION
                         ? climbingProblemDiscussionManager.getDiscussionData(first.getDiscussion())
                         : null,
-                first.getTargetType() == ReportTargetType.CLIMBING_PROBLEM
-                        ? climbingWallService.getClimbingProblemResponse(first.getProblem())
-                        : null,
-                first.getTargetType() == ReportTargetType.WALL_SECTION
-                        ? climbingWallService.getWallSectionResponse(first.getWallSection())
-                        : null,
+                problemSnapshot(first),
+                wallSnapshot(first),
                 first.getTargetType() == ReportTargetType.USER_ACCOUNT
                         ? userAccountManager.getUserAccountDTO(first.getUser())
                         : null,
                 reporters
         );
+    }
+
+    private ClimbingProblemResponse problemSnapshot(Report report) {
+        ClimbingProblem problem = switch (report.getTargetType()) {
+            case DISCUSSION -> {
+                DiscussionRoot discussion = report.getDiscussion();
+                yield discussion == null ? null : discussion.getProblem();
+            }
+            case CLIMBING_PROBLEM -> report.getProblem();
+            default -> null;
+        };
+        return problem == null ? null : climbingWallService.getClimbingProblemResponse(problem);
+    }
+
+    private WallSectionResponse wallSnapshot(Report report) {
+        WallSection wall = switch (report.getTargetType()) {
+            case DISCUSSION -> {
+                DiscussionRoot discussion = report.getDiscussion();
+                ClimbingProblem problem = discussion == null ? null : discussion.getProblem();
+                yield problem == null ? null : problem.getWallSection();
+            }
+            case CLIMBING_PROBLEM -> {
+                ClimbingProblem problem = report.getProblem();
+                yield problem == null ? null : problem.getWallSection();
+            }
+            case WALL_SECTION -> report.getWallSection();
+            default -> null;
+        };
+        return wall == null ? null : climbingWallService.getWallSectionResponse(wall);
     }
 
     private ReportUserDTO toReportUserDTO(Report report) {

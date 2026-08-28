@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: V-Beta-Server
+
+server:
+  port: 8080
+
+# Comma-separated list when overriding (e.g. http://localhost:3000,http://127.0.0.1:3000)
+app:
+  cors:
+    allowed-origins: "http://localhost:3000"
