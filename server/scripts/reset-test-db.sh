@@ -2,13 +2,14 @@
 
 set -euo pipefail
 
-# Isolated test database. Never read DB_NAME — that is the runtime app database
-# and is often exported in the same shell as `./mvnw spring-boot:run`.
-DB_HOST="${TEST_DB_HOST:-${DB_HOST:-127.0.0.1}}"
-DB_PORT="${TEST_DB_PORT:-${DB_PORT:-5432}}"
+# Isolated test database. Never inherit runtime .env (DB_PORT / SQL_* / DB_NAME).
+# Local default matches Docker from start-local-test-db.sh (55432, user postgres).
+# CI sets TEST_DB_PORT=5432 and TEST_SQL_*.
+DB_HOST="${TEST_DB_HOST:-127.0.0.1}"
+DB_PORT="${TEST_DB_PORT:-55432}"
 TEST_DB_NAME="${TEST_DB_NAME:-v_beta_test}"
-SQL_USERNAME="${SQL_USERNAME:-postgres}"
-SQL_PASSWORD="${SQL_PASSWORD:-postgres}"
+SQL_USERNAME="${TEST_SQL_USERNAME:-postgres}"
+SQL_PASSWORD="${TEST_SQL_PASSWORD:-postgres}"
 DB_ADMIN_DB="${DB_ADMIN_DB:-postgres}"
 SCHEMA_FILE="${SCHEMA_FILE:-src/test/resources/db/v_beta_test_schema.sql}"
 
@@ -28,9 +29,9 @@ if [[ ! -f "${SCHEMA_FILE}" ]]; then
 fi
 
 export PGPASSWORD="${SQL_PASSWORD}"
-PSQL_BASE=(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${SQL_USERNAME}" -v ON_ERROR_STOP=1)
+PSQL_BASE=(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${SQL_USERNAME}" -w -v ON_ERROR_STOP=1)
 
-echo "Resetting PostgreSQL test database '${TEST_DB_NAME}' on ${DB_HOST}:${DB_PORT}..."
+echo "Resetting PostgreSQL test database '${TEST_DB_NAME}' on ${DB_HOST}:${DB_PORT} as '${SQL_USERNAME}'..."
 "${PSQL_BASE[@]}" -d "${DB_ADMIN_DB}" -c "DROP DATABASE IF EXISTS ${TEST_DB_NAME};"
 "${PSQL_BASE[@]}" -d "${DB_ADMIN_DB}" -c "CREATE DATABASE ${TEST_DB_NAME};"
 

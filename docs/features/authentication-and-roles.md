@@ -14,6 +14,7 @@ This section documents the authentication and authorization features that are cu
 - Role-aware navigation and role-gated UI actions
 - Admin account-management capabilities (view accounts, promote/demote roles)
 - Signed-in notification bell (unread poll) and `/notifications` all-inbox page (paged `GET /all`)
+- Admin report queue at `/reports` (ranked list, detail dialog, dismiss / remove with notes)
 
 ## User Flows
 
@@ -76,8 +77,8 @@ This section documents the authentication and authorization features that are cu
 ## Content Reports and Notifications
 
 - Create report: `POST /api/report/create` (authenticated; not action-gated; no `CREATE_REPORT`; success `200`). The problem-page ⋮ menu is the Sprint 5 UI for this (comments and betas; category + reason required, max 250). Owners cannot report their own discussion.
-- Admin queue/detail: `GET /api/report/reports` (action-gated `VIEW_REPORTS`; admin only). Optional `reportId` returns one OPEN case.
-- Admin resolve: `POST /api/moderate/report` (action-gated `MODERATE_REPORT`; admin only). Dismiss or remove discussion reports; appeals are not accepted here.
+- Admin queue/detail: `GET /api/report/reports` (action-gated `VIEW_REPORTS`; admin only). Optional `reportId` returns one OPEN case. The `/reports` page lists ranked cases and opens detail (wall/problem/content, reporters, required notes).
+- Admin resolve: `POST /api/moderate/report` (action-gated `MODERATE_REPORT`; admin only). Dismiss (`REPORT_DISMISSED`) or remove (`CONTENT_REMOVED`) discussion reports; notes required (max 255). Appeals are not accepted here.
 - Admin logbook: `GET /api/moderate/logbook` (action-gated `VIEW_MODERATION_LOGS`; admin only). Optional `moderationId` returns one row; `offSetPlace` pages 25 newest-first.
 - Owner appeal create: `POST /api/moderate/appeal` (authenticated; not action-gated). One appeal per `CONTENT_REMOVED` discussion report owned by the caller.
 - Admin appeal queue/detail: `GET /api/moderate/appeal` (action-gated `VIEW_APPEALS`; admin only). Optional `appealId` returns one row (any status). Appeals filed by the viewing admin are hidden.
@@ -85,7 +86,7 @@ This section documents the authentication and authorization features that are cu
 - Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated). Includes `notificationId` and `click` metadata (`kind` + target ids). Current moderation events use `click.kind = REPORT_QUEUE`. The navbar bell uses this poll.
 - All-inbox page: `GET /api/notification/all` (authenticated; not action-gated). 10 rows per page, `offset` 1-based, read and unread. Same DTO as `/short` (`readAt` omitted). `/notifications` calls this with Previous/Next and overlays unread ids from `/short` so rows can still render as read vs unread.
 - Mark read: `PATCH /api/notification/short?notificationId=` (authenticated; own row only; already-read is a no-op). Bell and all-inbox both call this before navigating.
-- Click routing: `REPORT_CREATED` / `REPORT_DISMISSED` / `REPORT_APPROVED` → `/reports?reportId=`; `CONTENT_REMOVED` / `APPEAL_SUBMITTED` / `CONTENT_RESTORED` / `APPEAL_DENIED` → `/appeals?reportId=`. Those routes are stub landings until queue/appeal UI ships.
+- Click routing: `REPORT_CREATED` / `REPORT_DISMISSED` / `REPORT_APPROVED` → `/reports?reportId=` (admin queue). `CONTENT_REMOVED` / `APPEAL_SUBMITTED` / `CONTENT_RESTORED` / `APPEAL_DENIED` → `/appeals?reportId=` (stub until appeal UI).
 - See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.
 
 ## Key Files
@@ -104,6 +105,8 @@ This section documents the authentication and authorization features that are cu
   - `server/src/main/java/app/VBeta/application/AuthorizationService.java`
 - Content report and notification APIs:
   - `v-beta/src/api/reports.js`
+  - `v-beta/src/lib/reportQueue.js`
+  - `v-beta/src/app/reports/page.js`
   - `v-beta/src/api/notifications.js`
   - `v-beta/src/lib/notificationNavigation.js`
   - `v-beta/src/components/NotificationBell.js`

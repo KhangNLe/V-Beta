@@ -110,7 +110,7 @@ Related docs:
 
 ### G) Discussion Report UI (Problem Page)
 
-Status: Completed (frontend slice; admin queue/appeal UIs still future)
+Status: Completed (frontend slice; appeal UI still future)
 
 Highlights:
 
@@ -128,7 +128,7 @@ Related docs:
 
 ### H) Personal Notifications Inbox UI
 
-Status: Completed (frontend slice; `/reports` and `/appeals` landings are stubs)
+Status: Completed (frontend slice; `/appeals` landing is still a stub)
 
 Highlights:
 
@@ -143,6 +143,25 @@ Related docs:
 - `docs/features/authentication-and-roles.md`
 - `docs/architecture/frontend-architecture.md`
 - `docs/testing/manual-test-cases.md` (NOTIF-01)
+- `docs/api/endpoints.md`
+
+### I) Admin Report Queue UI
+
+Status: Completed (frontend slice)
+
+Highlights:
+
+- Admin-only `/reports` lists ranked OPEN cases from `GET /api/report/reports` (date, reporter, category, score). Non-admins are redirected.
+- Detail dialog shows wall section, problem, reported comment or beta preview/link, and each reporter reason.
+- **Dismiss** and **Approve deletion** require admin notes (max 255) and call `POST /api/moderate/report` with all OPEN `reportIds` on that case. The queue refreshes after success.
+- Discussion cases include problem/wall snapshots on `ReportDTO` for context links.
+- Navbar **Reports** link for admins. Covered by `reports-page.test.js`, `reports.test.js`, and `reportQueue.test.js`.
+
+Related docs:
+
+- `docs/features/authentication-and-roles.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/testing/manual-test-cases.md` (REPORT-01)
 - `docs/api/endpoints.md`
 
 ## Moved Out of Future Queue

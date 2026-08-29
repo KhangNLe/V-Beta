@@ -191,6 +191,21 @@ This document defines the manual regression checklist for validating core user f
   - read vs unread on `/notifications` uses unread ids from `/short` (`readAt` is not on the `/all` DTO)
   - report-queue event types go to `/reports`; appeal/deletion types go to `/appeals`
 
+### REPORT-01: Admin Report Queue and Resolve (UI)
+
+- Steps:
+  1. As a climber/setter, open `/reports` and confirm redirect to `/main-page`
+  2. As admin, open **Reports** and confirm ranked OPEN cases (date, reporter, category)
+  3. Open a discussion case and confirm wall section, problem, content preview, and reporter reason
+  4. Confirm **Dismiss** and **Approve deletion** are disabled with empty notes
+  5. Enter notes and Dismiss; confirm `POST /api/moderate/report` with `REPORT_DISMISSED` and the queue refreshes
+  6. Open another case, enter notes, Approve deletion; confirm `CONTENT_REMOVED` and the discussion is gone from the problem page
+- Expected:
+  - non-admin cannot use the page
+  - list order matches API `queueScore` (category weight × count)
+  - resolve requires notes (max 255) and sends all OPEN `reportIds` on that case
+  - errors surface as toasts; successful resolve removes the case from the list
+
 ### ACCOUNT-01: View Account Profile
 
 - Steps:

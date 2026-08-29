@@ -52,5 +52,16 @@ describe("RoleNavbar notifications entry", () => {
     });
     render(<RoleNavbar />);
     expect(screen.getByTestId("notification-bell")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Reports" })).not.toBeInTheDocument();
+  });
+
+  it("shows Reports for admins", () => {
+    useRequireAuth.mockReturnValue({
+      ready: true,
+      user: { uid: "firebase-uid" },
+      account: { id: 1, roleName: "ADMIN" },
+    });
+    render(<RoleNavbar />);
+    expect(screen.getByRole("link", { name: "Reports" })).toHaveAttribute("href", "/reports");
   });
 });
