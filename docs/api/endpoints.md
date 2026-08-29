@@ -362,7 +362,7 @@ There is no mark-all-read endpoint in this slice.
     - `400` when `offSetPlace` is `<= 0`
     - `401` when unauthenticated or the Firebase token is invalid
     - `404` when the account is missing, the caller lacks `VIEW_MODERATION_LOGS`, or `moderationId` does not exist (`Moderation not found`)
-  - Product note: no report-id or date filter in this slice. Appeal resolve writes `APPEAL_APPROVED` / `APPEAL_DENIED` rows here.
+  - Product note: no report-id or date filter in this slice. Appeal resolve writes `APPEAL_APPROVED` / `APPEAL_DENIED` rows here. Sprint 5 UI is admin-only `/logbook` (paged list, read-only detail, `.txt` download).
 
 - `POST /api/moderate/appeal`
   - Authenticated only (not action-gated)

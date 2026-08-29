@@ -206,6 +206,19 @@ This document defines the manual regression checklist for validating core user f
   - resolve requires notes (max 255) and sends all OPEN `reportIds` on that case
   - errors surface as toasts; successful resolve removes the case from the list
 
+### LOGBOOK-01: Admin Moderation Logbook (UI)
+
+- Steps:
+  1. As a climber/setter, open `/logbook` and confirm redirect to `/main-page`
+  2. As admin, open **Logbook** and confirm newest-first rows (decision, actor, time, report id, notes)
+  3. Open a row and confirm read-only detail (no dismiss/remove). Follow the report link when present
+  4. Click **Download .txt** and confirm a text file with those decisions
+- Expected:
+  - non-admin cannot use the page
+  - entries include `REPORT_DISMISSED`, `CONTENT_REMOVED`, `APPEAL_APPROVED`, and `APPEAL_DENIED` when those rows exist
+  - logbook cannot be edited
+  - empty logbook shows “No logbook entries.”
+
 ### ACCOUNT-01: View Account Profile
 
 - Steps:

@@ -164,6 +164,25 @@ Related docs:
 - `docs/testing/manual-test-cases.md` (REPORT-01)
 - `docs/api/endpoints.md`
 
+### J) Admin Moderation Logbook UI
+
+Status: Completed (frontend slice)
+
+Highlights:
+
+- Admin-only `/logbook` pages `GET /api/moderate/logbook` (25 rows, newest first). Non-admins are redirected.
+- Each row shows decision, actor, time, report id, and notes. Detail is read-only (no dismiss/remove).
+- Links to `/reports?reportId=` (dismiss/remove) or `/appeals?reportId=` (appeal decisions) when a report id exists; problem-page link when wall/problem snapshots are present.
+- **Download .txt** walks all pages and saves an append-only dump. Navbar **Logbook** for admins.
+- Covered by `logbook-page.test.js`, `moderation.test.js`, and `moderationLogbook.test.js`.
+
+Related docs:
+
+- `docs/features/authentication-and-roles.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/testing/manual-test-cases.md` (LOGBOOK-01)
+- `docs/api/endpoints.md`
+
 ## Moved Out of Future Queue
 
 The following future backlog topics were completed and removed from `future-features.md`:
