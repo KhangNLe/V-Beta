@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.*;
  * {@link app.VBeta.domain.model.actions.ActionDefinition#MODERATE_REPORT}.
  * Logbook reads are action-gated with
  * {@link app.VBeta.domain.model.actions.ActionDefinition#VIEW_MODERATION_LOGS}.
- * Appeal create is authenticated only. Appeal queue and detail are action-gated
+ * Appeal create is authenticated only. Owner deletion notice is authenticated
+ * only ({@code GET /api/moderate/appeal/notice}). Appeal queue and detail are action-gated
  * with {@link app.VBeta.domain.model.actions.ActionDefinition#VIEW_APPEALS}.
  * Appeal resolve is action-gated with
  * {@link app.VBeta.domain.model.actions.ActionDefinition#MODERATE_APPEAL}.
@@ -122,6 +123,28 @@ public class ModerationController {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
             appealService.createAppeal(appealRequest, firebaseUid);
             return new ResponseEntity<>(HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Returns the owner deletion notice for one report.
+     * <p>
+     * Authenticated only. The caller must own the removed discussion.
+     * {@code RuntimeException} is mapped to {@code 404}.
+     *
+     * @param reportId report named in {@code /appeals?reportId=}
+     * @return {@link OwnerDeletionNoticeDTO}
+     */
+    @GetMapping("/appeal/notice")
+    public ResponseEntity<?> getOwnerDeletionNotice(@RequestParam Long reportId) {
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            OwnerDeletionNoticeDTO notice = appealService.getOwnerDeletionNotice(reportId, firebaseUid);
+            return new ResponseEntity<>(notice, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {

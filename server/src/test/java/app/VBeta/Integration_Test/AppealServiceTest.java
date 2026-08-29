@@ -5,6 +5,7 @@ import app.VBeta.api.dto.moderation.AppealPayload;
 import app.VBeta.api.dto.moderation.AppealRequest;
 import app.VBeta.api.dto.moderation.ModerateAppealRequest;
 import app.VBeta.api.dto.moderation.ModerationRequest;
+import app.VBeta.api.dto.moderation.OwnerDeletionNoticeDTO;
 import app.VBeta.api.dto.report.ReportRequest;
 import app.VBeta.application.AppealService;
 import app.VBeta.application.ModerationService;
@@ -192,6 +193,35 @@ public class AppealServiceTest {
         assertEquals(APPEAL_REASON, appeal.appealReason());
         assertEquals(owner.getId(), appeal.appealUser().userId());
         assertEquals(1, countEvents(getUserAccount(ADMIN_UID), EventTypeName.APPEAL_SUBMITTED));
+    }
+
+    @Test
+    @DisplayName("Owner deletion notice shows admin reason and blocks a second appeal")
+    void ownerDeletionNoticeShowsReasonAndCanAppealOnce() {
+        UserAccount owner = createClimber("owner-" + UUID.randomUUID());
+        UserAccount other = createClimber("other-" + UUID.randomUUID());
+        Report removed = createRemovedReport(owner, getUserAccount(CLIMBER_UID));
+
+        OwnerDeletionNoticeDTO notice = appealService.getOwnerDeletionNotice(
+                removed.getReportId(), owner.getFirebaseUid());
+        assertEquals(removed.getReportId(), notice.reportId());
+        assertEquals(ReportStatus.CONTENT_REMOVED, notice.reportStatus());
+        assertEquals("Content does not make any sense.", notice.adminReason());
+        assertTrue(notice.canAppeal());
+        assertNull(notice.appealStatus());
+        assertNotNull(notice.report().discussion());
+        assertEquals(DiscussionType.COMMENT, notice.report().discussion().discussionType());
+
+        RuntimeException otherViewer = assertThrows(RuntimeException.class,
+                () -> appealService.getOwnerDeletionNotice(removed.getReportId(), other.getFirebaseUid()));
+        assertEquals("Appeal is not allowed", otherViewer.getMessage());
+
+        appealService.createAppeal(new AppealRequest(removed.getReportId(), APPEAL_REASON), owner.getFirebaseUid());
+        OwnerDeletionNoticeDTO afterSubmit = appealService.getOwnerDeletionNotice(
+                removed.getReportId(), owner.getFirebaseUid());
+        assertFalse(afterSubmit.canAppeal());
+        assertEquals(AppealStatus.OPEN, afterSubmit.appealStatus());
+        assertEquals(ReportStatus.APPEAL_PENDING, afterSubmit.reportStatus());
     }
 
     @Test

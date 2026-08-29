@@ -9,6 +9,7 @@ import app.VBeta.api.dto.moderation.ModerateAppealRequest;
 import app.VBeta.api.dto.moderation.ModerationDTO;
 import app.VBeta.api.dto.moderation.ModerationPayload;
 import app.VBeta.api.dto.moderation.ModerationRequest;
+import app.VBeta.api.dto.moderation.OwnerDeletionNoticeDTO;
 import app.VBeta.api.dto.report.ReportDTO;
 import app.VBeta.api.dto.report.ReportUserDTO;
 import app.VBeta.application.AppealService;
@@ -19,6 +20,7 @@ import app.VBeta.domain.model.appeal.AppealStatus;
 import app.VBeta.domain.model.discussions.DiscussionType;
 import app.VBeta.domain.model.moderation.ModerateActionType;
 import app.VBeta.domain.model.report.ReportCategoryName;
+import app.VBeta.domain.model.report.ReportStatus;
 import app.VBeta.domain.model.report.ReportTargetType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -364,6 +366,28 @@ public class ModerationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /api/moderate/appeal/notice returns the owner deletion notice")
+    void returns200_whenOwnerRequestsDeletionNotice() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        when(appealService.getOwnerDeletionNotice(11L, "testFirebaseUid")).thenReturn(
+                new OwnerDeletionNoticeDTO(
+                        11L,
+                        ReportStatus.CONTENT_REMOVED,
+                        "Does not belong on this wall.",
+                        sampleAppealPayload().appeals().get(0).report(),
+                        null,
+                        true
+                )
+        );
+
+        mockMvc.perform(get("/api/moderate/appeal/notice").param("reportId", "11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reportId").value(11))
+                .andExpect(jsonPath("$.adminReason").value("Does not belong on this wall."))
+                .andExpect(jsonPath("$.canAppeal").value(true));
     }
 
     @Test

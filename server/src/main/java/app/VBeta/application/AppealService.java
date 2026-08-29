@@ -4,6 +4,9 @@ import app.VBeta.api.dto.moderation.AppealDTO;
 import app.VBeta.api.dto.moderation.AppealPayload;
 import app.VBeta.api.dto.moderation.AppealRequest;
 import app.VBeta.api.dto.moderation.ModerateAppealRequest;
+import app.VBeta.api.dto.moderation.OwnerDeletionNoticeDTO;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
+import app.VBeta.api.dto.report.ReportDTO;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.moderation.AppealManager;
@@ -12,6 +15,7 @@ import app.VBeta.application.support.report.ReportManager;
 import app.VBeta.domain.model.actions.ActionDefinition;
 import app.VBeta.domain.model.appeal.Appeal;
 import app.VBeta.domain.model.appeal.AppealStatus;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.moderation.ModerateActionType;
 import app.VBeta.domain.model.moderation.ModerationAction;
 import app.VBeta.domain.model.notification.EventTypeName;
@@ -105,6 +109,39 @@ public class AppealService {
         report.setReportStatus(ReportStatus.APPEAL_PENDING);
         reportManager.save(report);
         notificationService.saveAppealSubmittedNotification(report, appealUser);
+    }
+
+    /**
+     * Returns the owner deletion notice for one report.
+     * <p>
+     * Authenticated only. The caller must own the reported discussion and the
+     * report must be a removal/appeal outcome ({@code CONTENT_REMOVED},
+     * {@code APPEAL_PENDING}, {@code CONTENT_RESTORED}, or {@code APPEAL_DENIED}).
+     *
+     * @param reportId report named in {@code /appeals?reportId=}
+     * @param firebaseUid Firebase UID of the content owner
+     * @return admin removal notes, content snapshot, and whether an appeal is still allowed
+     * @throws RuntimeException when the account is missing or the report is ineligible
+     */
+    public OwnerDeletionNoticeDTO getOwnerDeletionNotice(Long reportId, String firebaseUid) {
+        UserAccount caller = userAccountManager.findUserAccount(firebaseUid);
+        if (caller == null) {
+            throw new RuntimeException("User not found");
+        }
+        Report report = reportManager.findById(reportId);
+        if (!isOwnerDeletionNoticeVisible(report, caller)) {
+            throw new RuntimeException("Appeal is not allowed");
+        }
+        Appeal appeal = appealManager.findByReport(report).orElse(null);
+        boolean canAppeal = report.getReportStatus() == ReportStatus.CONTENT_REMOVED && appeal == null;
+        return new OwnerDeletionNoticeDTO(
+                report.getReportId(),
+                report.getReportStatus(),
+                removalAdminReason(report),
+                withDiscussionFallback(reportService.toReportDTO(List.of(report)), report),
+                appeal == null ? null : appeal.getAppealStatus(),
+                canAppeal
+        );
     }
 
     /**
@@ -244,6 +281,68 @@ public class AppealService {
                 || !report.getDiscussion().getUserAccount().getId().equals(appealUser.getId())) {
             throw new RuntimeException("Appeal is not allowed");
         }
+    }
+
+    /**
+     * Owner notice is visible for removal and later appeal outcomes on a
+     * discussion the caller owns.
+     */
+    private boolean isOwnerDeletionNoticeVisible(Report report, UserAccount caller) {
+        if (report.getTargetType() != ReportTargetType.DISCUSSION
+                || report.getDiscussion() == null
+                || report.getDiscussion().getUserAccount() == null
+                || !report.getDiscussion().getUserAccount().getId().equals(caller.getId())) {
+            return false;
+        }
+        ReportStatus status = report.getReportStatus();
+        return status == ReportStatus.CONTENT_REMOVED
+                || status == ReportStatus.APPEAL_PENDING
+                || status == ReportStatus.CONTENT_RESTORED
+                || status == ReportStatus.APPEAL_DENIED;
+    }
+
+    /**
+     * Prefers {@code CONTENT_REMOVED} logbook notes, then the discussion
+     * {@code deletedReason}.
+     */
+    private String removalAdminReason(Report report) {
+        return moderationManager.findByReport(report).stream()
+                .filter(action -> action.getModerateActionType() == ModerateActionType.CONTENT_REMOVED)
+                .map(ModerationAction::getAdminNotes)
+                .filter(notes -> notes != null && !notes.isBlank())
+                .findFirst()
+                .orElseGet(() -> {
+                    String deletedReason = report.getDiscussion().getDeletedReason();
+                    return deletedReason == null ? "" : deletedReason;
+                });
+    }
+
+    /**
+     * Soft-deleted discussions can omit the comment/beta child in
+     * {@link ReportService#toReportDTO}; still expose type/id for the owner page.
+     */
+    private ReportDTO withDiscussionFallback(ReportDTO snapshot, Report report) {
+        if (snapshot.discussion() != null || report.getDiscussion() == null) {
+            return snapshot;
+        }
+        DiscussionRoot root = report.getDiscussion();
+        UserDiscussionData fallback = new UserDiscussionData(
+                root.getDiscussionId(),
+                root.getUserAccount() == null ? null : root.getUserAccount().getId(),
+                root.getUserAccount() == null ? null : root.getUserAccount().getUsername(),
+                null,
+                root.getDiscussionType(),
+                "",
+                root.getCreatedAt()
+        );
+        return new ReportDTO(
+                snapshot.targetType(),
+                fallback,
+                snapshot.climbingProblem(),
+                snapshot.wallSection(),
+                snapshot.user(),
+                snapshot.reporters()
+        );
     }
 
     /**
