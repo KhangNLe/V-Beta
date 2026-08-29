@@ -108,6 +108,8 @@ After the Docker test DB is already up, `./mvnw test` uses it by default. To res
 ./mvnw test
 ```
 
+`./scripts/reset-test-db.sh` also defaults to `127.0.0.1:55432` as user `postgres` (not `SQL_*` / `DB_PORT` from `.env`). CI overrides `TEST_DB_PORT=5432`.
+
 ## Build a Runnable JAR
 
 ```bash

@@ -978,15 +978,24 @@ public class ModerationReportTest {
             case DISCUSSION -> {
                 assertNotNull(reportDTO.discussion());
                 assertEquals(report.getDiscussion().getDiscussionId(), reportDTO.discussion().discussionId());
-                assertNull(reportDTO.climbingProblem());
-                assertNull(reportDTO.wallSection());
+                ClimbingProblem problem = report.getDiscussion().getProblem();
+                assertNotNull(problem);
+                assertNotNull(reportDTO.climbingProblem());
+                assertEquals(problem.getId(), reportDTO.climbingProblem().problemId());
+                WallSection wall = problem.getWallSection();
+                assertNotNull(wall);
+                assertNotNull(reportDTO.wallSection());
+                assertEquals(wall.getId(), reportDTO.wallSection().wallSectionID());
                 assertNull(reportDTO.user());
             }
             case CLIMBING_PROBLEM -> {
                 assertNotNull(reportDTO.climbingProblem());
                 assertEquals(report.getProblem().getId(), reportDTO.climbingProblem().problemId());
+                WallSection wall = report.getProblem().getWallSection();
+                assertNotNull(wall);
+                assertNotNull(reportDTO.wallSection());
+                assertEquals(wall.getId(), reportDTO.wallSection().wallSectionID());
                 assertNull(reportDTO.discussion());
-                assertNull(reportDTO.wallSection());
                 assertNull(reportDTO.user());
             }
             case WALL_SECTION -> {
