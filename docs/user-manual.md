@@ -60,7 +60,7 @@ Climber users can participate in problem discussion and feedback.
 2. Open the bell to list unread items (`GET /api/notification/short`).
 3. Choose **Show all notifications** (or open `/notifications`).
 4. Confirm the page lists read and unread history (`GET /api/notification/all`, 10 per page). Use **Next** / **Previous** when there are more than 10 rows.
-5. Open an item. It is marked read (`PATCH /api/notification/short?notificationId=`) and you land on `/reports?reportId=` or `/appeals?reportId=` depending on the event type.
+5. Open an item. It is marked read (`PATCH /api/notification/short?notificationId=`) and you land on `/reports?reportId=`, `/appeals?reportId=`, or `/appeal-queue?reportId=` depending on the event type.
 
 ### C) Submit a Beta Video
 1. On a problem page, choose beta upload flow.
@@ -110,6 +110,17 @@ Setter and Admin users can perform route-setting and management operations.
 2. Confirm newest-first rows with decision, admin, time, and notes.
 3. Open a row. Confirm it is read-only and the report link is present when a report id exists.
 4. Download `.txt` and confirm the file lists those decisions.
+
+### E) Owner Appeal After Removal
+1. After an admin removes your comment or beta, open the **Content removed** notification.
+2. On `/appeals?reportId=`, read the admin reason, removed content, report category, and report reason. Reporter names are not shown.
+3. Submit one appeal. The form should close. Reloading should not offer a second submit.
+
+### F) Admin Appeal Queue (Admin)
+1. After an owner submits an appeal, open the **Appeal submitted** notification.
+2. Land on `/appeal-queue?reportId=`. Confirm the owner’s appeal reason and the reported content. Reporter identity may be shown here.
+3. Enter admin comments, then **Approve** (restore) or **Deny** (keep removed). The queue should refresh.
+4. Open **Appeals** in the navbar. Climbers/setters should be redirected to `/main-page`.
 
 ## 5) Account Page Actions
 

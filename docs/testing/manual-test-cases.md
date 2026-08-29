@@ -182,14 +182,14 @@ This document defines the manual regression checklist for validating core user f
   3. Open the bell and confirm unread items come from `GET /api/notification/short`
   4. Choose **Show all notifications** and confirm `/notifications` loads `GET /api/notification/all?offset=1`
   5. When there are more than 10 rows, click **Next** and confirm `offset=2`; **Previous** returns to page 1
-  6. Open an unread row and confirm `PATCH /api/notification/short?notificationId=` then navigation to `/reports?reportId=` or `/appeals?reportId=`
+  6. Open an unread row and confirm `PATCH /api/notification/short?notificationId=` then navigation to `/reports?reportId=`, `/appeals?reportId=`, or `/appeal-queue?reportId=`
   7. Return to `/notifications` and confirm that row no longer looks unread
 - Expected:
   - guests cannot open the inbox
   - signed-in users can poll unread, page the full inbox, and mark one row read
   - all-inbox page size is 10; `offset` is 1-based
   - read vs unread on `/notifications` uses unread ids from `/short` (`readAt` is not on the `/all` DTO)
-  - report-queue event types go to `/reports`; appeal/deletion types go to `/appeals`
+  - report-queue event types go to `/reports`; owner deletion/appeal types go to `/appeals`; admin `APPEAL_SUBMITTED` goes to `/appeal-queue`
 
 ### REPORT-01: Admin Report Queue and Resolve (UI)
 
@@ -218,6 +218,35 @@ This document defines the manual regression checklist for validating core user f
   - entries include `REPORT_DISMISSED`, `CONTENT_REMOVED`, `APPEAL_APPROVED`, and `APPEAL_DENIED` when those rows exist
   - logbook cannot be edited
   - empty logbook shows “No logbook entries.”
+
+### APPEAL-01: Owner Deletion Notice and One-Time Appeal (UI)
+
+- Steps:
+  1. As owner, open a `CONTENT_REMOVED` notification and land on `/appeals?reportId=`
+  2. Confirm admin reason, removed content summary, report category, and report reason (no reporter identity)
+  3. Submit an appeal reason (max 250) and confirm the form closes / status is pending
+  4. Reload and confirm the form stays closed (second submit blocked)
+  5. After admin deny/approve, confirm status text (denied stays removed / approved restored)
+- Expected:
+  - owner can view the deletion reason, report category, and report reason
+  - reporter identity is not shown
+  - only one appeal is submittable
+  - `POST /api/moderate/appeal` is called once
+  - non-owners see an error, not the form
+
+### APPEAL-02: Admin Appeal Queue (UI)
+
+- Steps:
+  1. As admin, open an `APPEAL_SUBMITTED` notification and land on `/appeal-queue?reportId=`
+  2. Confirm `AppealDTO` fields: appellant, appeal reason, removed content, reporter category/reason
+  3. Confirm Approve/Deny stay disabled until admin comments are entered
+  4. Approve or deny with comments and confirm `PATCH /api/moderate/appeal` (`appealId`, `appealStatus`, `adminReason`)
+  5. Open **Appeals** in the navbar and confirm the OPEN list
+  6. As climber, open `/appeal-queue` and confirm redirect to `/main-page`
+- Expected:
+  - admin does not land on `/appeals` and does not see “Appeal is not allowed”
+  - `GET /api/moderate/appeal` is used, not `/appeal/notice`
+  - notes are required (max 255); `APPROVED` restores, `DENIED` keeps the content removed
 
 ### ACCOUNT-01: View Account Profile
 

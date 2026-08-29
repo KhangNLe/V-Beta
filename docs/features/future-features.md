@@ -76,8 +76,8 @@ This document tracks ideas that are not fully implemented in the current release
 - **Effort:** Medium
 - **Area:** Trust and Safety
 - **Target sprint:** Sprint 5 (in progress)
-- **Current Gap:** Problem-page Report (⋮ menu + category/reason dialog → `POST /api/report/create`) is shipped for comments and betas. Backend create-report, admin queue/detail/resolve, unread inbox poll (`GET /api/notification/short`), paged all-inbox (`GET /api/notification/all`), mark-read (`PATCH /api/notification/short`), owner appeal create, admin appeal queue/detail, and appeal approve/deny restore are implemented. Frontend notification bell + `/notifications` page (paged `GET /all`), admin `/reports` queue/detail/resolve UI, and admin `/logbook` (read-only + `.txt` download) are shipped. Appeal/restore UI is not.
-- **Potential Work:** Owner appeal UI (submit + admin approve/deny restore).
+- **Current Gap:** Problem-page Report, admin `/reports`, admin `/logbook`, owner `/appeals?reportId=` (one-time appeal), admin `/appeal-queue` (view + approve/deny), and the notification inbox are shipped.
+- **Potential Work:** none remaining for this topic.
 - **Dependencies:** Report data model, report API endpoints, moderation/admin handling flow.
 
 ### 7) Images for Wall Sections and Climbing Problems

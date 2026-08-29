@@ -29,9 +29,9 @@ Deliver an end-to-end moderation loop: signed users report comments and solution
 - Admin report queue/detail (ranked by category priority, then datetime) — **frontend shipped** (`/reports`)
 - Admin resolve actions: approve deletion or dismiss (required admin notes → logbook) — **frontend shipped**
 - In-app notifications (new report for admins; outcome notifications for reporter/owner)
-- Personal notifications page (navbar bell + `/notifications` paged `GET /all`) — **frontend shipped**; `/appeals` landing is a stub
+- Personal notifications page (navbar bell + `/notifications` paged `GET /all`) — **frontend shipped**
 - Moderation logbook UI/API — **frontend shipped** (`/logbook`)
-- One-time appeal + admin-approved restore of soft-deleted discussion content (comment/beta delete already marks `Discussion_Root`; restore/purge still open)
+- One-time appeal + admin-approved restore of soft-deleted discussion content — **owner appeal UI shipped** (`/appeals?reportId=`); **admin queue + approve/deny shipped** (`/appeal-queue`)
 - Report action in discussion ⋮ menu (alongside owner/admin delete) — **frontend shipped**
 
 ### Category priority (queue ranking)

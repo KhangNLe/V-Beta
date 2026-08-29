@@ -25,6 +25,8 @@ Use this together with:
 | Notifications Inbox | navbar bell unread poll, `/notifications` paged `GET /all`, mark-read + deep-link | NOTIF-01 | High |
 | Admin Report Queue | admin-only `/reports`, ranked list, detail + required notes, dismiss/remove | REPORT-01 | High |
 | Admin Moderation Logbook | admin-only `/logbook`, paged list, read-only detail, `.txt` download | LOGBOOK-01 | High |
+| Owner Appeal | `/appeals?reportId=`, deletion reason, one-time form | APPEAL-01 | High |
+| Admin Appeal Queue | admin-only `/appeal-queue`, `AppealDTO` list/detail, required comments, approve/deny | APPEAL-02 | High |
 | API Reliability | health/meta, unauthorized/invalid token behavior | API-01, API-02 | Medium |
 | Theming and UX Stability | critical page render in light/dark mode, key nav interactions | visual sanity pass during smoke | Medium |
 
@@ -53,6 +55,10 @@ When code changes in these areas, minimum regression scope should include:
   - Re-run REPORT-01 and `reports-page.test.js`.
 - **Admin logbook changed** (`src/api/moderation.js`, `/logbook`, `moderationLogbook.js`):
   - Re-run LOGBOOK-01 and `logbook-page.test.js`.
+- **Owner appeal changed** (`src/api/appeals.js`, `/appeals`, `ownerAppeal.js`):
+  - Re-run APPEAL-01 and `appeals-page.test.js`.
+- **Admin appeal queue changed** (`src/api/appeals.js`, `/appeal-queue`, `appealQueue.js`):
+  - Re-run APPEAL-02 and `appeal-queue-page.test.js`.
 - **Routing/navigation/layout changed**:
   - Re-run guest browse + account/wall/problem entry points.
 

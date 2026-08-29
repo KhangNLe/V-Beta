@@ -83,7 +83,7 @@ Clients should not hardcode one exact JSON shape for all non-auth errors.
 
 `POST /api/report/create`, `GET /api/notification/short`, `GET /api/notification/all`, and `PATCH /api/notification/short` are authenticated, not action-gated. Missing bearer tokens are rejected by Spring Security (`401`). Invalid/expired tokens still use the filter payload above.
 
-`GET /api/report/reports` is action-gated (`VIEW_REPORTS`). `POST /api/moderate/report` is action-gated (`MODERATE_REPORT`). `GET /api/moderate/logbook` is action-gated (`VIEW_MODERATION_LOGS`). `GET /api/moderate/appeal` is action-gated (`VIEW_APPEALS`). `PATCH /api/moderate/appeal` is action-gated (`MODERATE_APPEAL`). `POST /api/moderate/appeal` is authenticated only. Guest callers are `401`. Climber/setter and other authorization failures currently map to **404**.
+`GET /api/report/reports` is action-gated (`VIEW_REPORTS`). `POST /api/moderate/report` is action-gated (`MODERATE_REPORT`). `GET /api/moderate/logbook` is action-gated (`VIEW_MODERATION_LOGS`). `GET /api/moderate/appeal` is action-gated (`VIEW_APPEALS`). `PATCH /api/moderate/appeal` is action-gated (`MODERATE_APPEAL`). `POST /api/moderate/appeal` and `GET /api/moderate/appeal/notice` are authenticated only. Guest callers are `401`. Climber/setter and other authorization failures currently map to **404**.
 
 Create-report domain errors:
 
@@ -113,9 +113,14 @@ Owner appeal create errors (`POST /api/moderate/appeal`):
 - `404` — missing account, ineligible report (`Appeal is not allowed`), or duplicate appeal (`Appeal already exists`)
 - `201` with empty body — success
 
+Owner deletion notice errors (`GET /api/moderate/appeal/notice`):
+
+- `404` — missing account, or ineligible/missing report (`Appeal is not allowed` / `Report not found`)
+- `200` — owner notice (admin reason, content snapshot, `canAppeal`, nested `AppealDTO` when an appeal exists). Admins should use `GET /api/moderate/appeal`.
+
 Admin appeal queue/detail errors (`GET /api/moderate/appeal`):
 
-- `404` — missing account, missing `VIEW_APPEALS`, or unknown / hidden `appealId` (`Appeal not found`)
+- `404` — missing account, missing `VIEW_APPEALS`, or unknown / hidden `appealId` / `reportId` (`Appeal not found`)
 - `200` with `"appeals": []` — no OPEN appeals, or every OPEN appeal was filed by the viewing admin
 
 Admin appeal resolve errors (`PATCH /api/moderate/appeal`):
