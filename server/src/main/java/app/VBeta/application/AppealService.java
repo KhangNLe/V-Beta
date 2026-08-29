@@ -7,6 +7,7 @@ import app.VBeta.api.dto.moderation.ModerateAppealRequest;
 import app.VBeta.api.dto.moderation.OwnerDeletionNoticeDTO;
 import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.api.dto.report.ReportDTO;
+import app.VBeta.api.dto.report.ReportUserDTO;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.moderation.AppealManager;
@@ -120,7 +121,7 @@ public class AppealService {
      *
      * @param reportId report named in {@code /appeals?reportId=}
      * @param firebaseUid Firebase UID of the content owner
-     * @return admin removal notes, content snapshot, and whether an appeal is still allowed
+     * @return admin removal notes, content snapshot (category/reason, no reporter identity), and whether an appeal is still allowed
      * @throws RuntimeException when the account is missing or the report is ineligible
      */
     public OwnerDeletionNoticeDTO getOwnerDeletionNotice(Long reportId, String firebaseUid) {
@@ -138,7 +139,7 @@ public class AppealService {
                 report.getReportId(),
                 report.getReportStatus(),
                 removalAdminReason(report),
-                withDiscussionFallback(reportService.toReportDTO(List.of(report)), report),
+                toOwnerReportSnapshot(report),
                 appeal == null ? null : appeal.getAppealStatus(),
                 canAppeal
         );
@@ -318,6 +319,14 @@ public class AppealService {
     }
 
     /**
+     * Owner snapshot: content summary plus category/reason, without reporter identity.
+     */
+    private ReportDTO toOwnerReportSnapshot(Report report) {
+        return withoutReporterIdentities(
+                withDiscussionFallback(reportService.toReportDTO(List.of(report)), report));
+    }
+
+    /**
      * Soft-deleted discussions can omit the comment/beta child in
      * {@link ReportService#toReportDTO}; still expose type/id for the owner page.
      */
@@ -342,6 +351,30 @@ public class AppealService {
                 snapshot.wallSection(),
                 snapshot.user(),
                 snapshot.reporters()
+        );
+    }
+
+    /**
+     * Keeps category and reason on {@code reporters} but drops the reporter account.
+     */
+    private ReportDTO withoutReporterIdentities(ReportDTO snapshot) {
+        List<ReportUserDTO> flags = snapshot.reporters() == null
+                ? List.of()
+                : snapshot.reporters().stream()
+                        .map((row) -> new ReportUserDTO(
+                                row.reportId(),
+                                null,
+                                row.categoryName(),
+                                row.reportReason(),
+                                row.createdAt()))
+                        .toList();
+        return new ReportDTO(
+                snapshot.targetType(),
+                snapshot.discussion(),
+                snapshot.climbingProblem(),
+                snapshot.wallSection(),
+                snapshot.user(),
+                flags
         );
     }
 

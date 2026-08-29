@@ -211,6 +211,10 @@ public class AppealServiceTest {
         assertNull(notice.appealStatus());
         assertNotNull(notice.report().discussion());
         assertEquals(DiscussionType.COMMENT, notice.report().discussion().discussionType());
+        assertEquals(1, notice.report().reporters().size());
+        assertNull(notice.report().reporters().get(0).reporter());
+        assertEquals(ReportCategoryName.SPAM, notice.report().reporters().get(0).categoryName());
+        assertEquals("Spammy", notice.report().reporters().get(0).reportReason());
 
         RuntimeException otherViewer = assertThrows(RuntimeException.class,
                 () -> appealService.getOwnerDeletionNotice(removed.getReportId(), other.getFirebaseUid()));

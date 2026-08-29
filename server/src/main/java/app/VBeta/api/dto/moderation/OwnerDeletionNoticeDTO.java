@@ -12,7 +12,7 @@ import app.VBeta.domain.model.report.ReportStatus;
  * @param reportId report named in the notification deep-link
  * @param reportStatus current report status
  * @param adminReason notes from the {@code CONTENT_REMOVED} logbook row
- * @param report discussion/problem/wall snapshot for the content summary
+ * @param report discussion/problem/wall snapshot plus category/reason; {@code reporters[].reporter} is omitted
  * @param appealStatus existing appeal status, or {@code null} when none
  * @param canAppeal {@code true} when the owner may still submit one appeal
  */

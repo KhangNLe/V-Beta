@@ -320,6 +320,25 @@ public class ModerationControllerTest {
         return new AppealPayload(List.of(sampleAppealDTO()));
     }
 
+    private ReportDTO sampleOwnerNoticeReport() {
+        ReportDTO source = sampleAppealDTO().report();
+        ReportUserDTO flag = source.reporters().get(0);
+        return new ReportDTO(
+                source.targetType(),
+                source.discussion(),
+                source.climbingProblem(),
+                source.wallSection(),
+                source.user(),
+                List.of(new ReportUserDTO(
+                        flag.reportId(),
+                        null,
+                        flag.categoryName(),
+                        flag.reportReason(),
+                        flag.createdAt()
+                ))
+        );
+    }
+
     @Test
     @DisplayName("POST /api/moderate/appeal returns 201 after owner submits an appeal")
     void returns201_whenAuthenticatedOwnerCreatesAppeal() throws Exception {
@@ -377,7 +396,7 @@ public class ModerationControllerTest {
                         11L,
                         ReportStatus.CONTENT_REMOVED,
                         "Does not belong on this wall.",
-                        sampleAppealPayload().appeals().get(0).report(),
+                        sampleOwnerNoticeReport(),
                         null,
                         true
                 )
@@ -387,7 +406,10 @@ public class ModerationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reportId").value(11))
                 .andExpect(jsonPath("$.adminReason").value("Does not belong on this wall."))
-                .andExpect(jsonPath("$.canAppeal").value(true));
+                .andExpect(jsonPath("$.canAppeal").value(true))
+                .andExpect(jsonPath("$.report.reporters[0].categoryName").value("SPAM"))
+                .andExpect(jsonPath("$.report.reporters[0].reportReason").value("It's spammy"))
+                .andExpect(jsonPath("$.report.reporters[0].reporter").value(org.hamcrest.Matchers.nullValue()));
     }
 
     @Test
