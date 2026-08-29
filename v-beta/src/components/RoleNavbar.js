@@ -74,6 +74,7 @@ export default function RoleNavbar() {
       return [
         { href: "/accounts", label: "All Accounts" },
         { href: "/reports", label: "Reports" },
+        { href: "/logbook", label: "Logbook" },
         { href: "/account", label: "Account" },
         { href: "/main-page", label: "Gym" },
       ];

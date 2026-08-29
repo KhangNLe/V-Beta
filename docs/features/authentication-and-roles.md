@@ -15,6 +15,7 @@ This section documents the authentication and authorization features that are cu
 - Admin account-management capabilities (view accounts, promote/demote roles)
 - Signed-in notification bell (unread poll) and `/notifications` all-inbox page (paged `GET /all`)
 - Admin report queue at `/reports` (ranked list, detail dialog, dismiss / remove with notes)
+- Admin moderation logbook at `/logbook` (paged list, read-only detail, `.txt` download)
 
 ## User Flows
 
@@ -79,7 +80,7 @@ This section documents the authentication and authorization features that are cu
 - Create report: `POST /api/report/create` (authenticated; not action-gated; no `CREATE_REPORT`; success `200`). The problem-page ⋮ menu is the Sprint 5 UI for this (comments and betas; category + reason required, max 250). Owners cannot report their own discussion.
 - Admin queue/detail: `GET /api/report/reports` (action-gated `VIEW_REPORTS`; admin only). Optional `reportId` returns one OPEN case. The `/reports` page lists ranked cases and opens detail (wall/problem/content, reporters, required notes).
 - Admin resolve: `POST /api/moderate/report` (action-gated `MODERATE_REPORT`; admin only). Dismiss (`REPORT_DISMISSED`) or remove (`CONTENT_REMOVED`) discussion reports; notes required (max 255). Appeals are not accepted here.
-- Admin logbook: `GET /api/moderate/logbook` (action-gated `VIEW_MODERATION_LOGS`; admin only). Optional `moderationId` returns one row; `offSetPlace` pages 25 newest-first.
+- Admin logbook: `GET /api/moderate/logbook` (action-gated `VIEW_MODERATION_LOGS`; admin only). Optional `moderationId` returns one row; `offSetPlace` pages 25 newest-first. The `/logbook` page lists those rows (read-only) and can download all pages as `.txt`.
 - Owner appeal create: `POST /api/moderate/appeal` (authenticated; not action-gated). One appeal per `CONTENT_REMOVED` discussion report owned by the caller.
 - Admin appeal queue/detail: `GET /api/moderate/appeal` (action-gated `VIEW_APPEALS`; admin only). Optional `appealId` returns one row (any status). Appeals filed by the viewing admin are hidden.
 - Admin appeal resolve: `PATCH /api/moderate/appeal` (action-gated `MODERATE_APPEAL`; admin only). `APPROVED` restores the discussion; `DENIED` keeps it removed. Both write a logbook row and notify the owner.
@@ -107,6 +108,9 @@ This section documents the authentication and authorization features that are cu
   - `v-beta/src/api/reports.js`
   - `v-beta/src/lib/reportQueue.js`
   - `v-beta/src/app/reports/page.js`
+  - `v-beta/src/api/moderation.js`
+  - `v-beta/src/lib/moderationLogbook.js`
+  - `v-beta/src/app/logbook/page.js`
   - `v-beta/src/api/notifications.js`
   - `v-beta/src/lib/notificationNavigation.js`
   - `v-beta/src/components/NotificationBell.js`

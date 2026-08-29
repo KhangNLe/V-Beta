@@ -63,5 +63,19 @@ describe("RoleNavbar notifications entry", () => {
     });
     render(<RoleNavbar />);
     expect(screen.getByRole("link", { name: "Reports" })).toHaveAttribute("href", "/reports");
+    expect(screen.getByRole("link", { name: "Logbook" })).toHaveAttribute(
+      "href",
+      "/logbook",
+    );
+  });
+
+  it("hides Logbook for climbers", () => {
+    useRequireAuth.mockReturnValue({
+      ready: true,
+      user: { uid: "firebase-uid" },
+      account: { id: 5, roleName: "CLIMBER" },
+    });
+    render(<RoleNavbar />);
+    expect(screen.queryByRole("link", { name: "Logbook" })).not.toBeInTheDocument();
   });
 });

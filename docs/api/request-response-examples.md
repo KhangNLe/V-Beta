@@ -838,6 +838,8 @@ Authorization: Bearer <firebase_id_token>
 
 Empty logbook or a page past the last row is `200` with `"moderationLogs": []`, not 404.
 
+The admin UI at `/logbook` lists this payload newest-first (page size 25), opens a read-only detail dialog, and can download all pages as a `.txt` file.
+
 ### Error examples
 
 - `400` when `offSetPlace` is `0` or negative

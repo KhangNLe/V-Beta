@@ -76,7 +76,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Effort:** Medium
 - **Area:** Trust and Safety
 - **Target sprint:** Sprint 5 (in progress)
-- **Current Gap:** Problem-page Report (⋮ menu + category/reason dialog → `POST /api/report/create`) is shipped for comments and betas. Backend create-report, admin queue/detail/resolve, unread inbox poll (`GET /api/notification/short`), paged all-inbox (`GET /api/notification/all`), mark-read (`PATCH /api/notification/short`), owner appeal create, admin appeal queue/detail, and appeal approve/deny restore are implemented. Frontend notification bell + `/notifications` page (paged `GET /all`) and admin `/reports` queue/detail/resolve UI are shipped. Appeal/restore UI is not.
+- **Current Gap:** Problem-page Report (⋮ menu + category/reason dialog → `POST /api/report/create`) is shipped for comments and betas. Backend create-report, admin queue/detail/resolve, unread inbox poll (`GET /api/notification/short`), paged all-inbox (`GET /api/notification/all`), mark-read (`PATCH /api/notification/short`), owner appeal create, admin appeal queue/detail, and appeal approve/deny restore are implemented. Frontend notification bell + `/notifications` page (paged `GET /all`), admin `/reports` queue/detail/resolve UI, and admin `/logbook` (read-only + `.txt` download) are shipped. Appeal/restore UI is not.
 - **Potential Work:** Owner appeal UI (submit + admin approve/deny restore).
 - **Dependencies:** Report data model, report API endpoints, moderation/admin handling flow.
 
@@ -132,8 +132,8 @@ This document tracks ideas that are not fully implemented in the current release
 - **Effort:** Large
 - **Area:** Moderation / Reliability
 - **Target sprint:** Sprint 5 (in progress) for admin reports/logbook; developer event log may follow later
-- **Current Gap:** There is no dedicated admin report log for flagged comments/solution betas and no centralized event/error log for developer debugging.
-- **Potential Work:** Add an admin-facing reports queue/history for inappropriate content, plus a structured application event log (errors and important events) for developers to diagnose unexpected bugs.
+- **Current Gap:** Admin `/reports` queue/detail/resolve and `/logbook` (paged `GET /api/moderate/logbook`, `.txt` download) are shipped. There is no centralized event/error log for developer debugging.
+- **Potential Work:** Add a structured application event log (errors and important events) for developers to diagnose unexpected bugs.
 - **Dependencies:** Report/audit data model, admin review UI, event ingestion pipeline, and log retention/access policy.
 
 ### 13) Perceived Grade Detail Subpage per Problem

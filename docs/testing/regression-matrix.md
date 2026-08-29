@@ -24,6 +24,7 @@ Use this together with:
 | Discussion Report UI | ⋮ Report on comments/betas, category + reason validation, guest/owner gating | DISC-06 | High |
 | Notifications Inbox | navbar bell unread poll, `/notifications` paged `GET /all`, mark-read + deep-link | NOTIF-01 | High |
 | Admin Report Queue | admin-only `/reports`, ranked list, detail + required notes, dismiss/remove | REPORT-01 | High |
+| Admin Moderation Logbook | admin-only `/logbook`, paged list, read-only detail, `.txt` download | LOGBOOK-01 | High |
 | API Reliability | health/meta, unauthorized/invalid token behavior | API-01, API-02 | Medium |
 | Theming and UX Stability | critical page render in light/dark mode, key nav interactions | visual sanity pass during smoke | Medium |
 
@@ -50,6 +51,8 @@ When code changes in these areas, minimum regression scope should include:
   - Re-run NOTIF-01 and `notifications.test.js` / `notifications-page.test.js` / `NotificationBell.test.js`.
 - **Admin report queue changed** (`src/api/reports.js`, `/reports`, `reportQueue.js`, report DTO wall/problem snapshots):
   - Re-run REPORT-01 and `reports-page.test.js`.
+- **Admin logbook changed** (`src/api/moderation.js`, `/logbook`, `moderationLogbook.js`):
+  - Re-run LOGBOOK-01 and `logbook-page.test.js`.
 - **Routing/navigation/layout changed**:
   - Re-run guest browse + account/wall/problem entry points.
 

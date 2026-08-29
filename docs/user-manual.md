@@ -105,6 +105,12 @@ Setter and Admin users can perform route-setting and management operations.
 4. Leave admin notes empty and confirm **Dismiss** and **Approve deletion** stay disabled.
 5. Enter notes and dismiss or approve deletion. Confirm a success toast and that the case leaves the queue.
 
+### D) Admin Moderation Logbook (Admin)
+1. Open **Logbook** in the navbar (`/logbook`). Climbers/setters should be redirected to `/main-page`.
+2. Confirm newest-first rows with decision, admin, time, and notes.
+3. Open a row. Confirm it is read-only and the report link is present when a report id exists.
+4. Download `.txt` and confirm the file lists those decisions.
+
 ## 5) Account Page Actions
 
 Authenticated users can access `/account` to:
