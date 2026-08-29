@@ -153,26 +153,31 @@ public class ModerationController {
     }
 
     /**
-     * Returns OPEN appeals for an admin, or one appeal by id.
+     * Returns OPEN appeals for an admin, one appeal by id, or one appeal by report.
      * <p>
-     * With {@code appealId}, the response is that one row. Without it, the
-     * response is OPEN appeals newest-first. Appeals filed by the viewing
-     * admin are omitted (empty list) or treated as missing ({@code 404} for
-     * get-by-id). {@code RuntimeException} is mapped to {@code 404}
-     * (missing account, missing {@code VIEW_APPEALS}, or unknown id).
+     * With {@code appealId}, the response is that one row. With {@code reportId}
+     * and no {@code appealId}, the response is the appeal for that report.
+     * Without either, the response is OPEN appeals newest-first. Appeals filed
+     * by the viewing admin are omitted (empty list) or treated as missing
+     * ({@code 404} for get-by-id/report). {@code RuntimeException} is mapped to
+     * {@code 404} (missing account, missing {@code VIEW_APPEALS}, or unknown id).
      *
      * @param appealId optional appeal id
+     * @param reportId optional report id
      * @return {@link AppealPayload}; empty {@code appeals} when the queue has no rows
      */
     @GetMapping("/appeal")
-    public ResponseEntity<?> getUserAppeal(@RequestParam(required = false) Long appealId) {
+    public ResponseEntity<?> getUserAppeal(@RequestParam(required = false) Long appealId,
+                                           @RequestParam(required = false) Long reportId) {
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
             AppealPayload payload;
-            if (appealId == null) {
-                payload = appealService.getAppeals(firebaseUid);
-            } else {
+            if (appealId != null) {
                 payload = appealService.getUserAppeal(appealId, firebaseUid);
+            } else if (reportId != null) {
+                payload = appealService.getAppealByReport(reportId, firebaseUid);
+            } else {
+                payload = appealService.getAppeals(firebaseUid);
             }
             return new ResponseEntity<>(payload, HttpStatus.OK);
         } catch (RuntimeException e) {

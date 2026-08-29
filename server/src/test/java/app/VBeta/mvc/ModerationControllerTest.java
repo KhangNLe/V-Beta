@@ -398,7 +398,8 @@ public class ModerationControllerTest {
                         "Does not belong on this wall.",
                         sampleOwnerNoticeReport(),
                         null,
-                        true
+                        true,
+                        null
                 )
         );
 
@@ -407,6 +408,7 @@ public class ModerationControllerTest {
                 .andExpect(jsonPath("$.reportId").value(11))
                 .andExpect(jsonPath("$.adminReason").value("Does not belong on this wall."))
                 .andExpect(jsonPath("$.canAppeal").value(true))
+                .andExpect(jsonPath("$.appeal").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.report.reporters[0].categoryName").value("SPAM"))
                 .andExpect(jsonPath("$.report.reporters[0].reportReason").value("It's spammy"))
                 .andExpect(jsonPath("$.report.reporters[0].reporter").value(org.hamcrest.Matchers.nullValue()));
@@ -426,6 +428,22 @@ public class ModerationControllerTest {
                 .andExpect(jsonPath("$.appeals[0].appealReason").value("This was a joke, please restore."));
 
         verify(appealService, times(1)).getUserAppeal(7L, "testFirebaseUid3");
+        verify(appealService, times(0)).getAppeals("testFirebaseUid3");
+    }
+
+    @Test
+    @DisplayName("GET /api/moderate/appeal?reportId= returns the matching appeal")
+    void returns200_whenAdminRequestsAppealByReportId() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
+        when(appealService.getAppealByReport(11L, "testFirebaseUid3")).thenReturn(sampleAppealPayload());
+
+        mockMvc.perform(get("/api/moderate/appeal").param("reportId", "11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.appeals[0].appealId").value(7))
+                .andExpect(jsonPath("$.appeals[0].appealUser.username").value("spammyUser"))
+                .andExpect(jsonPath("$.appeals[0].appealReason").value("This was a joke, please restore."));
+
+        verify(appealService, times(1)).getAppealByReport(11L, "testFirebaseUid3");
         verify(appealService, times(0)).getAppeals("testFirebaseUid3");
     }
 

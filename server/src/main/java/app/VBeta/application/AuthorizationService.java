@@ -98,6 +98,20 @@ public class AuthorizationService {
         }
     }
 
+    /**
+     * Returns whether {@code user} is permitted to perform {@code action}.
+     *
+     * @param user account to evaluate
+     * @param action action being requested
+     * @return {@code true} when the account's role includes the action
+     */
+    public boolean isPermitted(UserAccount user, ActionDefinition action) {
+        if (user == null || user.getGymRole() == null || user.getGymRole().getRoleType() == null) {
+            return false;
+        }
+        return roleBasedAuthenticationManager.isPermit(user.getGymRole().getRoleType(), action);
+    }
+
     public void authorize(UserAccount user,  ActionDefinition action) {
         if (!roleBasedAuthenticationManager.isPermit(user.getGymRole().getRoleType(), action)) {
             throw new RuntimeException("Role " + user.getGymRole().getRoleType() + " is not allowed to perform action ");

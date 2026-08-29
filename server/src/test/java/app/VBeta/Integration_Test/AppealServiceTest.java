@@ -209,6 +209,7 @@ public class AppealServiceTest {
         assertEquals("Content does not make any sense.", notice.adminReason());
         assertTrue(notice.canAppeal());
         assertNull(notice.appealStatus());
+        assertNull(notice.appeal());
         assertNotNull(notice.report().discussion());
         assertEquals(DiscussionType.COMMENT, notice.report().discussion().discussionType());
         assertEquals(1, notice.report().reporters().size());
@@ -226,6 +227,37 @@ public class AppealServiceTest {
         assertFalse(afterSubmit.canAppeal());
         assertEquals(AppealStatus.OPEN, afterSubmit.appealStatus());
         assertEquals(ReportStatus.APPEAL_PENDING, afterSubmit.reportStatus());
+        assertNotNull(afterSubmit.appeal());
+        assertEquals(APPEAL_REASON, afterSubmit.appeal().appealReason());
+        assertEquals(owner.getId(), afterSubmit.appeal().appealUser().userId());
+        assertNull(afterSubmit.appeal().report().reporters().get(0).reporter());
+    }
+
+    @Test
+    @DisplayName("Admin cannot load the owner deletion notice")
+    void adminCannotLoadOwnerDeletionNotice() {
+        UserAccount owner = createClimber("owner-" + UUID.randomUUID());
+        Report removed = createRemovedReport(owner, getUserAccount(CLIMBER_UID));
+        appealService.createAppeal(new AppealRequest(removed.getReportId(), APPEAL_REASON), owner.getFirebaseUid());
+
+        RuntimeException adminViewer = assertThrows(RuntimeException.class,
+                () -> appealService.getOwnerDeletionNotice(removed.getReportId(), ADMIN_UID));
+        assertEquals("Appeal is not allowed", adminViewer.getMessage());
+    }
+
+    @Test
+    @DisplayName("Admin can read a user appeal by report id")
+    void adminReadsAppealByReportId() {
+        UserAccount owner = createClimber("owner-" + UUID.randomUUID());
+        Report removed = createRemovedReport(owner, getUserAccount(CLIMBER_UID));
+        appealService.createAppeal(new AppealRequest(removed.getReportId(), APPEAL_REASON), owner.getFirebaseUid());
+
+        AppealPayload payload = appealService.getAppealByReport(removed.getReportId(), ADMIN_UID);
+        assertEquals(1, payload.appeals().size());
+        assertEquals(APPEAL_REASON, payload.appeals().get(0).appealReason());
+        assertEquals(owner.getId(), payload.appeals().get(0).appealUser().userId());
+        assertNotNull(payload.appeals().get(0).report().reporters().get(0).reporter());
+        assertEquals("Spammy", payload.appeals().get(0).report().reporters().get(0).reportReason());
     }
 
     @Test
