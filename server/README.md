@@ -84,7 +84,7 @@ Main class: `app.VBeta.VBetaApplication`
 
 ## Run Tests
 
-The backend test suite includes integration tests that use PostgreSQL datasource overrides.
+The backend test suite includes integration tests that connect to PostgreSQL **`v_beta_test`**, not the runtime database (`v_beta`). They read `TEST_DB_NAME` and never `DB_NAME`, so a shell `.env` with `DB_NAME=v_beta` cannot point tests at your running app DB.
 
 For consistent local runs without manual DB setup, use:
 
@@ -95,9 +95,9 @@ For consistent local runs without manual DB setup, use:
 What this command does:
 
 - starts/reuses local Docker PostgreSQL (`vbeta-test-postgres` on `127.0.0.1:55432`)
-- recreates `v_beta_test`
+- recreates `v_beta_test` (never `v_beta`)
 - applies `src/test/resources/db/v_beta_test_schema.sql` (schema + seed data)
-- runs `./mvnw test` with PostgreSQL test env wiring
+- runs `./mvnw test` with `TEST_DB_*` wiring (ignores runtime `DB_NAME`)
 
 Alternative (if you already have PostgreSQL running and configured):
 

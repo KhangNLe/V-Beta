@@ -112,6 +112,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+                    <!-- Integration tests read TEST_DB_NAME, never DB_NAME (runtime db). -->
+                    <systemPropertyVariables>
+                        <TEST_DB_NAME>v_beta_test</TEST_DB_NAME>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

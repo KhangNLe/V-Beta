@@ -45,14 +45,7 @@ import static org.mockito.Mockito.when;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:v_beta_test}",
-        "spring.datasource.username=${SQL_USERNAME:postgres}",
-        "spring.datasource.password=${SQL_PASSWORD:postgres}",
-        "spring.datasource.driver-class-name=org.postgresql.Driver",
-        "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"
-})
+@TestPropertySource("classpath:application-postgres-it.properties")
 public class SolutionBetaCreationDeletionTest {
     private static final String USER_DELETED_OWN_DISCUSSION = "User deleted their own discussion";
     private static final String ADMIN_FORCED_DELETE_DISCUSSION = "Admin forced delete the discussion";
