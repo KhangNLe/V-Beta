@@ -104,11 +104,23 @@ const removedEntry = {
   },
 };
 
+const appealEntry = {
+  ...dismissedEntry,
+  moderationId: 42,
+  decision: "APPEAL_APPROVED",
+  adminNote: "Owner explanation accepted.",
+  createdAt: "2026-08-19T18:05:00Z",
+  report: {
+    ...dismissedEntry.report,
+    reporters: [{ reportId: 13, reporter: { username: "alex" } }],
+  },
+};
+
 function renderLogbook({
   ready = true,
   session = adminSession,
   currentUser = user,
-  logs = [dismissedEntry, removedEntry],
+  logs = [appealEntry, dismissedEntry, removedEntry],
   moderationId = null,
 } = {}) {
   useRequireAuth.mockReturnValue({ ready, user: currentUser, account: session });
@@ -147,7 +159,8 @@ describe("LogbookPage", () => {
     renderLogbook();
     expect(await screen.findByText("Dismissed")).toBeInTheDocument();
     expect(screen.getByText("Content removed")).toBeInTheDocument();
-    expect(screen.getAllByText("testAdmin").length).toBeGreaterThan(0);
+    expect(screen.getByText("Appeal approved")).toBeInTheDocument();
+    expect(screen.getAllByText(/testAdmin/).length).toBeGreaterThan(0);
     expect(screen.getByText(/report 11/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Dismiss" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Approve deletion" })).not.toBeInTheDocument();
@@ -157,7 +170,9 @@ describe("LogbookPage", () => {
     renderLogbook();
     fireEvent.click(await screen.findByRole("button", { name: /Dismissed/i }));
     expect(await screen.findByTestId("logbook-dialog")).toBeInTheDocument();
-    expect(screen.getByText("Does not violate gym guidelines.")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Does not violate gym guidelines.").length,
+    ).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Report 11" })).toHaveAttribute(
       "href",
       "/reports?reportId=11",
