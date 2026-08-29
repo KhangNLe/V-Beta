@@ -112,6 +112,11 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+                    <!-- Name only. Host/port/user come from TEST_DB_* / TEST_SQL_*
+                         (defaults: Docker 55432, postgres/postgres). Never DB_NAME. -->
+                    <systemPropertyVariables>
+                        <TEST_DB_NAME>v_beta_test</TEST_DB_NAME>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

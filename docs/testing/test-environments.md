@@ -40,8 +40,8 @@ This document defines testing environments and expected configuration difference
 ### Behavior
 
 - Default test profile uses H2 in-memory DB config.
-- Integration tests under `Integration_Test/*` override datasource settings to PostgreSQL test DB values.
-- Standard bootstrap script: `server/scripts/reset-test-db.sh` (recreates `v_beta_test` and applies schema/seed).
+- Integration tests under `Integration_Test/*` connect to PostgreSQL **`v_beta_test`** via `TEST_DB_*` only (they do not read runtime `DB_NAME`, `DB_PORT`, or `SQL_*` from `.env`). Local default host port is `55432`.
+- Standard bootstrap script: `server/scripts/reset-test-db.sh` (recreates `v_beta_test` and applies schema/seed; refuses to drop `v_beta`).
 - One-command local backend run: `server/scripts/test-with-postgres.sh`.
 - Local Docker bootstrap helper: `server/scripts/start-local-test-db.sh` (default `DB_PORT=55432`).
 - GitHub backend CI provisions PostgreSQL service on `127.0.0.1:5432`.

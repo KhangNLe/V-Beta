@@ -89,8 +89,8 @@ STORAGE_PUBLIC_BUCKET_NAME=
 
 - `server/src/main/resources/application.properties` consumes all server env variables listed above.
 - `server/env_example.txt` contains a backend env template.
-- `server/src/test/java/.../Integration_Test/*` uses PostgreSQL test datasource overrides (default DB name: `v_beta_test`), reusing `DB_HOST`, `DB_PORT`, `DB_NAME`, `SQL_USERNAME`, and `SQL_PASSWORD`.
-- `server/scripts/reset-test-db.sh` and `server/scripts/test-with-postgres.sh` use the same DB env contract (with local defaults for test automation: host `127.0.0.1`, port `55432`, db `v_beta_test`, user `postgres`, password `postgres`).
+- `server/src/test/java/.../Integration_Test/*` uses `TEST_DB_*` / `TEST_SQL_*` only (never runtime `DB_NAME`, `DB_PORT`, or `SQL_*`). Local defaults: `127.0.0.1:55432`, db `v_beta_test`, user `postgres`.
+- `server/scripts/reset-test-db.sh` and `server/scripts/test-with-postgres.sh` bootstrap that isolated test DB (Docker default port `55432`; CI uses `5432`).
 
 ## Validation Checklist (Full Stack)
 

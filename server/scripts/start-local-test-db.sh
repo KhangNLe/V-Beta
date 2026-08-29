@@ -4,9 +4,9 @@ set -euo pipefail
 
 CONTAINER_NAME="${CONTAINER_NAME:-vbeta-test-postgres}"
 POSTGRES_IMAGE="${POSTGRES_IMAGE:-postgres:16-alpine}"
-DB_HOST="${DB_HOST:-127.0.0.1}"
-DB_PORT="${DB_PORT:-55432}"
-DB_NAME="${DB_NAME:-v_beta_test}"
+DB_HOST="${TEST_DB_HOST:-${DB_HOST:-127.0.0.1}}"
+DB_PORT="${TEST_DB_PORT:-${DB_PORT:-55432}}"
+TEST_DB_NAME="${TEST_DB_NAME:-v_beta_test}"
 SQL_USERNAME="${SQL_USERNAME:-postgres}"
 SQL_PASSWORD="${SQL_PASSWORD:-postgres}"
 
@@ -48,7 +48,9 @@ fi
 
 DB_HOST="${DB_HOST}" \
 DB_PORT="${DB_PORT}" \
-DB_NAME="${DB_NAME}" \
+TEST_DB_HOST="${DB_HOST}" \
+TEST_DB_PORT="${DB_PORT}" \
+TEST_DB_NAME="${TEST_DB_NAME}" \
 SQL_USERNAME="${SQL_USERNAME}" \
 SQL_PASSWORD="${SQL_PASSWORD}" \
 bash ./scripts/reset-test-db.sh
