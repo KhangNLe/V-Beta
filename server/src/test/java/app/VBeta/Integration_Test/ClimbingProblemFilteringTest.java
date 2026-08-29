@@ -40,14 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:v_beta_test}",
-        "spring.datasource.username=${SQL_USERNAME:postgres}",
-        "spring.datasource.password=${SQL_PASSWORD:postgres}",
-        "spring.datasource.driver-class-name=org.postgresql.Driver",
-        "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"
-})
+@TestPropertySource("classpath:application-postgres-it.properties")
 public class ClimbingProblemFilteringTest {
     @Autowired
     private ProblemFilteringService problemFilteringService;
