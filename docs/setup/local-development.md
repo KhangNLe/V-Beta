@@ -153,7 +153,7 @@ Manual two-step backend test path:
 ```bash
 cd server
 ./scripts/start-local-test-db.sh
-DB_HOST=127.0.0.1 DB_PORT=55432 DB_NAME=v_beta_test SQL_USERNAME=postgres SQL_PASSWORD=postgres ./mvnw test
+./mvnw test
 ```
 
 Notes:

@@ -29,6 +29,8 @@ jobs:
       TEST_DB_HOST: 127.0.0.1
       TEST_DB_PORT: 5432
       TEST_DB_NAME: v_beta_test
+      TEST_SQL_USERNAME: postgres
+      TEST_SQL_PASSWORD: postgres
       SQL_USERNAME: postgres
       SQL_PASSWORD: postgres
 

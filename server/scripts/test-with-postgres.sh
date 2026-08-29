@@ -22,6 +22,8 @@ echo "Running backend tests with PostgreSQL test database '${TEST_DB_NAME}'..."
 TEST_DB_HOST="${TEST_DB_HOST}" \
 TEST_DB_PORT="${TEST_DB_PORT}" \
 TEST_DB_NAME="${TEST_DB_NAME}" \
+TEST_SQL_USERNAME="${SQL_USERNAME}" \
+TEST_SQL_PASSWORD="${SQL_PASSWORD}" \
 SQL_USERNAME="${SQL_USERNAME}" \
 SQL_PASSWORD="${SQL_PASSWORD}" \
 ./mvnw test

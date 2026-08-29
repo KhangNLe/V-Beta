@@ -84,9 +84,11 @@ Main class: `app.VBeta.VBetaApplication`
 
 ## Run Tests
 
-The backend test suite includes integration tests that connect to PostgreSQL **`v_beta_test`**, not the runtime database (`v_beta`). They read `TEST_DB_NAME` and never `DB_NAME`, so a shell `.env` with `DB_NAME=v_beta` cannot point tests at your running app DB.
+The backend test suite includes integration tests that connect to PostgreSQL **`v_beta_test`**, not the runtime database (`v_beta`). They read `TEST_DB_*` / `TEST_SQL_*` only — never `DB_NAME`, `DB_PORT`, or `SQL_*` from `server/.env` — so `./mvnw test` cannot hit your running app DB.
 
-For consistent local runs without manual DB setup, use:
+Local default: `127.0.0.1:55432` (Docker from the scripts below), user `postgres`. CI sets `TEST_DB_PORT=5432`.
+
+For consistent local runs (bootstrap + tests):
 
 ```bash
 ./scripts/test-with-postgres.sh
@@ -97,12 +99,12 @@ What this command does:
 - starts/reuses local Docker PostgreSQL (`vbeta-test-postgres` on `127.0.0.1:55432`)
 - recreates `v_beta_test` (never `v_beta`)
 - applies `src/test/resources/db/v_beta_test_schema.sql` (schema + seed data)
-- runs `./mvnw test` with `TEST_DB_*` wiring (ignores runtime `DB_NAME`)
+- runs `./mvnw test` with `TEST_DB_*` wiring
 
-Alternative (if you already have PostgreSQL running and configured):
+After the Docker test DB is already up, `./mvnw test` uses it by default. To reset schema/seed first:
 
 ```bash
-./scripts/reset-test-db.sh
+./scripts/start-local-test-db.sh
 ./mvnw test
 ```
 
