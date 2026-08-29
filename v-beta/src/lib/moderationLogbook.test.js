@@ -38,7 +38,7 @@ describe("moderationLogbook helpers", () => {
 
   it("links to report detail or appeals when a report id exists", () => {
     expect(getLogbookReportHref(dismissed)).toBe("/reports?reportId=11");
-    expect(getLogbookReportHref(appealDenied)).toBe("/appeals?reportId=11");
+    expect(getLogbookReportHref(appealDenied)).toBe("/appeal-queue?reportId=11");
     expect(getLogbookProblemHref(dismissed)).toBe("/wall/10/problem/100");
   });
 

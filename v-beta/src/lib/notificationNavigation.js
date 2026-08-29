@@ -5,12 +5,20 @@ export const REPORT_QUEUE_EVENT_TYPES = new Set([
   "REPORT_APPROVED",
 ]);
 
-/** Event types that land on deletion/appeal context. */
-export const APPEAL_CONTEXT_EVENT_TYPES = new Set([
+/** Event types that land on the owner deletion/appeal page. */
+export const OWNER_APPEAL_EVENT_TYPES = new Set([
   "CONTENT_REMOVED",
-  "APPEAL_SUBMITTED",
   "CONTENT_RESTORED",
   "APPEAL_DENIED",
+]);
+
+/** Event types that land on the admin appeal queue. */
+export const ADMIN_APPEAL_EVENT_TYPES = new Set(["APPEAL_SUBMITTED"]);
+
+/** Event types that land on deletion/appeal context. */
+export const APPEAL_CONTEXT_EVENT_TYPES = new Set([
+  ...OWNER_APPEAL_EVENT_TYPES,
+  ...ADMIN_APPEAL_EVENT_TYPES,
 ]);
 
 const EVENT_TYPE_LABELS = {
@@ -186,7 +194,10 @@ export function getNotificationHref(notification) {
   }
 
   const eventType = getNotificationEventType(notification);
-  if (APPEAL_CONTEXT_EVENT_TYPES.has(eventType)) {
+  if (ADMIN_APPEAL_EVENT_TYPES.has(eventType)) {
+    return `/appeal-queue${reportQuery}`;
+  }
+  if (OWNER_APPEAL_EVENT_TYPES.has(eventType)) {
     return `/appeals${reportQuery}`;
   }
   if (REPORT_QUEUE_EVENT_TYPES.has(eventType) || kind === "REPORT_QUEUE") {

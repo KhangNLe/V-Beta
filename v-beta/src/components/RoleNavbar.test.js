@@ -63,6 +63,10 @@ describe("RoleNavbar notifications entry", () => {
     });
     render(<RoleNavbar />);
     expect(screen.getByRole("link", { name: "Reports" })).toHaveAttribute("href", "/reports");
+    expect(screen.getByRole("link", { name: "Appeals" })).toHaveAttribute(
+      "href",
+      "/appeal-queue",
+    );
     expect(screen.getByRole("link", { name: "Logbook" })).toHaveAttribute(
       "href",
       "/logbook",
