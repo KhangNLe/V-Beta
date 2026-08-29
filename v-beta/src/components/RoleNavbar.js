@@ -73,6 +73,7 @@ export default function RoleNavbar() {
     if (roleType === "admin") {
       return [
         { href: "/accounts", label: "All Accounts" },
+        { href: "/reports", label: "Reports" },
         { href: "/account", label: "Account" },
         { href: "/main-page", label: "Gym" },
       ];
