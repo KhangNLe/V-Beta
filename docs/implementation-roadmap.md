@@ -26,10 +26,10 @@ Deliver an end-to-end moderation loop: signed users report comments and solution
 ### Scope
 
 - Reporting workflow for comments and solution betas (category + required reason, max 250 characters)
-- Admin report queue/detail (ranked by category priority, then datetime)
-- Admin resolve actions: approve deletion or dismiss (required admin notes → logbook)
+- Admin report queue/detail (ranked by category priority, then datetime) — **frontend shipped** (`/reports`)
+- Admin resolve actions: approve deletion or dismiss (required admin notes → logbook) — **frontend shipped**
 - In-app notifications (new report for admins; outcome notifications for reporter/owner)
-- Personal notifications page (navbar bell + `/notifications` paged `GET /all`) — **frontend shipped**; `/reports` and `/appeals` landings are stubs
+- Personal notifications page (navbar bell + `/notifications` paged `GET /all`) — **frontend shipped**; `/appeals` landing is a stub
 - Moderation logbook UI/API
 - One-time appeal + admin-approved restore of soft-deleted discussion content (comment/beta delete already marks `Discussion_Root`; restore/purge still open)
 - Report action in discussion ⋮ menu (alongside owner/admin delete) — **frontend shipped**
@@ -45,8 +45,8 @@ Then by report date/time.
 ### Acceptance Criteria
 
 - [x] Signed-in users can report comments and betas from the discussion ⋮ menu
-- [ ] Reports enter an admin queue ranked by category priority then time
-- [ ] Admins can view report detail (wall/problem, reason, reported content) and approve deletion or dismiss with required notes
+- [x] Reports enter an admin queue ranked by category priority then time
+- [x] Admins can view report detail (wall/problem, reason, reported content) and approve deletion or dismiss with required notes
 - [ ] Moderation decisions are written to a logbook
 - [ ] In-app notifications notify admins of new reports and notify reporter/owner of outcomes
 - [ ] Personal notifications page supports redirect into queue/detail flows

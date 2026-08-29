@@ -86,7 +86,8 @@ Supporting auth/session modules:
 - Comment/beta delete helpers send a reason (`deletedReason` / `deleteReason`) from `src/lib/discussionDeletion.js`.
 - Discussion Report on the problem page calls `createContentReport` (`POST /api/report/create`) with `DISCUSSION` + discussion id.
 - Signed-in navbar renders `NotificationBell`: unread poll is `GET /api/notification/short`; mark-read is `PATCH /api/notification/short?notificationId=`.
-- `/notifications` pages the full inbox with `GET /api/notification/all?offset=` (1-based, 10 rows). `QuickNotificationDTO` omits `readAt`, so the client overlays unread ids from `/short` before styling. Click paths come from `src/lib/notificationNavigation.js` (`/reports?reportId=` vs `/appeals?reportId=` by event type). `/reports` and `/appeals` are thin landings until queue/appeal UI ships.
+- `/notifications` pages the full inbox with `GET /api/notification/all?offset=` (1-based, 10 rows). `QuickNotificationDTO` omits `readAt`, so the client overlays unread ids from `/short` before styling. Click paths come from `src/lib/notificationNavigation.js` (`/reports?reportId=` vs `/appeals?reportId=` by event type). `/appeals` is a thin landing until appeal UI ships.
+- `/reports` is admin-only (`VIEW_REPORTS` / role gate). It lists ranked OPEN cases from `GET /api/report/reports` and resolves discussion cases with `POST /api/moderate/report` (required notes, max 255). Non-admins are sent to `/main-page`.
 - Account list/session helpers map `UserAccountDTO` (`userId`, `role`) onto the existing client session shape (`id`, `roleName`).
 
 ## Constraints and Considerations

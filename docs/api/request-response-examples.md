@@ -499,8 +499,18 @@ Authorization: Bearer <firebase_id_token>
           "discussionContent": "hello",
           "createdDate": "2026-08-16T10:00:00"
         },
-        "climbingProblem": null,
-        "wallSection": null,
+        "climbingProblem": {
+          "problemId": 100,
+          "holdColor": "Red",
+          "info": "Crimpy warmup",
+          "createdDate": "2026-08-01",
+          "assignedGrade": "V4"
+        },
+        "wallSection": {
+          "wallSectionID": 10,
+          "wallSectionName": "Cave",
+          "wallSectionInfo": "Steep cave"
+        },
         "user": null,
         "reporters": [
           {
@@ -530,7 +540,9 @@ Authorization: Bearer <firebase_id_token>
 }
 ```
 
-Two reporters on the same discussion with different categories produce **one** array element, two `reporters`, two `categories`, and `queueScore` as the sum of `categoryScore`.
+Two reporters on the same discussion with different categories produce **one** array element, two `reporters`, two `categories`, and `queueScore` as the sum of `categoryScore`. Discussion cases include `climbingProblem` and `wallSection` from the discussion's problem.
+
+The admin UI at `/reports` lists this payload in API order and opens a detail dialog to dismiss (`REPORT_DISMISSED`) or remove (`CONTENT_REMOVED`) with required notes (max 255).
 
 ### Error examples
 

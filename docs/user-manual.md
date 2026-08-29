@@ -98,6 +98,13 @@ Setter and Admin users can perform route-setting and management operations.
 4. Select a new role and submit.
 5. Verify role update is reflected in the UI after refresh.
 
+### C) Admin Report Queue (Admin)
+1. Open **Reports** in the navbar (`/reports`). Climbers/setters should be redirected to `/main-page`.
+2. Confirm open cases are listed with date, reporter, and category, highest score first.
+3. Open a case. Confirm wall section, problem, reported comment or beta, and reporter reason.
+4. Leave admin notes empty and confirm **Dismiss** and **Approve deletion** stay disabled.
+5. Enter notes and dismiss or approve deletion. Confirm a success toast and that the case leaves the queue.
+
 ## 5) Account Page Actions
 
 Authenticated users can access `/account` to:

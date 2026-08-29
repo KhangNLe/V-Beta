@@ -312,14 +312,15 @@ There is no mark-all-read endpoint in this slice.
   - Visibility: omits discussion cases owned by the viewer and user-account cases targeting the viewer. Dismissed rows are excluded.
   - Response: `200` `ReportsPayload`:
     - `reports[]` (`ReportPriorityDTO`)
-      - `report` (`ReportDTO`): `targetType`; exactly one of `discussion` / `climbingProblem` / `wallSection` / `user`; `reporters[]` (`reportId`, `reporter`, `categoryName`, `reportReason`, `createdAt`)
+      - `report` (`ReportDTO`): `targetType`; `discussion` / `climbingProblem` / `wallSection` / `user` as applicable; `reporters[]` (`reportId`, `reporter`, `categoryName`, `reportReason`, `createdAt`)
+      - Discussion cases also include `climbingProblem` and `wallSection` from the discussion's problem (admin wall/problem context). Problem cases also include `wallSection`.
       - `categories[]`: `categoryName`, `reportCount`, `categoryScore` (`weight × reportCount`)
       - `queueScore` (sum of `categoryScore`)
   - Empty `reports` is a valid `200` (nothing visible, or get-by-id hidden / no remaining OPEN siblings).
   - Errors:
     - `401` when unauthenticated or the Firebase token is invalid
     - `404` when the account is missing, the caller lacks `VIEW_REPORTS`, or `reportId` does not exist
-  - Product note: Sprint 5 queue/detail is built for discussion comments and betas. The mapper also serializes problem/wall/user targets if those rows exist.
+  - Product note: Sprint 5 queue/detail UI is `/reports` (admin-only). It lists ranked OPEN cases and resolves discussion comments/betas with required notes (`REPORT_DISMISSED` or `CONTENT_REMOVED`). The mapper also serializes problem/wall/user targets if those rows exist.
 
 - `POST /api/moderate/report`
   - Required action: `MODERATE_REPORT` (admin)
