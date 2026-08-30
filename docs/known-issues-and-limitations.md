@@ -45,7 +45,8 @@ This document reflects the current repository state on `sprint5/moderation_mvp`.
 - Impact: evidence can be lost unless copied into `docs/testing/evidence/`.
 
 ### 9) Environment and secret configuration is file/env-path dependent
-- Firebase/GCP and DB configuration depend on local environment variables and credential file paths.
+- Firebase/GCP and DB configuration depend on environment variables and credential file paths.
+- Hosted staging mounts the same JSON files via Secret Manager on Cloud Run (see `docs/setup/deployment.md`); local still uses `server/.env` paths.
 - Impact: deployment reliability and security depend on strict environment management practices.
 
 ## Planned Follow-up Areas

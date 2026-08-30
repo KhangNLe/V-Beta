@@ -16,7 +16,7 @@ This directory contains test planning, execution records, traceability artifacts
 ## Test Planning
 
 - [`test-strategy.md`](./test-strategy.md) - scope, layers, priorities, and entry/exit criteria
-- [`test-environments.md`](./test-environments.md) - where tests run and environment constraints
+- [`test-environments.md`](./test-environments.md) - where tests run (local, CI, hosted staging) and environment constraints
 - [`test-data-and-accounts.md`](./test-data-and-accounts.md) - test accounts and dataset assumptions
 
 ## Test Design and Traceability

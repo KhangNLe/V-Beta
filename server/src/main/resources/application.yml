@@ -2,10 +2,11 @@ spring:
   application:
     name: V-Beta-Server
 
+# Cloud Run injects PORT. Local default remains 8080.
 server:
-  port: 8080
+  port: ${PORT:8080}
 
-# Comma-separated list when overriding (e.g. http://localhost:3000,http://127.0.0.1:3000)
+# Comma-separated list (e.g. http://localhost:3000,https://your-app.vercel.app)
 app:
   cors:
-    allowed-origins: "http://localhost:3000"
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

@@ -12,7 +12,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * {@code WebConfig} customizes Spring MVC web settings for the application.
  * <p>
  * This configuration currently defines CORS policies for API routes using
- * origins supplied by the {@code app.cors.allowed-origins} property.
+ * origins supplied by {@code app.cors.allowed-origins} (env {@code CORS_ALLOWED_ORIGINS},
+ * comma-separated).
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {

@@ -38,12 +38,12 @@ NEXT_PUBLIC_APP_ORIGIN=http://localhost:3000
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`: Firebase messaging sender ID.
 - `NEXT_PUBLIC_FIREBASE_APP_ID`: Firebase web app ID.
 - `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`: Firebase Analytics measurement ID (optional for local dev if analytics is not used).
-- `NEXT_PUBLIC_API_BASE_URL`: Base URL for backend API requests.
+- `NEXT_PUBLIC_API_BASE_URL`: Base URL for backend API requests (no trailing slash).
   - Local default: `http://localhost:8080`
-  - Use deployed backend URL in hosted environments.
-- `NEXT_PUBLIC_APP_ORIGIN`: Canonical app origin for Firebase email action links.
+  - Hosted (Vercel): `https://v-beta-api-6vqd6rspuq-ue.a.run.app`
+- `NEXT_PUBLIC_APP_ORIGIN`: Canonical app origin for Firebase email action links (no trailing slash).
   - Local default: `http://localhost:3000`
-  - Use deployed frontend URL in hosted environments.
+  - Hosted (Vercel): `https://v-beta-mncoop.vercel.app`
 
 ### Frontend Usage in Code
 
@@ -66,11 +66,14 @@ SQL_PASSWORD=
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_NAME=v_beta
+# DB_JDBC_PARAMS=?sslmode=require&channel_binding=require
 
 FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 GCP_PROJECT_ID=
 GOOGLE_SERVICE_CREDENTIALS_PATH=./google-account-credential.json
 STORAGE_PUBLIC_BUCKET_NAME=
+# CORS_ALLOWED_ORIGINS=http://localhost:3000,https://v-beta-mncoop.vercel.app
+# PORT=8080
 ```
 
 ### Backend Variable Reference
@@ -80,15 +83,20 @@ STORAGE_PUBLIC_BUCKET_NAME=
 - `DB_HOST`: PostgreSQL host for datasource URL (default `127.0.0.1`).
 - `DB_PORT`: PostgreSQL port for datasource URL (default `5432`).
 - `DB_NAME`: main PostgreSQL database name for app runtime (default `v_beta`).
+- `DB_JDBC_PARAMS`: optional suffix appended to the JDBC URL. Leave empty locally. For Neon, set `?sslmode=require&channel_binding=require` (include the leading `?`).
 - `FIREBASE_CREDENTIALS_PATH`: filesystem path to Firebase Admin SDK credentials JSON.
 - `GCP_PROJECT_ID`: Google Cloud project ID.
 - `GOOGLE_SERVICE_CREDENTIALS_PATH`: path to Google Cloud service account JSON.
 - `STORAGE_PUBLIC_BUCKET_NAME`: public bucket used for file storage.
+- `CORS_ALLOWED_ORIGINS`: comma-separated browser origins allowed to call `/api/**` (default `http://localhost:3000`). Hosted staging must include `https://v-beta-mncoop.vercel.app`.
+- `PORT`: HTTP listen port. Cloud Run injects this; local default is `8080`.
 
 ### Backend Usage in Code/Config
 
-- `server/src/main/resources/application.properties` consumes all server env variables listed above.
+- `server/src/main/resources/application.properties` consumes datasource, Firebase, and GCP env variables listed above.
+- `server/src/main/resources/application.yml` consumes `PORT` and `CORS_ALLOWED_ORIGINS`.
 - `server/env_example.txt` contains a backend env template.
+- Hosted staging (Vercel + Cloud Run + Neon) is documented in `docs/setup/deployment.md`.
 - `server/src/test/java/.../Integration_Test/*` uses `TEST_DB_*` / `TEST_SQL_*` only (never runtime `DB_NAME`, `DB_PORT`, or `SQL_*`). Local defaults: `127.0.0.1:55432`, db `v_beta_test`, user `postgres`.
 - `server/scripts/reset-test-db.sh` and `server/scripts/test-with-postgres.sh` bootstrap that isolated test DB (Docker default port `55432`; CI uses `5432`).
 
@@ -99,6 +107,18 @@ STORAGE_PUBLIC_BUCKET_NAME=
 - Frontend requests hit `NEXT_PUBLIC_API_BASE_URL`.
 - Auth flows work (login/signup/verification).
 - `GET /api/health` returns healthy status from backend.
+
+## Hosted Staging
+
+For Vercel + Cloud Run + Neon, set the same variable names in the host dashboards (not `.env` files). See [docs/setup/deployment.md](./deployment.md) for provision and deploy steps.
+
+Typical hosted differences:
+
+- Frontend (live): [https://v-beta-mncoop.vercel.app/](https://v-beta-mncoop.vercel.app/). Set `NEXT_PUBLIC_APP_ORIGIN=https://v-beta-mncoop.vercel.app` and `NEXT_PUBLIC_API_BASE_URL=https://v-beta-api-6vqd6rspuq-ue.a.run.app`.
+- Backend Neon (AWS `us-east-2` pooler): `DB_HOST=ep-autumn-feather-ajy43z9p-pooler.c-3.us-east-2.aws.neon.tech`, `DB_PORT=5432`, `DB_NAME=v_beta`, `SQL_USERNAME=neondb_owner`, `DB_JDBC_PARAMS=?sslmode=require&channel_binding=require`. Set `SQL_PASSWORD` in Cloud Run / Secret Manager only.
+- `CORS_ALLOWED_ORIGINS=http://localhost:3000,https://v-beta-mncoop.vercel.app`; credential JSON mounted as files via Secret Manager.
+
+Do not switch databases with a git branch. Local daily work should keep `server/.env` on `127.0.0.1`; Neon belongs on Cloud Run (or a gitignored `.env.neon` if you must debug staging from a laptop).
 
 ## Security Notes
 

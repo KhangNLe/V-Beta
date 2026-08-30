@@ -3,6 +3,12 @@ SQL_PASSWORD=your_sql_password
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_NAME=v_beta
+# Optional JDBC URL suffix. Leave empty for local Postgres.
+# Neon staging (pooler, AWS us-east-2):
+# DB_HOST=ep-autumn-feather-ajy43z9p-pooler.c-3.us-east-2.aws.neon.tech
+# SQL_USERNAME=neondb_owner
+# DB_JDBC_PARAMS=?sslmode=require&channel_binding=require
+# DB_JDBC_PARAMS=
 # Integration tests ignore DB_NAME / DB_PORT / SQL_*. Defaults match Docker
 # test DB from scripts/test-with-postgres.sh (127.0.0.1:55432, user postgres).
 # GitHub CI overrides TEST_DB_PORT=5432.
@@ -11,3 +17,7 @@ FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 GCP_PROJECT_ID=your_gcp_project_id
 GOOGLE_SERVICE_CREDENTIALS_PATH=./google-account-credential.json
 STORAGE_PUBLIC_BUCKET_NAME=your_public_bucket_name
+# Comma-separated browser origins allowed to call /api/** (local default is localhost:3000).
+# CORS_ALLOWED_ORIGINS=http://localhost:3000,https://v-beta-mncoop.vercel.app
+# Cloud Run sets PORT; local default is 8080.
+# PORT=8080

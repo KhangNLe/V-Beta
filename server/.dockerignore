@@ -1,0 +1,29 @@
+# Build output
+target/
+*.class
+
+# Secrets and local env (mount at runtime on Cloud Run)
+.env
+.env.*
+firebase-credentials.json
+google-account-credential.json
+*.pem
+*.key
+*.p12
+*.jks
+
+# Tests and local tooling (image is runtime-only)
+src/test/
+scripts/
+.idea/
+*.iml
+.vscode/
+.git/
+.gitignore
+
+# Docs and OS
+*.md
+*.log
+logs/
+.DS_Store
+Thumbs.db

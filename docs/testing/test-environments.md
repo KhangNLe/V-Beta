@@ -67,27 +67,48 @@ This document defines testing environments and expected configuration difference
 
 - Frontend unit-style testing exists, but could be expanded to every page and include end-to-end testing.
 
-## 4) Environment Comparison (Quick View)
+## 4) Hosted Staging Environment
 
-| Dimension | Local Dev | Backend Test Profile | Frontend Test |
-|---|---|---|---|
-| Target | Manual + integration behavior | Automated backend tests | Automated frontend tests |
-| Backend URL | `localhost:8080` | Test runtime context | Mocked/jsdom context |
-| DB | Cloud SQL/PostgreSQL (typical local) | H2 by default; Integration_Test overrides to PostgreSQL with scripted `v_beta_test` bootstrap (`55432` local Docker default, `5432` in CI) | N/A |
-| Auth | Firebase real tokens (manual flow) | Test setup/mocks/profile-driven | Usually mocked or not full auth e2e |
-| Main Runner | Manual + scripts | `./scripts/test-with-postgres.sh` | `npm test` |
+### Purpose
 
-## 5) Environment Validation Checklist
+- Public demo / stakeholder walkthrough against live URLs.
 
-- [ ] Correct env files loaded (`server/.env`, `v-beta/.env.local`)
+### Typical Setup
+
+- Frontend: Vercel ([https://v-beta-mncoop.vercel.app/](https://v-beta-mncoop.vercel.app/))
+- Backend: Cloud Run ([https://v-beta-api-6vqd6rspuq-ue.a.run.app](https://v-beta-api-6vqd6rspuq-ue.a.run.app))
+- Database: Neon PostgreSQL (`v_beta`, pooler `ep-autumn-feather-ajy43z9p-pooler.c-3.us-east-2.aws.neon.tech`, `sslmode=require`)
+- Firebase: shared/development project (authorized domain includes the Vercel hostname)
+- Storage: existing GCS public bucket (bucket CORS allows the Vercel origin)
+
+### Notes
+
+- First request after idle can be slow (Neon suspend + Cloud Run scale-to-zero).
+- Schema must be applied to Neon before the API boots (`ddl-auto=validate`).
+- Full provision and deploy steps: [docs/setup/deployment.md](../setup/deployment.md).
+
+## 5) Environment Comparison (Quick View)
+
+| Dimension | Local Dev | Backend Test Profile | Frontend Test | Hosted Staging |
+|---|---|---|---|---|
+| Target | Manual + integration behavior | Automated backend tests | Automated frontend tests | Public demo / live smoke |
+| Backend URL | `localhost:8080` | Test runtime context | Mocked/jsdom context | Cloud Run HTTPS URL |
+| DB | Cloud SQL/PostgreSQL (typical local) | H2 by default; Integration_Test overrides to PostgreSQL with scripted `v_beta_test` bootstrap (`55432` local Docker default, `5432` in CI) | N/A | Neon `v_beta` (us-east-2 pooler, `sslmode=require`) |
+| Auth | Firebase real tokens (manual flow) | Test setup/mocks/profile-driven | Usually mocked or not full auth e2e | Firebase real tokens; Vercel domain authorized |
+| Main Runner | Manual + scripts | `./scripts/test-with-postgres.sh` | `npm test` | Vercel + `gcloud run deploy` |
+
+## 6) Environment Validation Checklist
+
+- [ ] Correct env files loaded (`server/.env`, `v-beta/.env.local`) **or** hosted dashboard env (Vercel / Cloud Run)
 - [ ] Backend health endpoint returns success
 - [ ] Frontend can call backend API base URL
 - [ ] Firebase config values are valid for selected environment
-- [ ] DB/proxy connectivity is confirmed before manual regression
+- [ ] DB connectivity is confirmed (local proxy/Postgres, or Neon SSL for staging) before manual regression
 
-## 6) Related Docs
+## 7) Related Docs
 
 - [docs/setup/local-development.md](../setup/local-development.md)
 - [docs/setup/environment-variables.md](../setup/environment-variables.md)
+- [docs/setup/deployment.md](../setup/deployment.md)
 - [docs/testing/test-strategy.md](./test-strategy.md)
 - [docs/testing/manual-test-cases.md](./manual-test-cases.md)
