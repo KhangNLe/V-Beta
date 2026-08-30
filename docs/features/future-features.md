@@ -42,15 +42,6 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Bulk/problem lifecycle utilities (text search is tracked separately for a later sprint).
 - **Dependencies:** Existing wall/problem APIs and UI patterns.
 
-### 3) Better Content Moderation and Auditability
-
-- **Priority:** Medium
-- **Effort:** Medium
-- **Area:** Discussion/Beta
-- **Current Gap:** Deletion and ownership rules exist but limited moderation workflow/audit history.
-- **Potential Work:** Add moderation queue, reason codes, and event logs.
-- **Dependencies:** Backend audit model and admin UI.
-
 ### 4) Observability and Operational Hardening
 
 - **Priority:** Low
@@ -69,15 +60,6 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Add profile picture upload/display so each user avatar appears in comments and solution beta entries.
 - **Dependencies:** User profile image storage strategy, account schema updates, frontend rendering updates.
 
-### 6) Report Inappropriate Comments and Solution Betas
-
-- **Priority:** High
-- **Effort:** Medium
-- **Area:** Trust and Safety
-- **Current Gap:** Users cannot flag inappropriate comments or beta content in the current UI.
-- **Potential Work:** Add report actions on comments and solution betas, including reason selection and moderation review workflow.
-- **Dependencies:** Report data model, report API endpoints, moderation/admin handling flow.
-
 ### 7) Images for Wall Sections and Climbing Problems
 
 - **Priority:** Medium
@@ -92,8 +74,8 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Low
 - **Effort:** Medium
 - **Area:** Wall/Problem Discovery
-- **Target sprint:** Later (roadmap Sprint 9) — **not** Sprint 4
-- **Current Gap:** Sprint 4 ships grade-range filter and most recent / easiest / hardest sort; free-text search is intentionally deferred.
+- **Target sprint:** Later (roadmap Sprint 9) — **not** part of completed Sprint 4
+- **Current Gap:** Sprint 4 shipped grade-range filter and most recent / easiest / hardest sort; free-text search is intentionally deferred.
 - **Potential Work:** Add client-side text filtering on loaded results first; add a backend text-search endpoint only if lists grow.
 - **Dependencies:** UX for search input; optional API contract if server-side search is required.
 
@@ -111,8 +93,8 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** User Communication / Activity Awareness
-- **Current Gap:** Users are not proactively notified when a wall section is reset.
-- **Potential Work:** Add a notification system so users are informed when specific wall sections are reset, including in-app notifications and optional email/push channels.
+- **Current Gap:** The in-app inbox exists, but users are not notified when a wall section is reset.
+- **Potential Work:** Fan out a wall-reset event to the existing inbox (optional email/push later).
 - **Dependencies:** Reset event tracking, notification preference model, delivery mechanism, and frontend notification UI.
 
 ### 11) Account Activity History and Quick Navigation
@@ -129,8 +111,9 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** High
 - **Effort:** Large
 - **Area:** Moderation / Reliability
-- **Current Gap:** There is no dedicated admin report log for flagged comments/solution betas and no centralized event/error log for developer debugging.
-- **Potential Work:** Add an admin-facing reports queue/history for inappropriate content, plus a structured application event log (errors and important events) for developers to diagnose unexpected bugs.
+- **Target sprint:** Later (admin reports/logbook shipped in Sprint 5)
+- **Current Gap:** Admin `/reports` and `/logbook` are shipped. There is no centralized event/error log for developer debugging.
+- **Potential Work:** Add a structured application event log (errors and important events) for developers to diagnose unexpected bugs.
 - **Dependencies:** Report/audit data model, admin review UI, event ingestion pipeline, and log retention/access policy.
 
 ### 13) Perceived Grade Detail Subpage per Problem
@@ -187,14 +170,14 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Allow setters/admins to pin or highlight `discussion_root` entries, with deterministic ordering (pinned first, then chronological).
 - **Dependencies:** Moderation permissions, new pin metadata, and timeline sort contract changes.
 
-### 19) Soft Delete and Restoration for Discussion Items
+### 19) Restore and Delayed Purge for Soft-Deleted Discussions
 
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** Moderation / Safety
-- **Current Gap:** Delete operations are destructive and can remove evidence needed for moderation review or user recovery.
-- **Potential Work:** Introduce soft delete fields (`deleted_at`, `deleted_by`, `delete_reason`) at `discussion_root`, hide from normal feeds, and provide admin restore tooling.
-- **Dependencies:** Updated delete service flow, audit visibility rules, and admin recovery endpoints/UI.
+- **Current Gap:** Appeal **Approve** restores a soft-deleted discussion (`deleted_at` / `deleted_by` / `deleted_reason` cleared). GCS/beta objects are not purged after a retention window.
+- **Potential Work:** Scheduled 30-day purge of GCS objects keyed off `deleted_at` (not upload time).
+- **Dependencies:** Idempotent GCS delete and a retention job.
 
 ### 20) Cursor Pagination and Feed Performance for Problem Discussions
 
@@ -225,4 +208,5 @@ This document tracks ideas that are not fully implemented in the current release
 
 ## Change Log
 
+- 2026-08-30: Moved Sprint 5 moderation/report backlog (#3, #6) to `completed-features-archive.md`. Restored discussion content via appeal approve is shipped; #19 remains delayed GCS purge. Admin reports/logbook on #12 are shipped; remaining work is a developer event log.
 - Keep this section updated when priorities change or items move to implemented docs.

@@ -5,8 +5,10 @@ Spring Boot REST API for V-Beta. It pairs with the Next.js app in `../v-beta`.
 ## Overview
 
 - Framework: Spring Boot + Spring Security + Spring Data JPA
-- Database: PostgreSQL (runtime), H2 (tests)
+- Database: PostgreSQL (runtime and integration tests on `v_beta_test`)
 - Integrations: Firebase Admin SDK and Google Cloud Storage
+
+REST surface includes account, wall/problem, discussion, reports, notifications, moderation logbook, and appeals. See [API endpoints](../docs/api/endpoints.md) and [Moderation](../docs/features/moderation.md).
 
 ## Prerequisites
 
@@ -84,9 +86,11 @@ Main class: `app.VBeta.VBetaApplication`
 
 ## Run Tests
 
-The backend test suite includes integration tests that use PostgreSQL datasource overrides.
+The backend test suite includes integration tests that connect to PostgreSQL **`v_beta_test`**, not the runtime database (`v_beta`). They read `TEST_DB_*` / `TEST_SQL_*` only — never `DB_NAME`, `DB_PORT`, or `SQL_*` from `server/.env` — so `./mvnw test` cannot hit your running app DB.
 
-For consistent local runs without manual DB setup, use:
+Local default: `127.0.0.1:55432` (Docker from the scripts below), user `postgres`. CI sets `TEST_DB_PORT=5432`.
+
+For consistent local runs (bootstrap + tests):
 
 ```bash
 ./scripts/test-with-postgres.sh
@@ -95,16 +99,18 @@ For consistent local runs without manual DB setup, use:
 What this command does:
 
 - starts/reuses local Docker PostgreSQL (`vbeta-test-postgres` on `127.0.0.1:55432`)
-- recreates `v_beta_test`
+- recreates `v_beta_test` (never `v_beta`)
 - applies `src/test/resources/db/v_beta_test_schema.sql` (schema + seed data)
-- runs `./mvnw test` with PostgreSQL test env wiring
+- runs `./mvnw test` with `TEST_DB_*` wiring
 
-Alternative (if you already have PostgreSQL running and configured):
+After the Docker test DB is already up, `./mvnw test` uses it by default. To reset schema/seed first:
 
 ```bash
-./scripts/reset-test-db.sh
+./scripts/start-local-test-db.sh
 ./mvnw test
 ```
+
+`./scripts/reset-test-db.sh` also defaults to `127.0.0.1:55432` as user `postgres` (not `SQL_*` / `DB_PORT` from `.env`). CI overrides `TEST_DB_PORT=5432`.
 
 ## Build a Runnable JAR
 
@@ -122,6 +128,7 @@ java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 
 - [Project docs index](../docs/README.md)
 - [User Manual](../docs/user-manual.md)
+- [Moderation](../docs/features/moderation.md)
 - [Setup: Environment Variables](../docs/setup/environment-variables.md)
 - [Setup: Local Development](../docs/setup/local-development.md)
 - [Setup: Database Schema](../docs/setup/database-schema.md)
@@ -130,6 +137,8 @@ java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 - [Architecture: Backend](../docs/architecture/backend-architecture.md)
 - [Architecture: Data Model](../docs/architecture/data-model.md)
 - [API: Endpoints](../docs/api/endpoints.md)
+- [API: Request/Response Examples](../docs/api/request-response-examples.md)
+- [API: Permissions Matrix](../docs/api/permissions-matrix.md)
 - [API: Error Handling](../docs/api/error-handling.md)
 - [Testing: Strategy](../docs/testing/test-strategy.md)
 - [Testing: Server Test Report](../docs/testing/server-test-report.md)

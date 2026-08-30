@@ -12,15 +12,31 @@ import {
   deleteUserComment,
   postCommentForUser,
 } from "@/api/comments";
+import {
+  createContentReport,
+  REPORT_CATEGORIES,
+  REPORT_REASON_MAX_LENGTH,
+} from "@/api/reports";
 import PageLoader from "@/components/ui/PageLoader";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { getAccountId, getAccountRole } from '@/lib/accountSession';
+import { discussionDeletionReason } from '@/lib/discussionDeletion';
 import { buttons, card, colors, layout, fontFamily } from '@/ui/appTheme';
 import { ArrowLeftIcon, MoreVertical } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
@@ -152,13 +168,18 @@ export default function ProblemPage() {
   const [perceivedGrade, setPerceivedGrade] = useState('VB');
   const [entryMode, setEntryMode] = useState('comment'); // "comment" | "file"
   const [solutionFile, setSolutionFile] = useState(null);
-  const isAdmin = (account?.roleName || '').toUpperCase().includes('ADMIN');
+  const isAdmin = getAccountRole(account).toUpperCase().includes('ADMIN');
   const currentUserId = useMemo(() => {
-    if (account?.id != null) return String(account.id);
+    const accountId = getAccountId(account);
+    if (accountId != null) return String(accountId);
     return getCurrentUserId(user);
   }, [account, user]);
   const [uploadingSolution, setUploadingSolution] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportCategory, setReportCategory] = useState('');
+  const [reportReason, setReportReason] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
   const fileInputRef = useRef(null);
 
   const clearSelectedSolutionFile = () => {
@@ -183,8 +204,8 @@ export default function ProblemPage() {
     }
 
     const authorId = getCommentAuthorId(targetComment);
-    const canDeleteComment =
-      isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
+    const isOwner = !!currentUserId && !!authorId && currentUserId === authorId;
+    const canDeleteComment = isAdmin || isOwner;
     if (!canDeleteComment) {
       return;
     }
@@ -203,6 +224,7 @@ export default function ProblemPage() {
         problemId,
         discussionId,
         commentContent,
+        deletedReason: discussionDeletionReason(isOwner),
       });
       await refreshProblem();
       toast.success("Comment deleted.");
@@ -219,8 +241,8 @@ export default function ProblemPage() {
     if (!mediaUrl) return;
 
     const authorId = getCommentAuthorId(targetComment);
-    const canDeleteSolutionBeta =
-      isAdmin || (!!currentUserId && !!authorId && currentUserId === authorId);
+    const isOwner = !!currentUserId && !!authorId && currentUserId === authorId;
+    const canDeleteSolutionBeta = isAdmin || isOwner;
     if (!canDeleteSolutionBeta) {
       return;
     }
@@ -238,6 +260,7 @@ export default function ProblemPage() {
         problemId,
         discussionId,
         publicUrl: mediaUrl,
+        deleteReason: discussionDeletionReason(isOwner),
       });
       await refreshProblem();
       clearSelectedSolutionFile();
@@ -245,6 +268,63 @@ export default function ProblemPage() {
     } catch (err) {
       const message = extractErrorMessage(err);
       toast.error(`Failed to delete solution beta: ${message}`);
+    }
+  };
+
+  const openReportDialog = (targetComment) => {
+    setReportTarget(targetComment);
+    setReportCategory('');
+    setReportReason('');
+  };
+
+  const closeReportDialog = () => {
+    if (submittingReport) return;
+    setReportTarget(null);
+    setReportReason('');
+    setReportCategory('');
+  };
+
+  const handleSubmitReport = async (event) => {
+    event.preventDefault();
+    if (!user || !reportTarget || submittingReport) return;
+
+    const discussionId = getDiscussionId(reportTarget);
+    const reason = reportReason.trim();
+    if (!discussionId) {
+      toast.error('Unable to determine discussion to report.');
+      return;
+    }
+    if (!reportCategory) {
+      toast.error('Please choose a report category.');
+      return;
+    }
+    if (!reason) {
+      toast.error('Please enter a reason for this report.');
+      return;
+    }
+    if (reason.length > REPORT_REASON_MAX_LENGTH) {
+      toast.error(
+        `Report reason must be ${REPORT_REASON_MAX_LENGTH} characters or fewer.`,
+      );
+      return;
+    }
+
+    try {
+      setSubmittingReport(true);
+      await createContentReport(user, {
+        reportTargetType: 'DISCUSSION',
+        reportReason: reason,
+        reportCategoryName: reportCategory,
+        targetId: discussionId,
+      });
+      toast.success('Report submitted.');
+      setReportTarget(null);
+      setReportReason('');
+      setReportCategory('');
+    } catch (err) {
+      toast.error(`Failed to submit report: ${extractErrorMessage(err)}`);
+    } finally {
+      setSubmittingReport(false);
     }
   };
 
@@ -450,6 +530,12 @@ export default function ProblemPage() {
   const commentOverLimit = commentCharCount > 250;
   const canPostComment =
     !!user && !!commentText.trim() && !commentOverLimit && !submittingComment;
+  const reportReasonOverLimit = reportReason.length > REPORT_REASON_MAX_LENGTH;
+  const canSubmitReport =
+    !!reportCategory &&
+    !!reportReason.trim() &&
+    !reportReasonOverLimit &&
+    !submittingReport;
 
   return (
     <main style={layout.main}>
@@ -570,11 +656,14 @@ export default function ProblemPage() {
                       const discussionType = getDiscussionType(comment);
                       const discussionContent = getDiscussionContent(comment);
                       const mediaUrl = getDiscussionMediaUrl(comment);
-                      const canDeleteComment =
-                        isAdmin ||
-                        (!!currentUserId &&
-                          !!authorId &&
-                          currentUserId === authorId);
+                      const isOwner =
+                        !!currentUserId &&
+                        !!authorId &&
+                        currentUserId === authorId;
+                      const canDeleteComment = isAdmin || isOwner;
+                      const canReportComment = isSignedIn && !isOwner;
+                      const showDiscussionMenu =
+                        isSignedIn && (canDeleteComment || canReportComment);
                       const isSolutionBeta =
                         discussionType === 'BETA' ||
                         (discussionType !== 'COMMENT' &&
@@ -624,7 +713,7 @@ export default function ProblemPage() {
                             >
                               {formatCommentDate(comment.createdDate)}
                             </p>
-                            {canDeleteComment && (
+                            {showDiscussionMenu && (
                               <DropdownMenu>
                                 <DropdownMenuTrigger
                                   render={
@@ -641,18 +730,30 @@ export default function ProblemPage() {
                                   <MoreVertical className="size-4" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    variant="destructive"
-                                    onClick={() =>
-                                      isSolutionBeta
-                                        ? handleDeleteSolutionBeta(comment)
-                                        : handleDeleteComment(comment)
-                                    }
-                                  >
-                                    {isSolutionBeta
-                                      ? 'Delete Solution Beta'
-                                      : 'Delete Comment'}
-                                  </DropdownMenuItem>
+                                  {canReportComment && (
+                                    <DropdownMenuItem
+                                      onClick={() => openReportDialog(comment)}
+                                    >
+                                      Report
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canReportComment && canDeleteComment && (
+                                    <DropdownMenuSeparator />
+                                  )}
+                                  {canDeleteComment && (
+                                    <DropdownMenuItem
+                                      variant="destructive"
+                                      onClick={() =>
+                                        isSolutionBeta
+                                          ? handleDeleteSolutionBeta(comment)
+                                          : handleDeleteComment(comment)
+                                      }
+                                    >
+                                      {isSolutionBeta
+                                        ? 'Delete Solution Beta'
+                                        : 'Delete Comment'}
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             )}
@@ -1038,6 +1139,100 @@ export default function ProblemPage() {
           </>
         )}
       </div>
+
+      <Dialog
+        open={!!reportTarget}
+        onOpenChange={(open) => {
+          if (!open) closeReportDialog();
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <form onSubmit={handleSubmitReport}>
+            <DialogHeader>
+              <DialogTitle>Report discussion</DialogTitle>
+              <DialogDescription>
+                Choose a category and explain why this discussion should be
+                reviewed.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-3 py-3">
+              <div className="grid gap-1.5">
+                <label
+                  htmlFor="report-category"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Category
+                </label>
+                <select
+                  id="report-category"
+                  value={reportCategory}
+                  onChange={(event) => setReportCategory(event.target.value)}
+                  disabled={submittingReport}
+                  required
+                  aria-label="Report category"
+                  className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                >
+                  <option value="">Select a category</option>
+                  {REPORT_CATEGORIES.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-1.5">
+                <label
+                  htmlFor="report-reason"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Reason
+                </label>
+                <textarea
+                  id="report-reason"
+                  value={reportReason}
+                  onChange={(event) => setReportReason(event.target.value)}
+                  disabled={submittingReport}
+                  required
+                  rows={4}
+                  placeholder="Describe what is wrong with this discussion."
+                  aria-label="Report reason"
+                  className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                  style={{
+                    borderColor: reportReasonOverLimit
+                      ? colors.danger
+                      : undefined,
+                  }}
+                />
+                <p
+                  className="text-xs text-right"
+                  style={{
+                    color: reportReasonOverLimit ? colors.danger : undefined,
+                  }}
+                >
+                  {reportReason.length}/{REPORT_REASON_MAX_LENGTH}
+                </p>
+              </div>
+            </div>
+            <DialogFooter className="mt-1 gap-2 sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={submittingReport}
+                onClick={closeReportDialog}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!canSubmitReport}
+                style={buttons.primary}
+              >
+                {submittingReport ? 'Submitting…' : 'Submit Report'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

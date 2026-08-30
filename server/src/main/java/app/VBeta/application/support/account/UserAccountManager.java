@@ -1,14 +1,13 @@
 package app.VBeta.application.support.account;
 
+import app.VBeta.api.dto.account.UserAccountDTO;
 import app.VBeta.domain.model.actions.GymRole;
 import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.domain.model.user.UserAccount;
 import app.VBeta.repository.GymRoleRepository;
 import app.VBeta.repository.UserAccountRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 import java.util.List;
@@ -91,8 +90,7 @@ public class UserAccountManager {
     public UserAccount createNewAccount(String userName, String email, String firebaseUid){
         Optional<GymRole> role = gymRoleRepository.findByRoleType(RoleType.CLIMBER);
         if (role.isEmpty()){
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Service error while creating new account, please contact the developer for this.");
+            throw new RuntimeException("Service error while creating new account, please contact the developer for this.");
         }
         UserAccount newAccount = new UserAccount();
         newAccount.setGymRole(role.get());
@@ -133,4 +131,22 @@ public class UserAccountManager {
         return result.orElse(null);
     }
 
+    /**
+     * Returns all accounts assigned the given gym role type.
+     *
+     * @param roleType role type to match
+     * @return accounts with that role
+     */
+    public List<UserAccount> findUsersOfRole(RoleType roleType) {
+        return userAccountRepository.findByGymRole_RoleType(roleType);
+    }
+
+    public UserAccountDTO getUserAccountDTO(UserAccount userAccount){
+        return new UserAccountDTO(
+                userAccount.getId(),
+                userAccount.getUsername(),
+                userAccount.getEmail(),
+                userAccount.getGymRole().getRoleType().name()
+        );
+    }
 }

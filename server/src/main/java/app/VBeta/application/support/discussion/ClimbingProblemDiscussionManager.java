@@ -1,6 +1,6 @@
 package app.VBeta.application.support.discussion;
 
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
 import app.VBeta.application.support.discussion.comment.DiscussionCommentManager;
 import app.VBeta.domain.model.climb.ClimbingProblem;
@@ -9,17 +9,17 @@ import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.discussions.DiscussionType;
 import app.VBeta.domain.model.discussions.SolutionBeta;
 import app.VBeta.domain.model.user.UserAccount;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * {@code ClimbingProblemDiscussionManager} composes a unified discussion timeline for a climbing problem.
  * It merges text comments and beta video submissions into a shared
- * {@link UserCommentData} stream ordered by creation time.
+ * {@link UserDiscussionData} stream ordered by creation time, omitting roots whose
+ * {@code deletedAt} is set.
  * <p>
  * Data is sourced from {@link DiscussionCommentManager} and {@link SolutionBetaManager}.
  */
@@ -48,16 +48,20 @@ public class ClimbingProblemDiscussionManager {
 
     /**
      * Returns merged comment and beta entries for a climbing problem in chronological order.
+     * Soft-deleted discussion roots ({@code deletedAt != null}) are excluded.
      *
      * @param problem climbing problem context
-     * @return discussion timeline entries in database order
+     * @return visible discussion timeline entries in database order
      */
-    public List<UserCommentData> getCommentsForProblem(ClimbingProblem problem){
+    public List<UserDiscussionData> getCommentsForProblem(ClimbingProblem problem){
         List<DiscussionRoot> discussionRoots = discussionRootManager.getDiscussionForProblem(problem);
-        List<UserCommentData> data = new ArrayList<>();
+        List<UserDiscussionData> data = new ArrayList<>();
 
         discussionRoots.forEach(root -> {
-            UserCommentData dataContent = null;
+            if (root.getDeletedAt() != null) {
+                return;
+            }
+            UserDiscussionData dataContent = null;
             if (root.getDiscussionType().equals(DiscussionType.COMMENT)){
                 dataContent = getCommentDiscussion(root);
             } else if (root.getDiscussionType().equals(DiscussionType.BETA)){
@@ -79,7 +83,7 @@ public class ClimbingProblemDiscussionManager {
      * @param commentInfo comment text content
      * @return created timeline entry including discussion id metadata
      */
-    public UserCommentData storeDiscussionComment(UserAccount user, ClimbingProblem problem, String commentInfo){
+    public UserDiscussionData storeDiscussionComment(UserAccount user, ClimbingProblem problem, String commentInfo){
         DiscussionRoot discussionRoot = discussionRootManager.createNewDiscussion(user, problem,
                 DiscussionType.COMMENT);
         discussionCommentManager.storeDiscussionComment(discussionRoot, commentInfo);
@@ -136,6 +140,7 @@ public class ClimbingProblemDiscussionManager {
     }
 
     /**
+     * Deprecated hard-delete path. Comment hide is now {@link #softDeleteDiscussionRoot}.
      * Removes a discussion comment by discussion id.
      *
      * @param discussionId discussion identifier to remove
@@ -148,6 +153,7 @@ public class ClimbingProblemDiscussionManager {
     }
 
     /**
+     * Deprecated hard-delete path. Beta hide is now {@link #softDeleteDiscussionRoot}.
      * Removes a solution beta by discussion id.
      *
      * @param discussionId discussion identifier to remove
@@ -159,11 +165,66 @@ public class ClimbingProblemDiscussionManager {
         discussionRootManager.removeDiscussion(discussion);
     }
 
-    private UserCommentData getCommentDiscussion(DiscussionRoot discussionRoot){
+    /**
+     * Marks a discussion root as deleted without removing the row or child comment/beta records.
+     *
+     * @param actor account performing the delete (stored as {@code deletedBy})
+     * @param discussionRootId discussion identifier to soft-delete
+     * @param deletedReason reason stored on the root (max 100 characters)
+     * @throws RuntimeException when the discussion is missing or already deleted
+     */
+    public void softDeleteDiscussionRoot(UserAccount actor, Long discussionRootId, String deletedReason){
+        DiscussionRoot discussionRoot = getDiscussionNode(discussionRootId);
+        if (discussionRoot.getDeletedAt() != null) {
+            throw new RuntimeException("Invalid action. Discussion is already deleted.");
+        }
+        discussionRoot.setDeletedAt(LocalDateTime.now());
+        discussionRoot.setDeletedBy(actor);
+        discussionRoot.setDeletedReason(deletedReason);
+        discussionRootManager.updateDiscussionRoot(discussionRoot);
+    }
+
+    /**
+     * Clears soft-delete metadata so a discussion root is visible on timelines again.
+     * <p>
+     * If {@code deletedAt} is already unset, the method returns without a second write.
+     *
+     * @param discussionRootId discussion identifier to restore
+     * @throws RuntimeException when the discussion is missing
+     */
+    public void restoreDiscussionRoot(Long discussionRootId) {
+        DiscussionRoot discussionRoot = getDiscussionNode(discussionRootId);
+        if (discussionRoot.getDeletedAt() == null) {
+            return;
+        }
+        discussionRoot.setDeletedAt(null);
+        discussionRoot.setDeletedBy(null);
+        discussionRoot.setDeletedReason(null);
+        discussionRootManager.updateDiscussionRoot(discussionRoot);
+    }
+
+    /**
+     * Maps a discussion root to a timeline DTO. Does not apply soft-delete filtering;
+     * callers that build public timelines should skip roots with {@code deletedAt} set.
+     *
+     * @param discussionRoot discussion root to map
+     * @return comment or beta timeline payload, or {@code null} when child content is missing
+     */
+    public UserDiscussionData getDiscussionData(DiscussionRoot discussionRoot){
+        UserDiscussionData dataContent = null;
+        if (discussionRoot.getDiscussionType().equals(DiscussionType.COMMENT)){
+            dataContent = getCommentDiscussion(discussionRoot);
+        } else {
+            dataContent = getSolutionBeta(discussionRoot);
+        }
+        return dataContent;
+    }
+
+    private UserDiscussionData getCommentDiscussion(DiscussionRoot discussionRoot){
         DiscussionComment comment = discussionCommentManager.getDiscussionComment(discussionRoot);
         if (comment == null) return null;
         Long parentId = discussionRoot.getParent() == null ? null : discussionRoot.getParent().getDiscussionId();
-        return new UserCommentData(
+        return new UserDiscussionData(
                 discussionRoot.getDiscussionId(),
                 discussionRoot.getUserAccount().getId(),
                 discussionRoot.getUserAccount().getUsername(),
@@ -174,11 +235,11 @@ public class ClimbingProblemDiscussionManager {
         );
     }
 
-    private UserCommentData getSolutionBeta(DiscussionRoot discussionRoot){
+    private UserDiscussionData getSolutionBeta(DiscussionRoot discussionRoot){
         SolutionBeta beta = solutionBetaManager.getSolutionBetaFromDiscussionRoot(discussionRoot);
         if (beta == null) return null;
         Long parentId = discussionRoot.getParent() == null ? null : discussionRoot.getParent().getDiscussionId();
-        return  new UserCommentData(
+        return  new UserDiscussionData(
                 discussionRoot.getDiscussionId(),
                 discussionRoot.getUserAccount().getId(),
                 discussionRoot.getUserAccount().getUsername(),
@@ -192,9 +253,7 @@ public class ClimbingProblemDiscussionManager {
     private DiscussionRoot getDiscussionNode(Long discussionParentId){
         DiscussionRoot parent = discussionRootManager.findDiscussionRootById(discussionParentId);
         if (parent == null){
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    String.format("Unable to reply to a discussion with id %d", discussionParentId)
+            throw new RuntimeException(String.format("Unable to reply to a discussion with id %d", discussionParentId)
             );
         }
         return parent;

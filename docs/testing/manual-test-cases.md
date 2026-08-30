@@ -102,9 +102,10 @@ This document defines the manual regression checklist for validating core user f
   3. As another non-admin user, attempt deleting other user comment
   4. As admin, delete another user comment
 - Expected:
-  - owner delete succeeds
+  - owner delete succeeds and the comment disappears from the problem timeline
   - non-owner non-admin delete is blocked
-  - admin delete succeeds
+  - admin delete succeeds and the comment disappears from the problem timeline
+  - the discussion root remains (soft delete); owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
 
 ### DISC-02: Solution Beta Upload/Delete
 
@@ -112,10 +113,13 @@ This document defines the manual regression checklist for validating core user f
   1. Upload a valid beta video on problem page
   2. Confirm metadata appears in discussion
   3. Delete beta as owner
+  4. As admin, delete another user's beta
 - Expected:
   - signed URL/upload/save flow succeeds
   - beta entry is visible after refresh
   - owner/admin deletion rules are enforced
+  - deleted betas disappear from the timeline; video metadata/GCS object is not immediately removed
+  - owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
 
 ### DISC-03: Suggest Perceived Grade
 
@@ -128,7 +132,7 @@ This document defines the manual regression checklist for validating core user f
 ### DISC-04: Problem Discovery by Grade Range (API)
 
 - Steps:
-  1. Call `GET /search/{wallSectionId}?min={lowest}&max={highest}` for a known wall
+  1. Call `GET /api/search/{wallSectionId}?min={lowest}&max={highest}` for a known wall
   2. Call the same range with `&sort=asc` and `&sort=desc`
   3. Retry with `min > max`
   4. Retry with a non-existent wall section id
@@ -149,9 +153,100 @@ This document defines the manual regression checklist for validating core user f
   5. Clear filters and confirm the default list is restored
 - Expected:
   - Filter is available without setter role
-  - Easiest/Hardest use `/search` with `sort=asc|desc`
-  - Most Recent uses `/search` without sort and orders by newest `createdDate`
+  - Easiest/Hardest use `/api/search` with `sort=asc|desc`
+  - Most Recent uses `/api/search` without sort and orders by newest `createdDate`
   - Clear returns to the default wall problems fetch
+
+### DISC-06: Report Comment or Solution Beta (UI)
+
+- Steps:
+  1. As a guest, open a problem with discussion and confirm there is no ⋮ menu
+  2. As a signed-in climber who does not own the row, open ⋮ on a comment and on a beta
+  3. Confirm **Report** is present and **Delete** is not
+  4. Open Report with no category/reason and confirm Submit is disabled
+  5. Enter a 251-character reason and confirm Submit stays disabled
+  6. Submit a valid category + reason (≤250 characters)
+  7. As the content owner, open ⋮ and confirm **Report** is hidden and **Delete** is present
+- Expected:
+  - guests cannot report
+  - signed-in users can report others' comments and betas
+  - category is required; reason is required and capped at 250 characters
+  - successful submit calls `POST /api/report/create` with `reportTargetType: DISCUSSION`
+  - owner cannot report their own discussion; duplicate reports surface an error toast
+
+### NOTIF-01: Notification Bell and All-Inbox Page
+
+- Steps:
+  1. As a guest, confirm there is no notification bell
+  2. Sign in and confirm the navbar bell is present
+  3. Open the bell and confirm unread items come from `GET /api/notification/short`
+  4. Choose **Show all notifications** and confirm `/notifications` loads `GET /api/notification/all?offset=1`
+  5. When there are more than 10 rows, click **Next** and confirm `offset=2`; **Previous** returns to page 1
+  6. Open an unread row and confirm `PATCH /api/notification/short?notificationId=` then navigation to `/reports?reportId=`, `/appeals?reportId=`, or `/appeal-queue?reportId=`
+  7. Return to `/notifications` and confirm that row no longer looks unread
+- Expected:
+  - guests cannot open the inbox
+  - signed-in users can poll unread, page the full inbox, and mark one row read
+  - all-inbox page size is 10; `offset` is 1-based
+  - read vs unread on `/notifications` uses unread ids from `/short` (`readAt` is not on the `/all` DTO)
+  - report-queue event types go to `/reports`; owner deletion/appeal types go to `/appeals`; admin `APPEAL_SUBMITTED` goes to `/appeal-queue`
+
+### REPORT-01: Admin Report Queue and Resolve (UI)
+
+- Steps:
+  1. As a climber/setter, open `/reports` and confirm redirect to `/main-page`
+  2. As admin, open **Reports** and confirm ranked OPEN cases (date, reporter, category)
+  3. Open a discussion case and confirm wall section, problem, content preview, and reporter reason
+  4. Confirm **Dismiss** and **Approve deletion** are disabled with empty notes
+  5. Enter notes and Dismiss; confirm `POST /api/moderate/report` with `REPORT_DISMISSED` and the queue refreshes
+  6. Open another case, enter notes, Approve deletion; confirm `CONTENT_REMOVED` and the discussion is gone from the problem page
+- Expected:
+  - non-admin cannot use the page
+  - list order matches API `queueScore` (category weight × count)
+  - resolve requires notes (max 255) and sends all OPEN `reportIds` on that case
+  - errors surface as toasts; successful resolve removes the case from the list
+
+### LOGBOOK-01: Admin Moderation Logbook (UI)
+
+- Steps:
+  1. As a climber/setter, open `/logbook` and confirm redirect to `/main-page`
+  2. As admin, open **Logbook** and confirm newest-first rows (decision, actor, time, report id, notes)
+  3. Open a row and confirm read-only detail (no dismiss/remove). Follow the report link when present
+  4. Click **Download .txt** and confirm a text file with those decisions
+- Expected:
+  - non-admin cannot use the page
+  - entries include `REPORT_DISMISSED`, `CONTENT_REMOVED`, `APPEAL_APPROVED`, and `APPEAL_DENIED` when those rows exist
+  - logbook cannot be edited
+  - empty logbook shows “No logbook entries.”
+
+### APPEAL-01: Owner Deletion Notice and One-Time Appeal (UI)
+
+- Steps:
+  1. As owner, open a `CONTENT_REMOVED` notification and land on `/appeals?reportId=`
+  2. Confirm admin reason, removed content summary, report category, and report reason (no reporter identity)
+  3. Submit an appeal reason (max 250) and confirm the form closes / status is pending
+  4. Reload and confirm the form stays closed (second submit blocked)
+  5. After admin deny/approve, confirm status text (denied stays removed / approved restored)
+- Expected:
+  - owner can view the deletion reason, report category, and report reason
+  - reporter identity is not shown
+  - only one appeal is submittable
+  - `POST /api/moderate/appeal` is called once
+  - non-owners see an error, not the form
+
+### APPEAL-02: Admin Appeal Queue (UI)
+
+- Steps:
+  1. As admin, open an `APPEAL_SUBMITTED` notification and land on `/appeal-queue?reportId=`
+  2. Confirm `AppealDTO` fields: appellant, appeal reason, removed content, reporter category/reason
+  3. Confirm Approve/Deny stay disabled until admin comments are entered
+  4. Approve or deny with comments and confirm `PATCH /api/moderate/appeal` (`appealId`, `appealStatus`, `adminReason`)
+  5. Open **Appeals** in the navbar and confirm the OPEN list
+  6. As climber, open `/appeal-queue` and confirm redirect to `/main-page`
+- Expected:
+  - admin does not land on `/appeals` and does not see “Appeal is not allowed”
+  - `GET /api/moderate/appeal` is used, not `/appeal/notice`
+  - notes are required (max 255); `APPROVED` restores, `DENIED` keeps the content removed
 
 ### ACCOUNT-01: View Account Profile
 

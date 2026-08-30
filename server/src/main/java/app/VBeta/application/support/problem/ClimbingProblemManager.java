@@ -4,10 +4,8 @@ import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;
 import app.VBeta.domain.model.climb.*;
 import app.VBeta.repository.ClimbingGradeRepository;
 import app.VBeta.repository.ClimbingProblemRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -87,9 +85,7 @@ public class ClimbingProblemManager {
     private ClimbingGrade getClimbingGrade(GradeDefinition grade){
         Optional<ClimbingGrade> climbingGrade = climbingGradeRepository.findByGradeDefinition(grade);
         return climbingGrade.orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        String.format(
+                new RuntimeException(String.format(
                                 "The assigned grade %s is not a proper. Please contact the developers for support.",
                                 grade.name()
                         )

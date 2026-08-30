@@ -1,6 +1,6 @@
 package app.VBeta.application;
 
-import app.VBeta.api.dto.discussions.comment.UserCommentData;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;
 import app.VBeta.api.dto.problems.ClimbingProblemDetailResponse;
 import app.VBeta.api.dto.problems.ClimbingProblemResponse;
@@ -16,10 +16,8 @@ import app.VBeta.domain.model.climb.WallSection;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
@@ -96,7 +94,7 @@ public class ClimbingWallService {
         ClimbingProblem problem = getActiveProblem(problemId);
 
         String perceiveGrade = userPerceiveGradeManager.getPerceiveGrade(problem);
-        List<UserCommentData> comments = climbingProblemDiscussionManager.getCommentsForProblem(problem);
+        List<UserDiscussionData> comments = climbingProblemDiscussionManager.getCommentsForProblem(problem);
         return new ClimbingProblemDetailResponse(
                 new ClimbingProblemResponse(problem.getId(),
                         problem.getHoldColor(),
@@ -148,8 +146,7 @@ public class ClimbingWallService {
     public void deleteWallSection(Long wallSectionId){
         WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
         if (wallSection == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Incorrect wall section ID or the wall section does not exist.");
+            throw new RuntimeException("Incorrect wall section ID or the wall section does not exist.");
         }
 
         List<ClimbingProblem> problems = climbingProblemManager.getAllProblemsFromWallSection(wallSection);
@@ -166,8 +163,7 @@ public class ClimbingWallService {
     public void resetWallSection(Long wallSectionId){
         WallSection wallSection = wallSectionManager.findWallSection(wallSectionId);
         if (wallSection == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Incorrect wall section ID or the wall section does not exist.");
+            throw new RuntimeException("Incorrect wall section ID or the wall section does not exist.");
         }
         List<ClimbingProblem> problems = climbingProblemManager.getAllActiveProblemFromWallSection(wallSection);
         climbingProblemManager.archiveActiveProblems(problems);
@@ -223,9 +219,26 @@ public class ClimbingWallService {
     private ClimbingProblem getActiveProblem(Long problemId){
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
         if (problem == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Problem does not exist or no longer active.");
+            throw new RuntimeException("Problem does not exist or no longer active.");
         }
         return problem;
+    }
+
+    public WallSectionResponse getWallSectionResponse(WallSection wallSection){
+        return new WallSectionResponse(
+                wallSection.getId(),
+                wallSection.getWallSectionName(),
+                wallSection.getWallInfo()
+        );
+    }
+
+    public ClimbingProblemResponse getClimbingProblemResponse(ClimbingProblem problem){
+        return new ClimbingProblemResponse(
+                problem.getId(),
+                problem.getHoldColor(),
+                problem.getProblemInfo(),
+                problem.getCreatedDate().toString().split("T")[0],
+                problem.getClimbingGrade().getGradeDefinition()
+        );
     }
 }

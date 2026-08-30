@@ -1,12 +1,12 @@
 # Known Issues and Limitations
 
-This document reflects the current repository state on `package_sub` and comparison against `administrator_page`.
+This document reflects the current repository state on `sprint5/moderation_mvp`.
 
 ## Functional Limitations
 
 ### 1) Keyword/text search for problems is deferred to a later sprint
-- Grade-range filtering and sort (most recent / easiest / hardest) ship in Sprint 4 discovery.
-- Text/keyword search is intentionally not in Sprint 4; tracked for a later sprint (see roadmap Sprint 9).
+- Grade-range filtering and sort (most recent / easiest / hardest) shipped in completed Sprint 4 discovery.
+- Text/keyword search was intentionally not in Sprint 4; tracked for a later sprint (see roadmap Sprint 9).
 - Impact: users filter by grade/sort only until that later sprint.
 
 ### 2) Comment model is problem-level, not beta-level
@@ -21,7 +21,8 @@ This document reflects the current repository state on `package_sub` and compari
 
 ### 4) No unified global API error envelope
 - Server error responses are not fully standardized via a single global exception handler contract.
-- Impact: clients must handle varying error payload shapes and message formats.
+- Controllers catch `RuntimeException` and usually return **404** (wall/problem writes **400**; unread notification GET `/short` **401**; all-inbox GET `/all` **404**) with a plain-text message.
+- Impact: clients must handle varying error payload shapes. Action-gated permission failures and duplicate reports currently look like 404/400 rather than 403/409. `GET /api/notification/all` also omits `readAt`; the `/notifications` page infers unread from a parallel `/short` poll.
 
 ## Testing and Quality Limitations
 
@@ -49,6 +50,9 @@ This document reflects the current repository state on `package_sub` and compari
 
 ## Planned Follow-up Areas
 
+- Delayed GCS purge of soft-deleted beta objects after a retention window (appeal restore is already shipped).
+- Reporting wall sections or problems (Sprint 5 covers comments and betas only).
+- Email/push notification channels (in-app inbox only).
 - Add automated explain/plan sampling for high-traffic discussion queries as dataset size grows.
 - Standardize authorization checks for all mutating discussion/beta routes.
 - Add global server error handling contract and document response schema.

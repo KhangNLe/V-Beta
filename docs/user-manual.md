@@ -8,6 +8,8 @@ This manual explains how to use the application by role.
 - Backend URL (local): `http://localhost:8080`
 - For authenticated actions, sign in from `/login` or create an account at `/signup`.
 
+Sprint 5 moderation is live: report a comment or beta from the ⋮ menu; admins review **Reports** and **Logbook**; owners appeal from a **Content removed** notification; admins decide on **Appeals**. Details: [`docs/features/moderation.md`](./features/moderation.md).
+
 ## 2) Guest Flow (Browse Walls and Problems)
 
 Guests can view content but cannot perform authenticated actions.
@@ -25,6 +27,8 @@ Guests can view content but cannot perform authenticated actions.
 - Cannot post comments
 - Cannot upload beta videos
 - Cannot submit perceived grades
+- Cannot report discussion content
+- Cannot open the notification bell or `/notifications`
 - Cannot access account-only or admin-only pages
 
 ## 3) Climber Flow (Login, Comment, Submit Beta, Suggest Grade)
@@ -42,11 +46,34 @@ Climber users can participate in problem discussion and feedback.
 3. Enter comment text and submit.
 4. Verify the new comment appears in the discussion.
 
+### B2) Delete a Comment
+1. On a problem page, open the actions menu on a comment you own (or, as admin, on another user's comment).
+2. Choose Delete Comment.
+3. Verify the comment disappears from the discussion after refresh.
+
+### B3) Report a Comment or Beta
+1. Sign in and open a problem page.
+2. Open the ⋮ menu on another user's comment or beta (not your own).
+3. Choose **Report**, pick a category, enter a reason (required, at most 250 characters), and submit.
+4. Verify a success toast. Duplicate or invalid reports show an error toast.
+
+### B4) Notifications
+1. Sign in. Confirm the navbar bell is visible (guests do not see it).
+2. Open the bell to list unread items (`GET /api/notification/short`).
+3. Choose **Show all notifications** (or open `/notifications`).
+4. Confirm the page lists read and unread history (`GET /api/notification/all`, 10 per page). Use **Next** / **Previous** when there are more than 10 rows.
+5. Open an item. It is marked read (`PATCH /api/notification/short?notificationId=`) and you land on `/reports?reportId=`, `/appeals?reportId=`, or `/appeal-queue?reportId=` depending on the event type.
+
 ### C) Submit a Beta Video
 1. On a problem page, choose beta upload flow.
 2. Request signed upload URL.
 3. Upload video and save beta metadata.
 4. Verify your beta appears in discussion.
+
+### C2) Delete a Beta Video
+1. On a problem page, open the actions menu on a beta you own (or, as admin, on another user's beta).
+2. Choose Delete Solution Beta.
+3. Verify the beta disappears from the discussion after refresh.
 
 ### D) Suggest a Grade
 1. On a problem page, choose a perceived grade.
@@ -73,6 +100,30 @@ Setter and Admin users can perform route-setting and management operations.
 4. Select a new role and submit.
 5. Verify role update is reflected in the UI after refresh.
 
+### C) Admin Report Queue (Admin)
+1. Open **Reports** in the navbar (`/reports`). Climbers/setters should be redirected to `/main-page`.
+2. Confirm open cases are listed with date, reporter, and category, highest score first.
+3. Open a case. Confirm wall section, problem, reported comment or beta, and reporter reason.
+4. Leave admin notes empty and confirm **Dismiss** and **Approve deletion** stay disabled.
+5. Enter notes and dismiss or approve deletion. Confirm a success toast and that the case leaves the queue.
+
+### D) Admin Moderation Logbook (Admin)
+1. Open **Logbook** in the navbar (`/logbook`). Climbers/setters should be redirected to `/main-page`.
+2. Confirm newest-first rows with decision, admin, time, and notes.
+3. Open a row. Confirm it is read-only and the report link is present when a report id exists.
+4. Download `.txt` and confirm the file lists those decisions.
+
+### E) Owner Appeal After Removal
+1. After an admin removes your comment or beta, open the **Content removed** notification.
+2. On `/appeals?reportId=`, read the admin reason, removed content, report category, and report reason. Reporter names are not shown.
+3. Submit one appeal. The form should close. Reloading should not offer a second submit.
+
+### F) Admin Appeal Queue (Admin)
+1. After an owner submits an appeal, open the **Appeal submitted** notification.
+2. Land on `/appeal-queue?reportId=`. Confirm the owner’s appeal reason and the reported content. Reporter identity may be shown here.
+3. Enter admin comments, then **Approve** (restore) or **Deny** (keep removed). The queue should refresh.
+4. Open **Appeals** in the navbar. Climbers/setters should be redirected to `/main-page`.
+
 ## 5) Account Page Actions
 
 Authenticated users can access `/account` to:
@@ -90,5 +141,6 @@ Authenticated users can access `/account` to:
 
 - Setup: [`docs/setup/local-development.md`](./setup/local-development.md)
 - Feature behavior: [`docs/features/authentication-and-roles.md`](./features/authentication-and-roles.md)
+- Moderation: [`docs/features/moderation.md`](./features/moderation.md)
 - Wall/problem behavior: [`docs/features/wall-and-problems.md`](./features/wall-and-problems.md)
 - Account behavior: [`docs/features/account-page.md`](./features/account-page.md)

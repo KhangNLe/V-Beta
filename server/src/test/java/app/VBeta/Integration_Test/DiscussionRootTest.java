@@ -1,6 +1,7 @@
 package app.VBeta.Integration_Test;
 
 import app.VBeta.application.support.problem.ClimbingProblemManager;
+import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.discussion.DiscussionRootManager;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.domain.model.climb.ClimbingProblem;
@@ -30,16 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Transactional
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@TestPropertySource(
-        properties = {
-                "spring.datasource.url=jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:v_beta_test}",
-                "spring.datasource.username=${SQL_USERNAME:postgres}",
-                "spring.datasource.password=${SQL_PASSWORD:postgres}",
-                "spring.datasource.driver-class-name=org.postgresql.Driver",
-                "spring.jpa.hibernate.ddl-auto=validate",
-                "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect",
-        }
-)
+@TestPropertySource("classpath:application-postgres-it.properties")
 public class DiscussionRootTest {
     @Autowired
     private DiscussionRootManager discussionRootManager;
@@ -52,6 +44,9 @@ public class DiscussionRootTest {
 
     @Autowired
     private ClimbingProblemManager climbingProblemManager;
+
+    @Autowired
+    private ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
 
     private UserAccount getTestUser(String firebaseUid) {
         UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
@@ -221,6 +216,32 @@ public class DiscussionRootTest {
         assertFalse(replies.isEmpty());
         assertEquals(newest.getDiscussionId(), replies.get(0).getDiscussionId());
         assertEquals(oldest.getDiscussionId(), replies.get(replies.size() - 1).getDiscussionId());
+    }
+
+    @Test
+    @DisplayName("Test soft-delete marks discussion root without removing it")
+    void testSoftDeleteDiscussionRootPersistsMetadata() {
+        String fakeFirebaseID = "testFirebaseUid";
+        long problemId = 1L;
+        String deletedReason = "User deleted their own discussion";
+
+        UserAccount testUser = getTestUser(fakeFirebaseID);
+        ClimbingProblem problem = getTestClimbingProblem(problemId);
+        DiscussionRoot discussionRoot = discussionRootManager.createNewDiscussion(
+                testUser, problem, DiscussionType.COMMENT);
+
+        climbingProblemDiscussionManager.softDeleteDiscussionRoot(
+                testUser, discussionRoot.getDiscussionId(), deletedReason);
+
+        DiscussionRoot deleted = discussionRootRepository.findById(discussionRoot.getDiscussionId()).orElseThrow();
+        assertNotNull(deleted.getDeletedAt());
+        assertEquals(deletedReason, deleted.getDeletedReason());
+        assertEquals(testUser.getId(), deleted.getDeletedBy().getId());
+
+        RuntimeException alreadyDeleted = assertThrows(RuntimeException.class, () ->
+                climbingProblemDiscussionManager.softDeleteDiscussionRoot(
+                        testUser, discussionRoot.getDiscussionId(), deletedReason));
+        assertEquals("Invalid action. Discussion is already deleted.", alreadyDeleted.getMessage());
     }
 
     @Test

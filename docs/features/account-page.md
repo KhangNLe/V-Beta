@@ -8,13 +8,15 @@ This section documents account-related features currently available to authentic
 
 - Authenticated account page route (`/account`)
 - Fetch and display current account information from backend
-- Displays core account fields:
+- Displays core account fields from `UserAccountDTO`:
+  - `userId`
   - email
   - username
   - role
 - Loading and error states for account data request
 - Full account self-deletion support (frontend and backend)
 - Full admin role management support for account promotion/demotion (frontend and backend workflow)
+- Admin account cards show `userId`, email, username, and role. The API does not return `firebaseUid`.
 
 ## User Flow
 
@@ -35,10 +37,12 @@ This section documents account-related features currently available to authentic
 
 - Frontend fetch helper: `v-beta/src/api/account.js`
 - Account page route component: `v-beta/src/app/account/page.js`
-- Backend endpoint: `GET /api/account`
+- Backend endpoint: `GET /api/account` (`UserAccountDTO`)
 - Backend self-delete endpoint: `DELETE /api/account/deletion`
-- Backend admin role update endpoint: `PATCH /api/accounts/{userId}/role`
-- Backend admin account list endpoint: `GET /api/accounts`
+- Backend admin role update endpoint: `PATCH /api/accounts/{userId}/role` (`UserAccountDTO`)
+- Backend admin account list endpoint: `GET /api/accounts` (array of `UserAccountDTO`)
+- Session bootstrap: `POST /api/accounts/session` (`201` + `UserAccountDTO`)
+- Frontend session helper maps `userId` → `id` and `role` → `roleName`, and stores the Firebase client UID locally.
 
 ## Notes and Limitations
 

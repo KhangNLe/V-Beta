@@ -3,7 +3,9 @@ SQL_PASSWORD=your_sql_password
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_NAME=v_beta
-# Optional override used by integration-test datasource defaults.
+# Integration tests ignore DB_NAME / DB_PORT / SQL_*. Defaults match Docker
+# test DB from scripts/test-with-postgres.sh (127.0.0.1:55432, user postgres).
+# GitHub CI overrides TEST_DB_PORT=5432.
 TEST_DB_NAME=v_beta_test
 FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 GCP_PROJECT_ID=your_gcp_project_id

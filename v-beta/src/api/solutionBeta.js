@@ -10,8 +10,8 @@ import { toast } from "react-toastify";
 export async function requestSignedUploadUrl(user, { fileName, contentType, problemId, wallSectionId }) {
     const idToken = await user.getIdToken();
 
-    const response = await fetch(`${API_BASE_URL}/discussion/solution-beta/upload-url`, {
-        method: "POST",
+    const response = await fetch(`${API_BASE_URL}/api/discussion/solution-beta/upload-url`, {
+        method: "GET",
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${idToken}`,
@@ -77,7 +77,7 @@ export async function uploadSolutionBeta(file, signedResponse) {
  */
 export async function saveSolutionBetaToDatabase(user, payload) {
     const idToken = await user.getIdToken();
-    const response = await fetch(`${API_BASE_URL}/discussion/solution-beta/save`, {
+    const response = await fetch(`${API_BASE_URL}/api/discussion/solution-beta/save`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -102,15 +102,14 @@ export async function saveSolutionBetaToDatabase(user, payload) {
 }
 
 /**
- * Delete solution beta from database.
+ * Soft-delete a solution beta discussion. Does not remove the GCS object.
  *
  * @param {import("firebase/auth").User} user
- * @param {{userId: number, problemId: number, discussionId: number, publicUrl: string}} payload
+ * @param {{userId: number, problemId: number, discussionId: number, publicUrl: string, deleteReason: string}} payload
  */
 export async function deleteSolutionBetaFromDatabase(user, payload) {
     const idToken = await user.getIdToken();
-    console.log(payload);
-    const response = await fetch(`${API_BASE_URL}/discussion/solution-beta`, {
+    const response = await fetch(`${API_BASE_URL}/api/discussion/solution-beta`, {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",

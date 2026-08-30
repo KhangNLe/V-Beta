@@ -14,11 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,14 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:v_beta_test}",
-        "spring.datasource.username=${SQL_USERNAME:postgres}",
-        "spring.datasource.password=${SQL_PASSWORD:postgres}",
-        "spring.datasource.driver-class-name=org.postgresql.Driver",
-        "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"
-})
+@TestPropertySource("classpath:application-postgres-it.properties")
 public class WallSectionModificationTest {
     @Autowired
     private ClimbingWallService climbingWallService;
@@ -91,24 +82,19 @@ public class WallSectionModificationTest {
     void testWallResetFailureCase(){
         String climberFirebaseUid = "testFirebaseUid";
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 authorizationService.authorize(climberFirebaseUid, ActionDefinition.RESET_WALL)
         );
 
-        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
-
         String adminFirebaseUid = "testFirebaseUid3";
 
-        ex = assertThrows(ResponseStatusException.class, () ->
+        ex = assertThrows(RuntimeException.class, () ->
                 authorizationService.authorize(adminFirebaseUid, ActionDefinition.RESET_WALL)
         );
 
-        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
-
-        ex = assertThrows(ResponseStatusException.class, () ->
+        ex = assertThrows(RuntimeException.class, () ->
                 climbingWallService.resetWallSection(123435L)
         );
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
     @Test
@@ -147,19 +133,15 @@ public class WallSectionModificationTest {
         //test climber firebaseUid
         String climberFirebaseUid = "testFirebaseUid";
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 authorizationService.authorize(climberFirebaseUid, ActionDefinition.CREATE_WALL)
         );
 
-        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
-
         String setterFirebaseUid = "testFirebaseUid2";
 
-        ex = assertThrows(ResponseStatusException.class, () ->
+        ex = assertThrows(RuntimeException.class, () ->
                 authorizationService.authorize(setterFirebaseUid, ActionDefinition.CREATE_WALL)
         );
-
-        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
     }
 
     @Test
@@ -197,24 +179,18 @@ public class WallSectionModificationTest {
 
         String climberFirebaseUid = "testFirebaseUid";
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 authorizationService.authorize(climberFirebaseUid, ActionDefinition.DELETE_WALL)
         );
 
-        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
-
         String setterFirebaseUid = "testFirebaseUid2";
 
-        ex = assertThrows(ResponseStatusException.class, () ->
+        ex = assertThrows(RuntimeException.class, () ->
                 authorizationService.authorize(setterFirebaseUid, ActionDefinition.DELETE_WALL)
         );
 
-        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
-
-        ex = assertThrows(ResponseStatusException.class, () ->
+        ex = assertThrows(RuntimeException.class, () ->
                 climbingWallService.resetWallSection(12345L)
         );
-
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 }

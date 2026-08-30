@@ -12,7 +12,7 @@ export async function fetchWallSectionsForUser(user) {
     const idToken = await user.getIdToken();
     headers.Authorization = `Bearer ${idToken}`;
   }
-  const response = await fetch(`${API_BASE_URL}/home/wall-sections`, {
+  const response = await fetch(`${API_BASE_URL}/api/home/wall-sections`, {
     headers,
   });
   if (!response.ok) {
@@ -23,7 +23,7 @@ export async function fetchWallSectionsForUser(user) {
 }
 
 /**
- * Problems for a wall section. Wire to `GET /api/wall-sections/{id}/problems` when available.
+ * Problems for a wall section. Maps to `GET /api/home/wall-sections/{id}/problems`.
  *
  * @param {import("firebase/auth").User} user
  * @param {number} sectionId
@@ -38,7 +38,7 @@ export async function fetchWallSectionProblemsForUser(user, sectionId) {
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/home/wall-sections/${sectionId}/problems`,
+    `${API_BASE_URL}/api/home/wall-sections/${sectionId}/problems`,
     {
       headers,
     },
@@ -54,7 +54,7 @@ export async function fetchWallSectionProblemsForUser(user, sectionId) {
 
 /**
  * Active problems in a wall section filtered by inclusive grade range and optional sort.
- * Maps to `GET /search/{sectionId}?min=&max=&sort=`.
+ * Maps to `GET /api/search/{sectionId}?min=&max=&sort=`.
  *
  * @param {import("firebase/auth").User | null} user
  * @param {number} sectionId
@@ -78,7 +78,7 @@ export async function fetchFilteredWallSectionProblems(user, sectionId, options)
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/search/${sectionId}?${params.toString()}`,
+    `${API_BASE_URL}/api/search/${sectionId}?${params.toString()}`,
     { headers },
   );
   if (!response.ok) {
@@ -107,7 +107,7 @@ export async function fetchProblemForUser(user, sectionId, problemId) {
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/home/wall-sections/${sectionId}/problems/${problemId}`,
+    `${API_BASE_URL}/api/home/wall-sections/${sectionId}/problems/${problemId}`,
     {
       headers,
     },
@@ -140,7 +140,7 @@ export async function fetchProblemForUser(user, sectionId, problemId) {
  */
 export async function addWallSection(user, requestPayload) {
   const idToken = await user.getIdToken();
-  const response = await fetch(`${API_BASE_URL}/home/wall-section/creation`, {
+  const response = await fetch(`${API_BASE_URL}/api/home/wall-section/creation`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${idToken}`,
@@ -166,7 +166,7 @@ export async function addWallSection(user, requestPayload) {
 export async function deleteWallSection(user, wallSectionId) {
   const idToken = await user.getIdToken();
   const response = await fetch(
-    `${API_BASE_URL}/home/wall-section/${wallSectionId}/delete`,
+    `${API_BASE_URL}/api/home/wall-section/${wallSectionId}/delete`,
     {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${idToken}` },
@@ -187,9 +187,9 @@ export async function deleteWallSection(user, wallSectionId) {
 export async function resetWallSection(user, wallSectionId) {
   const idToken = await user.getIdToken();
   const response = await fetch(
-    `${API_BASE_URL}/home/wall-section/${wallSectionId}/reset`,
+    `${API_BASE_URL}/api/home/wall-section/${wallSectionId}/reset`,
     {
-      method: 'POST',
+      method: 'PATCH',
       headers: { Authorization: `Bearer ${idToken}` },
     },
   );
@@ -210,7 +210,7 @@ export async function resetWallSection(user, wallSectionId) {
 export async function createWallSectionProblem(user, sectionId, body) {
   const idToken = await user.getIdToken();
   const response = await fetch(
-    `${API_BASE_URL}/home/wall-sections/${sectionId}/problems/create`,
+    `${API_BASE_URL}/api/home/wall-sections/${sectionId}/problems/create`,
     {
       method: 'POST',
       headers: {
@@ -240,9 +240,9 @@ export async function createWallSectionProblem(user, sectionId, body) {
 export async function deleteWallSectionProblem(user, sectionId, problemId) {
   const idToken = await user.getIdToken();
   const response = await fetch(
-    `${API_BASE_URL}/home/wall-sections/${sectionId}/problems/${problemId}/delete`,
+    `${API_BASE_URL}/api/home/wall-sections/${sectionId}/problems/${problemId}/delete`,
     {
-      method: 'DELETE',
+      method: 'PATCH',
       headers: { Authorization: `Bearer ${idToken}` },
     },
   );

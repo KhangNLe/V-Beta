@@ -6,7 +6,9 @@ import { signOut } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
 
 import { auth } from "@/app/firebase";
+import NotificationBell from "@/components/NotificationBell";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { getAccountRole } from "@/lib/accountSession";
 
 function normalizeRole(roleName) {
   const normalized = (roleName || "").toUpperCase();
@@ -56,7 +58,7 @@ export default function RoleNavbar() {
 
   const roleType = useMemo(() => {
     if (!user || !ready) return "guest";
-    return normalizeRole(account?.roleName);
+    return normalizeRole(getAccountRole(account));
   }, [user, account, ready]);
 
   const navItems = useMemo(() => {
@@ -71,6 +73,9 @@ export default function RoleNavbar() {
     if (roleType === "admin") {
       return [
         { href: "/accounts", label: "All Accounts" },
+        { href: "/reports", label: "Reports" },
+        { href: "/appeal-queue", label: "Appeals" },
+        { href: "/logbook", label: "Logbook" },
         { href: "/account", label: "Account" },
         { href: "/main-page", label: "Gym" },
       ];
@@ -122,6 +127,11 @@ export default function RoleNavbar() {
               </li>
             );
           })}
+          {user && roleType !== "guest" && (
+            <li>
+              <NotificationBell user={user} />
+            </li>
+          )}
           {user && roleType !== "guest" && (
             <li>
               <span

@@ -42,6 +42,7 @@ import {
 import GuestBanner from "@/components/GuestBanner";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { getAccountRole } from "@/lib/accountSession";
 import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
 import { MoreVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -56,7 +57,7 @@ export default function MainPage() {
     requireEmailVerified: true,
   });
   const [sections, setSections] = useState([]);
-  const isAdmin = (account?.roleName || '').toUpperCase().includes('ADMIN');
+  const isAdmin = getAccountRole(account).toUpperCase().includes('ADMIN');
 
   const [fetchError, setFetchError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);

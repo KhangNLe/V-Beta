@@ -122,9 +122,9 @@ When adding a new feature, prefer extending existing project patterns over intro
 
 Place new types in the matching domain subpackage under `app.VBeta` (do not leave them in the layer root):
 
-- **DTOs** (`api/dto/`): `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`)
-- **Domain** (`domain/model/`): `actions/`, `climb/`, `discussions/`, `user/`
-- **Support** (`application/support/`): `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`
+- **DTOs** (`api/dto/`): `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`), `report/`, `notification/`, `moderation/`
+- **Domain** (`domain/model/`): `actions/`, `climb/`, `discussions/`, `user/`, `report/`, `notification/`, `appeal/`, `moderation/`
+- **Support** (`application/support/`): `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`, `report/`, `events/`, `moderation/`
 
 See [`docs/architecture/backend-architecture.md`](../architecture/backend-architecture.md) for the full layout.
 
@@ -132,6 +132,7 @@ See [`docs/architecture/backend-architecture.md`](../architecture/backend-archit
 
 - Use DTOs for request/response contracts.
 - Keep endpoint semantics predictable (avoid non-standard method behavior for new endpoints).
+- Keep new HTTP routes under `/api` and match existing controller method choices (`PATCH` for wall reset and problem delete; `GET` with JSON body for signed upload URL).
 - Return clear, intentional status codes.
 - Keep endpoint docs updated in `docs/api/` when contracts change.
 

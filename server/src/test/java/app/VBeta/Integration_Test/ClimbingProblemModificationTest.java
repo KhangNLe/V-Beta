@@ -30,11 +30,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,14 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:v_beta_test}",
-        "spring.datasource.username=${SQL_USERNAME:postgres}",
-        "spring.datasource.password=${SQL_PASSWORD:postgres}",
-        "spring.datasource.driver-class-name=org.postgresql.Driver",
-        "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"
-})
+@TestPropertySource("classpath:application-postgres-it.properties")
 public class ClimbingProblemModificationTest {
     @Autowired
     private ClimbingWallService climbingWallService;
@@ -168,10 +159,9 @@ public class ClimbingProblemModificationTest {
     @Order(3)
     @DisplayName("Test for Fail Climbing Problem Creation")
     void testClimbingProblemCreationFailure(){
-        ResponseStatusException ex = assertThrows((ResponseStatusException.class), () ->
+        RuntimeException ex = assertThrows((RuntimeException.class), () ->
                 climbingWallService.createNewClimbingProblem(1234L, request)
         );
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
     @Test

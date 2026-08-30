@@ -15,7 +15,7 @@ This strategy defines how we validate correctness, authorization behavior, and r
 - Framework: JUnit 5 + Spring Boot Test
 - Test styles in repo:
   - application/context smoke tests
-  - controller/service tests with MockMvc and mocked dependencies
+  - `@WebMvcTest` Mockito controller tests (MockMvc, filters off, mocked services) covering `/api/...` routes
   - integration-style tests under `Integration_Test/*`
 - Profiles/config:
   - `application-test.yml` uses H2 by default
@@ -40,7 +40,7 @@ cd server
   - boundary mocking for auth/session, route params, router actions, and API modules
   - async flow validation for loading/error/empty/success states
   - role/ownership gating tests for guest/climber/setter/admin experiences
-  - mutation and failure-path tests for account role changes, wall actions, comments, and beta upload workflows
+  - mutation and failure-path tests for account role changes, wall actions, comments, beta upload, reports, notifications, and appeals
   - pending-state and UI disablement checks for long-running actions (`Adding...`, `Deleting...`, `Submitting...`, `Uploading...`)
 
 Run command:
@@ -60,6 +60,7 @@ Focus:
 - account role change behavior
 - discussion and beta ownership checks
 - domain validation and error paths
+- report queue, logbook, notification inbox, and appeal create/resolve
 
 Target outcomes:
 
@@ -72,8 +73,8 @@ Focus:
 
 - end-to-end service/controller behavior with realistic persistence interactions
 - wall/problem lifecycle operations
-- comment creation/deletion behavior
-- solution beta metadata creation/deletion behavior
+- comment creation/soft-deletion behavior (root stays; timeline hides deleted rows)
+- solution beta metadata creation/soft-deletion behavior (GCS object is not deleted on user/admin hide)
 - discussion timeline/read ordering and deterministic retrieval semantics
 
 Target outcomes:
@@ -88,6 +89,7 @@ Priority targets:
 - auth forms (login/signup/verify/reset) state and validation behavior, with login/signup coverage prioritized next
 - role-based UI visibility (guest/climber/setter/admin)
 - wall/problem page interaction states (loading, error, empty, success)
+- problem-page discussion ⋮ menu (owner/admin delete vs signed-in report, dialog validation)
 - account page behaviors (including delete flow and role-management entry points when applicable)
 
 Target outcomes:
@@ -110,8 +112,8 @@ Highest regression risk areas:
 
 - authentication/session sync (`/api/accounts/session`)
 - authorization and role enforcement (`CHANGE_ROLE`, `VIEW_ACCOUNTS`, `DELETE_COMMENT`, etc.)
-- wall/problem modification endpoints
-- solution beta upload flow (signed URL -> upload -> metadata save)
+- wall/problem modification endpoints (`/api/home/...`, including `PATCH` reset and problem delete)
+- solution beta upload flow (`GET /api/discussion/solution-beta/upload-url` → GCS PUT → `POST .../save`)
 
 These areas should always be included in release smoke testing.
 

@@ -9,10 +9,8 @@ import app.VBeta.domain.model.user.UserPerceiveGrade;
 import app.VBeta.domain.model.user.UserPerceiveGradeId;
 import app.VBeta.repository.ClimbingGradeRepository;
 import app.VBeta.repository.UserPerceiveGradeRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -92,9 +90,7 @@ public class UserPerceiveGradeManager {
     private ClimbingGrade getClimbingGrade(GradeDefinition gradeDefinition){
         Optional<ClimbingGrade> grade = climbingGradeRepository.findByGradeDefinition(gradeDefinition);
         return grade.orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR,
-                        String.format("The climbing grade %s is not on database. Please contact developers for help.",
+                new RuntimeException(String.format("The climbing grade %s is not on database. Please contact developers for help.",
                                 gradeDefinition.name())
                 )
         );
@@ -152,8 +148,7 @@ public class UserPerceiveGradeManager {
     private UserAccount getUserAccount(String firebaseUid){
         UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
         if (userAccount == null){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Unknown authorization for user account. Please re-login and try again.");
+            throw new RuntimeException("Unknown authorization for user account. Please re-login and try again.");
         }
         return userAccount;
     }

@@ -1,14 +1,15 @@
 package app.VBeta.controller;
 
 import app.VBeta.api.dto.account.AccountRequest;
-import app.VBeta.api.dto.account.AccountResponse;
 import app.VBeta.api.dto.account.AccountRoleChangeRequest;
+import app.VBeta.api.dto.account.UserAccountDTO;
 import app.VBeta.application.AccountService;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.domain.model.actions.ActionDefinition;
 import jakarta.validation.Valid;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -65,7 +66,7 @@ public class AccountController {
    * @throws ResponseStatusException with {@link HttpStatus#UNAUTHORIZED} when authentication is missing or invalid
    */
   @PostMapping("/session")
-  public AccountResponse session(@Valid @RequestBody AccountRequest body) {
+  public ResponseEntity<?> session(@Valid @RequestBody AccountRequest body) {
     Authentication auth = SecurityContextHolder
       .getContext()
       .getAuthentication();
@@ -88,11 +89,12 @@ public class AccountController {
       }
     }
 
-    return accountService.loginAccount(
+    UserAccountDTO response = accountService.loginAccount(
       body.username(),
       resolvedEmail,
       verifiedUid
     );
+    return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
   /**
@@ -105,13 +107,20 @@ public class AccountController {
    * @return updated account response after role change
    */
   @PatchMapping("/{userId}/role")
-  public AccountResponse changeUserRole(
+  public ResponseEntity<?> changeUserRole(
     @PathVariable Long userId,
     @Valid @RequestBody AccountRoleChangeRequest body
   ) {
-    authorizationService.authorizeCurrentUser(ActionDefinition.CHANGE_ROLE);
+    try {
+      authorizationService.authorizeCurrentUser(ActionDefinition.CHANGE_ROLE);
+      UserAccountDTO response =  accountService.changeUserRole(userId, body.roleType());
 
-    return accountService.changeUserRole(userId, body.roleType());
+      return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (RuntimeException e){
+      return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+    } catch (Exception e) {
+      return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   /**
@@ -122,9 +131,16 @@ public class AccountController {
    * @return list of all account responses
    */
   @GetMapping
-  public List<AccountResponse> getAllAccounts() {
-    authorizationService.authorizeCurrentUser(ActionDefinition.VIEW_ACCOUNTS);
+  public ResponseEntity<?> getAllAccounts() {
+    try {
+      authorizationService.authorizeCurrentUser(ActionDefinition.VIEW_ACCOUNTS);
+      List<UserAccountDTO> body = accountService.getAllAccounts();
 
-    return accountService.getAllAccounts();
+      return new ResponseEntity<>(body, HttpStatus.OK);
+    } catch (RuntimeException e){
+      return new ResponseEntity<>(e.getMessage(),  HttpStatus.NOT_FOUND);
+    } catch (Exception e){
+      return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

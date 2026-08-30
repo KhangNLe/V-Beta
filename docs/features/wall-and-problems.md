@@ -12,9 +12,10 @@ This section documents wall section and climbing problem features currently avai
 - Admin wall section creation and deletion
 - Setter problem creation and deletion
 - Setter wall section reset/archive operation
-- Authenticated discussion actions (comments, beta upload, grade suggestion)
+- Authenticated discussion actions (comments, beta upload, grade suggestion, content report)
 - Guest browsing mode with read-only wall/problem access and banner messaging
-- Owner/admin deletion behavior for comments and solution betas
+- Owner/admin **soft-delete** for comments and solution betas (`Discussion_Root.deleted_at` / `deleted_by` / `deleted_reason`)
+- Signed-in **Report** action on the discussion ⋮ menu (comments and solution betas) via `POST /api/report/create`
 - Backend discovery: filter active problems by inclusive grade range within a wall section
 - Backend discovery: sort filtered problems by assigned grade ascending or descending
 - Wall section Filter UI: grade range (min–max), sort by most recent / easiest / hardest, Apply / Clear
@@ -34,14 +35,14 @@ This section documents wall section and climbing problem features currently avai
 
 1. On a wall section page, user opens **Filter**.
 2. User selects inclusive min/max grades and a sort mode:
-   - **Most Recent** — grade filter via `/search` without `sort`, then client sorts by `createdDate` descending
-   - **Easiest** — `/search?...&sort=asc`
-   - **Hardest** — `/search?...&sort=desc`
+   - **Most Recent** — grade filter via `/api/search` without `sort`, then client sorts by `createdDate` descending
+   - **Easiest** — `/api/search?...&sort=asc`
+   - **Hardest** — `/api/search?...&sort=desc`
 3. **Apply** loads matching active problems; Apply is disabled when min is harder than max.
 4. **Clear filters** restores the default wall-section problem list.
 5. Guests and signed-in users can use Filter; invalid API ranges still return `400`, missing walls `404`.
 
-Keyword/text search is deferred to a later sprint (not Sprint 4).
+Keyword/text search is deferred to a later sprint (completed Sprint 4 delivered grade filter/sort only).
 
 ### Setter Management Flow
 
@@ -56,12 +57,15 @@ Keyword/text search is deferred to a later sprint (not Sprint 4).
 2. User can post a comment.
 3. User can upload a beta video and save metadata.
 4. User can submit perceived grade.
-5. Comment/solution beta deletion is allowed for owner or admin (when checks pass).
+5. Comment/solution beta **soft-delete** is allowed for owner or admin (when checks pass). Deleted items disappear from the problem timeline after refresh.
+6. Signed-in users who do **not** own the discussion can open **Report** from the ⋮ menu, choose a category, enter a reason (required, max 250 characters), and submit. Guests do not see the menu. Owners see Delete only (self-report is rejected by the API).
 
 Current discussion payload contract is unified through `DiscussionRoot` metadata:
 
 - Discussion entries include `discussionId`, `discussionType`, and `discussionContent`.
-- Deletion payloads for both comments and solution betas include `discussionId`.
+- Deletion payloads for both comments and solution betas include `discussionId` and a reason string (max 100).
+- Comment deletes send `deletedReason`; beta deletes send `deleteReason`.
+- The problem page currently sends `"User deleted their own discussion"` for owner deletes and `"Admin forced delete the discussion"` when an admin deletes another user's item.
 
 ## Permissions and Visibility
 
@@ -69,6 +73,7 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 - Mutating wall/problem management operations require role-qualified users.
 - Setter-gated UI controls are used for problem create/delete/reset actions.
 - Deletion of user-generated discussion content is restricted to owner/admin patterns.
+- Reporting discussion content is available to any signed-in role except the discussion owner. Guests have no Report control.
 
 ## Key Files
 
@@ -80,6 +85,8 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
     - `v-beta/src/api/wallSections.js`
     - `v-beta/src/api/comments.js`
     - `v-beta/src/api/solutionBeta.js`
+    - `v-beta/src/api/reports.js`
+    - `v-beta/src/lib/discussionDeletion.js`
 - Backend controllers/services:
     - `server/src/main/java/app/VBeta/controller/WallSectionController.java`
     - `server/src/main/java/app/VBeta/controller/ProblemDiscussionController.java`
@@ -90,11 +97,16 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 
 ## Limitations and Notes
 
-- Some endpoint semantics are legacy (for example, delete problem is currently exposed as a GET route in backend controller).
+- Comment/beta delete is a soft delete: discussion root metadata is marked deleted; comment text, beta metadata, and GCS objects stay. Appeal **Approve** restores the discussion; delayed GCS purge is still future work.
+- Problem delete is `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`.
+- Wall reset is `PATCH /api/home/wall-section/{wallSectionId}/reset`.
 - UI gating and backend authorization should both be revalidated when role logic changes.
-- Discovery grade-range endpoints use query params (`?min=&max=&sort=`).
-- CORS allows `/search/**` for the frontend origin (same pattern as `/home/**`).
-- Keyword/text search is deferred to a later sprint (roadmap Sprint 9), not Sprint 4.
+- Problem-page Report submits `reportTargetType: DISCUSSION` and `targetId` = discussion id. Category is required (`INAPPROPRIATE_CONTENT`, `HARASSMENT_BULLYING`, `SPAM`, `OFF_TOPIC`). Reason is required and capped at 250 characters (API max; not 255).
+- Duplicate open reports and self-reports return `404` from create-report; the dialog shows an error toast.
+- The rest of the moderation loop (admin queue, logbook, notifications, appeals) is documented in `docs/features/moderation.md`.
+- Discovery grade-range endpoints use `/api/search/{wallSectionId}?min=&max=&sort=`.
+- CORS allows `/api/**` for the frontend origin (covers `/api/home/**` and `/api/search/**`).
+- Keyword/text search is deferred to a later sprint (roadmap Sprint 9); Sprint 4 discovery (grade filter/sort) is complete.
 
 ## Future Enhancements
 

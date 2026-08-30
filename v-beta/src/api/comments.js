@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
  */
 export async function postCommentForUser(user, problemId, commentInfo) {
   const idToken = await user.getIdToken();
-  const response = await fetch(`${API_BASE_URL}/discussion/add-comments`, {
+  const response = await fetch(`${API_BASE_URL}/api/discussion/add-comments`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -25,14 +25,14 @@ export async function postCommentForUser(user, problemId, commentInfo) {
 }
 
 /**
- * Delete user comment from a problem.
- * 
+ * Delete user comment from a problem (soft-delete of the discussion root).
+ *
  * @param {import("firebase/auth").User} user
- * @param {{authorId: number, problemId: number, discussionId: number, commentContent: string}} payload
+ * @param {{authorId: number, problemId: number, discussionId: number, commentContent: string, deletedReason: string}} payload
  */
 export async function deleteUserComment(user, payload){
   const idToken = await user.getIdToken();
-  const response = await fetch(`${API_BASE_URL}/discussion/comment/delete`, {
+  const response = await fetch(`${API_BASE_URL}/api/discussion/comment/delete`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
@@ -64,7 +64,7 @@ export async function addUserSuggestedGrade(user, payload, problemId){
     return;
   }
   
-  const response = await fetch(`${API_BASE_URL}/discussion/problems/${problemId}/suggest-grade`, {
+  const response = await fetch(`${API_BASE_URL}/api/discussion/problems/${problemId}/suggest-grade`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

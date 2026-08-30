@@ -5,11 +5,9 @@ import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.domain.model.actions.ActionDefinition;
 import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.domain.model.user.UserAccount;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * {@code AuthorizationService} centralizes authentication context access and permission enforcement.
@@ -48,17 +46,17 @@ public class AuthorizationService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth == null || !auth.isAuthenticated()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid authentication token");
+            throw new RuntimeException("Missing or invalid authentication token");
         }
 
         Object principal = auth.getPrincipal();
         if (principal == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing Firebase UID in authentication token");
+            throw new RuntimeException("Missing Firebase UID in authentication token");
         }
 
         String firebaseUid = String.valueOf(principal);
         if (firebaseUid.isBlank() || "anonymousUser".equals(firebaseUid)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing Firebase UID in authentication token");
+            throw new RuntimeException("Missing Firebase UID in authentication token");
         }
 
         return firebaseUid;
@@ -84,21 +82,39 @@ public class AuthorizationService {
         UserAccount user = userAccountManager.findUserAccountWithRole(firebaseUid);
 
         if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated user account does not exist");
+            throw new RuntimeException("Authenticated user account does not exist");
         }
 
         if (user.getGymRole() == null || user.getGymRole().getRoleType() == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have a valid role assigned");
+            throw new RuntimeException("User does not have a valid role assigned");
         }
 
         RoleType roleType = user.getGymRole().getRoleType();
         boolean allowed = roleBasedAuthenticationManager.isPermit(roleType, action);
 
         if (!allowed) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Role " + roleType.name() + " is not allowed to perform action " + action.name()
+            throw new RuntimeException("Role " + roleType.name() + " is not allowed to perform action " + action.name()
             );
+        }
+    }
+
+    /**
+     * Returns whether {@code user} is permitted to perform {@code action}.
+     *
+     * @param user account to evaluate
+     * @param action action being requested
+     * @return {@code true} when the account's role includes the action
+     */
+    public boolean isPermitted(UserAccount user, ActionDefinition action) {
+        if (user == null || user.getGymRole() == null || user.getGymRole().getRoleType() == null) {
+            return false;
+        }
+        return roleBasedAuthenticationManager.isPermit(user.getGymRole().getRoleType(), action);
+    }
+
+    public void authorize(UserAccount user,  ActionDefinition action) {
+        if (!roleBasedAuthenticationManager.isPermit(user.getGymRole().getRoleType(), action)) {
+            throw new RuntimeException("Role " + user.getGymRole().getRoleType() + " is not allowed to perform action ");
         }
     }
 }

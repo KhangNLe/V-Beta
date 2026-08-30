@@ -8,26 +8,32 @@ Errors come from three main layers:
 
 - **Auth filter layer** (`FirebaseAuthFilter`) for invalid Firebase bearer tokens
 - **Authorization layer** (`AuthorizationService`) for role/permission checks
-- **Service/controller layer** (`ResponseStatusException`, validation, and runtime exceptions)
+- **Controller catch mapping** plus Spring validation (`@Valid`) and a few remaining `ResponseStatusException` paths (account session)
 
 ## Common HTTP Status Codes
 
 - **400 Bad Request**
-  - Invalid request payloads
-  - Invalid role value on role update
-  - Invalid perceived grade input
+  - Invalid request payloads (`@Valid`)
+  - Invalid perceived grade / role enum values
+  - Blank or over-length report reason / missing report enums
+  - Blank moderation `reason` / missing `reportIds` or `decision`
+  - Blank appeal `appealReason` / missing `reportId`
+  - Blank appeal-resolve `adminReason` / missing `appealId` or `appealStatus`, or `appealStatus` is `OPEN`
+  - Missing `notificationId` on `PATCH /api/notification/short`
+  - Non-numeric `offset` on `GET /api/notification/all`
+  - `offSetPlace <= 0` on `GET /api/moderate/logbook`
+  - Wall/problem write `RuntimeException`s (create/delete/reset), including authorization failures on those routes
 - **401 Unauthorized**
-  - Missing/invalid bearer token for protected routes
-  - Authenticated token exists but no matching account in DB
-- **403 Forbidden**
-  - Authenticated user lacks required role/action permission
-  - User has no valid role assigned
+  - Missing/invalid bearer token for protected routes (Spring Security or `FirebaseAuthFilter`)
+  - Missing auth context on `POST /api/accounts/session`
+  - `GET /api/notification/short` when auth/account lookup throws `RuntimeException`
 - **404 Not Found**
-  - Referenced resource not found (wall/problem/comment/beta/account targets)
-- **409 Conflict** (route-dependent)
-  - Duplicate or conflicting state in create/save operations (if thrown by service logic)
+  - Referenced resource not found (wall/problem/comment/beta/account/report/notification targets)
+  - Most other controller `RuntimeException`s, including action-gated authorization failures, duplicate report creates, unauthorized discussion deletes, deleting an already-deleted discussion, `GET /api/notification/all` failures, and `PATCH /api/notification/short` failures
 - **500 Internal Server Error**
   - Unhandled exceptions or infrastructure failures (storage/DB/internal service issues)
+
+Controllers return the exception message as a **plain-text** body for caught `RuntimeException` / `Exception`. They do not use a shared JSON error envelope.
 
 ## Authentication Error Behavior
 
@@ -43,37 +49,111 @@ Status: `401`
 
 ### Missing/Invalid Auth Context
 
-Authorization failures from `AuthorizationService` can return:
+`AuthorizationService` throws `RuntimeException` with messages such as:
 
-- `401 Missing or invalid authentication token`
-- `401 Missing Firebase UID in authentication token`
-- `401 Authenticated user account does not exist`
+- `Missing or invalid authentication token`
+- `Missing Firebase UID in authentication token`
+- `Authenticated user account does not exist`
+
+How that surfaces depends on the controller:
+
+- most routes → **404** with that message
+- wall/problem writes → **400**
+- `GET /api/notification/short` → **401**
+- `GET /api/notification/all` → **404**
+- `PATCH /api/notification/short` → **404**
+- `POST /api/accounts/session` with no security context → **401** (`ResponseStatusException`)
 
 ## Authorization Error Behavior
 
-When user is authenticated but not allowed:
+When the user is authenticated but not allowed, `AuthorizationService` throws `RuntimeException` (`Role <ROLE> is not allowed to perform action <ACTION>` or no valid role). Controllers currently map those to **404** or **400**, not 403.
 
-- `403 User does not have a valid role assigned`
-- `403 Role <ROLE> is not allowed to perform action <ACTION>`
-
-This applies to action-gated endpoints (for example account list/role-change, wall/problem management, grade suggestion, and comment delete).
+This applies to action-gated endpoints (for example account list/role-change, wall/problem management, grade suggestion, comment delete, `GET /api/report/reports`, `POST /api/moderate/report`, `GET /api/moderate/logbook`, `GET /api/moderate/appeal`, and `PATCH /api/moderate/appeal`).
 
 ## Validation and Domain Errors
 
-Validation/domain errors are typically returned as `400`, `404`, or `500` depending on failure point:
-
-- Invalid payload fields/enums: usually `400`
+- Invalid payload fields/enums: usually `400` (Spring validation)
 - Missing domain resource: usually `404`
+- Duplicate report create: currently `404` (`Report already exists`) because the report controller maps all `RuntimeException`s to not-found
 - Storage/generation/internal failure: usually `500`
 
-Because there is no custom global error envelope documented yet, clients should not hardcode one exact shape for all non-auth errors.
+Clients should not hardcode one exact JSON shape for all non-auth errors.
+
+## Content Report and Notification Errors
+
+`POST /api/report/create`, `GET /api/notification/short`, `GET /api/notification/all`, and `PATCH /api/notification/short` are authenticated, not action-gated. Missing bearer tokens are rejected by Spring Security (`401`). Invalid/expired tokens still use the filter payload above.
+
+`GET /api/report/reports` is action-gated (`VIEW_REPORTS`). `POST /api/moderate/report` is action-gated (`MODERATE_REPORT`). `GET /api/moderate/logbook` is action-gated (`VIEW_MODERATION_LOGS`). `GET /api/moderate/appeal` is action-gated (`VIEW_APPEALS`). `PATCH /api/moderate/appeal` is action-gated (`MODERATE_APPEAL`). `POST /api/moderate/appeal` and `GET /api/moderate/appeal/notice` are authenticated only. Guest callers are `401`. Climber/setter and other authorization failures currently map to **404**.
+
+Create-report domain errors:
+
+- `400` — blank `reportReason`, missing `reportTargetType` / `reportCategoryName` / `targetId`
+- `404` — reporter account missing, target missing/deleted, reporter owns the discussion, reporter is the reported user, or a duplicate report already exists
+
+Admin queue/detail errors:
+
+- `404` — missing account, missing `VIEW_REPORTS`, or unknown `reportId` (`Report not found`)
+- `200` with `"reports": []` — empty queue, viewer owns the reported discussion, or no OPEN siblings remain on that target
+
+Admin resolve errors (`POST /api/moderate/report`):
+
+- `400` — missing `reportIds` / `decision`, or blank `reason`
+- `404` — missing account, missing `MODERATE_REPORT`, or appeal `decision` (`Appeal decisions are not supported on this endpoint.`)
+- `200` with empty body — success, including when every id was skipped (unknown, already closed, filed by the acting admin, or on a discussion the admin owns)
+
+Admin logbook errors (`GET /api/moderate/logbook`):
+
+- `400` — `offSetPlace <= 0`
+- `404` — missing account, missing `VIEW_MODERATION_LOGS`, or unknown `moderationId` (`Moderation not found`)
+- `200` with `"moderationLogs": []` — no decisions yet, or the requested page is past the last row
+
+Owner appeal create errors (`POST /api/moderate/appeal`):
+
+- `400` — missing `reportId`, or blank `appealReason`
+- `404` — missing account, ineligible report (`Appeal is not allowed`), or duplicate appeal (`Appeal already exists`)
+- `201` with empty body — success
+
+Owner deletion notice errors (`GET /api/moderate/appeal/notice`):
+
+- `404` — missing account, or ineligible/missing report (`Appeal is not allowed` / `Report not found`)
+- `200` — owner notice (admin reason, content snapshot, `canAppeal`, nested `AppealDTO` when an appeal exists). Admins should use `GET /api/moderate/appeal`.
+
+Admin appeal queue/detail errors (`GET /api/moderate/appeal`):
+
+- `404` — missing account, missing `VIEW_APPEALS`, or unknown / hidden `appealId` / `reportId` (`Appeal not found`)
+- `200` with `"appeals": []` — no OPEN appeals, or every OPEN appeal was filed by the viewing admin
+
+Admin appeal resolve errors (`PATCH /api/moderate/appeal`):
+
+- `400` — missing `appealId` / `appealStatus`, blank `adminReason`, or `appealStatus` is `OPEN` (`Invalid appeal status`)
+- `404` — missing account, missing `MODERATE_APPEAL`, unknown / already-decided / hidden `appealId` (`Appeal not found`)
+- `200` with empty body — success
+
+Unread notification errors (`GET /api/notification/short`):
+
+- `401` — missing/invalid auth, or no account matches the Firebase UID (controller maps lookup failure to `401`)
+
+All-inbox errors (`GET /api/notification/all`):
+
+- `400` — non-numeric `offset`
+- `401` — guest or invalid Firebase token (Spring Security / auth filter)
+- `404` — missing auth context or no account matches the Firebase UID (controller maps lookup failure to `404`)
+- `200` with `[]` — the requested page has no rows
+
+Mark-read errors (`PATCH /api/notification/short?notificationId=`):
+
+- `400` — missing `notificationId`
+- `404` — missing auth context, missing account, unknown id, or the row belongs to another user
+- `200` with empty body — success, including when the row was already read
+
+Create-report does not return `403` for climber/setter: any authenticated role may submit a report. Admin inbox fan-out is a side effect, not an access check on create/poll. Queue/detail **does** require admin `VIEW_REPORTS`. Resolve **does** require admin `MODERATE_REPORT`. Logbook **does** require admin `VIEW_MODERATION_LOGS`. Appeal queue/detail **does** require admin `VIEW_APPEALS`. Appeal resolve **does** require admin `MODERATE_APPEAL`. Inbox mark-read is own-row only.
 
 ## Practical Error Payload Notes
 
 - **Guaranteed stable auth payload** for invalid token:
   - `{"error":"Invalid or expired Firebase token"}`
-- **Other errors** usually come from Spring default handling of `ResponseStatusException` / validation exceptions.
-  - Treat message/body as informative but not guaranteed stable across framework changes.
+- **Controller-caught errors** are typically the raw exception message as text.
+- **Validation errors** use Spring's default `MethodArgumentNotValidException` JSON.
 
 ## Client Handling Guidance
 
@@ -82,12 +162,15 @@ Frontend/API client should handle by status class first:
 - **401**
   - Clear local session
   - Redirect to login or prompt re-authentication
-- **403**
-  - Show permission-denied message
-  - Keep user on current page where possible
 - **404**
-  - Show not-found message and offer navigation fallback
+  - Show not-found or permission-denied message (action-gated failures currently use this status)
+  - Offer navigation fallback where appropriate
 - **400**
   - Show field-specific or action-specific validation message
 - **500**
   - Show generic retry/support message and log details client-side
+
+Inbox UI notes:
+
+- `GET /api/notification/short` maps account lookup failure to **401**; `GET /api/notification/all` maps it to **404**.
+- `/notifications` overlays unread ids from `/short` because `/all` omits `readAt`. If the unread poll fails, those rows render as unread.

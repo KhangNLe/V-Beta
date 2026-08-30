@@ -19,7 +19,7 @@ The backend follows a layered architecture under `server/src/main/java/app/VBeta
    - Coordinate use cases and transaction boundaries.
 3. **Support Managers/Adapters** (`application/support/`)
    - Domain-specific orchestration and integration helpers, grouped by concern:
-     - `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`
+     - `account/`, `discussion/` (`beta/`, `comment/`), `grade/`, `problem/`, `wall/`, `report/`, `events/`, `moderation/`
 4. **Repositories** (`repository/`)
    - Data access through Spring Data JPA.
 5. **Domain Model** (`domain/model/`)
@@ -28,9 +28,10 @@ The backend follows a layered architecture under `server/src/main/java/app/VBeta
      - `climb/` — walls, problems, grades, lifecycle
      - `discussions/` — discussion roots, comments, solution betas
      - `user/` — accounts and perceived grades
+     - `report/`, `notification/`, `appeal/`, `moderation/` — Sprint 5 moderation model
 6. **API DTOs** (`api/dto/`)
    - Request/response contracts, grouped by feature area:
-     - `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`)
+     - `account/`, `walls/`, `problems/`, `discussions/` (`comment/`, `video/`), `report/`, `notification/`, `moderation/`
 
 Place new types in the matching domain subpackage rather than the layer root.
 
@@ -57,7 +58,8 @@ Access model types:
 
 ## Persistence and Domain
 
-- Main entities include user accounts, roles, wall sections, climbing problems, discussion comments, solution betas, and perceived grades.
+- Main entities include user accounts, roles, wall sections, climbing problems, discussion comments, solution betas, perceived grades, reports, events, and notifications.
+- Discussion comment/beta user deletes are **soft deletes** on `DiscussionRoot` (`deleted_at`, `deleted_by`, `deleted_reason`). Hard `removeDiscussion` remains for cascading problem/account cleanup.
 - JPA schema mode in runtime is `ddl-auto=validate`, so schema must exist and match.
 - Role permission evaluation is data-driven from role/action tables.
 
@@ -81,11 +83,13 @@ Access model types:
 - **Security filter chain**
   - Firebase token verification runs in `FirebaseAuthFilter`.
 - **CORS**
-  - Configured via `WebConfig` for API route groups.
+  - Configured via `WebConfig` for `/api/**` (GET, POST, PUT, PATCH, DELETE, OPTIONS).
 - **Transactions**
   - Service-layer transaction boundaries coordinate multi-step operations.
 - **Error handling**
-  - Mixed approach: `ResponseStatusException`, explicit filter responses, and default Spring exception mapping.
+  - Controllers catch `RuntimeException` and return a mapped status with a plain-text message (typically 404; wall writes 400; unread notification GET `/short` 401; all-inbox GET `/all` 404).
+  - `FirebaseAuthFilter` returns JSON `401` for invalid tokens.
+  - `POST /api/accounts/session` still uses `ResponseStatusException` for missing auth.
 
 ## Request/Permission Patterns
 
@@ -95,6 +99,14 @@ Access model types:
   - action-gated (`ActionDefinition` checks)
 - Role permissions are loaded from DB mappings (`RolePermission`) through authorization support services.
 - Some discussion endpoints are authenticated without full action-gating; enforceable behavior is partly service-rule based.
+- Content report **create** and notification inbox (`GET /api/notification/short`, `GET /api/notification/all`, `PATCH /api/notification/short`) are authenticated only (no `CREATE_REPORT` action).
+- Admin report **queue/detail** (`GET /api/report/reports`) is action-gated with `VIEW_REPORTS`.
+- Admin report **resolve** (`POST /api/moderate/report`) is action-gated with `MODERATE_REPORT`.
+- Admin **logbook** (`GET /api/moderate/logbook`) is action-gated with `VIEW_MODERATION_LOGS`.
+- Owner **appeal create** (`POST /api/moderate/appeal`) is authenticated only.
+- Owner **deletion notice** (`GET /api/moderate/appeal/notice`) is authenticated only. The caller must own the discussion. Snapshots strip reporter identity.
+- Admin **appeal queue/detail** (`GET /api/moderate/appeal`) is action-gated with `VIEW_APPEALS`. Optional `appealId` or `reportId`.
+- Admin **appeal resolve** (`PATCH /api/moderate/appeal`) is action-gated with `MODERATE_APPEAL`.
 
 ## Constraints and Technical Debt Notes
 

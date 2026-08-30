@@ -1,8 +1,13 @@
 package app.VBeta.repository;
 
+import app.VBeta.domain.model.actions.GymRole;
+import app.VBeta.domain.model.actions.RoleType;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -41,4 +46,23 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long>{
      */
     @Query("select ua from UserAccount ua left join fetch ua.gymRole where ua.firebaseUid = :firebaseUid")
     Optional<UserAccount> findByFirebaseUidWithRole(String firebaseUid);
+
+    /**
+     * Returns all accounts assigned the given gym role type.
+     *
+     * @param roleType role type
+     * @return matching accounts
+     */
+    List<UserAccount> findByGymRole_RoleType(RoleType roleType);
+
+    /**
+     * Finds an account by id that is not the requester's Firebase UID.
+     *
+     * @param targetId account identifier
+     * @param requesterId requester Firebase UID to exclude
+     * @return matching account when present
+     */
+    @Query("SELECT ua from UserAccount  ua WHERE ua.id = :targetId AND ua.firebaseUid <> :requesterId")
+    Optional<UserAccount> findByIdAndNotFirebaseUid(@Param("targetId") Long targetId,
+                                                    @Param("requesterId") String requesterId);
 }

@@ -53,7 +53,7 @@ public class AccountDeletionManager {
      * Deletes all user-owned discussion artifacts and finally the account itself.
      *
      * @param userAccount account targeted for teardown
-     * @throws org.springframework.web.server.ResponseStatusException when related data integrity checks fail
+     * @throws RuntimeException when related data integrity checks fail
      */
     public void deleteAllUserRelatedDiscussion(UserAccount userAccount){
         List<DiscussionRoot> userDiscussionComments = discussionRootManager.getUserDiscussionsByType(userAccount,

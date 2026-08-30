@@ -60,10 +60,10 @@ Status: Completed (backend slice)
 
 Highlights:
 
-- Public `/search` endpoints filter active problems by inclusive grade range within a wall section.
+- Public `/api/search` endpoints filter active problems by inclusive grade range within a wall section.
 - Ascending and descending grade sort variants are supported.
 - Invalid range and missing-wall error behavior covered by integration tests.
-- CORS mapping added for `/search/**`.
+- CORS mapping is `/api/**` (includes `/api/search/**`).
 
 Related docs:
 
@@ -79,10 +79,11 @@ Highlights:
 
 - Filter button/dialog on the wall section page for guests and signed-in users.
 - Inclusive min–max grade range with Apply disabled when min is harder than max.
-- Sort modes: Most Recent (client `createdDate` desc after `/search`), Easiest (`sort=asc`), Hardest (`sort=desc`).
+- Sort modes: Most Recent (client `createdDate` desc after `/api/search`), Easiest (`sort=asc`), Hardest (`sort=desc`).
 - Clear restores the default wall problems list; active filter hint shown while applied.
 - Add Problem assigned grade uses a `VB`–`V17` dropdown.
 - Covered by `wall-page.test.js` filter cases.
+- Sprint 4 discovery improvements marked completed on the implementation roadmap.
 
 Related docs:
 
@@ -90,9 +91,142 @@ Related docs:
 - `docs/testing/manual-test-cases.md` (DISC-04 / DISC-05)
 - `docs/implementation-roadmap.md`
 
+### F) Discussion Root Soft Delete
+
+Status: Completed (delete path; delayed GCS purge still future)
+
+Highlights:
+
+- Comment and solution-beta deletes mark `Discussion_Root` with `deleted_at`, `deleted_by`, and `deleted_reason` instead of removing the row.
+- Problem timelines omit soft-deleted discussions; comment/beta child rows and GCS objects stay. Appeal approve restores the discussion.
+- Delete requests require a reason (`deletedReason` on comments, `deleteReason` on betas). The problem page currently sends `"User deleted their own discussion"` or `"Admin forced delete the discussion"`.
+
+Related docs:
+
+- `docs/api/endpoints.md`
+- `docs/api/request-response-examples.md`
+- `docs/features/wall-and-problems.md`
+- `docs/architecture/data-model.md`
+
+### G) Discussion Report UI (Problem Page)
+
+Status: Completed (frontend slice)
+
+Highlights:
+
+- Signed-in users see a ⋮ menu on every discussion row (comment and beta). Guests do not.
+- **Report** is shown for other users' content; **Delete** remains owner/admin.
+- Report dialog requires a category and a reason (max 250 characters) and calls `POST /api/report/create` with `DISCUSSION` + discussion id.
+- Submit is disabled while pending or when category/reason are invalid; success and API errors use toasts.
+- Covered by `problem-page.test.js` report cases.
+
+Related docs:
+
+- `docs/features/wall-and-problems.md`
+- `docs/features/moderation.md`
+- `docs/testing/manual-test-cases.md` (DISC-06)
+- `docs/api/endpoints.md`
+
+### H) Personal Notifications Inbox UI
+
+Status: Completed (frontend slice; owner deletion clicks open `/appeals?reportId=`; admin appeal clicks open `/appeal-queue?reportId=`)
+
+Highlights:
+
+- Signed-in navbar bell polls unread rows with `GET /api/notification/short`, marks one read with `PATCH /api/notification/short?notificationId=`, and deep-links by event type.
+- `/notifications` pages the full inbox with `GET /api/notification/all?offset=` (1-based, 10 rows). Previous/Next appear when a page is full.
+- `QuickNotificationDTO` omits `readAt`; the client overlays unread ids from `/short` so the all-inbox list can still show read vs unread.
+- Report-queue event types go to `/reports?reportId=`; owner deletion/outcome types go to `/appeals?reportId=`; admin `APPEAL_SUBMITTED` goes to `/appeal-queue?reportId=`.
+- Covered by `notifications.test.js`, `notifications-page.test.js`, `NotificationBell.test.js`, and `notificationNavigation.test.js`.
+
+Related docs:
+
+- `docs/features/authentication-and-roles.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/testing/manual-test-cases.md` (NOTIF-01)
+- `docs/api/endpoints.md`
+
+### I) Admin Report Queue UI
+
+Status: Completed (frontend slice)
+
+Highlights:
+
+- Admin-only `/reports` lists ranked OPEN cases from `GET /api/report/reports` (date, reporter, category, score). Non-admins are redirected.
+- Detail dialog shows wall section, problem, reported comment or beta preview/link, and each reporter reason.
+- **Dismiss** and **Approve deletion** require admin notes (max 255) and call `POST /api/moderate/report` with all OPEN `reportIds` on that case. The queue refreshes after success.
+- Discussion cases include problem/wall snapshots on `ReportDTO` for context links.
+- Navbar **Reports** link for admins. Covered by `reports-page.test.js`, `reports.test.js`, and `reportQueue.test.js`.
+
+Related docs:
+
+- `docs/features/authentication-and-roles.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/testing/manual-test-cases.md` (REPORT-01)
+- `docs/api/endpoints.md`
+
+### J) Admin Moderation Logbook UI
+
+Status: Completed (frontend slice)
+
+Highlights:
+
+- Admin-only `/logbook` pages `GET /api/moderate/logbook` (25 rows, newest first). Non-admins are redirected.
+- Each row shows decision, actor, time, report id, and notes. Detail is read-only (no dismiss/remove).
+- Links to `/reports?reportId=` (dismiss/remove) or `/appeal-queue?reportId=` (appeal decisions) when a report id exists; problem-page link when wall/problem snapshots are present.
+- **Download .txt** walks all pages and saves an append-only dump. Navbar **Logbook** for admins.
+- Covered by `logbook-page.test.js`, `moderation.test.js`, and `moderationLogbook.test.js`.
+
+Related docs:
+
+- `docs/features/authentication-and-roles.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/testing/manual-test-cases.md` (LOGBOOK-01)
+- `docs/api/endpoints.md`
+
+### K) Owner Deletion Notice + One-Time Appeal
+
+Status: Completed (frontend slice; owner GET notice added)
+
+Highlights:
+
+- `/appeals?reportId=` is reached from owner `CONTENT_REMOVED` (and later owner appeal outcome) notifications.
+- Shows admin removal notes, the report category and reason (without reporter identity), a nested `AppealDTO` when an appeal exists, and a content summary from `GET /api/moderate/appeal/notice`.
+- One appeal via `POST /api/moderate/appeal` (max 250). The form hides after success or when `canAppeal` is false / `Appeal already exists`.
+- Status: can appeal, pending, approved (restored), or denied.
+- Covered by `appeals-page.test.js`, `appeals.test.js`, and `ownerAppeal.test.js`.
+
+Related docs:
+
+- `docs/features/authentication-and-roles.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/testing/manual-test-cases.md` (APPEAL-01)
+- `docs/api/endpoints.md`
+
+### L) Admin Appeal Queue UI
+
+Status: Completed (frontend slice)
+
+Highlights:
+
+- Admin-only `/appeal-queue` lists OPEN appeals from `GET /api/moderate/appeal` (`AppealDTO`: appellant, reason, report snapshot).
+- Detail by `?reportId=` uses `GET /api/moderate/appeal?reportId=`. `APPEAL_SUBMITTED` notifications and logbook appeal rows land here, not on `/appeals`.
+- Required admin comments (max 255) plus **Approve** / **Deny** call `PATCH /api/moderate/appeal` (`ModerateAppealRequest`).
+- Navbar **Appeals** for admins. Covered by `appeal-queue-page.test.js`, `appeals.test.js`, and `appealQueue.test.js`.
+
+Related docs:
+
+- `docs/features/authentication-and-roles.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/testing/manual-test-cases.md` (APPEAL-02)
+- `docs/api/endpoints.md`
+
 ## Moved Out of Future Queue
 
 The following future backlog topics were completed and removed from `future-features.md`:
 
 - Merge `User_Comment` and `User_Beta` into unified discussion flow.
 - PostgreSQL migration completion and test alignment baseline.
+- Soft-delete fields and hide-from-timeline behavior for `discussion_root` (delayed GCS purge remains in `future-features.md` #19).
+- Better content moderation and auditability (Sprint 5 queue, notifications, logbook, appeal/restore).
+- Report inappropriate comments and solution betas (problem-page Report plus admin `/reports`, `/logbook`, `/appeals`, `/appeal-queue`).
