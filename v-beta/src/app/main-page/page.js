@@ -44,10 +44,20 @@ import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { getAccountRole } from "@/lib/accountSession";
 import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
-import { MoreVertical } from "lucide-react";
+import { ChevronDown, MoreVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
+
+const GYM_INFO = {
+  name: "Minnesota Climbing Cooperative",
+  description:
+    "Volunteer-run bouldering gym in the Thorp Building in NE Minneapolis. The only bouldering co-op in the Twin Cities metro that run by climbers, for climbers. All proceeds go back into making the Co-op better for everyone who climbs here.",
+  location: "1620 Central Ave NE, Suite 178, Minneapolis, MN 55413",
+  hours:
+    "Sundays 11am–3pm; Mondays 5:30pm–9:30pm; First Fridays 6pm–9pm. Access pass holders climb 24/7.",
+  website: "https://www.mnclimbingcoop.com/",
+};
 
 export default function MainPage() {
   const router = useRouter();
@@ -153,7 +163,7 @@ export default function MainPage() {
         )}
         <header className="mb-6">
           <h1 className="m-0 text-[1.75rem] font-bold" style={{ color: colors.text }}>
-            GYM
+            {GYM_INFO.name}
           </h1>
         </header>
 
@@ -165,33 +175,60 @@ export default function MainPage() {
             position: "relative",
             overflow: "hidden",
             fontFamily,
-            padding: "22px 22px 22px 20px",
+            padding: "16px 22px 16px 20px",
             marginBottom: "28px",
           }}
         >
           <div style={card.accentBar} aria-hidden />
-          <CardHeader className="rounded-none px-0 pt-0 pb-0">
-            <CardTitle
-              className="mb-1.5 text-xs font-semibold tracking-wide uppercase"
-              style={{ color: colors.subtle }}
+          <details>
+            <summary
+              className="flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none [&::-webkit-details-marker]:hidden"
             >
-              Gym info
-            </CardTitle>
-            <CardDescription
-              className="mb-3 max-w-[65ch] text-[0.9375rem] leading-[1.55]"
-              style={{ color: colors.muted }}
-            >
-              A fantastic gym with a variety of climbing walls for all skill levels. Come in and climb!
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-0 pb-0">
-            <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2">
-              <span className="text-sm font-medium" style={{ color: colors.muted }}>
-                <span style={{ color: colors.subtle }}>Location · </span>
-                123 Climbing St, Boulder City
-              </span>
-            </div>
-          </CardContent>
+              <CardTitle
+                className="text-xs font-semibold tracking-wide uppercase"
+                style={{ color: colors.subtle }}
+              >
+                Gym info
+              </CardTitle>
+              <ChevronDown
+                className="size-4 shrink-0 transition-transform [[open]_&]:rotate-180"
+                style={{ color: colors.subtle }}
+                aria-hidden
+              />
+            </summary>
+            <CardHeader className="rounded-none px-0 pt-3 pb-0">
+              <CardDescription
+                className="mb-3 max-w-[65ch] text-[0.9375rem] leading-[1.55]"
+                style={{ color: colors.muted }}
+              >
+                {GYM_INFO.description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-0 pb-0">
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium" style={{ color: colors.muted }}>
+                  <span style={{ color: colors.subtle }}>Location · </span>
+                  {GYM_INFO.location}
+                </span>
+                <span className="text-sm font-medium" style={{ color: colors.muted }}>
+                  <span style={{ color: colors.subtle }}>Open Hours · </span>
+                  {GYM_INFO.hours}
+                </span>
+                <span className="text-sm font-medium" style={{ color: colors.muted }}>
+                  <span style={{ color: colors.subtle }}>Website · </span>
+                  <a
+                    href={GYM_INFO.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline-offset-2 hover:underline"
+                    style={{ color: colors.primary }}
+                  >
+                    mnclimbingcoop.com
+                  </a>
+                </span>
+              </div>
+            </CardContent>
+          </details>
         </Card>
 
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
