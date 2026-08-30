@@ -77,6 +77,33 @@ Expected behavior:
 
 If signed URL generation fails, check project ID, credentials path, and bucket IAM permissions first.
 
+## Part C: Convert iPhone `.mov` betas to MP4
+
+GCS does not transcode or play `.mov`. The HTML5 player only plays **MP4** and **WebM**. iPhone Photos often uploads `.mov`, so a small Cloud Run service converts those objects to `.mp4` and deletes the original.
+
+Source: [`jobs/mov-to-mp4/`](../../jobs/mov-to-mp4/).
+
+1. Build and deploy (same region as the video bucket, e.g. `us-east1`):
+
+```bash
+cd jobs/mov-to-mp4
+gcloud builds submit --tag REGION-docker.pkg.dev/PROJECT_ID/v-beta/mov-to-mp4:latest
+gcloud run deploy v-beta-mov-to-mp4 \
+  --image REGION-docker.pkg.dev/PROJECT_ID/v-beta/mov-to-mp4:latest \
+  --region REGION \
+  --no-allow-unauthenticated \
+  --memory 4Gi \
+  --cpu 2 \
+  --timeout 900 \
+  --set-env-vars STORAGE_PUBLIC_BUCKET_NAME=BUCKET
+```
+
+2. Grant the Cloud Run runtime service account **Storage Object Admin** on the public video bucket (download `.mov`, upload `.mp4`, delete `.mov`).
+
+3. Create an Eventarc trigger on **object finalized** for that bucket, destination `v-beta-mov-to-mp4`. The service ignores non-`.mov` objects.
+
+The problem page waits for the sibling `.mp4` (HEAD) before saving discussion metadata, so the player never points at `.mov`.
+
 ## Part B: Google Cloud SQL (PostgreSQL) Setup
 
 > Backend connects to Cloud SQL through Cloud SQL Auth Proxy using the JDBC host/port/database env vars (`DB_HOST`, `DB_PORT`, `DB_NAME`).

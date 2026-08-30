@@ -13,6 +13,7 @@ This section documents wall section and climbing problem features currently avai
 - Setter problem creation and deletion
 - Setter wall section reset/archive operation
 - Authenticated discussion actions (comments, beta upload, grade suggestion, content report)
+- iPhone `.mov` beta uploads convert to MP4 (Cloud Run worker) before they are stored for playback; `.mp4` and `.webm` are stored as-is
 - Guest browsing mode with read-only wall/problem access and banner messaging
 - Owner/admin **soft-delete** for comments and solution betas (`Discussion_Root.deleted_at` / `deleted_by` / `deleted_reason`)
 - Signed-in **Report** action on the discussion ⋮ menu (comments and solution betas) via `POST /api/report/create`
