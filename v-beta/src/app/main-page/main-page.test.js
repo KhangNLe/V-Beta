@@ -167,6 +167,30 @@ describe("MainPage coverage", () => {
     expect(fetchWallSectionsForUser).not.toHaveBeenCalled();
   });
 
+  it("renders Minnesota Climbing Cooperative gym info as collapsed by default", async () => {
+    renderMainPage({ sections: [] });
+    expect(await screen.findByRole("heading", { name: "Minnesota Climbing Cooperative" })).toBeInTheDocument();
+
+    const gymInfoToggle = screen.getByText("Gym info");
+    const gymInfoDetails = gymInfoToggle.closest("details");
+    expect(gymInfoDetails).toBeInTheDocument();
+    expect(gymInfoDetails).not.toHaveAttribute("open");
+
+    fireEvent.click(gymInfoToggle);
+    expect(gymInfoDetails).toHaveAttribute("open");
+    expect(
+      screen.getByText(/Volunteer-run bouldering gym in the Thorp Building in NE Minneapolis/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1620 Central Ave NE, Suite 178, Minneapolis, MN 55413")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sundays 11am–3pm; Mondays 5:30pm–9:30pm; First Fridays 6pm–9pm/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "mnclimbingcoop.com" })).toHaveAttribute(
+      "href",
+      "https://www.mnclimbingcoop.com/",
+    );
+  });
+
   it("shows guest banner and hides admin controls for guests", async () => {
     renderMainPage({ user: null, account: null, sections: [] });
     expect(await screen.findByText("No wall sections found.")).toBeInTheDocument();
