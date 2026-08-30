@@ -3,12 +3,15 @@
 This guide covers the two Google Cloud pieces used by this project:
 
 1. **Google Cloud Storage bucket** for uploaded media
-2. **Google Cloud SQL (PostgreSQL)** for backend persistence
+2. **Google Cloud SQL (PostgreSQL)** for **local/dev** persistence via Auth Proxy
+
+Hosted staging uses **Neon** instead of Cloud SQL and runs the API on **Cloud Run**. Follow [`docs/setup/deployment.md`](./deployment.md) for that path. GCS bucket setup in Part A is still required for solution-beta videos.
 
 Use this with:
 
 - `docs/setup/environment-variables.md`
 - `docs/setup/firebase-setup.md`
+- `docs/setup/deployment.md` (hosted staging)
 
 ## Prerequisites
 
@@ -35,6 +38,8 @@ The backend reads these properties in `server/src/main/resources/application.pro
 5. Keep defaults unless your project has stricter requirements.
 
 Save the bucket name for `STORAGE_PUBLIC_BUCKET_NAME`.
+
+Hosted staging also needs **bucket CORS** so the Vercel origin can PUT signed uploads. Template: `server/gcs-cors.example.json`. Steps: [deployment.md](./deployment.md).
 
 ### 2) Create/configure service account
 

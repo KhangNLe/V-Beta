@@ -63,6 +63,8 @@ npm run build
 npm run start
 ```
 
+Hosted staging is live at [https://v-beta-mncoop.vercel.app/](https://v-beta-mncoop.vercel.app/) (Vercel Root Directory `v-beta`). See [Setup: Deployment](../docs/setup/deployment.md).
+
 ## Lint and Tests
 
 ```bash
@@ -92,4 +94,5 @@ npm run test:watch
 - [Setup: Environment Variables](../docs/setup/environment-variables.md)
 - [Setup: Local Development](../docs/setup/local-development.md)
 - [Setup: Firebase](../docs/setup/firebase-setup.md)
+- [Setup: Deployment](../docs/setup/deployment.md)
 - [Testing: Frontend Test Report](../docs/testing/frontend-test-report.md)

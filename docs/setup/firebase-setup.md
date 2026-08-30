@@ -31,9 +31,9 @@ This project uses both:
 In **Authentication -> Settings -> Authorized domains**, ensure these are present:
 
 - `localhost` (for local frontend dev)
-- Your deployed frontend domain (if applicable)
+- `v-beta-mncoop.vercel.app` (hosted staging: [https://v-beta-mncoop.vercel.app/](https://v-beta-mncoop.vercel.app/))
 
-If missing, popup login and action links can fail.
+If missing, popup login and action links can fail. Hosted staging steps are in [deployment.md](./deployment.md).
 
 ## 4) Register the frontend web app (`v-beta/`)
 

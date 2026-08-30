@@ -71,6 +71,7 @@ Access model types:
   - Generates signed upload URLs and manages video object operations.
 - **PostgreSQL**
   - Stores relational domain data for all core features.
+  - Local/dev: host `127.0.0.1`. Hosted staging: Neon `v_beta` (AWS us-east-2 pooler). Tests: isolated `v_beta_test`.
 
 ## Configuration and Profiles
 

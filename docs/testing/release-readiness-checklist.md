@@ -4,9 +4,10 @@ Run this quick checklist before a release demo or stakeholder walkthrough.
 
 ## Pre-Release Environment Check
 
-- [ ] Backend is running at `http://localhost:8080`
-- [ ] Frontend is running at `http://localhost:3000`
-- [ ] Cloud SQL proxy is running (if required for environment)
+- [ ] Backend is running at `http://localhost:8080` **or** [https://v-beta-api-6vqd6rspuq-ue.a.run.app](https://v-beta-api-6vqd6rspuq-ue.a.run.app) for hosted staging
+- [ ] Frontend is running at `http://localhost:3000` **or** [https://v-beta-mncoop.vercel.app/](https://v-beta-mncoop.vercel.app/) for hosted staging
+- [ ] Cloud SQL proxy is running (if required for **local** environment)
+- [ ] Neon schema is applied (if this is hosted staging; see [deployment.md](../setup/deployment.md))
 - [ ] Firebase/GCP credentials are valid for release environment
 - [ ] Browser cache/session is clean or intentionally prepared
 

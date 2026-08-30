@@ -5,7 +5,7 @@ Spring Boot REST API for V-Beta. It pairs with the Next.js app in `../v-beta`.
 ## Overview
 
 - Framework: Spring Boot + Spring Security + Spring Data JPA
-- Database: PostgreSQL (runtime and integration tests on `v_beta_test`)
+- Database: PostgreSQL — local `127.0.0.1` for day-to-day runs; **Neon** for hosted staging; integration tests on isolated `v_beta_test`
 - Integrations: Firebase Admin SDK and Google Cloud Storage
 
 REST surface includes account, wall/problem, discussion, reports, notifications, moderation logbook, and appeals. See [API endpoints](../docs/api/endpoints.md) and [Moderation](../docs/features/moderation.md).
@@ -13,7 +13,7 @@ REST surface includes account, wall/problem, discussion, reports, notifications,
 ## Prerequisites
 
 - **JDK 17+** (JDK 21 is also supported).
-- **PostgreSQL 14+** reachable by the backend when running locally.
+- **PostgreSQL 14+** reachable by the backend when running locally (or Neon if you intentionally point `.env` at staging).
 - Optional for storage/auth flows: Firebase and Google Cloud credentials.
 - Optional for one-command backend PostgreSQL test runs: **Docker** (used by `scripts/test-with-postgres.sh`).
 
@@ -39,13 +39,16 @@ Minimum DB variables for local boot:
 - `DB_NAME` (default fallback: `v_beta`)
 - `SQL_USERNAME` (**required**, no fallback)
 - `SQL_PASSWORD` (**required**, no fallback)
+- `DB_JDBC_PARAMS` (optional JDBC URL suffix; leave empty locally. Neon: `?sslmode=require&channel_binding=require`)
 
-Additional variables used by Firebase/GCP integrations:
+Additional variables used by Firebase/GCP integrations and hosting:
 
 - `FIREBASE_CREDENTIALS_PATH`
 - `GCP_PROJECT_ID`
 - `GOOGLE_SERVICE_CREDENTIALS_PATH`
 - `STORAGE_PUBLIC_BUCKET_NAME`
+- `CORS_ALLOWED_ORIGINS` (comma-separated; default `http://localhost:3000`)
+- `PORT` (Cloud Run injects this; local default `8080`)
 
 Example `server/.env`:
 
@@ -59,7 +62,34 @@ FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 GCP_PROJECT_ID=your-gcp-project-id
 GOOGLE_SERVICE_CREDENTIALS_PATH=./google-account-credential.json
 STORAGE_PUBLIC_BUCKET_NAME=your-public-bucket
+# CORS_ALLOWED_ORIGINS=http://localhost:3000
+# DB_JDBC_PARAMS=
 ```
+
+### Databases (local vs Neon)
+
+Do **not** use a git branch to switch databases. `server/.env` is gitignored; Cloud Run has its own env. Same code, same branch.
+
+| Environment | Database | Typical `server/.env` / Cloud Run |
+|---|---|---|
+| Local daily work | Postgres on `127.0.0.1` (or Cloud SQL Auth Proxy) | `DB_HOST=127.0.0.1`, empty `DB_JDBC_PARAMS` |
+| Hosted staging | Neon `v_beta` (AWS `us-east-2`, **pooler**) | See Neon values below |
+| `./mvnw test` | Docker/CI `v_beta_test` | `TEST_DB_*` only — ignores runtime `DB_*` / `SQL_*` |
+
+**Neon staging** (password lives in Neon console / Secret Manager / local `.env`, never in git):
+
+| Variable | Staging value |
+|---|---|
+| `DB_HOST` | `ep-autumn-feather-ajy43z9p-pooler.c-3.us-east-2.aws.neon.tech` |
+| `DB_PORT` | `5432` |
+| `DB_NAME` | `v_beta` |
+| `SQL_USERNAME` | `neondb_owner` |
+| `SQL_PASSWORD` | Neon role password (not committed) |
+| `DB_JDBC_PARAMS` | `?sslmode=require&channel_binding=require` |
+
+Host is the **pooler** hostname (needed for Cloud Run’s many short connections). Apply schema with [`src/main/resources/db/pg-v-beta.sql`](src/main/resources/db/pg-v-beta.sql) to database `v_beta` before the API boots. Setup steps: [Database schema](../docs/setup/database-schema.md) and [Deployment](../docs/setup/deployment.md).
+
+To poke Neon from a laptop without replacing local settings, copy a gitignored `server/.env.neon` over `.env` temporarily; restore `127.0.0.1` when done.
 
 ## Run the Application
 
@@ -122,7 +152,8 @@ java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 ## Notes
 
 - `spring.jpa.hibernate.ddl-auto=validate` is enabled in runtime config, so your PostgreSQL schema must already exist and match entity mappings.
-- Local PostgreSQL SSL is commonly disabled in JDBC URL for development (`sslmode=disable`) unless your environment requires TLS.
+- Local PostgreSQL SSL is commonly omitted in the JDBC URL for development. Neon (hosted or laptop-against-staging) requires `DB_JDBC_PARAMS=?sslmode=require&channel_binding=require`.
+- Cloud Run packaging uses `server/Dockerfile`. Do not copy credential JSON into the image; see [Setup: Deployment](../docs/setup/deployment.md).
 
 ## Related Docs
 
@@ -134,6 +165,7 @@ java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 - [Setup: Database Schema](../docs/setup/database-schema.md)
 - [Setup: Firebase](../docs/setup/firebase-setup.md)
 - [Setup: Google Cloud](../docs/setup/google-cloud-setup.md)
+- [Setup: Deployment](../docs/setup/deployment.md)
 - [Architecture: Backend](../docs/architecture/backend-architecture.md)
 - [Architecture: Data Model](../docs/architecture/data-model.md)
 - [API: Endpoints](../docs/api/endpoints.md)

@@ -25,6 +25,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 - [`setup/firebase-setup.md`](./setup/firebase-setup.md)
 - [`setup/google-cloud-setup.md`](./setup/google-cloud-setup.md)
 - [`setup/database-schema.md`](./setup/database-schema.md)
+- [`setup/deployment.md`](./setup/deployment.md) (Vercel + Cloud Run + Neon; [app](https://v-beta-mncoop.vercel.app/), [API](https://v-beta-api-6vqd6rspuq-ue.a.run.app))
 
 ## Architecture
 

@@ -15,6 +15,8 @@ Before starting, complete:
 3. [docs/setup/google-cloud-setup.md](./google-cloud-setup.md)
 4. [docs/setup/database-schema.md](./database-schema.md)
 
+Hosted staging (Vercel + Cloud Run + Neon) is a separate path: [docs/setup/deployment.md](./deployment.md).
+
 ## Prerequisites
 
 - Node.js + npm (for `v-beta/`)
@@ -63,6 +65,8 @@ STORAGE_PUBLIC_BUCKET_NAME=
 ```
 
 Note: `application.properties` defaults to PostgreSQL on `5432`, so keep `DB_PORT` in `server/.env` synced with your local DB or proxy `--port`.
+
+Keep local `.env` on `127.0.0.1`. Neon staging (`ep-autumn-feather-ajy43z9p-pooler.c-3.us-east-2.aws.neon.tech`, database `v_beta`) is for Cloud Run, not a second git branch. See [server/README.md](../server/README.md) and [database-schema.md](./database-schema.md).
 
 ## 2) Start PostgreSQL connection path
 

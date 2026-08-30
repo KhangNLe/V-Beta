@@ -9,6 +9,32 @@ Important backend behavior:
 
 If schema is missing or mismatched, backend startup will fail.
 
+Hosted staging applies this same file to **Neon** (SSL). Database name is `v_beta`. See [deployment.md](./deployment.md).
+
+## Neon (hosted staging)
+
+Neon project region: AWS **us-east-2**. Use the **pooler** host for Cloud Run.
+
+| Variable | Staging value |
+|---|---|
+| `DB_HOST` | `ep-autumn-feather-ajy43z9p-pooler.c-3.us-east-2.aws.neon.tech` |
+| `DB_PORT` | `5432` |
+| `DB_NAME` | `v_beta` |
+| `SQL_USERNAME` | `neondb_owner` |
+| `SQL_PASSWORD` | Neon role password (console / Secret Manager only) |
+| `DB_JDBC_PARAMS` | `?sslmode=require&channel_binding=require` |
+
+Apply schema to **`v_beta`** (not `neondb`):
+
+```bash
+psql "postgresql://neondb_owner:PASSWORD@ep-autumn-feather-ajy43z9p-pooler.c-3.us-east-2.aws.neon.tech:5432/v_beta?sslmode=require" \
+  -f server/src/main/resources/db/pg-v-beta.sql
+```
+
+Or paste `pg-v-beta.sql` into the Neon SQL Editor with database `v_beta` selected.
+
+Local day-to-day development should keep using `127.0.0.1` in `server/.env`. Do not store Neon vs local as two git branches.
+
 ## Source of truth for schema
 
 Primary runtime schema SQL:
