@@ -11,60 +11,7 @@ This roadmap tracks only active and upcoming work. Completed foundation delivery
 
 ## Current Sprint
 
-## Sprint 5: Moderation MVP
-
-Status: In Progress
-
-### Summary
-
-Deliver an end-to-end moderation loop: signed users report comments and solution betas; admins review a ranked report queue; decisions are logged; reporters/owners are notified; deleted-content owners may submit a one-time appeal for admin-approved restore.
-
-### Estimated Duration
-
-2 weeks
-
-### Scope
-
-- Reporting workflow for comments and solution betas (category + required reason, max 250 characters)
-- Admin report queue/detail (ranked by category priority, then datetime) — **frontend shipped** (`/reports`)
-- Admin resolve actions: approve deletion or dismiss (required admin notes → logbook) — **frontend shipped**
-- In-app notifications (new report for admins; outcome notifications for reporter/owner)
-- Personal notifications page (navbar bell + `/notifications` paged `GET /all`) — **frontend shipped**
-- Moderation logbook UI/API — **frontend shipped** (`/logbook`)
-- One-time appeal + admin-approved restore of soft-deleted discussion content — **owner appeal UI shipped** (`/appeals?reportId=`); **admin queue + approve/deny shipped** (`/appeal-queue`)
-- Report action in discussion ⋮ menu (alongside owner/admin delete) — **frontend shipped**
-
-### Category priority (queue ranking)
-
-1. Inappropriate content  
-2. Harassment/bullying  
-3. Spam  
-4. Off-topic  
-Then by report date/time.
-
-### Acceptance Criteria
-
-- [x] Signed-in users can report comments and betas from the discussion ⋮ menu
-- [x] Reports enter an admin queue ranked by category priority then time
-- [x] Admins can view report detail (wall/problem, reason, reported content) and approve deletion or dismiss with required notes
-- [ ] Moderation decisions are written to a logbook
-- [ ] In-app notifications notify admins of new reports and notify reporter/owner of outcomes
-- [ ] Personal notifications page supports redirect into queue/detail flows
-- [ ] Deleted-content owners can submit one appeal; admin can approve restore or deny
-- [ ] Schema, APIs, UI, tests, and docs updated for the moderation MVP
-
-### Explicitly out of scope (later)
-
-- Automated/ML moderation
-- Reporting wall sections or problems (comments/betas only)
-- External email/push channels beyond in-app notifications (unless already available)
-
-### Planning reference
-
-- Issue breakdown drafts can follow the Sprint 5 moderation MVP contract (reports, notifications, logbook, appeals).
-- Related backlog: `docs/features/future-features.md` (#3, #6, #12)
-- API contract for the shipped create-report / queue / resolve / inbox / logbook slice: `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, `docs/api/request-response-examples.md`
-- Problem-page Report UI: `docs/features/wall-and-problems.md`, `docs/testing/manual-test-cases.md` (DISC-06)
+Sprint 5 (Moderation MVP) is complete. Upcoming work starts at Sprint 6.
 
 ## Upcoming Sprints
 
@@ -110,6 +57,55 @@ Focus:
 - Not part of Sprint 4 discovery (grade filter/sort already covers current discovery needs)
 
 ## Completed Sprints
+
+### Sprint 5: Moderation MVP
+
+Status: Completed
+
+### Summary
+
+Delivered an end-to-end moderation loop: signed users report comments and solution betas; admins review a ranked queue; decisions are logged; reporters/owners are notified in-app; deleted-content owners may submit one appeal for admin restore or deny.
+
+### Scope delivered
+
+- Report from the discussion ⋮ menu (comments and betas; category + required reason, max 250)
+- Ranked admin report queue/detail (`/reports`) with dismiss or approve deletion and required notes (max 255)
+- Append-only moderation logbook (`/logbook`)
+- In-app notifications (navbar bell + `/notifications`); clicks go directly to `/reports`, `/appeals`, or `/appeal-queue`
+- Owner deletion notice + one-time appeal (`/appeals?reportId=`)
+- Admin appeal queue + approve/deny (`/appeal-queue`, `PATCH /api/moderate/appeal`)
+
+### Category priority (queue ranking)
+
+1. Inappropriate content
+2. Harassment/bullying
+3. Spam
+4. Off-topic
+Then by report date/time.
+
+### Acceptance Criteria
+
+- [x] Signed-in users can report comments and betas from the discussion ⋮ menu
+- [x] Reports enter an admin queue ranked by category priority then time
+- [x] Admins can view report detail (wall/problem, reason, reported content) and approve deletion or dismiss with required notes
+- [x] Moderation decisions are written to a logbook
+- [x] In-app notifications notify admins of new reports and notify reporter/owner of outcomes
+- [x] Personal notifications page supports redirect into queue/detail flows
+- [x] Deleted-content owners can submit one appeal; admin can approve restore or deny
+- [x] Schema, APIs, UI, tests, and docs updated for the moderation MVP
+
+### Explicitly out of scope (later)
+
+- Automated/ML moderation
+- Reporting wall sections or problems (comments/betas only)
+- External email/push channels beyond in-app notifications
+- Delayed GCS purge of soft-deleted beta objects
+
+### Notes
+
+- Feature overview: `docs/features/moderation.md`
+- API: `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, `docs/api/request-response-examples.md`
+- Manual cases: DISC-06, NOTIF-01, REPORT-01, LOGBOOK-01, APPEAL-01, APPEAL-02
 
 ### Sprint 4: Discovery Improvements for Wall Sections and Problems
 

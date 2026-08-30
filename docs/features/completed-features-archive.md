@@ -93,12 +93,12 @@ Related docs:
 
 ### F) Discussion Root Soft Delete
 
-Status: Completed (delete path; restore/purge still future)
+Status: Completed (delete path; delayed GCS purge still future)
 
 Highlights:
 
 - Comment and solution-beta deletes mark `Discussion_Root` with `deleted_at`, `deleted_by`, and `deleted_reason` instead of removing the row.
-- Problem timelines omit soft-deleted discussions; comment/beta child rows and GCS objects stay.
+- Problem timelines omit soft-deleted discussions; comment/beta child rows and GCS objects stay. Appeal approve restores the discussion.
 - Delete requests require a reason (`deletedReason` on comments, `deleteReason` on betas). The problem page currently sends `"User deleted their own discussion"` or `"Admin forced delete the discussion"`.
 
 Related docs:
@@ -110,7 +110,7 @@ Related docs:
 
 ### G) Discussion Report UI (Problem Page)
 
-Status: Completed (frontend slice; appeal UI still future)
+Status: Completed (frontend slice)
 
 Highlights:
 
@@ -123,6 +123,7 @@ Highlights:
 Related docs:
 
 - `docs/features/wall-and-problems.md`
+- `docs/features/moderation.md`
 - `docs/testing/manual-test-cases.md` (DISC-06)
 - `docs/api/endpoints.md`
 
@@ -226,4 +227,6 @@ The following future backlog topics were completed and removed from `future-feat
 
 - Merge `User_Comment` and `User_Beta` into unified discussion flow.
 - PostgreSQL migration completion and test alignment baseline.
-- Soft-delete fields and hide-from-timeline behavior for `discussion_root` (restore and delayed GCS purge remain in `future-features.md`).
+- Soft-delete fields and hide-from-timeline behavior for `discussion_root` (delayed GCS purge remains in `future-features.md` #19).
+- Better content moderation and auditability (Sprint 5 queue, notifications, logbook, appeal/restore).
+- Report inappropriate comments and solution betas (problem-page Report plus admin `/reports`, `/logbook`, `/appeals`, `/appeal-queue`).

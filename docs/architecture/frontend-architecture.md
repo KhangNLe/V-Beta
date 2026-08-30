@@ -18,11 +18,11 @@
 - `src/components/ui/`
   - Shared UI primitives (button, card, dialog, etc.)
 - `src/api/`
-  - Backend API calls grouped by domain (`account`, `accounts`, `promoteOrDemote`, `wallSections`, `comments`, `solutionBeta`, `reports`, `notifications`)
+  - Backend API calls grouped by domain (`account`, `accounts`, `promoteOrDemote`, `wallSections`, `comments`, `solutionBeta`, `reports`, `moderation`, `appeals`, `notifications`)
 - `src/hooks/`
   - Auth/session hook (`useRequireAuth`)
 - `src/lib/`
-  - Session persistence, email verification helpers, formatting utilities, notification click/read helpers
+  - Session persistence, email verification helpers, formatting utilities, notification click/read helpers, report/appeal queue helpers
 
 ## Routing Model
 

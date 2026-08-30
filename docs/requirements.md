@@ -30,6 +30,9 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 - Perceived grade suggestion and aggregation
 - Search/filter by grade and wall section
 - Lifecycle tracking for problems affected by wall resets
+- Content reports on comments and solution betas
+- Admin report queue, moderation logbook, and in-app notifications
+- One-time owner appeal with admin restore or deny
 
 ### 2.4 Out of Scope
 
@@ -37,6 +40,8 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 - Integration with gym management systems
 - Advanced social features (followers, feeds, direct messaging)
 - Large-scale automated content moderation
+- Reporting wall sections or climbing problems (comments and betas only)
+- Email or push notification channels (in-app inbox only)
 
 ## 3. Stakeholders and Roles
 
@@ -47,9 +52,9 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 
 ### 3.2 System Roles
 
-- **Climber**: authenticated user who can browse problems, submit beta, comment, and suggest grades
+- **Climber**: authenticated user who can browse problems, submit beta, comment, suggest grades, report others' discussion content, and appeal a removal once
 - **Route Setter**: climber with permissions to create/manage climbing problems
-- **Administrator**: user with permissions to manage wall sections and assign/change roles
+- **Administrator**: user with permissions to manage wall sections, assign/change roles, and run the report/appeal/logbook moderation loop
 
 ## 4. Core Domain Concepts
 
@@ -99,6 +104,15 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 - **FR-22**: The system shall display the aggregated perceived grade alongside the assigned difficulty grade for each climbing problem.
 - **FR-23**: The system shall allow signed-out users (guests) to browse wall sections and problem details while restricting authenticated actions.
 
+### 5.6 Moderation and Notifications
+
+- **FR-24**: The system shall allow any signed-in user except the discussion owner to report a comment or solution beta with a category and a required reason (max 250 characters).
+- **FR-25**: The system shall place OPEN discussion reports in an administrator queue ranked by category priority, then report time.
+- **FR-26**: The system shall allow administrators to dismiss a report or approve deletion, require action notes (max 255 characters), and append the decision to a moderation logbook.
+- **FR-27**: The system shall notify administrators of new reports in-app and notify reporters of dismiss/remove outcomes. On deletion it shall notify the content owner with the administrator reason.
+- **FR-28**: The system shall provide a personal in-app inbox. Opening a row marks it read and navigates to the report queue, owner appeal page, or admin appeal queue as appropriate.
+- **FR-29**: The system shall allow a deleted-content owner to submit one appeal with reasoning, and shall allow an administrator to approve restore or deny the appeal.
+
 ## 6. Non-Functional Requirements
 
 ### 6.1 Performance
@@ -112,7 +126,7 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 
 ### 6.3 Security and Authorization
 
-- **NFR-4**: The system shall enforce role-based access control for all operations that modify climbing problems, beta submissions, wall sections, or user roles.
+- **NFR-4**: The system shall enforce role-based access control for all operations that modify climbing problems, beta submissions, wall sections, user roles, or moderation decisions.
 
 ### 6.4 Data Integrity
 
@@ -146,7 +160,8 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 - Users can sign up/login and submit beta videos to problems.
 - Multiple beta submissions can exist for the same problem.
 - Setters/admins can manage wall sections/problems per role permissions.
-- Users can comment and suggest perceived grades.
+- Users can comment, suggest perceived grades, and report others' comments/betas.
+- Administrators can dismiss or remove reported discussion content, review the logbook, and approve or deny a one-time owner appeal.
 
 ### 8.2 Technical Success
 
@@ -156,7 +171,7 @@ Climbing beta is often shared informally (word-of-mouth or temporary recordings)
 
 ### 8.3 Usability Success
 
-- Primary flows (browse, problem detail, submit beta/comment, account actions) are understandable and navigable without special training.
+- Primary flows (browse, problem detail, submit beta/comment, report, notifications, account actions) are understandable and navigable without special training.
 
 ## 9. Requirements Traceability
 
@@ -176,7 +191,7 @@ Requirement verification evidence is tracked through:
 | FR-9 to FR-15 (beta workflow/authorization) | DISC-02, API-02                        | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/server-test-report.md`](./testing/server-test-report.md) | 2026-04-25   |
 | FR-16 to FR-20 (comments/authorization)     | DISC-01, API-02                        | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/server-test-report.md`](./testing/server-test-report.md) | 2026-04-25   |
 | FR-21 to FR-23 (grades/discovery)           | DISC-03, NAV-01                        | [`docs/testing/regression-matrix.md`](./testing/regression-matrix.md), [`docs/testing/frontend-test-report.md`](./testing/frontend-test-report.md) | 2026-04-25   |
-| FR-24 (guest browsing)                      | NAV-01                                 | [`docs/testing/manual-test-cases.md`](./testing/manual-test-cases.md), [`docs/testing/frontend-test-report.md`](./testing/frontend-test-report.md) | 2026-04-25   |
+| FR-24 to FR-29 (reports/moderation/appeals) | DISC-06, NOTIF-01, REPORT-01, LOGBOOK-01, APPEAL-01, APPEAL-02 | [`docs/testing/manual-test-cases.md`](./testing/manual-test-cases.md), [`docs/features/moderation.md`](./features/moderation.md) | 2026-08-30   |
 | NFR-1 to NFR-6                              | Smoke/regression + release readiness checks | [`docs/testing/server-test-report.md`](./testing/server-test-report.md), [`docs/testing/frontend-test-report.md`](./testing/frontend-test-report.md), [`docs/testing/evidence/backend/surefire-report-2026-04-25.html`](./testing/evidence/backend/surefire-report-2026-04-25.html) | 2026-04-25   |
 
 
@@ -213,6 +228,7 @@ This section provides supporting context documents outside the direct requiremen
 
 - [`docs/features/authentication-and-roles.md`](./features/authentication-and-roles.md)
 - [`docs/features/wall-and-problems.md`](./features/wall-and-problems.md)
+- [`docs/features/moderation.md`](./features/moderation.md)
 - [`docs/features/account-page.md`](./features/account-page.md)
 - [`docs/features/future-features.md`](./features/future-features.md)
 

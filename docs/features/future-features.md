@@ -42,16 +42,6 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Bulk/problem lifecycle utilities (text search is tracked separately for a later sprint).
 - **Dependencies:** Existing wall/problem APIs and UI patterns.
 
-### 3) Better Content Moderation and Auditability
-
-- **Priority:** High
-- **Effort:** Medium
-- **Area:** Discussion/Beta
-- **Target sprint:** Sprint 5 (in progress)
-- **Current Gap:** Deletion and ownership rules exist but limited moderation workflow/audit history.
-- **Potential Work:** Add moderation queue, reason codes, notifications, logbook, and appeal/restore.
-- **Dependencies:** Backend audit/report model and admin UI.
-
 ### 4) Observability and Operational Hardening
 
 - **Priority:** Low
@@ -69,16 +59,6 @@ This document tracks ideas that are not fully implemented in the current release
 - **Current Gap:** User identity in comments and solution beta sections is text-only.
 - **Potential Work:** Add profile picture upload/display so each user avatar appears in comments and solution beta entries.
 - **Dependencies:** User profile image storage strategy, account schema updates, frontend rendering updates.
-
-### 6) Report Inappropriate Comments and Solution Betas
-
-- **Priority:** High
-- **Effort:** Medium
-- **Area:** Trust and Safety
-- **Target sprint:** Sprint 5 (in progress)
-- **Current Gap:** Problem-page Report, admin `/reports`, admin `/logbook`, owner `/appeals?reportId=` (one-time appeal), admin `/appeal-queue` (view + approve/deny), and the notification inbox are shipped.
-- **Potential Work:** none remaining for this topic.
-- **Dependencies:** Report data model, report API endpoints, moderation/admin handling flow.
 
 ### 7) Images for Wall Sections and Climbing Problems
 
@@ -113,8 +93,8 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** User Communication / Activity Awareness
-- **Current Gap:** Users are not proactively notified when a wall section is reset.
-- **Potential Work:** Add a notification system so users are informed when specific wall sections are reset, including in-app notifications and optional email/push channels.
+- **Current Gap:** The in-app inbox exists, but users are not notified when a wall section is reset.
+- **Potential Work:** Fan out a wall-reset event to the existing inbox (optional email/push later).
 - **Dependencies:** Reset event tracking, notification preference model, delivery mechanism, and frontend notification UI.
 
 ### 11) Account Activity History and Quick Navigation
@@ -131,8 +111,8 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** High
 - **Effort:** Large
 - **Area:** Moderation / Reliability
-- **Target sprint:** Sprint 5 (in progress) for admin reports/logbook; developer event log may follow later
-- **Current Gap:** Admin `/reports` queue/detail/resolve and `/logbook` (paged `GET /api/moderate/logbook`, `.txt` download) are shipped. There is no centralized event/error log for developer debugging.
+- **Target sprint:** Later (admin reports/logbook shipped in Sprint 5)
+- **Current Gap:** Admin `/reports` and `/logbook` are shipped. There is no centralized event/error log for developer debugging.
 - **Potential Work:** Add a structured application event log (errors and important events) for developers to diagnose unexpected bugs.
 - **Dependencies:** Report/audit data model, admin review UI, event ingestion pipeline, and log retention/access policy.
 
@@ -195,9 +175,9 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** Moderation / Safety
-- **Current Gap:** Comment/beta delete already soft-deletes `discussion_root` (`deleted_at`, `deleted_by`, `deleted_reason`) and hides those rows from problem timelines. There is no admin restore path, and GCS/beta objects are not purged after a retention window.
-- **Potential Work:** Admin-approved restore of soft-deleted discussion content, plus a scheduled 30-day purge of GCS objects keyed off `deleted_at` (not upload time).
-- **Dependencies:** Restore API/UI, idempotent GCS delete, and appeal/moderation decision wiring.
+- **Current Gap:** Appeal **Approve** restores a soft-deleted discussion (`deleted_at` / `deleted_by` / `deleted_reason` cleared). GCS/beta objects are not purged after a retention window.
+- **Potential Work:** Scheduled 30-day purge of GCS objects keyed off `deleted_at` (not upload time).
+- **Dependencies:** Idempotent GCS delete and a retention job.
 
 ### 20) Cursor Pagination and Feed Performance for Problem Discussions
 
@@ -228,4 +208,5 @@ This document tracks ideas that are not fully implemented in the current release
 
 ## Change Log
 
+- 2026-08-30: Moved Sprint 5 moderation/report backlog (#3, #6) to `completed-features-archive.md`. Restored discussion content via appeal approve is shipped; #19 remains delayed GCS purge. Admin reports/logbook on #12 are shipped; remaining work is a developer event log.
 - Keep this section updated when priorities change or items move to implemented docs.

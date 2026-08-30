@@ -9,6 +9,8 @@ Next.js frontend for V-Beta. This app connects to the Spring Boot backend in `..
 - Auth: Firebase client SDK
 - API target: Spring Boot backend in `../server`
 
+Signed-in climbers can report discussion comments/betas. Admins also get **Reports** (`/reports`), **Logbook** (`/logbook`), and **Appeals** (`/appeal-queue`). Owners open deletion notices on `/appeals`. See [Moderation](../docs/features/moderation.md) and the [User Manual](../docs/user-manual.md).
+
 ## Prerequisites
 
 - Node.js 20+ (or current LTS compatible with Next.js 16)
@@ -80,12 +82,13 @@ npm run test:watch
 2. Start frontend with `npm run dev`.
 3. Open `http://localhost:3000`.
 4. Verify login/signup flow reaches Firebase and backend session sync succeeds.
-5. Verify role-based navigation renders expected links for the signed-in account.
+5. Verify role-based navigation renders expected links for the signed-in account (admins: Reports, Logbook, Appeals).
 
 ## Related Docs
 
 - [Project docs index](../docs/README.md)
 - [User Manual](../docs/user-manual.md)
+- [Moderation](../docs/features/moderation.md)
 - [Setup: Environment Variables](../docs/setup/environment-variables.md)
 - [Setup: Local Development](../docs/setup/local-development.md)
 - [Setup: Firebase](../docs/setup/firebase-setup.md)

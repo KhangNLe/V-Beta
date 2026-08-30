@@ -6,6 +6,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 
 - Follow the recommended reading order for onboarding.
 - Use section links below as a quick reference during development.
+- Sprint 5 moderation (report → queue → logbook → notify → appeal) is documented in [`features/moderation.md`](./features/moderation.md).
 
 ## Recommended Reading Order
 
@@ -38,6 +39,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 
 - [`features/authentication-and-roles.md`](./features/authentication-and-roles.md)
 - [`features/wall-and-problems.md`](./features/wall-and-problems.md)
+- [`features/moderation.md`](./features/moderation.md)
 - [`features/account-page.md`](./features/account-page.md)
 - [`features/future-features.md`](./features/future-features.md)
 - [`features/completed-features-archive.md`](./features/completed-features-archive.md)

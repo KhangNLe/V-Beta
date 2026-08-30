@@ -40,7 +40,7 @@ cd server
   - boundary mocking for auth/session, route params, router actions, and API modules
   - async flow validation for loading/error/empty/success states
   - role/ownership gating tests for guest/climber/setter/admin experiences
-  - mutation and failure-path tests for account role changes, wall actions, comments, and beta upload workflows
+  - mutation and failure-path tests for account role changes, wall actions, comments, beta upload, reports, notifications, and appeals
   - pending-state and UI disablement checks for long-running actions (`Adding...`, `Deleting...`, `Submitting...`, `Uploading...`)
 
 Run command:
@@ -60,6 +60,7 @@ Focus:
 - account role change behavior
 - discussion and beta ownership checks
 - domain validation and error paths
+- report queue, logbook, notification inbox, and appeal create/resolve
 
 Target outcomes:
 

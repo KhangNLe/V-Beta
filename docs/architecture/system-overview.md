@@ -39,6 +39,7 @@ This project is a full-stack climbing gym application with:
 - Wall section and climbing problem management
 - Problem discussion (comments + solution beta uploads)
 - Perceived grade suggestions
+- Content reports, admin queue, logbook, in-app notifications, and appeals
 
 ## Runtime and Environments
 

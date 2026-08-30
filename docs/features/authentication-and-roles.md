@@ -16,6 +16,8 @@ This section documents the authentication and authorization features that are cu
 - Signed-in notification bell (unread poll) and `/notifications` all-inbox page (paged `GET /all`)
 - Admin report queue at `/reports` (ranked list, detail dialog, dismiss / remove with notes)
 - Admin moderation logbook at `/logbook` (paged list, read-only detail, `.txt` download)
+- Owner deletion notice and one-time appeal at `/appeals?reportId=`
+- Admin appeal queue at `/appeal-queue` (required comments, approve restore / deny)
 
 ## User Flows
 
@@ -77,7 +79,7 @@ This section documents the authentication and authorization features that are cu
 
 ## Content Reports and Notifications
 
-- Create report: `POST /api/report/create` (authenticated; not action-gated; no `CREATE_REPORT`; success `200`). The problem-page ⋮ menu is the Sprint 5 UI for this (comments and betas; category + reason required, max 250). Owners cannot report their own discussion.
+- Create report: `POST /api/report/create` (authenticated; not action-gated; no `CREATE_REPORT`; success `200`). The problem-page ⋮ menu is the shipped UI for this (comments and betas; category + reason required, max 250). Owners cannot report their own discussion.
 - Admin queue/detail: `GET /api/report/reports` (action-gated `VIEW_REPORTS`; admin only). Optional `reportId` returns one OPEN case. The `/reports` page lists ranked cases and opens detail (wall/problem/content, reporters, required notes).
 - Admin resolve: `POST /api/moderate/report` (action-gated `MODERATE_REPORT`; admin only). Dismiss (`REPORT_DISMISSED`) or remove (`CONTENT_REMOVED`) discussion reports; notes required (max 255). Appeals are not accepted here.
 - Admin logbook: `GET /api/moderate/logbook` (action-gated `VIEW_MODERATION_LOGS`; admin only). Optional `moderationId` returns one row; `offSetPlace` pages 25 newest-first. The `/logbook` page lists those rows (read-only) and can download all pages as `.txt`.

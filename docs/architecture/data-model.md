@@ -10,8 +10,9 @@ Primary persistence is PostgreSQL. Existing JPA entities live under `server/src/
 - `climb/` — wall sections, problems, grades, lifecycle
 - `discussions/` — discussion roots, comments, solution betas
 - `user/` — accounts and perceived grades
+- `report/`, `notification/`, `appeal/`, `moderation/` — reports, inbox events, appeals, logbook
 
-Moderation tables are defined in bootstrap SQL (`pg-v-beta.sql` / `v_beta_test_schema.sql`). Matching JPA entities can follow in a later Sprint 5 implementation PR.
+Moderation tables are defined in bootstrap SQL (`pg-v-beta.sql` / `v_beta_test_schema.sql`) and mapped by JPA entities in those packages.
 
 ## Core Entity Groups
 
@@ -76,7 +77,7 @@ Defined in runtime/test SQL. Closed workflow values use PostgreSQL enums; extens
 #### Report lifecycle
 
 - `Report`
-  - Reporter, optional reason (≤250), category, status, timestamps.
+  - Reporter, reason (max 250; create-report requires a non-blank reason), category, status, timestamps.
   - Typed target via `report_target_type` plus nullable FKs (`discussion_id`, `problem_id`, `wall_section_id`, `user_id`) with a CHECK that exactly one target is set.
   - Sprint 5 product scope uses `DISCUSSION` only; other targets are reserved for later expansion.
   - Partial unique index `uq_one_open_report_per_user_target` prevents duplicate open reports per user/target.

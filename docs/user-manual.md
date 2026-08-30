@@ -8,6 +8,8 @@ This manual explains how to use the application by role.
 - Backend URL (local): `http://localhost:8080`
 - For authenticated actions, sign in from `/login` or create an account at `/signup`.
 
+Sprint 5 moderation is live: report a comment or beta from the ⋮ menu; admins review **Reports** and **Logbook**; owners appeal from a **Content removed** notification; admins decide on **Appeals**. Details: [`docs/features/moderation.md`](./features/moderation.md).
+
 ## 2) Guest Flow (Browse Walls and Problems)
 
 Guests can view content but cannot perform authenticated actions.
@@ -139,5 +141,6 @@ Authenticated users can access `/account` to:
 
 - Setup: [`docs/setup/local-development.md`](./setup/local-development.md)
 - Feature behavior: [`docs/features/authentication-and-roles.md`](./features/authentication-and-roles.md)
+- Moderation: [`docs/features/moderation.md`](./features/moderation.md)
 - Wall/problem behavior: [`docs/features/wall-and-problems.md`](./features/wall-and-problems.md)
 - Account behavior: [`docs/features/account-page.md`](./features/account-page.md)

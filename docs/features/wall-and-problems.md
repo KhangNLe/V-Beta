@@ -97,12 +97,13 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 
 ## Limitations and Notes
 
-- Comment/beta delete is a soft delete: discussion root metadata is marked deleted; comment text, beta metadata, and GCS objects stay until a later purge/restore flow.
+- Comment/beta delete is a soft delete: discussion root metadata is marked deleted; comment text, beta metadata, and GCS objects stay. Appeal **Approve** restores the discussion; delayed GCS purge is still future work.
 - Problem delete is `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`.
 - Wall reset is `PATCH /api/home/wall-section/{wallSectionId}/reset`.
 - UI gating and backend authorization should both be revalidated when role logic changes.
 - Problem-page Report submits `reportTargetType: DISCUSSION` and `targetId` = discussion id. Category is required (`INAPPROPRIATE_CONTENT`, `HARASSMENT_BULLYING`, `SPAM`, `OFF_TOPIC`). Reason is required and capped at 250 characters (API max; not 255).
 - Duplicate open reports and self-reports return `404` from create-report; the dialog shows an error toast.
+- The rest of the moderation loop (admin queue, logbook, notifications, appeals) is documented in `docs/features/moderation.md`.
 - Discovery grade-range endpoints use `/api/search/{wallSectionId}?min=&max=&sort=`.
 - CORS allows `/api/**` for the frontend origin (covers `/api/home/**` and `/api/search/**`).
 - Keyword/text search is deferred to a later sprint (roadmap Sprint 9); Sprint 4 discovery (grade filter/sort) is complete.

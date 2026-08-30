@@ -1,6 +1,6 @@
 # Known Issues and Limitations
 
-This document reflects the current repository state on `package_sub` and comparison against `administrator_page`.
+This document reflects the current repository state on `sprint5/moderation_mvp`.
 
 ## Functional Limitations
 
@@ -50,6 +50,9 @@ This document reflects the current repository state on `package_sub` and compari
 
 ## Planned Follow-up Areas
 
+- Delayed GCS purge of soft-deleted beta objects after a retention window (appeal restore is already shipped).
+- Reporting wall sections or problems (Sprint 5 covers comments and betas only).
+- Email/push notification channels (in-app inbox only).
 - Add automated explain/plan sampling for high-traffic discussion queries as dataset size grows.
 - Standardize authorization checks for all mutating discussion/beta routes.
 - Add global server error handling contract and document response schema.

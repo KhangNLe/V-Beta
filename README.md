@@ -15,9 +15,11 @@ The system includes:
 Core roles:
 
 - Guest (browse public content)
-- Climber (authenticated user actions)
+- Climber (authenticated user actions, including content reports and one-time appeals)
 - Setter (wall/problem management actions)
-- Admin (account/role management actions)
+- Admin (account/role management plus report queue, logbook, and appeal review)
+
+Shipped moderation loop (Sprint 5): report comments/betas → admin `/reports` + in-app notifications → dismiss or delete with logged notes → optional owner appeal on `/appeals` and admin restore/deny on `/appeal-queue`. See [`docs/features/moderation.md`](./docs/features/moderation.md).
 
 ## Repository Structure
 
@@ -42,6 +44,7 @@ Core roles:
 - [`docs/README.md`](./docs/README.md) - complete documentation index
 - [`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md) - sprint plan and implementation priorities for contributors
 - [`docs/user-manual.md`](./docs/user-manual.md) - role-based user guide
+- [`docs/features/moderation.md`](./docs/features/moderation.md) - report, queue, logbook, notifications, and appeals
 - [`server/README.md`](./server/README.md) - backend setup and runtime configuration
 - [`v-beta/README.md`](./v-beta/README.md) - frontend setup and runtime configuration
 - [`docs/architecture/diagrams/README.md`](./docs/architecture/diagrams/README.md) - architecture diagrams index

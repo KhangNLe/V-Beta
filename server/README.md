@@ -5,8 +5,10 @@ Spring Boot REST API for V-Beta. It pairs with the Next.js app in `../v-beta`.
 ## Overview
 
 - Framework: Spring Boot + Spring Security + Spring Data JPA
-- Database: PostgreSQL (runtime), H2 (tests)
+- Database: PostgreSQL (runtime and integration tests on `v_beta_test`)
 - Integrations: Firebase Admin SDK and Google Cloud Storage
+
+REST surface includes account, wall/problem, discussion, reports, notifications, moderation logbook, and appeals. See [API endpoints](../docs/api/endpoints.md) and [Moderation](../docs/features/moderation.md).
 
 ## Prerequisites
 
@@ -126,6 +128,7 @@ java -jar target/team-satisfaction-server-0.0.1-SNAPSHOT.jar
 
 - [Project docs index](../docs/README.md)
 - [User Manual](../docs/user-manual.md)
+- [Moderation](../docs/features/moderation.md)
 - [Setup: Environment Variables](../docs/setup/environment-variables.md)
 - [Setup: Local Development](../docs/setup/local-development.md)
 - [Setup: Database Schema](../docs/setup/database-schema.md)
