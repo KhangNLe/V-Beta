@@ -48,16 +48,6 @@
   color: #3730a3;
 }
 
-.role-navbar__link--disabled {
-  opacity: 0.8;
-  cursor: default;
-  user-select: none;
-}
-
-.role-navbar__link--disabled:hover {
-  background: transparent;
-}
-
 .role-navbar__link--action {
   cursor: pointer;
 }

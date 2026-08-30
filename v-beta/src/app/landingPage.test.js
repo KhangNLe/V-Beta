@@ -66,6 +66,10 @@ describe('LandingPage', () => {
       'href',
       '/signup',
     );
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute(
+      'href',
+      '/about',
+    );
   });
 
   // Test that the landing page renders the slider images and footer attribution links correctly

@@ -29,6 +29,7 @@
 Primary routes:
 
 - `/`
+- `/about`
 - `/login`, `/signup`, `/forgot-password`, `/verify-email`
 - `/main-page`
 - `/account`
