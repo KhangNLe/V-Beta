@@ -9,6 +9,7 @@ import app.VBeta.api.dto.moderation.ModerateAppealRequest;
 import app.VBeta.api.dto.moderation.ModerationDTO;
 import app.VBeta.api.dto.moderation.ModerationPayload;
 import app.VBeta.api.dto.moderation.ModerationRequest;
+import app.VBeta.api.dto.moderation.OwnerDeletionNoticeDTO;
 import app.VBeta.api.dto.report.ReportDTO;
 import app.VBeta.api.dto.report.ReportUserDTO;
 import app.VBeta.application.AppealService;
@@ -19,6 +20,7 @@ import app.VBeta.domain.model.appeal.AppealStatus;
 import app.VBeta.domain.model.discussions.DiscussionType;
 import app.VBeta.domain.model.moderation.ModerateActionType;
 import app.VBeta.domain.model.report.ReportCategoryName;
+import app.VBeta.domain.model.report.ReportStatus;
 import app.VBeta.domain.model.report.ReportTargetType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -318,6 +320,25 @@ public class ModerationControllerTest {
         return new AppealPayload(List.of(sampleAppealDTO()));
     }
 
+    private ReportDTO sampleOwnerNoticeReport() {
+        ReportDTO source = sampleAppealDTO().report();
+        ReportUserDTO flag = source.reporters().get(0);
+        return new ReportDTO(
+                source.targetType(),
+                source.discussion(),
+                source.climbingProblem(),
+                source.wallSection(),
+                source.user(),
+                List.of(new ReportUserDTO(
+                        flag.reportId(),
+                        null,
+                        flag.categoryName(),
+                        flag.reportReason(),
+                        flag.createdAt()
+                ))
+        );
+    }
+
     @Test
     @DisplayName("POST /api/moderate/appeal returns 201 after owner submits an appeal")
     void returns201_whenAuthenticatedOwnerCreatesAppeal() throws Exception {
@@ -367,6 +388,33 @@ public class ModerationControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/moderate/appeal/notice returns the owner deletion notice")
+    void returns200_whenOwnerRequestsDeletionNotice() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        when(appealService.getOwnerDeletionNotice(11L, "testFirebaseUid")).thenReturn(
+                new OwnerDeletionNoticeDTO(
+                        11L,
+                        ReportStatus.CONTENT_REMOVED,
+                        "Does not belong on this wall.",
+                        sampleOwnerNoticeReport(),
+                        null,
+                        true,
+                        null
+                )
+        );
+
+        mockMvc.perform(get("/api/moderate/appeal/notice").param("reportId", "11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reportId").value(11))
+                .andExpect(jsonPath("$.adminReason").value("Does not belong on this wall."))
+                .andExpect(jsonPath("$.canAppeal").value(true))
+                .andExpect(jsonPath("$.appeal").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.report.reporters[0].categoryName").value("SPAM"))
+                .andExpect(jsonPath("$.report.reporters[0].reportReason").value("It's spammy"))
+                .andExpect(jsonPath("$.report.reporters[0].reporter").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
     @DisplayName("GET /api/moderate/appeal?appealId= returns the matching appeal")
     void returns200_whenAdminRequestsAppealById() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
@@ -380,6 +428,22 @@ public class ModerationControllerTest {
                 .andExpect(jsonPath("$.appeals[0].appealReason").value("This was a joke, please restore."));
 
         verify(appealService, times(1)).getUserAppeal(7L, "testFirebaseUid3");
+        verify(appealService, times(0)).getAppeals("testFirebaseUid3");
+    }
+
+    @Test
+    @DisplayName("GET /api/moderate/appeal?reportId= returns the matching appeal")
+    void returns200_whenAdminRequestsAppealByReportId() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid3");
+        when(appealService.getAppealByReport(11L, "testFirebaseUid3")).thenReturn(sampleAppealPayload());
+
+        mockMvc.perform(get("/api/moderate/appeal").param("reportId", "11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.appeals[0].appealId").value(7))
+                .andExpect(jsonPath("$.appeals[0].appealUser.username").value("spammyUser"))
+                .andExpect(jsonPath("$.appeals[0].appealReason").value("This was a joke, please restore."));
+
+        verify(appealService, times(1)).getAppealByReport(11L, "testFirebaseUid3");
         verify(appealService, times(0)).getAppeals("testFirebaseUid3");
     }
 

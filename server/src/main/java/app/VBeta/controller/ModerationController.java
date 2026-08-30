@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.*;
  * {@link app.VBeta.domain.model.actions.ActionDefinition#MODERATE_REPORT}.
  * Logbook reads are action-gated with
  * {@link app.VBeta.domain.model.actions.ActionDefinition#VIEW_MODERATION_LOGS}.
- * Appeal create is authenticated only. Appeal queue and detail are action-gated
+ * Appeal create is authenticated only. Owner deletion notice is authenticated
+ * only ({@code GET /api/moderate/appeal/notice}). Appeal queue and detail are action-gated
  * with {@link app.VBeta.domain.model.actions.ActionDefinition#VIEW_APPEALS}.
  * Appeal resolve is action-gated with
  * {@link app.VBeta.domain.model.actions.ActionDefinition#MODERATE_APPEAL}.
@@ -130,26 +131,53 @@ public class ModerationController {
     }
 
     /**
-     * Returns OPEN appeals for an admin, or one appeal by id.
+     * Returns the owner deletion notice for one report.
      * <p>
-     * With {@code appealId}, the response is that one row. Without it, the
-     * response is OPEN appeals newest-first. Appeals filed by the viewing
-     * admin are omitted (empty list) or treated as missing ({@code 404} for
-     * get-by-id). {@code RuntimeException} is mapped to {@code 404}
-     * (missing account, missing {@code VIEW_APPEALS}, or unknown id).
+     * Authenticated only. The caller must own the removed discussion.
+     * {@code RuntimeException} is mapped to {@code 404}.
+     *
+     * @param reportId report named in {@code /appeals?reportId=}
+     * @return {@link OwnerDeletionNoticeDTO}
+     */
+    @GetMapping("/appeal/notice")
+    public ResponseEntity<?> getOwnerDeletionNotice(@RequestParam Long reportId) {
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            OwnerDeletionNoticeDTO notice = appealService.getOwnerDeletionNotice(reportId, firebaseUid);
+            return new ResponseEntity<>(notice, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Returns OPEN appeals for an admin, one appeal by id, or one appeal by report.
+     * <p>
+     * With {@code appealId}, the response is that one row. With {@code reportId}
+     * and no {@code appealId}, the response is the appeal for that report.
+     * Without either, the response is OPEN appeals newest-first. Appeals filed
+     * by the viewing admin are omitted (empty list) or treated as missing
+     * ({@code 404} for get-by-id/report). {@code RuntimeException} is mapped to
+     * {@code 404} (missing account, missing {@code VIEW_APPEALS}, or unknown id).
      *
      * @param appealId optional appeal id
+     * @param reportId optional report id
      * @return {@link AppealPayload}; empty {@code appeals} when the queue has no rows
      */
     @GetMapping("/appeal")
-    public ResponseEntity<?> getUserAppeal(@RequestParam(required = false) Long appealId) {
+    public ResponseEntity<?> getUserAppeal(@RequestParam(required = false) Long appealId,
+                                           @RequestParam(required = false) Long reportId) {
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
             AppealPayload payload;
-            if (appealId == null) {
-                payload = appealService.getAppeals(firebaseUid);
-            } else {
+            if (appealId != null) {
                 payload = appealService.getUserAppeal(appealId, firebaseUid);
+            } else if (reportId != null) {
+                payload = appealService.getAppealByReport(reportId, firebaseUid);
+            } else {
+                payload = appealService.getAppeals(firebaseUid);
             }
             return new ResponseEntity<>(payload, HttpStatus.OK);
         } catch (RuntimeException e) {

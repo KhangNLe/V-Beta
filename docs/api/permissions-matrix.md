@@ -43,8 +43,10 @@ All routes below are under `/api`.
 | `GET /api/moderate/logbook` | No | No | No | Yes | Action-gated (`VIEW_MODERATION_LOGS`) |
 | `GET /api/moderate/logbook?moderationId=` | No | No | No | Yes | Action-gated (`VIEW_MODERATION_LOGS`) |
 | `POST /api/moderate/appeal` | No | Yes | Yes | Yes | Authenticated (owner of a `CONTENT_REMOVED` discussion) |
+| `GET /api/moderate/appeal/notice` | No | Yes* | Yes* | Yes | Authenticated (owner of the removed discussion) |
 | `GET /api/moderate/appeal` | No | No | No | Yes | Action-gated (`VIEW_APPEALS`) |
 | `GET /api/moderate/appeal?appealId=` | No | No | No | Yes | Action-gated (`VIEW_APPEALS`) |
+| `GET /api/moderate/appeal?reportId=` | No | No | No | Yes | Action-gated (`VIEW_APPEALS`) |
 | `PATCH /api/moderate/appeal` | No | No | No | Yes | Action-gated (`MODERATE_APPEAL`) |
 | `GET /api/notification/short` | No | Yes | Yes | Yes | Authenticated (not action-gated). Own unread rows only |
 | `GET /api/notification/all` | No | Yes | Yes | Yes | Authenticated (not action-gated). Own rows, 10 per page |
@@ -76,7 +78,7 @@ All routes below are under `/api`.
 
 - Final permission results are role-permission table driven in the database.
 - Some discussion endpoints are authenticated but not action-gated at controller level.
-- `POST /api/report/create`, `POST /api/moderate/appeal`, `GET /api/notification/short`, `GET /api/notification/all`, and `PATCH /api/notification/short` are authenticated only. Guest `401` comes from Spring Security. There is no `CREATE_REPORT` action. Queue/detail uses `VIEW_REPORTS` (admin). Resolve uses `MODERATE_REPORT` (admin). Logbook uses `VIEW_MODERATION_LOGS` (admin). Appeal queue/detail uses `VIEW_APPEALS` (admin). Appeal resolve uses `MODERATE_APPEAL` (admin). Inbox mark-read is own-row only (another user's id is **404**).
+- `POST /api/report/create`, `POST /api/moderate/appeal`, `GET /api/moderate/appeal/notice`, `GET /api/notification/short`, `GET /api/notification/all`, and `PATCH /api/notification/short` are authenticated only. Guest `401` comes from Spring Security. There is no `CREATE_REPORT` action. Queue/detail uses `VIEW_REPORTS` (admin). Resolve uses `MODERATE_REPORT` (admin). Logbook uses `VIEW_MODERATION_LOGS` (admin). Appeal queue/detail uses `VIEW_APPEALS` (admin). Appeal resolve uses `MODERATE_APPEAL` (admin). Inbox mark-read is own-row only (another user's id is **404**).
 - Create-report notifies **admins** of `REPORT_CREATED`. Climber/setter callers still get `200`; they do not receive that inbox event. If the reporter is an admin, they are skipped as a recipient.
 - `GET /api/notification/short` returns the caller's unread rows with `notificationId`, catalog `summary`, and `click` metadata. Current moderation events map to `click.kind = REPORT_QUEUE` and `click.reportId`. Report reason and admin notes are omitted.
 - `GET /api/notification/all` returns a 10-row page of the caller's read **and** unread rows (newest first). `offset` is 1-based (default `1`). Same DTO as `/short`; `readAt` is omitted. Missing account maps to **404**. The `/notifications` UI overlays unread ids from `/short`.
@@ -84,7 +86,8 @@ All routes below are under `/api`.
 - `POST /api/moderate/report` requires `MODERATE_REPORT`. Climber/setter and missing permission currently map to **404**. The acting admin cannot close a report they filed, and cannot close reports on their own discussion; those ids are skipped (the request can still `200`). Appeal decisions (`APPEAL_APPROVED` / `APPEAL_DENIED`) are rejected before any report is closed.
 - `GET /api/moderate/logbook` requires `VIEW_MODERATION_LOGS`. Climber/setter and missing permission currently map to **404**. Empty pages are **200** with `"moderationLogs": []`. Unknown `moderationId` is **404**. `offSetPlace <= 0` is **400**. The admin UI is `/logbook`.
 - `POST /api/moderate/appeal` is authenticated only. The caller must own the `CONTENT_REMOVED` discussion. Duplicate appeals and ineligible reports currently map to **404**.
-- `GET /api/moderate/appeal` requires `VIEW_APPEALS`. Climber/setter and missing permission currently map to **404**. Empty queues are **200** with `"appeals": []`. Unknown `appealId` is **404**. Appeals filed by the viewing admin are omitted from the queue and treated as missing on get-by-id.
+- `GET /api/moderate/appeal/notice` is authenticated. The caller must own the removed discussion. Ineligible reports currently map to **404**. `canAppeal` is true only for the owner. Snapshots omit reporter identity.
+- `GET /api/moderate/appeal` requires `VIEW_APPEALS`. Climber/setter and missing permission currently map to **404**. Empty queues are **200** with `"appeals": []`. Unknown `appealId` or `reportId` is **404**. Appeals filed by the viewing admin are omitted from the queue and treated as missing on get-by-id.
 - `PATCH /api/moderate/appeal` requires `MODERATE_APPEAL`. Climber/setter and missing permission currently map to **404**. Only `OPEN` appeals can be decided (`APPROVED` or `DENIED`; `OPEN` is **400**). The acting admin cannot decide an appeal they filed (treated as missing). Approve restores the discussion, sets the report to `CONTENT_RESTORED`, writes `APPEAL_APPROVED` to the logbook, and notifies the owner with `CONTENT_RESTORED`. Deny keeps the discussion deleted, sets the report to `APPEAL_DENIED`, writes `APPEAL_DENIED` to the logbook, and notifies the owner with `APPEAL_DENIED`.
 - Queue-resolve notifications: dismiss writes `REPORT_DISMISSED` to each reporter (owner is not notified). Remove writes `REPORT_APPROVED` to each reporter and `CONTENT_REMOVED` once to the owner. Event actor is the admin.
 - Appeal notifications: create writes `APPEAL_SUBMITTED` to admins (skipping the appellant). Approve writes `CONTENT_RESTORED` to the owner. Deny writes `APPEAL_DENIED` to the owner. Resolve event actor is the admin.

@@ -877,6 +877,62 @@ Empty body.
 - `401` when the caller is a guest or the Firebase token is invalid
 - `404` when the account is missing, the report is ineligible (`Appeal is not allowed`), or an appeal already exists (`Appeal already exists`)
 
+## 22b) Get Owner Deletion Notice (Authenticated)
+
+Any authenticated role may call this endpoint. The caller must own the reported discussion. Status must be `CONTENT_REMOVED`, `APPEAL_PENDING`, `CONTENT_RESTORED`, or `APPEAL_DENIED`. `canAppeal` is true only before the owner submits.
+
+### Request
+
+```http
+GET /api/moderate/appeal/notice?reportId=11
+Authorization: Bearer <firebase_id_token>
+```
+
+### Response (200)
+
+```json
+{
+  "reportId": 11,
+  "reportStatus": "CONTENT_REMOVED",
+  "adminReason": "Does not belong on this wall.",
+  "report": {
+    "targetType": "DISCUSSION",
+    "discussion": {
+      "discussionId": 301,
+      "userId": 8,
+      "username": "alex",
+      "parentCommentId": null,
+      "discussionType": "COMMENT",
+      "discussionContent": "hello",
+      "createdDate": "2026-08-16T10:00:00"
+    },
+    "climbingProblem": null,
+    "wallSection": null,
+    "user": null,
+    "reporters": [
+      {
+        "reportId": 11,
+        "reporter": null,
+        "categoryName": "SPAM",
+        "reportReason": "Spammy",
+        "createdAt": "2026-08-16T10:05:00Z"
+      }
+    ]
+  },
+  "appealStatus": null,
+  "canAppeal": true,
+  "appeal": null
+}
+```
+
+The UI at `/appeals?reportId=` uses this payload for the deletion reason, content summary, report category/reason, one-time appeal form, and (when present) the nested `AppealDTO`. `reporters[].reporter` is `null` for the owner. Admins view user appeals on `/appeal-queue` via `GET /api/moderate/appeal` (`AppealDTO`), not this notice endpoint.
+
+When an appeal exists, `appeal` is an `AppealDTO` (`appealId`, `report`, `appealUser`, `appealReason`) matching section 23.
+### Error examples
+
+- `401` when the caller is a guest or the Firebase token is invalid
+- `404` when the account is missing or the report is ineligible (`Appeal is not allowed`)
+
 ## 23) Get Appeals (Action-gated)
 
 Requires `VIEW_APPEALS`. With no `appealId`, the response is OPEN appeals newest-first. With `appealId`, the response is that one row (any status). Appeals filed by the viewing admin are omitted from the queue and treated as missing on get-by-id.
@@ -948,11 +1004,11 @@ Empty queue is `200` with `"appeals": []`, not 404.
 ### Error examples
 
 - `401` when the caller is a guest or the Firebase token is invalid
-- `404` when the account is missing, the caller is not allowed `VIEW_APPEALS`, or `appealId` does not exist / was filed by the viewing admin
+- `404` when the account is missing, the caller is not allowed `VIEW_APPEALS`, or `appealId` / `reportId` does not exist / was filed by the viewing admin
 
 ## 24) Resolve Appeal (Action-gated)
 
-Requires `MODERATE_APPEAL`. Success is `200` with an empty body. Only `OPEN` appeals can be decided. `OPEN` is not a valid decision status.
+Requires `MODERATE_APPEAL`. Success is `200` with an empty body. Only `OPEN` appeals can be decided. `OPEN` is not a valid decision status. The `/appeal-queue` detail dialog sends this body.
 
 ### Request — approve restore
 

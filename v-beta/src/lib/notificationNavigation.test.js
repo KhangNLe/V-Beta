@@ -58,14 +58,8 @@ describe("notificationNavigation", () => {
     ).toBe("/reports?reportId=11");
   });
 
-  it("sends owner deletion and appeal events to appeal context", () => {
+  it("sends owner deletion and appeal outcome events to the owner appeal page", () => {
     expect(getNotificationHref(contentRemoved)).toBe("/appeals?reportId=11");
-    expect(
-      getNotificationHref({
-        ...contentRemoved,
-        summary: { eventTypeName: "APPEAL_SUBMITTED", description: "Appeal" },
-      }),
-    ).toBe("/appeals?reportId=11");
     expect(
       getNotificationHref({
         ...contentRemoved,
@@ -78,6 +72,15 @@ describe("notificationNavigation", () => {
         summary: { eventTypeName: "APPEAL_DENIED", description: "Denied" },
       }),
     ).toBe("/appeals?reportId=11");
+  });
+
+  it("sends admin appeal-submitted events to the appeal queue", () => {
+    expect(
+      getNotificationHref({
+        ...contentRemoved,
+        summary: { eventTypeName: "APPEAL_SUBMITTED", description: "Appeal" },
+      }),
+    ).toBe("/appeal-queue?reportId=11");
   });
 
   it("uses problem and wall click kinds when ids are present", () => {

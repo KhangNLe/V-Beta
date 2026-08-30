@@ -82,7 +82,7 @@ Defined in runtime/test SQL. Closed workflow values use PostgreSQL enums; extens
   - Partial unique index `uq_one_open_report_per_user_target` prevents duplicate open reports per user/target.
 - `Appeal`
   - One appeal per report (`report_id` unique), appellant user, reason, `appeal_status`, review metadata.
-  - Owner create is `POST /api/moderate/appeal` (authenticated). Admin list/detail is `GET /api/moderate/appeal` (`VIEW_APPEALS`); OPEN newest-first, or one row by `appealId`.
+  - Owner create is `POST /api/moderate/appeal` (authenticated). Owner deletion notice is `GET /api/moderate/appeal/notice` (authenticated). Admin list/detail is `GET /api/moderate/appeal` (`VIEW_APPEALS`); OPEN newest-first, or one row by `appealId`.
   - Admin resolve is `PATCH /api/moderate/appeal` (`MODERATE_APPEAL`): `APPROVED` restores the discussion and sets the report to `CONTENT_RESTORED`; `DENIED` keeps it deleted and sets the report to `APPEAL_DENIED`.
 - `Moderation_Action`
   - Append-only admin logbook rows for a report (action type + required notes).

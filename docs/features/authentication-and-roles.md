@@ -82,12 +82,13 @@ This section documents the authentication and authorization features that are cu
 - Admin resolve: `POST /api/moderate/report` (action-gated `MODERATE_REPORT`; admin only). Dismiss (`REPORT_DISMISSED`) or remove (`CONTENT_REMOVED`) discussion reports; notes required (max 255). Appeals are not accepted here.
 - Admin logbook: `GET /api/moderate/logbook` (action-gated `VIEW_MODERATION_LOGS`; admin only). Optional `moderationId` returns one row; `offSetPlace` pages 25 newest-first. The `/logbook` page lists those rows (read-only) and can download all pages as `.txt`.
 - Owner appeal create: `POST /api/moderate/appeal` (authenticated; not action-gated). One appeal per `CONTENT_REMOVED` discussion report owned by the caller.
-- Admin appeal queue/detail: `GET /api/moderate/appeal` (action-gated `VIEW_APPEALS`; admin only). Optional `appealId` returns one row (any status). Appeals filed by the viewing admin are hidden.
-- Admin appeal resolve: `PATCH /api/moderate/appeal` (action-gated `MODERATE_APPEAL`; admin only). `APPROVED` restores the discussion; `DENIED` keeps it removed. Both write a logbook row and notify the owner.
+- Owner deletion notice: `GET /api/moderate/appeal/notice?reportId=` (authenticated; owner of the removed discussion). Powers `/appeals?reportId=` (admin reason, content summary, report category/reason without reporter identity, one-time form, status).
+- Admin appeal queue/detail: `GET /api/moderate/appeal` (action-gated `VIEW_APPEALS`; admin only). Optional `appealId` or `reportId` returns one row. The `/appeal-queue` page lists OPEN appeals (`AppealDTO`), opens detail, and resolves with required comments.
+- Admin appeal resolve: `PATCH /api/moderate/appeal` (action-gated `MODERATE_APPEAL`; admin only). Body is `ModerateAppealRequest` (`appealId`, `appealStatus` `APPROVED`/`DENIED`, `adminReason` max 255). `APPROVED` restores the discussion; `DENIED` keeps it removed. Both write a logbook row and notify the owner. The `/appeal-queue` detail dialog is the UI.
 - Unread inbox poll: `GET /api/notification/short` (authenticated; not action-gated). Includes `notificationId` and `click` metadata (`kind` + target ids). Current moderation events use `click.kind = REPORT_QUEUE`. The navbar bell uses this poll.
 - All-inbox page: `GET /api/notification/all` (authenticated; not action-gated). 10 rows per page, `offset` 1-based, read and unread. Same DTO as `/short` (`readAt` omitted). `/notifications` calls this with Previous/Next and overlays unread ids from `/short` so rows can still render as read vs unread.
 - Mark read: `PATCH /api/notification/short?notificationId=` (authenticated; own row only; already-read is a no-op). Bell and all-inbox both call this before navigating.
-- Click routing: `REPORT_CREATED` / `REPORT_DISMISSED` / `REPORT_APPROVED` → `/reports?reportId=` (admin queue). `CONTENT_REMOVED` / `APPEAL_SUBMITTED` / `CONTENT_RESTORED` / `APPEAL_DENIED` → `/appeals?reportId=` (stub until appeal UI).
+- Click routing: `REPORT_CREATED` / `REPORT_DISMISSED` / `REPORT_APPROVED` → `/reports?reportId=` (admin queue). `CONTENT_REMOVED` / `CONTENT_RESTORED` / `APPEAL_DENIED` → `/appeals?reportId=` (owner deletion notice + one-time appeal). `APPEAL_SUBMITTED` → `/appeal-queue?reportId=` (admin appeal queue).
 - See `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, and `docs/api/request-response-examples.md`.
 
 ## Key Files
@@ -111,6 +112,11 @@ This section documents the authentication and authorization features that are cu
   - `v-beta/src/api/moderation.js`
   - `v-beta/src/lib/moderationLogbook.js`
   - `v-beta/src/app/logbook/page.js`
+  - `v-beta/src/api/appeals.js`
+  - `v-beta/src/lib/ownerAppeal.js`
+  - `v-beta/src/app/appeals/page.js`
+  - `v-beta/src/lib/appealQueue.js`
+  - `v-beta/src/app/appeal-queue/page.js`
   - `v-beta/src/api/notifications.js`
   - `v-beta/src/lib/notificationNavigation.js`
   - `v-beta/src/components/NotificationBell.js`

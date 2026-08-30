@@ -101,4 +101,14 @@ public class ModerationManager {
         int offSetNum = 25 * (offSetPlace - 1);
         return moderationRepository.findAllByOrderByCreatedAtDesc(offSetNum);
     }
+
+    /**
+     * Returns logbook rows for one report, oldest first.
+     *
+     * @param report report whose decisions to load
+     * @return matching logbook rows
+     */
+    public List<ModerationAction> findByReport(Report report) {
+        return moderationRepository.findByReportOrderByCreatedAtAsc(report);
+    }
 }

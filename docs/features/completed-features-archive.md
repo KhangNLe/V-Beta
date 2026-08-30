@@ -128,14 +128,14 @@ Related docs:
 
 ### H) Personal Notifications Inbox UI
 
-Status: Completed (frontend slice; `/appeals` landing is still a stub)
+Status: Completed (frontend slice; owner deletion clicks open `/appeals?reportId=`; admin appeal clicks open `/appeal-queue?reportId=`)
 
 Highlights:
 
 - Signed-in navbar bell polls unread rows with `GET /api/notification/short`, marks one read with `PATCH /api/notification/short?notificationId=`, and deep-links by event type.
 - `/notifications` pages the full inbox with `GET /api/notification/all?offset=` (1-based, 10 rows). Previous/Next appear when a page is full.
 - `QuickNotificationDTO` omits `readAt`; the client overlays unread ids from `/short` so the all-inbox list can still show read vs unread.
-- Report-queue event types go to `/reports?reportId=`; appeal/deletion types go to `/appeals?reportId=`.
+- Report-queue event types go to `/reports?reportId=`; owner deletion/outcome types go to `/appeals?reportId=`; admin `APPEAL_SUBMITTED` goes to `/appeal-queue?reportId=`.
 - Covered by `notifications.test.js`, `notifications-page.test.js`, `NotificationBell.test.js`, and `notificationNavigation.test.js`.
 
 Related docs:
@@ -172,7 +172,7 @@ Highlights:
 
 - Admin-only `/logbook` pages `GET /api/moderate/logbook` (25 rows, newest first). Non-admins are redirected.
 - Each row shows decision, actor, time, report id, and notes. Detail is read-only (no dismiss/remove).
-- Links to `/reports?reportId=` (dismiss/remove) or `/appeals?reportId=` (appeal decisions) when a report id exists; problem-page link when wall/problem snapshots are present.
+- Links to `/reports?reportId=` (dismiss/remove) or `/appeal-queue?reportId=` (appeal decisions) when a report id exists; problem-page link when wall/problem snapshots are present.
 - **Download .txt** walks all pages and saves an append-only dump. Navbar **Logbook** for admins.
 - Covered by `logbook-page.test.js`, `moderation.test.js`, and `moderationLogbook.test.js`.
 
@@ -181,6 +181,43 @@ Related docs:
 - `docs/features/authentication-and-roles.md`
 - `docs/architecture/frontend-architecture.md`
 - `docs/testing/manual-test-cases.md` (LOGBOOK-01)
+- `docs/api/endpoints.md`
+
+### K) Owner Deletion Notice + One-Time Appeal
+
+Status: Completed (frontend slice; owner GET notice added)
+
+Highlights:
+
+- `/appeals?reportId=` is reached from owner `CONTENT_REMOVED` (and later owner appeal outcome) notifications.
+- Shows admin removal notes, the report category and reason (without reporter identity), a nested `AppealDTO` when an appeal exists, and a content summary from `GET /api/moderate/appeal/notice`.
+- One appeal via `POST /api/moderate/appeal` (max 250). The form hides after success or when `canAppeal` is false / `Appeal already exists`.
+- Status: can appeal, pending, approved (restored), or denied.
+- Covered by `appeals-page.test.js`, `appeals.test.js`, and `ownerAppeal.test.js`.
+
+Related docs:
+
+- `docs/features/authentication-and-roles.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/testing/manual-test-cases.md` (APPEAL-01)
+- `docs/api/endpoints.md`
+
+### L) Admin Appeal Queue UI
+
+Status: Completed (frontend slice)
+
+Highlights:
+
+- Admin-only `/appeal-queue` lists OPEN appeals from `GET /api/moderate/appeal` (`AppealDTO`: appellant, reason, report snapshot).
+- Detail by `?reportId=` uses `GET /api/moderate/appeal?reportId=`. `APPEAL_SUBMITTED` notifications and logbook appeal rows land here, not on `/appeals`.
+- Required admin comments (max 255) plus **Approve** / **Deny** call `PATCH /api/moderate/appeal` (`ModerateAppealRequest`).
+- Navbar **Appeals** for admins. Covered by `appeal-queue-page.test.js`, `appeals.test.js`, and `appealQueue.test.js`.
+
+Related docs:
+
+- `docs/features/authentication-and-roles.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/testing/manual-test-cases.md` (APPEAL-02)
 - `docs/api/endpoints.md`
 
 ## Moved Out of Future Queue

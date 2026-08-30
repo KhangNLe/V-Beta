@@ -5,6 +5,7 @@ import app.VBeta.api.dto.moderation.AppealPayload;
 import app.VBeta.api.dto.moderation.AppealRequest;
 import app.VBeta.api.dto.moderation.ModerateAppealRequest;
 import app.VBeta.api.dto.moderation.ModerationRequest;
+import app.VBeta.api.dto.moderation.OwnerDeletionNoticeDTO;
 import app.VBeta.api.dto.report.ReportRequest;
 import app.VBeta.application.AppealService;
 import app.VBeta.application.ModerationService;
@@ -192,6 +193,71 @@ public class AppealServiceTest {
         assertEquals(APPEAL_REASON, appeal.appealReason());
         assertEquals(owner.getId(), appeal.appealUser().userId());
         assertEquals(1, countEvents(getUserAccount(ADMIN_UID), EventTypeName.APPEAL_SUBMITTED));
+    }
+
+    @Test
+    @DisplayName("Owner deletion notice shows admin reason and blocks a second appeal")
+    void ownerDeletionNoticeShowsReasonAndCanAppealOnce() {
+        UserAccount owner = createClimber("owner-" + UUID.randomUUID());
+        UserAccount other = createClimber("other-" + UUID.randomUUID());
+        Report removed = createRemovedReport(owner, getUserAccount(CLIMBER_UID));
+
+        OwnerDeletionNoticeDTO notice = appealService.getOwnerDeletionNotice(
+                removed.getReportId(), owner.getFirebaseUid());
+        assertEquals(removed.getReportId(), notice.reportId());
+        assertEquals(ReportStatus.CONTENT_REMOVED, notice.reportStatus());
+        assertEquals("Content does not make any sense.", notice.adminReason());
+        assertTrue(notice.canAppeal());
+        assertNull(notice.appealStatus());
+        assertNull(notice.appeal());
+        assertNotNull(notice.report().discussion());
+        assertEquals(DiscussionType.COMMENT, notice.report().discussion().discussionType());
+        assertEquals(1, notice.report().reporters().size());
+        assertNull(notice.report().reporters().get(0).reporter());
+        assertEquals(ReportCategoryName.SPAM, notice.report().reporters().get(0).categoryName());
+        assertEquals("Spammy", notice.report().reporters().get(0).reportReason());
+
+        RuntimeException otherViewer = assertThrows(RuntimeException.class,
+                () -> appealService.getOwnerDeletionNotice(removed.getReportId(), other.getFirebaseUid()));
+        assertEquals("Appeal is not allowed", otherViewer.getMessage());
+
+        appealService.createAppeal(new AppealRequest(removed.getReportId(), APPEAL_REASON), owner.getFirebaseUid());
+        OwnerDeletionNoticeDTO afterSubmit = appealService.getOwnerDeletionNotice(
+                removed.getReportId(), owner.getFirebaseUid());
+        assertFalse(afterSubmit.canAppeal());
+        assertEquals(AppealStatus.OPEN, afterSubmit.appealStatus());
+        assertEquals(ReportStatus.APPEAL_PENDING, afterSubmit.reportStatus());
+        assertNotNull(afterSubmit.appeal());
+        assertEquals(APPEAL_REASON, afterSubmit.appeal().appealReason());
+        assertEquals(owner.getId(), afterSubmit.appeal().appealUser().userId());
+        assertNull(afterSubmit.appeal().report().reporters().get(0).reporter());
+    }
+
+    @Test
+    @DisplayName("Admin cannot load the owner deletion notice")
+    void adminCannotLoadOwnerDeletionNotice() {
+        UserAccount owner = createClimber("owner-" + UUID.randomUUID());
+        Report removed = createRemovedReport(owner, getUserAccount(CLIMBER_UID));
+        appealService.createAppeal(new AppealRequest(removed.getReportId(), APPEAL_REASON), owner.getFirebaseUid());
+
+        RuntimeException adminViewer = assertThrows(RuntimeException.class,
+                () -> appealService.getOwnerDeletionNotice(removed.getReportId(), ADMIN_UID));
+        assertEquals("Appeal is not allowed", adminViewer.getMessage());
+    }
+
+    @Test
+    @DisplayName("Admin can read a user appeal by report id")
+    void adminReadsAppealByReportId() {
+        UserAccount owner = createClimber("owner-" + UUID.randomUUID());
+        Report removed = createRemovedReport(owner, getUserAccount(CLIMBER_UID));
+        appealService.createAppeal(new AppealRequest(removed.getReportId(), APPEAL_REASON), owner.getFirebaseUid());
+
+        AppealPayload payload = appealService.getAppealByReport(removed.getReportId(), ADMIN_UID);
+        assertEquals(1, payload.appeals().size());
+        assertEquals(APPEAL_REASON, payload.appeals().get(0).appealReason());
+        assertEquals(owner.getId(), payload.appeals().get(0).appealUser().userId());
+        assertNotNull(payload.appeals().get(0).report().reporters().get(0).reporter());
+        assertEquals("Spammy", payload.appeals().get(0).report().reporters().get(0).reportReason());
     }
 
     @Test

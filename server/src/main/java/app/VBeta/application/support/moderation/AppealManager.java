@@ -83,4 +83,14 @@ public class AppealManager {
     public List<Appeal> findOpenAppeals() {
         return appealRepository.findByAppealStatusOrderByCreatedAtDesc(AppealStatus.OPEN);
     }
+
+    /**
+     * Finds the one-time appeal for a report, if any.
+     *
+     * @param report report that may have been appealed
+     * @return matching appeal, or empty when none exists
+     */
+    public Optional<Appeal> findByReport(Report report) {
+        return appealRepository.findByReport(report);
+    }
 }

@@ -377,13 +377,34 @@ There is no mark-all-read endpoint in this slice.
     - `400` when `reportId` / `appealReason` fail bean validation
     - `401` when unauthenticated or the Firebase token is invalid
     - `404` when the account is missing, the report is missing/ineligible (`Appeal is not allowed`), or an appeal already exists (`Appeal already exists`)
+  - Product note: Sprint 5 owner UI is `/appeals?reportId=` (notification deep-link).
+
+- `GET /api/moderate/appeal/notice`
+  - Authenticated (owner of the removed discussion)
+  - Purpose: deletion notice / user-appeal context for one report (admin removal notes, content snapshot, nested `AppealDTO` when submitted, whether a first appeal is still allowed).
+  - Query params:
+    - `reportId` (required)
+  - Eligibility: caller owns the reported discussion; status is `CONTENT_REMOVED`, `APPEAL_PENDING`, `CONTENT_RESTORED`, or `APPEAL_DENIED`.
+  - Response: `200` `OwnerDeletionNoticeDTO`:
+    - `reportId`
+    - `reportStatus`
+    - `adminReason` (from the `CONTENT_REMOVED` logbook row)
+    - `report` (`ReportDTO` snapshot: content, category, and reason; `reporters[].reporter` omitted)
+    - `appealStatus` (`OPEN` / `APPROVED` / `DENIED`, or omitted/`null` when none)
+    - `canAppeal` (`true` only for `CONTENT_REMOVED` with no appeal row)
+    - `appeal` (`AppealDTO`, or omitted/`null` when none)
+  - Errors:
+    - `401` when unauthenticated or the Firebase token is invalid
+    - `404` when the account is missing or the report is missing/ineligible (`Appeal is not allowed` / `Report not found`)
 
 - `GET /api/moderate/appeal`
   - Required action: `VIEW_APPEALS` (admin)
-  - Purpose: read OPEN appeals newest-first, or one appeal by id.
+  - Purpose: read OPEN appeals newest-first, one appeal by id, or one appeal by report.
   - Query params:
     - none — OPEN appeal queue
-    - `appealId` (optional) — one appeal (any status); when set, the queue filter is ignored
+    - `appealId` (optional) — one appeal (any status); when set, `reportId` is ignored
+    - `reportId` (optional) — the appeal for that report (powers `/appeal-queue?reportId=`)
+  - Product note: admin list/detail UI is `/appeal-queue`.
   - Response: `200` `AppealPayload`:
     - `appeals[]` (`AppealDTO`)
       - `appealId`
@@ -393,8 +414,7 @@ There is no mark-all-read endpoint in this slice.
   - Empty `appeals` is a valid `200` (no OPEN appeals, or every OPEN appeal was filed by the viewing admin).
   - Errors:
     - `401` when unauthenticated or the Firebase token is invalid
-    - `404` when the account is missing, the caller lacks `VIEW_APPEALS`, or `appealId` does not exist / was filed by the viewing admin (`Appeal not found`)
-  - Product note: approve/deny restore is `PATCH /api/moderate/appeal` (`MODERATE_APPEAL`).
+    - `404` when the account is missing, the caller lacks `VIEW_APPEALS`, or `appealId` / `reportId` does not exist / was filed by the viewing admin (`Appeal not found`)
 
 - `PATCH /api/moderate/appeal`
   - Required action: `MODERATE_APPEAL` (admin)
@@ -407,6 +427,7 @@ There is no mark-all-read endpoint in this slice.
   - `APPROVED` side effects: restore the soft-deleted discussion (clear `deleted_at` / `deleted_by` / `deleted_reason`), set report status to `CONTENT_RESTORED`, write logbook `APPEAL_APPROVED`, notify the owner with `CONTENT_RESTORED`.
   - `DENIED` side effects: discussion stays deleted, set report status to `APPEAL_DENIED`, write logbook `APPEAL_DENIED`, notify the owner with `APPEAL_DENIED`.
   - Response: `200` with empty body.
+  - Product note: `/appeal-queue` detail sends this body (required comments + Approve/Deny).
   - Errors:
     - `400` when `appealId` / `appealStatus` / `adminReason` fail bean validation, or `appealStatus` is `OPEN` (`Invalid appeal status`)
     - `401` when unauthenticated or the Firebase token is invalid

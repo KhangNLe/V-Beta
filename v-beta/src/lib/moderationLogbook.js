@@ -99,7 +99,7 @@ export function getLogbookReportHref(entry) {
       ? entry.decision
       : "";
   if (decision === "APPEAL_APPROVED" || decision === "APPEAL_DENIED") {
-    return `/appeals?reportId=${reportId}`;
+    return `/appeal-queue?reportId=${reportId}`;
   }
   return `/reports?reportId=${reportId}`;
 }

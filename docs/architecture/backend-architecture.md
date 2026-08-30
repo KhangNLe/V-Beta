@@ -104,7 +104,8 @@ Access model types:
 - Admin report **resolve** (`POST /api/moderate/report`) is action-gated with `MODERATE_REPORT`.
 - Admin **logbook** (`GET /api/moderate/logbook`) is action-gated with `VIEW_MODERATION_LOGS`.
 - Owner **appeal create** (`POST /api/moderate/appeal`) is authenticated only.
-- Admin **appeal queue/detail** (`GET /api/moderate/appeal`) is action-gated with `VIEW_APPEALS`.
+- Owner **deletion notice** (`GET /api/moderate/appeal/notice`) is authenticated only. The caller must own the discussion. Snapshots strip reporter identity.
+- Admin **appeal queue/detail** (`GET /api/moderate/appeal`) is action-gated with `VIEW_APPEALS`. Optional `appealId` or `reportId`.
 - Admin **appeal resolve** (`PATCH /api/moderate/appeal`) is action-gated with `MODERATE_APPEAL`.
 
 ## Constraints and Technical Debt Notes

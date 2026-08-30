@@ -4,6 +4,10 @@ import app.VBeta.api.dto.moderation.AppealDTO;
 import app.VBeta.api.dto.moderation.AppealPayload;
 import app.VBeta.api.dto.moderation.AppealRequest;
 import app.VBeta.api.dto.moderation.ModerateAppealRequest;
+import app.VBeta.api.dto.moderation.OwnerDeletionNoticeDTO;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
+import app.VBeta.api.dto.report.ReportDTO;
+import app.VBeta.api.dto.report.ReportUserDTO;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.moderation.AppealManager;
@@ -12,6 +16,7 @@ import app.VBeta.application.support.report.ReportManager;
 import app.VBeta.domain.model.actions.ActionDefinition;
 import app.VBeta.domain.model.appeal.Appeal;
 import app.VBeta.domain.model.appeal.AppealStatus;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.moderation.ModerateActionType;
 import app.VBeta.domain.model.moderation.ModerationAction;
 import app.VBeta.domain.model.notification.EventTypeName;
@@ -108,6 +113,41 @@ public class AppealService {
     }
 
     /**
+     * Returns the owner deletion notice for one report.
+     * <p>
+     * Authenticated. The caller must own the reported discussion. The report
+     * must be a removal/appeal outcome. {@code canAppeal} is true when no
+     * appeal exists yet. Reporter identity is omitted from the snapshot.
+     *
+     * @param reportId report named in {@code /appeals?reportId=}
+     * @param firebaseUid Firebase UID of the content owner
+     * @return admin removal notes, content snapshot, optional nested {@code AppealDTO}, and whether an appeal is still allowed
+     * @throws RuntimeException when the account is missing or the report is ineligible
+     */
+    public OwnerDeletionNoticeDTO getOwnerDeletionNotice(Long reportId, String firebaseUid) {
+        UserAccount caller = userAccountManager.findUserAccount(firebaseUid);
+        if (caller == null) {
+            throw new RuntimeException("User not found");
+        }
+        Report report = reportManager.findById(reportId);
+        if (!isDiscussionOwner(report, caller) || !isRemovalOrAppealStatus(report)) {
+            throw new RuntimeException("Appeal is not allowed");
+        }
+        Appeal appeal = appealManager.findByReport(report).orElse(null);
+        boolean canAppeal = report.getReportStatus() == ReportStatus.CONTENT_REMOVED && appeal == null;
+        ReportDTO snapshot = toOwnerReportSnapshot(report);
+        return new OwnerDeletionNoticeDTO(
+                report.getReportId(),
+                report.getReportStatus(),
+                removalAdminReason(report),
+                snapshot,
+                appeal == null ? null : appeal.getAppealStatus(),
+                canAppeal,
+                appeal == null ? null : convertToAppealDTO(appeal, snapshot)
+        );
+    }
+
+    /**
      * Returns one appeal by identifier.
      * <p>
      * Requires {@link ActionDefinition#VIEW_APPEALS}. The payload {@code appeals}
@@ -123,6 +163,29 @@ public class AppealService {
     public AppealPayload getUserAppeal(Long appealId, String firebaseUid) {
         UserAccount admin = requireAppealViewer(firebaseUid);
         Appeal appeal = appealManager.findById(appealId)
+                .orElseThrow(() -> new RuntimeException("Appeal not found"));
+        if (isHiddenFromViewer(appeal, admin)) {
+            throw new RuntimeException("Appeal not found");
+        }
+        return toPayload(List.of(appeal));
+    }
+
+    /**
+     * Returns the appeal for one report.
+     * <p>
+     * Requires {@link ActionDefinition#VIEW_APPEALS}. Appeals filed by the
+     * viewing admin are treated as missing.
+     *
+     * @param reportId report named in {@code /appeal-queue?reportId=}
+     * @param firebaseUid Firebase UID of the requesting admin
+     * @return payload with that one appeal
+     * @throws RuntimeException when the account is missing, unauthorized, or
+     *         no visible appeal exists for {@code reportId}
+     */
+    public AppealPayload getAppealByReport(Long reportId, String firebaseUid) {
+        UserAccount admin = requireAppealViewer(firebaseUid);
+        Report report = reportManager.findById(reportId);
+        Appeal appeal = appealManager.findByReport(report)
                 .orElseThrow(() -> new RuntimeException("Appeal not found"));
         if (isHiddenFromViewer(appeal, admin)) {
             throw new RuntimeException("Appeal not found");
@@ -247,6 +310,110 @@ public class AppealService {
     }
 
     /**
+     * Owner notice is visible for removal and later appeal outcomes on a
+     * discussion the caller owns, or to callers with {@code VIEW_APPEALS}.
+     */
+    private boolean isDiscussionOwner(Report report, UserAccount caller) {
+        return report.getTargetType() == ReportTargetType.DISCUSSION
+                && report.getDiscussion() != null
+                && report.getDiscussion().getUserAccount() != null
+                && report.getDiscussion().getUserAccount().getId().equals(caller.getId());
+    }
+
+    private boolean isRemovalOrAppealStatus(Report report) {
+        if (report.getTargetType() != ReportTargetType.DISCUSSION || report.getDiscussion() == null) {
+            return false;
+        }
+        ReportStatus status = report.getReportStatus();
+        return status == ReportStatus.CONTENT_REMOVED
+                || status == ReportStatus.APPEAL_PENDING
+                || status == ReportStatus.CONTENT_RESTORED
+                || status == ReportStatus.APPEAL_DENIED;
+    }
+
+    /**
+     * Prefers {@code CONTENT_REMOVED} logbook notes, then the discussion
+     * {@code deletedReason}.
+     */
+    private String removalAdminReason(Report report) {
+        return moderationManager.findByReport(report).stream()
+                .filter(action -> action.getModerateActionType() == ModerateActionType.CONTENT_REMOVED)
+                .map(ModerationAction::getAdminNotes)
+                .filter(notes -> notes != null && !notes.isBlank())
+                .findFirst()
+                .orElseGet(() -> {
+                    String deletedReason = report.getDiscussion().getDeletedReason();
+                    return deletedReason == null ? "" : deletedReason;
+                });
+    }
+
+    /**
+     * Owner snapshot: content summary plus category/reason, without reporter identity.
+     */
+    private ReportDTO toOwnerReportSnapshot(Report report) {
+        return withoutReporterIdentities(toAppealViewerReportSnapshot(report));
+    }
+
+    /**
+     * Appeal-viewer snapshot keeps reporter identity for admin review.
+     */
+    private ReportDTO toAppealViewerReportSnapshot(Report report) {
+        return withDiscussionFallback(reportService.toReportDTO(List.of(report)), report);
+    }
+
+    /**
+     * Soft-deleted discussions can omit the comment/beta child in
+     * {@link ReportService#toReportDTO}; still expose type/id for the owner page.
+     */
+    private ReportDTO withDiscussionFallback(ReportDTO snapshot, Report report) {
+        if (snapshot.discussion() != null || report.getDiscussion() == null) {
+            return snapshot;
+        }
+        DiscussionRoot root = report.getDiscussion();
+        UserDiscussionData fallback = new UserDiscussionData(
+                root.getDiscussionId(),
+                root.getUserAccount() == null ? null : root.getUserAccount().getId(),
+                root.getUserAccount() == null ? null : root.getUserAccount().getUsername(),
+                null,
+                root.getDiscussionType(),
+                "",
+                root.getCreatedAt()
+        );
+        return new ReportDTO(
+                snapshot.targetType(),
+                fallback,
+                snapshot.climbingProblem(),
+                snapshot.wallSection(),
+                snapshot.user(),
+                snapshot.reporters()
+        );
+    }
+
+    /**
+     * Keeps category and reason on {@code reporters} but drops the reporter account.
+     */
+    private ReportDTO withoutReporterIdentities(ReportDTO snapshot) {
+        List<ReportUserDTO> flags = snapshot.reporters() == null
+                ? List.of()
+                : snapshot.reporters().stream()
+                        .map((row) -> new ReportUserDTO(
+                                row.reportId(),
+                                null,
+                                row.categoryName(),
+                                row.reportReason(),
+                                row.createdAt()))
+                        .toList();
+        return new ReportDTO(
+                snapshot.targetType(),
+                snapshot.discussion(),
+                snapshot.climbingProblem(),
+                snapshot.wallSection(),
+                snapshot.user(),
+                flags
+        );
+    }
+
+    /**
      * Returns whether {@code viewer} filed this appeal and must not review it.
      *
      * @param appeal appeal being viewed
@@ -274,9 +441,16 @@ public class AppealService {
      * @return API appeal item
      */
     private AppealDTO convertToAppealDTO(Appeal appeal) {
+        return convertToAppealDTO(appeal, toAppealViewerReportSnapshot(appeal.getReport()));
+    }
+
+    /**
+     * Maps one appeal using a caller-specific report snapshot.
+     */
+    private AppealDTO convertToAppealDTO(Appeal appeal, ReportDTO report) {
         return new AppealDTO(
                 appeal.getId(),
-                reportService.toReportDTO(List.of(appeal.getReport())),
+                report,
                 userAccountManager.getUserAccountDTO(appeal.getAppealUser()),
                 appeal.getReason()
         );
