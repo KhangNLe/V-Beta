@@ -37,6 +37,13 @@ import {
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { getAccountId, getAccountRole } from '@/lib/accountSession';
 import { discussionDeletionReason } from '@/lib/discussionDeletion';
+import {
+  buildShortUploadFileName,
+  SOLUTION_VIDEO_ACCEPT,
+  toPlaybackStorageRefs,
+  videoUploadContentType,
+  waitForPublicVideo,
+} from '@/lib/videoUpload';
 import { buttons, card, colors, layout, fontFamily } from '@/ui/appTheme';
 import { ArrowLeftIcon, MoreVertical } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
@@ -146,11 +153,6 @@ function getDiscussionMediaUrl(discussionItem) {
   return typeof value === 'string' ? value : '';
 }
 
-function buildShortUploadFileName(originalFileName, problemId) {
-  const name = (originalFileName || '').toLowerCase();
-  const extension = name.endsWith('.webm') ? 'webm' : 'mp4';
-  return `beta_${problemId}.${extension}`;
-}
 export default function ProblemPage() {
   const router = useRouter();
   const params = useParams();
@@ -449,7 +451,7 @@ export default function ProblemPage() {
       );
       const requestPayload = {
         fileName: shortenedUploadName,
-        contentType: solutionFile.type || 'application/octet-stream',
+        contentType: videoUploadContentType(solutionFile),
         problemId,
         wallSectionId: wallSectionID,
       };
@@ -465,16 +467,41 @@ export default function ProblemPage() {
         throw new Error('Signed URL response is missing uploadObjectName.');
       }
 
-      await uploadSolutionBeta(solutionFile, signedData);
+      await uploadSolutionBeta(solutionFile, {
+        ...signedData,
+        // Signed URL was minted for the normalized MIME, not the browser's empty iOS type.
+        contentType: videoUploadContentType(solutionFile),
+      });
 
-      let verificationMessage = 'Uploaded to bucket successfully.';
-      if (signedData.publicURL) {
+      const playback = toPlaybackStorageRefs(
+        uploadObjectName,
+        signedData.publicURL || '',
+      );
+      const needsMovConversion = /\.mov$/i.test(uploadObjectName);
+      if (needsMovConversion) {
+        if (!playback.publicURL) {
+          throw new Error('Signed URL response is missing publicURL for conversion.');
+        }
+        setUploadStatus({
+          type: 'success',
+          message: 'Uploaded iPhone video. Converting to MP4 for playback…',
+          publicURL: playback.publicURL,
+        });
+        await waitForPublicVideo(playback.publicURL);
+      }
+
+      let verificationMessage = needsMovConversion
+        ? 'Converted iPhone video to MP4.'
+        : 'Uploaded to bucket successfully.';
+      if (playback.publicURL) {
         try {
-          const verifyResponse = await fetch(signedData.publicURL, {
+          const verifyResponse = await fetch(playback.publicURL, {
             method: 'HEAD',
           });
           verificationMessage = verifyResponse.ok
-            ? 'Uploaded and verified from bucket.'
+            ? needsMovConversion
+              ? 'Converted and verified MP4 from bucket.'
+              : 'Uploaded and verified from bucket.'
             : 'Uploaded, but public URL verification did not return success.';
         } catch {
           verificationMessage =
@@ -485,8 +512,8 @@ export default function ProblemPage() {
       try {
         await saveSolutionBetaToDatabase(user, {
           problemId,
-          objectFileName: uploadObjectName,
-          videoURL: signedData.publicURL || '',
+          objectFileName: playback.objectName,
+          videoURL: playback.publicURL || '',
         });
         verificationMessage = `${verificationMessage} Metadata saved to database.`;
       } catch (dbError) {
@@ -506,7 +533,7 @@ export default function ProblemPage() {
           ? 'error'
           : 'success',
         message: verificationMessage,
-        publicURL: signedData.publicURL || null,
+        publicURL: playback.publicURL || null,
       });
       clearSelectedSolutionFile();
     } catch (err) {
@@ -918,7 +945,7 @@ export default function ProblemPage() {
                         ref={fileInputRef}
                         id="solution-beta-file-input"
                         type="file"
-                        accept="video/mp4,video/webm"
+                        accept={SOLUTION_VIDEO_ACCEPT}
                         onChange={(e) => {
                           setSolutionFile(e.target.files?.[0] || null);
                           setUploadStatus(null);
@@ -973,7 +1000,7 @@ export default function ProblemPage() {
                           color: colors.subtle,
                         }}
                       >
-                        Allowed file types: .mp4, .webm
+                        Allowed file types: .mp4, .webm, .mov (iPhone videos are converted to MP4)
                       </p>
                       {uploadStatus && (
                         <div

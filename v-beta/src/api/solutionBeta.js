@@ -45,7 +45,10 @@ export async function uploadSolutionBeta(file, signedResponse) {
         request = await fetch(signedResponse.signedURL, {
             method: signedResponse.method || "PUT",
             headers: {
-                "Content-Type": file.type || "application/octet-stream",
+                "Content-Type":
+                    signedResponse.contentType ||
+                    file.type ||
+                    "application/octet-stream",
             },
             body: file,
         });

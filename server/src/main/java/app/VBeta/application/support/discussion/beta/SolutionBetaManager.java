@@ -229,9 +229,23 @@ public class SolutionBetaManager {
     }
 
     private String resolveContentType(String objectName, String requestedContentType) {
+        String fromName = contentTypeFromObjectName(objectName);
         if (requestedContentType != null && !requestedContentType.isBlank()) {
-            return requestedContentType.trim();
+            String requested = requestedContentType.trim().toLowerCase(Locale.ROOT);
+            if (requested.equals("video/x-quicktime")) {
+                requested = "video/quicktime";
+            }
+            if (!requested.equals(fromName)) {
+                throw new IllegalArgumentException(
+                        "Solution beta content type must match mp4, webm, or mov."
+                );
+            }
+            return fromName;
         }
+        return fromName;
+    }
+
+    private String contentTypeFromObjectName(String objectName) {
         int lastDot = objectName.lastIndexOf('.');
         if (lastDot > 0 && lastDot < objectName.length() - 1) {
             String ext = objectName.substring(lastDot + 1).toLowerCase(Locale.ROOT);
@@ -241,8 +255,13 @@ public class SolutionBetaManager {
             if ("webm".equals(ext)) {
                 return "video/webm";
             }
+            if ("mov".equals(ext)) {
+                return "video/quicktime";
+            }
         }
-        return "application/octet-stream";
+        throw new IllegalArgumentException(
+                "Solution beta must be mp4, webm, or mov (iPhone). Other types are not playable."
+        );
     }
 
     private String sanitizeFileName(String fileName) {

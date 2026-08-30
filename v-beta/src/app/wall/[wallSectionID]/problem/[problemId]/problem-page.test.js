@@ -582,6 +582,47 @@ describe("ProblemPage coverage", () => {
       expect(await screen.findByText(/Uploaded and verified from bucket\./)).toBeInTheDocument();
       headSpy.mockRestore();
     });
+
+    it("accepts iPhone MOV, waits for MP4 conversion, and saves the mp4 URL", async () => {
+      requestSignedUploadUrl.mockResolvedValue({
+        signedURL: "https://upload.example.com",
+        uploadObjectName: "wall/problem/uuid-beta_100.mov",
+        publicURL: "https://cdn.example.com/uuid-beta_100.mov",
+      });
+      uploadSolutionBeta.mockResolvedValue({ ok: true });
+      saveSolutionBetaToDatabase.mockResolvedValue(null);
+      fetchProblemForUser
+        .mockResolvedValueOnce(baseProblem)
+        .mockResolvedValueOnce({ ...baseProblem, discussion: [betaByOwner] });
+      const headSpy = jest.spyOn(global, "fetch").mockResolvedValue({ ok: true });
+
+      renderProblemPage();
+      await screen.findByText("Blue");
+      fireEvent.click(screen.getByRole("button", { name: "Submit Beta" }));
+      const input = screen.getByLabelText("Choose Video");
+      const file = new File(["video"], "IMG_1.MOV", { type: "video/quicktime" });
+      fireEvent.change(input, { target: { files: [file] } });
+
+      fireEvent.click(screen.getByRole("button", { name: "Upload Solution Beta" }));
+      await waitFor(() => {
+        expect(requestSignedUploadUrl).toHaveBeenCalledWith(
+          user,
+          expect.objectContaining({
+            fileName: "beta_100.mov",
+            contentType: "video/quicktime",
+          }),
+        );
+      });
+      await waitFor(() => {
+        expect(saveSolutionBetaToDatabase).toHaveBeenCalledWith(user, {
+          problemId: 100,
+          objectFileName: "wall/problem/uuid-beta_100.mp4",
+          videoURL: "https://cdn.example.com/uuid-beta_100.mp4",
+        });
+      });
+      expect(await screen.findByText(/Converted and verified MP4 from bucket\./)).toBeInTheDocument();
+      headSpy.mockRestore();
+    });
   });
 
   describe("Exceptions", () => {
