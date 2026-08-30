@@ -3,16 +3,13 @@
 import { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import LandingFooter from '@/components/LandingFooter';
 import styles from './page.module.css';
 
 const climbingLocations = [
-  'mnclimbingcoop',
   'Bouldering Project - Minneapolis',
   'Minnesota Climbing Cooperative',
-  'Vertical Endeavors - Minneapolis',
-  'Climb Zone',
-  'Base Camp',
-  'Hard Water Sports',
+  'Vertical Endeavors - Minneapolis'
 ];
 
 const sliderPhotos = [
@@ -218,85 +215,7 @@ export default function LandingPage() {
           </article>
         </section>
 
-        <footer className={`${styles.footer} ${styles.reveal}`} data-reveal>
-          <div className={styles.footerLeft}>
-            <div className={styles.footerBrand}>
-              <Image
-                src="/VBetaLogo.svg"
-                alt="V-Beta logo"
-                width={36}
-                height={22}
-                className={styles.footerBrandLogo}
-              />
-              <span>V-Beta</span>
-            </div>
-            <nav className={styles.footerNav}>
-              <Link href="/">About</Link>
-              <Link href="/">Contact</Link>
-              <Link href="/">GitHub</Link>
-            </nav>
-          </div>
-          <div className={styles.footerSocials}>
-            <Link
-              href="/"
-              aria-label="Instagram"
-              className={styles.footerIconLink}
-            >
-              <Image
-                src="/social/instagram.png"
-                alt="Instagram"
-                width={28}
-                height={28}
-                className={styles.footerIconImage}
-              />
-            </Link>
-            <Link
-              href="/"
-              aria-label="LinkedIn"
-              className={styles.footerIconLink}
-            >
-              <Image
-                src="/social/linkedin.png"
-                alt="LinkedIn"
-                width={28}
-                height={28}
-                className={styles.footerIconImage}
-              />
-            </Link>
-            <Link href="/" aria-label="X" className={styles.footerIconLink}>
-              <Image
-                src="/social/twitter.png"
-                alt="X"
-                width={28}
-                height={28}
-                className={styles.footerIconImage}
-              />
-            </Link>
-          </div>
-        </footer>
-        <section className={styles.footerAttribution}>
-          <a
-            href="https://www.flaticon.com/free-icons/instagram"
-            title="instagram icons"
-          >
-            Instagram icons created by Freepik - Flaticon
-          </a>
-          <a
-            href="https://www.flaticon.com/free-icons/tweet"
-            title="tweet icons"
-          >
-            Tweet icons created by Freepik - Flaticon
-          </a>
-          <a
-            href="https://www.flaticon.com/free-icons/linkedin"
-            title="linkedin icons"
-          >
-            Linkedin icons created by riajulislam - Flaticon
-          </a>
-          <a href="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b">
-            Hero background photo sourced from Unsplash
-          </a>
-        </section>
+        <LandingFooter reveal />
       </main>
     </div>
   );

@@ -38,10 +38,31 @@ describe("RoleNavbar notifications entry", () => {
     });
   });
 
+  it("hides the navbar on the about page", () => {
+    usePathname.mockReturnValue("/about");
+    useRequireAuth.mockReturnValue({ ready: true, user: null, account: null });
+    const { container } = render(<RoleNavbar />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it("hides the bell for guests", () => {
     useRequireAuth.mockReturnValue({ ready: true, user: null, account: null });
     render(<RoleNavbar />);
     expect(screen.queryByTestId("notification-bell")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "V-Beta" })).toHaveAttribute("href", "/");
+  });
+
+  it("sends signed-in users to the gym from the V-Beta brand", () => {
+    useRequireAuth.mockReturnValue({
+      ready: true,
+      user: { uid: "firebase-uid" },
+      account: { id: 5, roleName: "CLIMBER" },
+    });
+    render(<RoleNavbar />);
+    expect(screen.getByRole("link", { name: "V-Beta" })).toHaveAttribute(
+      "href",
+      "/main-page",
+    );
   });
 
   it("shows the bell for signed-in users", () => {

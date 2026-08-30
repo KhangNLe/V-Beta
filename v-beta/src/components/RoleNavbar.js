@@ -21,6 +21,7 @@ function normalizeRole(roleName) {
 function isAuthShellPath(pathname) {
   return (
     pathname === "/" ||
+    pathname === "/about" ||
     pathname === "/login" ||
     pathname === "/signup" ||
     pathname === "/forgot-password" ||
@@ -111,7 +112,12 @@ export default function RoleNavbar() {
   return (
     <nav className="role-navbar" aria-label="Primary navigation">
       <div className="role-navbar__inner">
-        <span className="role-navbar__link role-navbar__link--disabled">V-Beta</span>
+        <Link
+          href={user ? "/main-page" : "/"}
+          className="role-navbar__link"
+        >
+          V-Beta
+        </Link>
 
         <ul className="role-navbar__links role-navbar__links--right">
           {navItems.map((item) => {

@@ -66,10 +66,14 @@ describe('LandingPage', () => {
       'href',
       '/signup',
     );
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute(
+      'href',
+      '/about',
+    );
   });
 
-  // Test that the landing page renders the slider images and footer attribution links correctly
-  it('renders the slider images and footer attribution links', () => {
+  // Test that the landing page renders the slider images and remaining footer links
+  it('renders the slider images and footer links', () => {
     render(<LandingPage />);
 
     expect(
@@ -85,20 +89,20 @@ describe('LandingPage', () => {
         .length,
     ).toBeGreaterThan(0);
 
-    expect(
-      screen.getByRole('link', {
-        name: /Instagram icons created by Freepik - Flaticon/i,
-      }),
-    ).toHaveAttribute('href', 'https://www.flaticon.com/free-icons/instagram');
-
-    expect(
-      screen.getByRole('link', {
-        name: /Hero background photo sourced from Unsplash/i,
-      }),
-    ).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute(
       'href',
-      'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b',
+      '/about',
     );
+    expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute(
+      'href',
+      'https://github.com/KhangNLe/V-Beta',
+    );
+    expect(
+      screen.queryByRole('link', { name: /Flaticon/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Instagram')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('LinkedIn')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('X')).not.toBeInTheDocument();
   });
 
   // Test that the landing page registers intersection observers for reveal-on-scroll sections to ensure that the scroll-based animations are set up correctly
