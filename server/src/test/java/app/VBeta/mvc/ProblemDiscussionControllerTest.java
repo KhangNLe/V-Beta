@@ -123,8 +123,10 @@ public class ProblemDiscussionControllerTest {
                 ));
 
         mockMvc.perform(get("/api/discussion/solution-beta/upload-url")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .param("fileName", request.fileName())
+                        .param("contentType", request.contentType())
+                        .param("problemId", String.valueOf(request.problemId()))
+                        .param("wallSectionId", String.valueOf(request.wallSectionId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.method").value("PUT"))
                 .andExpect(jsonPath("$.signedURL").value("https://storage.googleapis.com/signed"));

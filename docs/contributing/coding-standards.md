@@ -132,7 +132,7 @@ See [`docs/architecture/backend-architecture.md`](../architecture/backend-archit
 
 - Use DTOs for request/response contracts.
 - Keep endpoint semantics predictable (avoid non-standard method behavior for new endpoints).
-- Keep new HTTP routes under `/api` and match existing controller method choices (`PATCH` for wall reset and problem delete; `GET` with JSON body for signed upload URL).
+- Keep new HTTP routes under `/api` and match existing controller method choices (`PATCH` for wall reset and problem delete; `GET` with `CloudFileStorageRequest` query params for the signed upload URL).
 - Return clear, intentional status codes.
 - Keep endpoint docs updated in `docs/api/` when contracts change.
 

@@ -16,6 +16,7 @@ describe("videoUpload helpers", () => {
     expect(videoUploadContentType({ name: "IMG_1.MOV", type: "" })).toBe("video/quicktime");
     expect(buildShortUploadFileName("IMG_99.MOV", 22)).toBe("beta_22.mov");
     expect(SOLUTION_VIDEO_ACCEPT).toContain(".mov");
+    expect(SOLUTION_VIDEO_ACCEPT).not.toContain("video/quicktime");
   });
 
   it("rewrites MOV storage refs to the converted MP4", () => {

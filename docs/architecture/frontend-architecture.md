@@ -76,7 +76,7 @@ Supporting auth/session modules:
 - API modules call backend endpoints using `fetch` under `/api/...`.
 - Protected routes pass `Authorization: Bearer <idToken>`.
 - Read-only endpoints may support guest access (`/api/home/...` reads and `/api/search/...`).
-- HTTP methods follow the controllers (`PATCH` for wall reset and problem delete; `GET` with JSON body for solution-beta upload URL).
+- HTTP methods follow the controllers (`PATCH` for wall reset and problem delete; `GET` with `CloudFileStorageRequest` query params for the solution-beta upload URL).
 - API surface is split by domain modules:
   - `src/api/account.js`
   - `src/api/accounts.js`
