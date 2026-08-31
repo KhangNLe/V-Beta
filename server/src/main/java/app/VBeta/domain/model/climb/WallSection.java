@@ -31,4 +31,10 @@ public class WallSection {
 
     @Column(name = "wall_section_name", nullable = false, length = 30)
     private String wallSectionName;
+
+    @Column(name = "wall_image_url", length = 250)
+    private String wallImageUrl;
+
+    @Column(name = "image_object_name", length = 250)
+    private String imageObjectName;
 }

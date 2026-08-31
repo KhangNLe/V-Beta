@@ -73,6 +73,8 @@ All routes below are under `/api`.
 - `VIEW_MODERATION_LOGS`
 - `VIEW_APPEALS`
 - `MODERATE_APPEAL`
+- `UPLOAD_WALL_IMAGE`,
+- `UPLOAD_PROBLEM_IMAGE`
 
 ## Notes
 
