@@ -98,3 +98,32 @@ html[data-theme="dark"] [data-slot="button"]:hover:not(:disabled) {
 html[data-theme="light"] [data-slot="button"]:hover:not(:disabled) {
   filter: none;
 }
+
+/* Native file picker: Chromium/Brave ignores overlay/clip hit-testing on input[type=file]. */
+.solution-beta-file-input {
+  max-width: 100%;
+  color: var(--app-subtle);
+  font-size: 0.8rem;
+}
+
+.solution-beta-file-input::file-selector-button {
+  margin-right: 10px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  line-height: 1.1;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  background: var(--app-muted-surface);
+  color: var(--app-text);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.solution-beta-file-input:disabled,
+.solution-beta-file-input:disabled::file-selector-button {
+  cursor: not-allowed;
+}
+
+.solution-beta-file-input:disabled::file-selector-button {
+  opacity: 0.6;
+}

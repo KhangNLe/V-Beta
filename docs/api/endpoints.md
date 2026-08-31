@@ -126,7 +126,7 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
 
 - `GET /api/discussion/solution-beta/upload-url`
   - Purpose: generate signed upload URL for solution beta video.
-  - Request: JSON body (not query params):
+  - Request: `CloudFileStorageRequest` bound from query params (`@ModelAttribute`, not `@RequestBody`). Browsers reject GET with a JSON body.
     - `fileName`
     - `contentType`
     - `problemId`

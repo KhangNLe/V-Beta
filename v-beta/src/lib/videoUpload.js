@@ -1,6 +1,6 @@
 /** Allowed solution-beta types for the file picker and signed uploads. */
 export const SOLUTION_VIDEO_ACCEPT =
-  "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov";
+  "video/mp4,video/webm,.mp4,.webm,.mov,.MOV";
 
 const MOV_TYPE = new Set(["video/quicktime", "video/x-quicktime"]);
 

@@ -1,5 +1,6 @@
 package app.VBeta.api.dto.discussions.video;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 
 /**
@@ -15,9 +16,9 @@ public record CloudFileStorageRequest(
         String fileName,
         @NotBlank
         String contentType,
-        @NotBlank
+        @NotNull
         Long problemId,
-        @NotBlank
+        @NotNull
         Long wallSectionId
 ) {
 }

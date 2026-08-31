@@ -71,12 +71,14 @@ public class ProblemDiscussionController {
 
     /**
      * Creates signed upload metadata for a solution beta video.
+     * {@link CloudFileStorageRequest} is bound from query parameters. {@code @RequestBody} cannot
+     * be used here because browsers reject GET requests that include a JSON body.
      *
      * @param body cloud file storage request payload
      * @return signed upload URL and related storage metadata
      */
     @GetMapping("/solution-beta/upload-url")
-    public ResponseEntity<?> getSignedURL(@RequestBody CloudFileStorageRequest body){
+    public ResponseEntity<?> getSignedURL(@Valid @ModelAttribute CloudFileStorageRequest body){
         try {
             CloudFileStorageResponse response = problemDiscussionService.getSignedUrl(body);
             return new ResponseEntity<>(response, HttpStatus.OK);

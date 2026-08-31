@@ -9,20 +9,22 @@ import { toast } from "react-toastify";
  */
 export async function requestSignedUploadUrl(user, { fileName, contentType, problemId, wallSectionId }) {
     const idToken = await user.getIdToken();
-
-    const response = await fetch(`${API_BASE_URL}/api/discussion/solution-beta/upload-url`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-            fileName,
-            contentType,
-            problemId,
-            wallSectionId,
-        }),
+    const params = new URLSearchParams({
+        fileName,
+        contentType,
+        problemId: String(problemId),
+        wallSectionId: String(wallSectionId),
     });
+
+    const response = await fetch(
+        `${API_BASE_URL}/api/discussion/solution-beta/upload-url?${params}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${idToken}`,
+            },
+        },
+    );
 
     if (!response.ok) {
         const message = `Failed to request signed upload URL: ${response.status}`;

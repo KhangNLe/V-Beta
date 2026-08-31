@@ -185,23 +185,13 @@ Authorization: Bearer <firebase_id_token>
 
 ## 7) Request Signed Upload URL for Solution Beta
 
-This is a `GET` with a JSON body (`CloudFileStorageRequest`), not query parameters.
+This is a `GET`. Spring binds `CloudFileStorageRequest` from query parameters (`@ModelAttribute`). Do not send a JSON body; browsers reject GET requests that include one.
 
 ### Request
 
 ```http
-GET /api/discussion/solution-beta/upload-url
-Content-Type: application/json
+GET /api/discussion/solution-beta/upload-url?fileName=beta_22.mp4&contentType=video%2Fmp4&problemId=22&wallSectionId=1
 Authorization: Bearer <firebase_id_token>
-```
-
-```json
-{
-  "fileName": "beta_22.mp4",
-  "contentType": "video/mp4",
-  "problemId": 22,
-  "wallSectionId": 1
-}
 ```
 
 ### Response (200)

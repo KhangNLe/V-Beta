@@ -944,55 +944,16 @@ export default function ProblemPage() {
                       <input
                         ref={fileInputRef}
                         id="solution-beta-file-input"
+                        className="solution-beta-file-input"
                         type="file"
                         accept={SOLUTION_VIDEO_ACCEPT}
+                        aria-label="Choose Video"
                         onChange={(e) => {
                           setSolutionFile(e.target.files?.[0] || null);
                           setUploadStatus(null);
                         }}
                         disabled={!isSignedIn}
-                        style={{ display: 'none' }}
                       />
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          flexWrap: 'wrap',
-                        }}
-                      >
-                        <label
-                          htmlFor="solution-beta-file-input"
-                          style={{
-                            ...buttons.secondary,
-                            padding: '6px 10px',
-                            fontSize: '0.78rem',
-                            lineHeight: 1.1,
-                            borderRadius: '999px',
-                            borderColor: colors.border,
-                            background: colors.surfaceAlt,
-                            color: colors.text,
-                            cursor: 'pointer',
-                            margin: 0,
-                          }}
-                        >
-                          Choose Video
-                        </label>
-                        <span
-                          style={{
-                            fontSize: '0.8rem',
-                            color: solutionFile ? colors.text : colors.subtle,
-                            maxWidth: '100%',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {solutionFile
-                            ? solutionFile.name
-                            : 'No file selected'}
-                        </span>
-                      </div>
                       <p
                         style={{
                           margin: '8px 0 0',
