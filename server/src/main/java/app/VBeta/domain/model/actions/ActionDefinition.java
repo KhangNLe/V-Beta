@@ -37,5 +37,7 @@ public enum ActionDefinition {
     /** Permission to read the admin appeal queue and appeal detail ({@code GET /api/moderate/appeal}). */
     VIEW_APPEALS,
     /** Permission to approve or deny an appeal ({@code PATCH /api/moderate/appeal}). */
-    MODERATE_APPEAL
+    MODERATE_APPEAL,
+    UPLOAD_WALL_IMAGE,
+    UPLOAD_PROBLEM_IMAGE
 }

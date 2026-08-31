@@ -40,14 +40,22 @@ public class RolePermissionTest {
     private final List<ActionDefinition> setterActions = List.of(
             ActionDefinition.CREATE_PROBLEM,
             ActionDefinition.RESET_WALL,
-            ActionDefinition.DELETE_PROBLEM
+            ActionDefinition.DELETE_PROBLEM,
+            ActionDefinition.UPLOAD_PROBLEM_IMAGE
     );
 
     private final List<ActionDefinition> adminActions = List.of(
             ActionDefinition.CREATE_WALL,
             ActionDefinition.DELETE_WALL,
             ActionDefinition.CHANGE_ROLE,
-            ActionDefinition.VIEW_ACCOUNTS
+            ActionDefinition.VIEW_ACCOUNTS,
+            ActionDefinition.VIEW_REPORTS,
+            ActionDefinition.VIEW_APPEALS,
+            ActionDefinition.VIEW_MODERATION_LOGS,
+            ActionDefinition.MODERATE_APPEAL,
+            ActionDefinition.MODERATE_REPORT,
+            ActionDefinition.UPLOAD_WALL_IMAGE
+
     );
 
     @Test
