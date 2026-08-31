@@ -62,13 +62,6 @@ The browser authenticates with Firebase, then sends ID tokens to the API. Spring
 | Media | Google Cloud Storage |
 | Hosting | Vercel + Cloud Run (`us-east1`, scale-to-zero) |
 
-Engineering notes recruiters often look for:
-
-- Split frontend/API with CORS and env-driven origins (not a monolith)
-- `ddl-auto=validate` — schema is versioned SQL, not surprise Hibernate migrations in prod
-- Backend integration tests against a dedicated `v_beta_test` Postgres (Docker locally, GitHub Actions on PRs)
-- Frontend unit tests (Jest) on PRs
-- Secrets stay out of the image (Cloud Run Secret Manager file mounts)
 
 ## Live staging
 
