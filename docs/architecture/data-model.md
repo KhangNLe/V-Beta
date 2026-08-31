@@ -35,8 +35,10 @@ Located in `domain/model/climb/`:
 
 - `WallSection`
   - Logical wall area/group.
+  - Optional `wall_image_url` + `image_object_name` (paired; see [`docs/features/wall-problem-images.md`](../features/wall-problem-images.md)).
 - `ClimbingProblem`
   - Problem metadata, assigned grade, lifecycle status, wall association.
+  - Optional `problem_image_url` + `image_object_name` (paired; see [`docs/features/wall-problem-images.md`](../features/wall-problem-images.md)).
 - `ClimbingGrade`
   - Grade lookup values (VB..V17 model).
 
