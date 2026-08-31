@@ -308,6 +308,39 @@ DROP TYPE IF EXISTS report_status;
 
 Keep test schema SQL aligned if you roll back.
 
+## Wall / Problem Image Columns (Sprint 6)
+
+Sprint 6 adds optional image metadata to climbing content tables. Full behavior contract: [`docs/features/wall-problem-images.md`](../features/wall-problem-images.md).
+
+### `Wall_Section`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `wall_image_url` | `VARCHAR(250)` nullable | Public GCS URL for client display |
+| `image_object_name` | `VARCHAR(250)` nullable | GCS object key |
+
+Constraint `chk_wall_img_obj`: both columns NULL together, or both non-NULL together.
+
+### `Climbing_Problem`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `problem_image_url` | `VARCHAR(250)` nullable | Public GCS URL for client display |
+| `image_object_name` | `VARCHAR(250)` nullable | GCS object key |
+
+Constraint `chk_img_obj`: both columns NULL together, or both non-NULL together.
+
+### Object key convention (v1)
+
+```text
+walls/{wallSectionId}/section-image.{ext}
+walls/{wallSectionId}/problems/{problemId}/problem-image.{ext}
+```
+
+Allowed MIME types: `image/jpeg`, `image/png`, `image/webp`. Max size: 8 MB.
+
+Keep `pg-v-beta.sql` and `v_beta_test_schema.sql` aligned when changing image columns.
+
 ## Common issues
 
 - **Table not found / schema validation failed**
@@ -340,6 +373,7 @@ Keep test schema SQL aligned if you roll back.
     - typed polymorphic FKs + CHECK constraints on `Report` and `Events`
     - partial unique index preventing duplicate open reports per user/target
     - notification uniqueness on `(event_id, recipient_user_id)`
+  - Sprint 6 image columns on `Wall_Section` and `Climbing_Problem` with paired NULL/non-NULL CHECK constraints (`chk_wall_img_obj`, `chk_img_obj`)
 
 ## Notes for future contributors
 

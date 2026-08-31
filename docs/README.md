@@ -40,6 +40,7 @@ This directory contains setup guides, architecture notes, feature documentation,
 
 - [`features/authentication-and-roles.md`](./features/authentication-and-roles.md)
 - [`features/wall-and-problems.md`](./features/wall-and-problems.md)
+- [`features/wall-problem-images.md`](./features/wall-problem-images.md) (Sprint 6 — in progress)
 - [`features/moderation.md`](./features/moderation.md)
 - [`features/account-page.md`](./features/account-page.md)
 - [`features/future-features.md`](./features/future-features.md)

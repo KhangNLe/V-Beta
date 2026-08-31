@@ -11,11 +11,69 @@ This roadmap tracks only active and upcoming work. Completed foundation delivery
 
 ## Current Sprint
 
-Sprint 5 (Moderation MVP) is complete. Upcoming work starts at Sprint 6.
+Sprint 6 (Wall and Problem Images) is in progress. Sprint 5 (Moderation MVP) is complete.
 
 ## Upcoming Sprints
 
-### Sprint 6: API Reliability
+### Sprint 6: Wall and Problem Images
+
+Status: In progress
+
+Estimated Duration: 2 weeks
+
+### Summary
+
+Deliver image support for wall sections and climbing problems: admins upload wall photos, setters upload problem photos, and all users (including guests) view thumbnails with click-to-expand. Builds on the existing GCS signed-upload pattern used for solution betas.
+
+### Scope
+
+**Phase 1 — Contract and schema**
+
+- Data/storage contract and lifecycle rules
+- Nullable paired image columns on `Wall_Section` and `Climbing_Problem`
+- Agreed API response field: `imageUrl: string | null`
+
+**Phase 2 — Backend**
+
+- `UPLOAD_WALL_SECTION_IMAGE` / `UPLOAD_PROBLEM_IMAGE` permissions
+- Signed upload URL + metadata save endpoints
+- `imageUrl` on wall/problem list, detail, and search DTOs
+
+**Phase 3 — Frontend**
+
+- Admin wall image upload/replace
+- Setter problem image upload/replace
+- Thumbnails + lightbox on main page, wall page, and problem page
+
+**Phase 4 — Quality**
+
+- Backend/frontend tests, manual cases, API docs
+
+### Acceptance Criteria
+
+- [ ] Schema and contract documented; bootstrap SQL aligned in runtime + test schemas
+- [ ] Admin can upload/replace wall section image via authenticated UI
+- [ ] Setter can upload/replace problem image via authenticated UI
+- [ ] Unauthorized roles cannot upload via API
+- [ ] Read APIs return `imageUrl: string | null` on wall and problem payloads
+- [ ] UI supports click-to-view; null images show placeholder
+- [ ] MIME type and 8 MB size limits enforced server-side
+- [ ] Tests and docs updated for Sprint 6
+
+### Explicitly out of scope (Sprint 6 / v1)
+
+- Image galleries, in-app cropping, climber-uploaded photos
+- Dedicated delete-image endpoint (replace-only)
+- Immediate GCS purge on problem delete
+- `image_content_type` / `image_uploaded_at` columns
+
+### Notes
+
+- Contract and plan: `docs/features/wall-problem-images.md`
+- Schema: `docs/setup/database-schema.md` (Wall / Problem Image Columns)
+- Deferred from `docs/features/future-features.md` item 7
+
+### Sprint 7: API Reliability
 
 Estimated Duration: 2 weeks
 
@@ -25,7 +83,7 @@ Focus:
 - Standardized error payload contract (`code`, `message`, `status`, `path`, `timestamp`)
 - Frontend/API client parsing alignment
 
-### Sprint 7: Discussion Scalability
+### Sprint 8: Discussion Scalability
 
 Estimated Duration: 2 weeks
 
@@ -35,18 +93,17 @@ Focus:
 - Continuation-token contract and deterministic feed retrieval
 - Performance verification on larger datasets
 
-### Sprint 8: UX Enhancements
+### Sprint 9: UX Enhancements
 
 Estimated Duration: 2 weeks
 
 Focus:
 
 - Profile images
-- Wall/problem images
 - Account activity history
 - Perceived-grade detail views
 
-### Sprint 9: Problem Text Search (Later)
+### Sprint 10: Problem Text Search (Later)
 
 Estimated Duration: 1–2 weeks
 
@@ -54,7 +111,7 @@ Focus:
 
 - Keyword / free-text search for climbing problems (and optionally wall sections)
 - Prefer client-side filtering first if lists stay small; add a backend search query only if needed
-- Not part of Sprint 4 discovery (grade filter/sort already covers current discovery needs)
+- Not part of Sprint 4 discovery (grade filter/sort already covers current discovery needs); scheduled after Sprint 9
 
 ## Completed Sprints
 

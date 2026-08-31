@@ -65,9 +65,11 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** Wall/Problem Experience
+- **Target sprint:** Sprint 6 (in progress)
 - **Current Gap:** Wall sections and climbing problems are currently displayed without dedicated images.
 - **Potential Work:** Add image support for each wall section and each climbing problem (upload, storage, display).
 - **Dependencies:** Media storage integration, schema/API extensions, frontend image components and fallbacks.
+- **Tracking:** [`docs/features/wall-problem-images.md`](./wall-problem-images.md), [`docs/implementation-roadmap.md`](../implementation-roadmap.md)
 
 ### 8) Text Search for Problems
 
