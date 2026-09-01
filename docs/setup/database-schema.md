@@ -333,8 +333,9 @@ Constraint `chk_img_obj`: both columns NULL together, or both non-NULL together.
 ### Object key convention (v1)
 
 ```text
-walls/{wallSectionId}/section-image.{ext}
-walls/{wallSectionId}/problems/{problemId}/problem-image.{ext}
+image/wallSection-{wallSectionId}/{uuid}-{name}.{ext}
+image/problem-{problemId}/{uuid}-{name}.{ext}
+image/userProfile-{userId}/{uuid}-{name}.{ext}
 ```
 
 Allowed MIME types: `image/jpeg`, `image/png`, `image/webp`. Max size: 8 MB.

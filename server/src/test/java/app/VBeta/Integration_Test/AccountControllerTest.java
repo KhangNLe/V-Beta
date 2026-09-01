@@ -7,7 +7,7 @@ import app.VBeta.api.dto.discussions.PerceiveGradeRequest;
 import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
 import app.VBeta.application.AccountService;
 import app.VBeta.application.ProblemDiscussionService;
-import app.VBeta.application.support.discussion.beta.GcpFileStorageAdapter;
+import app.VBeta.application.support.cloud.GcpFileStorageAdapter;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.discussions.DiscussionType;

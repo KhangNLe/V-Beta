@@ -158,4 +158,32 @@ public class ClimbingProblemManager {
         return climbingProblemRepository.findByWallSectionAndProblemStatusAndClimbingGradeBetweenOrderByClimbingGradeDesc
                 (wall, LifecycleStatus.ACTIVE, minGrade, maxGrade);
     }
+
+    /**
+     * Persists climbing problem image metadata after a successful client upload.
+     *
+     * @param problemId active problem identifier
+     * @param objectFileName GCS object key
+     * @param imageUrl public display URL
+     */
+    public void updateProblemImage(Long problemId, String objectFileName, String imageUrl){
+        ClimbingProblem problem = getActiveProblem(problemId);
+        if (problem == null){
+            throw new RuntimeException("Problem with id " + problemId + " does not exist");
+        }
+        problem.setObjectImageName(objectFileName);
+        problem.setProblemImageUrl(imageUrl);
+        climbingProblemRepository.save(problem);
+    }
+
+    /**
+     * Clears persisted climbing problem image metadata.
+     *
+     * @param problem active problem entity to update
+     */
+    public void removeProblemImage(ClimbingProblem problem){
+        problem.setProblemImageUrl(null);
+        problem.setProblemImageUrl(null);
+        climbingProblemRepository.save(problem);
+    }
 }

@@ -205,6 +205,71 @@ Authorization: Bearer <firebase_id_token>
 }
 ```
 
+## 7a) Request Signed Upload URL for Wall / Problem / Profile Image
+
+Same signed-PUT contract as solution betas. Spring binds `ImageStorageRequest` from query parameters (`@ModelAttribute`).
+
+### Request (wall section — admin)
+
+```http
+GET /api/social/image/signed-url?fileName=section-image.webp&contentType=image%2Fwebp&imageTargetType=WALL_SECTION&wallSectionId=1
+Authorization: Bearer <firebase_id_token>
+```
+
+### Request (climbing problem — setter)
+
+```http
+GET /api/social/image/signed-url?fileName=problem-image.jpg&contentType=image%2Fjpeg&imageTargetType=CLIMBING_PROBLEM&problemId=1
+Authorization: Bearer <firebase_id_token>
+```
+
+### Response (200)
+
+```json
+{
+  "signedURL": "https://storage.googleapis.com/...",
+  "method": "PUT",
+  "uploadObjectName": "image/wallSection-1/uuid-section-image.webp",
+  "publicURL": "https://storage.googleapis.com/bucket/image/wallSection-1/uuid-section-image.webp"
+}
+```
+
+## 7b) Save Image Metadata After GCS Upload
+
+### Request (wall section)
+
+```http
+PATCH /api/social/image/upload?targetType=WALL_SECTION&objectFileName=image/wallSection-1/uuid-section-image.webp&imageUrl=https://storage.googleapis.com/bucket/image/wallSection-1/uuid-section-image.webp&wallSectionId=1
+Authorization: Bearer <firebase_id_token>
+```
+
+### Request (climbing problem)
+
+```http
+PATCH /api/social/image/upload?targetType=CLIMBING_PROBLEM&objectFileName=image/problem-1/uuid-problem-image.jpg&imageUrl=https://storage.googleapis.com/bucket/image/problem-1/uuid-problem-image.jpg&climbingProblemId=1
+Authorization: Bearer <firebase_id_token>
+```
+
+### Response (200)
+
+Empty body.
+
+## 7c) Delete Wall or Problem Image
+
+```http
+DELETE /api/social/image/wall?wallSectionId=1
+Authorization: Bearer <admin_firebase_id_token>
+```
+
+```http
+DELETE /api/social/image/problem?climbingProblemId=1
+Authorization: Bearer <setter_firebase_id_token>
+```
+
+### Response (200)
+
+Empty body.
+
 ## 8) Save Solution Beta Metadata
 
 ### Request

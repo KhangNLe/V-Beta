@@ -38,6 +38,8 @@ public enum ActionDefinition {
     VIEW_APPEALS,
     /** Permission to approve or deny an appeal ({@code PATCH /api/moderate/appeal}). */
     MODERATE_APPEAL,
+    /** Permission to upload or delete a wall section image ({@code /api/social/image/*} with {@code WALL_SECTION}). */
     UPLOAD_WALL_IMAGE,
+    /** Permission to upload or delete a climbing problem image ({@code /api/social/image/*} with {@code CLIMBING_PROBLEM}). */
     UPLOAD_PROBLEM_IMAGE
 }

@@ -6,7 +6,7 @@ import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
-import app.VBeta.application.support.discussion.beta.GcpFileStorageAdapter;
+import app.VBeta.application.support.cloud.GcpFileStorageAdapter;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.domain.model.climb.ClimbingProblem;
 import app.VBeta.domain.model.discussions.DiscussionRoot;

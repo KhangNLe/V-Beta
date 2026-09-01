@@ -159,6 +159,59 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
     - `"Admin forced delete the discussion"` when an admin deletes another user's beta
   - Response: `200` (empty body).
 
+### Image Upload (Authenticated + Action-Gated)
+
+Wall-section and problem images use the signed-PUT pattern documented for solution betas. Requests bind DTOs from **query parameters** (`@ModelAttribute`), not JSON bodies.
+
+- `GET /api/social/image/signed-url`
+  - Purpose: generate signed upload URL for a wall section, climbing problem, or user profile image.
+  - Request (`ImageStorageRequest` query params):
+    - `fileName` (required)
+    - `contentType` (required; `image/jpeg`, `image/png`, or `image/webp`)
+    - `imageTargetType` (`WALL_SECTION`, `CLIMBING_PROBLEM`, `USER_ACCOUNT`)
+    - `wallSectionId` when `imageTargetType=WALL_SECTION`
+    - `problemId` when `imageTargetType=CLIMBING_PROBLEM`
+    - `userid` when `imageTargetType=USER_ACCOUNT`
+  - Authorization:
+    - `WALL_SECTION` → `UPLOAD_WALL_IMAGE` (admin)
+    - `CLIMBING_PROBLEM` → `UPLOAD_PROBLEM_IMAGE` (setter)
+    - `USER_ACCOUNT` → caller must match `userid`
+  - Response (`CloudFileStorageResponse`):
+    - `signedURL`
+    - `method` (`PUT`)
+    - `uploadObjectName`
+    - `publicURL`
+  - Errors:
+    - `400` unsupported extension/content type (`IllegalArgumentException`)
+    - `404` user missing or role not permitted (`RuntimeException`)
+
+- `PATCH /api/social/image/upload`
+  - Purpose: persist image metadata after the client uploads to GCS.
+  - Request (`ProfileImageCreationRequest` query params):
+    - `targetType` (required)
+    - `objectFileName` (required, max 250)
+    - `imageUrl` (required, max 250)
+    - `wallSectionId` when `targetType=WALL_SECTION`
+    - `climbingProblemId` when `targetType=CLIMBING_PROBLEM`
+    - `userId` when `targetType=USER_ACCOUNT`
+  - Response: `200` (empty body)
+  - Errors:
+    - `400` validation, authorization, or business rule failure (`RuntimeException`)
+
+- `DELETE /api/social/image/problem?climbingProblemId={id}`
+  - Purpose: delete the GCS object and clear problem image metadata.
+  - Required action: `UPLOAD_PROBLEM_IMAGE`
+  - Response: `200` (empty body)
+  - Errors: `404` when unauthorized, user/problem missing, or storage delete fails
+
+- `DELETE /api/social/image/wall?wallSectionId={id}`
+  - Purpose: delete the GCS object and clear wall section image metadata.
+  - Required action: `UPLOAD_WALL_IMAGE`
+  - Response: `200` (empty body)
+  - Errors: `404` when unauthorized, wall missing, or storage delete fails
+
+Feature overview: `docs/features/wall-problem-images.md`.
+
 ### Content Reports (Authenticated)
 
 Create-report is **authenticated, not action-gated**. There is no `CREATE_REPORT` value in `ActionDefinition`. Guest callers are rejected by Spring Security (`401`). Reporter identity is taken from the Firebase UID, not the request body.

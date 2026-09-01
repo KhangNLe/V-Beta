@@ -40,7 +40,7 @@ cd server
   - boundary mocking for auth/session, route params, router actions, and API modules
   - async flow validation for loading/error/empty/success states
   - role/ownership gating tests for guest/climber/setter/admin experiences
-  - mutation and failure-path tests for account role changes, wall actions, comments, beta upload, reports, notifications, and appeals
+  - mutation and failure-path tests for account role changes, wall actions, comments, beta upload, image upload, reports, notifications, and appeals
   - pending-state and UI disablement checks for long-running actions (`Adding...`, `Deleting...`, `Submitting...`, `Uploading...`)
 
 Run command:
@@ -75,6 +75,7 @@ Focus:
 - wall/problem lifecycle operations
 - comment creation/soft-deletion behavior (root stays; timeline hides deleted rows)
 - solution beta metadata creation/soft-deletion behavior (GCS object is not deleted on user/admin hide)
+- image upload authorization and metadata persistence (`ImageService`, `/api/social/image/*`)
 - discussion timeline/read ordering and deterministic retrieval semantics
 
 Target outcomes:
@@ -114,6 +115,7 @@ Highest regression risk areas:
 - authorization and role enforcement (`CHANGE_ROLE`, `VIEW_ACCOUNTS`, `DELETE_COMMENT`, etc.)
 - wall/problem modification endpoints (`/api/home/...`, including `PATCH` reset and problem delete)
 - solution beta upload flow (`GET /api/discussion/solution-beta/upload-url` → GCS PUT → `POST .../save`)
+- image upload flow (`GET /api/social/image/signed-url` → GCS PUT → `PATCH /api/social/image/upload`)
 
 These areas should always be included in release smoke testing.
 
