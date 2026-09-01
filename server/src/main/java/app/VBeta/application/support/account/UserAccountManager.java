@@ -149,4 +149,15 @@ public class UserAccountManager {
                 userAccount.getGymRole().getRoleType().name()
         );
     }
+
+    /**
+     * This function is current incomplete since user profile image is not yet implement
+     * */
+    public void updateUserProfile(Long userId, String objectFileName, String imageUrl){
+        UserAccount user = findUserAccountById(userId);
+        if (user == null){
+            throw new RuntimeException("Missing user");
+        }
+
+    }
 }

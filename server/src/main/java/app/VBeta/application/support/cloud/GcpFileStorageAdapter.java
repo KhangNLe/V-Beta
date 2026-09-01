@@ -1,4 +1,4 @@
-package app.VBeta.application.support.discussion.beta;
+package app.VBeta.application.support.cloud;
 
 import com.google.cloud.storage.*;
 import lombok.Getter;

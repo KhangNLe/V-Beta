@@ -158,4 +158,14 @@ public class ClimbingProblemManager {
         return climbingProblemRepository.findByWallSectionAndProblemStatusAndClimbingGradeBetweenOrderByClimbingGradeDesc
                 (wall, LifecycleStatus.ACTIVE, minGrade, maxGrade);
     }
+
+    public void updateProblemImage(Long problemId, String objectFileName, String imageUrl){
+        ClimbingProblem problem = getActiveProblem(problemId);
+        if (problem == null){
+            throw new RuntimeException("Problem with id " + problemId + " does not exist");
+        }
+        problem.setObjectImageName(objectFileName);
+        problem.setProblemImageUrl(imageUrl);
+        climbingProblemRepository.save(problem);
+    }
 }

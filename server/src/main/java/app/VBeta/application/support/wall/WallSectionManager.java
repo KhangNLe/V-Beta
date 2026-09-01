@@ -74,4 +74,11 @@ public class WallSectionManager {
     public void removeWallSection(Long wallSectionId){
         wallSectionRepository.deleteById(wallSectionId);
     }
+
+    public void updateWallImage(Long wallSectionId, String objectFileName, String imageUrl){
+        WallSection section = findWallSection(wallSectionId);
+        section.setImageObjectName(objectFileName);
+        section.setWallImageUrl(imageUrl);
+        wallSectionRepository.save(section);
+    }
 }
