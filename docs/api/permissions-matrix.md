@@ -36,6 +36,10 @@ All routes below are under `/api`.
 | `POST /api/discussion/problems/{problemId}/suggest-grade` | No | Yes | Yes | Yes | Action-gated (`GRADE_PROBLEM`) |
 | `DELETE /api/discussion/comment/delete` | No | Depends | Depends | Yes | Action-gated (`DELETE_COMMENT`) + owner/admin **soft-delete** |
 | `DELETE /api/discussion/solution-beta` | No | Depends | Depends | Yes | Authenticated + owner/admin **soft-delete** |
+| `GET /api/social/image/signed-url` | No | Depends | Depends | Depends | Authenticated + target-specific (see notes) |
+| `PATCH /api/social/image/upload` | No | Depends | Depends | Depends | Authenticated + target-specific (see notes) |
+| `DELETE /api/social/image/problem` | No | No | Yes | No | Action-gated (`UPLOAD_PROBLEM_IMAGE`) |
+| `DELETE /api/social/image/wall` | No | No | No | Yes | Action-gated (`UPLOAD_WALL_IMAGE`) |
 | `POST /api/report/create` | No | Yes | Yes | Yes | Authenticated (not action-gated; no `CREATE_REPORT`) |
 | `GET /api/report/reports` | No | No | No | Yes | Action-gated (`VIEW_REPORTS`) |
 | `GET /api/report/reports?reportId=` | No | No | No | Yes | Action-gated (`VIEW_REPORTS`) |
@@ -73,8 +77,14 @@ All routes below are under `/api`.
 - `VIEW_MODERATION_LOGS`
 - `VIEW_APPEALS`
 - `MODERATE_APPEAL`
-- `UPLOAD_WALL_IMAGE`,
+- `UPLOAD_WALL_IMAGE`
 - `UPLOAD_PROBLEM_IMAGE`
+
+Image upload notes:
+
+- `GET /api/social/image/signed-url` and `PATCH /api/social/image/upload` require authentication. `WALL_SECTION` targets require `UPLOAD_WALL_IMAGE` (admin). `CLIMBING_PROBLEM` targets require `UPLOAD_PROBLEM_IMAGE` (setter). `USER_ACCOUNT` targets require the caller's account id to match `userid` / `userId` on the request (any role).
+- `DELETE /api/social/image/wall` requires `UPLOAD_WALL_IMAGE`. `DELETE /api/social/image/problem` requires `UPLOAD_PROBLEM_IMAGE`.
+- Admin does **not** receive `UPLOAD_PROBLEM_IMAGE` in seed data; only setters delete/upload problem images.
 
 ## Notes
 

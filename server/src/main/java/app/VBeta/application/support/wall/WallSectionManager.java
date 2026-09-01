@@ -75,6 +75,13 @@ public class WallSectionManager {
         wallSectionRepository.deleteById(wallSectionId);
     }
 
+    /**
+     * Persists wall section image metadata after a successful client upload.
+     *
+     * @param wallSectionId wall section identifier
+     * @param objectFileName GCS object key
+     * @param imageUrl public display URL
+     */
     public void updateWallImage(Long wallSectionId, String objectFileName, String imageUrl){
         WallSection section = findWallSection(wallSectionId);
         section.setImageObjectName(objectFileName);
@@ -82,6 +89,11 @@ public class WallSectionManager {
         wallSectionRepository.save(section);
     }
 
+    /**
+     * Clears persisted wall section image metadata.
+     *
+     * @param wall wall section entity to update
+     */
     public void removeWallImage(WallSection wall){
         wall.setWallImageUrl(null);
         wall.setImageObjectName(null);

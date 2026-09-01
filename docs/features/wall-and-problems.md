@@ -21,6 +21,8 @@ This section documents wall section and climbing problem features currently avai
 - Backend discovery: sort filtered problems by assigned grade ascending or descending
 - Wall section Filter UI: grade range (min–max), sort by most recent / easiest / hardest, Apply / Clear
 - Add Problem grade picker uses a grade dropdown (`VB`–`V17`)
+- Backend image upload/delete APIs for wall sections and climbing problems (`/api/social/image/*`)
+- Signed GCS PUT flow for wall, problem, and profile image targets (profile persistence incomplete)
 
 ## User Flows
 
@@ -52,6 +54,15 @@ Keyword/text search is deferred to a later sprint (completed Sprint 4 delivered 
 3. Setter can reset/archive active problems for a section.
 4. Updated problem list is refreshed after create/delete/reset operations.
 
+### Image Upload Flow (API — backend shipped)
+
+1. Admin or setter requests `GET /api/social/image/signed-url` with `imageTargetType` and target id.
+2. Client uploads the image to GCS with the returned signed PUT URL.
+3. Client calls `PATCH /api/social/image/upload` with `objectFileName` and `imageUrl`.
+4. Optional: authorized caller deletes via `DELETE /api/social/image/wall` or `/image/problem`.
+
+Frontend upload UI and `imageUrl` on read responses are not yet shipped. See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
+
 ### Discussion Flow
 
 1. Authenticated user opens a problem.
@@ -73,6 +84,7 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 - Guest users can browse wall and problem content.
 - Mutating wall/problem management operations require role-qualified users.
 - Setter-gated UI controls are used for problem create/delete/reset actions.
+- Wall image upload/delete requires admin (`UPLOAD_WALL_IMAGE`). Problem image upload/delete requires setter (`UPLOAD_PROBLEM_IMAGE`).
 - Deletion of user-generated discussion content is restricted to owner/admin patterns.
 - Reporting discussion content is available to any signed-in role except the discussion owner. Guests have no Report control.
 
@@ -88,7 +100,11 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
     - `v-beta/src/api/solutionBeta.js`
     - `v-beta/src/api/reports.js`
     - `v-beta/src/lib/discussionDeletion.js`
+    - `v-beta/src/api/socialMedia.js` (planned)
 - Backend controllers/services:
+    - `server/src/main/java/app/VBeta/controller/SocialMediaController.java`
+    - `server/src/main/java/app/VBeta/application/ImageService.java`
+    - `server/src/main/java/app/VBeta/application/support/cloud/CloudStorageManager.java`
     - `server/src/main/java/app/VBeta/controller/WallSectionController.java`
     - `server/src/main/java/app/VBeta/controller/ProblemDiscussionController.java`
     - `server/src/main/java/app/VBeta/controller/ProblemDiscoveryController.java`
@@ -107,7 +123,8 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 - The rest of the moderation loop (admin queue, logbook, notifications, appeals) is documented in `docs/features/moderation.md`.
 - Discovery grade-range endpoints use `/api/search/{wallSectionId}?min=&max=&sort=`.
 - CORS allows `/api/**` for the frontend origin (covers `/api/home/**` and `/api/search/**`).
-- Keyword/text search is deferred to a later sprint (roadmap Sprint 9); Sprint 4 discovery (grade filter/sort) is complete.
+- Keyword/text search is deferred to a later sprint (roadmap Sprint 10); Sprint 4 discovery (grade filter/sort) is complete.
+- Image read DTOs do not yet expose `imageUrl`; see [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
 
 ## Future Enhancements
 

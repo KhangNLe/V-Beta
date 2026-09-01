@@ -11,6 +11,10 @@ import java.net.URL;
 import java.util.Locale;
 import java.util.UUID;
 
+/**
+ * Coordinates signed upload URL generation and object deletion for solution-beta videos
+ * and wall/problem/profile images in Google Cloud Storage.
+ */
 @Service
 public class CloudStorageManager {
     private final GcpFileStorageAdapter gcpFileStorageAdapter;
@@ -34,12 +38,25 @@ public class CloudStorageManager {
         return createSignedUrl(objectName, contentType);
     }
 
+    /**
+     * Builds a signed PUT URL and public URL for an image upload.
+     *
+     * @param request file name, content type, and image target metadata
+     * @return signed upload response shared with solution-beta uploads
+     * @throws IllegalArgumentException when the extension or content type is unsupported
+     */
     public CloudFileStorageResponse createImageSignedUrl(ImageStorageRequest request){
         String objectName = buildImagePublicObjectName(request);
         String contentType = resolveImageContentType(objectName, request.contentType());
         return createSignedUrl(objectName, contentType);
     }
 
+    /**
+     * Deletes an image object from the public bucket when a key is present.
+     * No-op when {@code objectFileName} is null or blank.
+     *
+     * @param objectFileName GCS object key
+     */
     public void deleteImageObject(String objectFileName){
         if (objectFileName == null || objectFileName.isEmpty()) {return;}
         gcpFileStorageAdapter.deleteFile(gcpFileStorageAdapter.getPublicBucketName(), objectFileName);

@@ -15,6 +15,18 @@ import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Application service for wall-section, climbing-problem, and user-profile image workflows.
+ * <p>
+ * Upload authorization is enforced per {@link ImageTargetType}:
+ * <ul>
+ *   <li>{@link ImageTargetType#WALL_SECTION} — requires {@link ActionDefinition#UPLOAD_WALL_IMAGE}</li>
+ *   <li>{@link ImageTargetType#CLIMBING_PROBLEM} — requires {@link ActionDefinition#UPLOAD_PROBLEM_IMAGE}</li>
+ *   <li>{@link ImageTargetType#USER_ACCOUNT} — caller must match {@code userId} on the request</li>
+ * </ul>
+ * Storage operations are delegated to {@link CloudStorageManager}; entity updates are delegated
+ * to the wall, problem, and account managers.
+ */
 @Service
 @Transactional
 public class ImageService {
@@ -36,11 +48,24 @@ public class ImageService {
         this.authorizationService = authorizationService;
     }
 
+    /**
+     * Validates the caller for the requested target and returns signed upload metadata.
+     *
+     * @param firebaseUid authenticated Firebase UID
+     * @param request image file name, content type, and upload target
+     * @return signed PUT URL, HTTP method, object key, and public URL
+     */
     public CloudFileStorageResponse createSignedUrl(String firebaseUid, ImageStorageRequest request){
         validateImageRequest(firebaseUid, request.imageTargetType(), request.userid());
         return cloudStorageManager.createImageSignedUrl(request);
     }
 
+    /**
+     * Persists image metadata on the target entity after a successful client upload to GCS.
+     *
+     * @param firebaseUid authenticated Firebase UID
+     * @param request target type, object key, public URL, and entity identifiers
+     */
     public void saveImage(String firebaseUid, ProfileImageCreationRequest request){
         validateImageRequest(firebaseUid, request.targetType(), request.userId());
         switch (request.targetType()){
@@ -62,6 +87,13 @@ public class ImageService {
         }
     }
 
+    /**
+     * Deletes the GCS object and clears image metadata for an active climbing problem.
+     *
+     * @param firebaseUid authenticated Firebase UID
+     * @param problemId active problem identifier
+     * @throws RuntimeException when the caller lacks permission or the problem is not found
+     */
     public void problemImageDeletion(String firebaseUid, Long problemId){
         findAndValidateUserAccount(firebaseUid, ActionDefinition.UPLOAD_PROBLEM_IMAGE);
 
@@ -74,6 +106,13 @@ public class ImageService {
         climbingProblemManager.removeProblemImage(problem);
     }
 
+    /**
+     * Deletes the GCS object and clears image metadata for a wall section.
+     *
+     * @param firebaseUid authenticated Firebase UID
+     * @param wallSectionId wall section identifier
+     * @throws RuntimeException when the caller lacks permission or the wall section is not found
+     */
     public void wallSectionImageDeletion(String firebaseUid, Long wallSectionId){
         findAndValidateUserAccount(firebaseUid, ActionDefinition.UPLOAD_WALL_IMAGE);
 

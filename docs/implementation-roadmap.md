@@ -33,11 +33,11 @@ Deliver image support for wall sections and climbing problems: admins upload wal
 - Nullable paired image columns on `Wall_Section` and `Climbing_Problem`
 - Agreed API response field: `imageUrl: string | null`
 
-**Phase 2 — Backend**
+**Phase 2 — Backend** (partial)
 
-- `UPLOAD_WALL_SECTION_IMAGE` / `UPLOAD_PROBLEM_IMAGE` permissions
-- Signed upload URL + metadata save endpoints
-- `imageUrl` on wall/problem list, detail, and search DTOs
+- `UPLOAD_WALL_IMAGE` / `UPLOAD_PROBLEM_IMAGE` permissions — done
+- Signed upload URL + metadata save + delete endpoints — done
+- `imageUrl` on wall/problem list, detail, and search DTOs — planned
 
 **Phase 3 — Frontend**
 
@@ -69,9 +69,9 @@ Deliver image support for wall sections and climbing problems: admins upload wal
 
 ### Notes
 
-- Contract and plan: `docs/features/wall-problem-images.md`
+- Contract and plan: `docs/sprints/wall-problem-images.md`
+- Feature summary: `docs/features/wall-problem-images.md`
 - Schema: `docs/setup/database-schema.md` (Wall / Problem Image Columns)
-- Deferred from `docs/features/future-features.md` item 7
 
 ### Sprint 7: API Reliability
 

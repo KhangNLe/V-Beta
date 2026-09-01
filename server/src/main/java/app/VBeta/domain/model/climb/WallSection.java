@@ -32,9 +32,11 @@ public class WallSection {
     @Column(name = "wall_section_name", nullable = false, length = 30)
     private String wallSectionName;
 
+    /** Public GCS URL for the wall section image; paired with {@link #imageObjectName}. */
     @Column(name = "wall_image_url", length = 250)
     private String wallImageUrl;
 
+    /** GCS object key for the wall section image; paired with {@link #wallImageUrl}. */
     @Column(name = "image_object_name", length = 250)
     private String imageObjectName;
 }

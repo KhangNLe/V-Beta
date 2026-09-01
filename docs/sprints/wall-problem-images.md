@@ -6,32 +6,33 @@ Sprint 6 delivers image support for wall sections and climbing problems. Admins 
 
 This document is the **source of truth** for the v1 data/storage contract and Sprint 6 implementation plan. API endpoint names may be refined during implementation; rules marked **MUST** are normative.
 
-**Status:** In progress (Sprint 6)  
-**Roadmap:** [`docs/implementation-roadmap.md`](../implementation-roadmap.md)  
-**Parent epic:** Wall section and climbing problem images
+**Status:** In progress (Sprint 6) — backend APIs shipped; frontend and read DTOs pending  
+**Feature doc:** [`docs/features/wall-problem-images.md`](../features/wall-problem-images.md)  
+**Roadmap:** [`docs/implementation-roadmap.md`](../implementation-roadmap.md)
 
 ## Sprint 6 Implementation Plan
 
 Estimated duration: 2 weeks
 
-### Phase 1 — Contract and schema (this branch)
+### Phase 1 — Contract and schema
 
 | Task | Owner | Status |
 |------|-------|--------|
-| Document storage contract (this file) | Docs | In progress |
-| Add nullable paired image columns to bootstrap SQL | Backend | In progress |
-| Update `database-schema.md` and `data-model.md` | Docs | In progress |
+| Document storage contract (this file) | Docs | Done |
+| Add nullable paired image columns to bootstrap SQL | Backend | Done |
+| Update `database-schema.md` and `data-model.md` | Docs | Done |
 | Agree API response shape (`imageUrl`) | Backend + Frontend | Planned |
 
 ### Phase 2 — Backend APIs and permissions
 
 | Task | Owner | Status |
 |------|-------|--------|
-| Add `UPLOAD_WALL_SECTION_IMAGE` and `UPLOAD_PROBLEM_IMAGE` actions | Backend | Planned |
-| Signed upload URL endpoints (reuse GCS adapter pattern) | Backend | Planned |
-| Confirm/save metadata after client PUT | Backend | Planned |
+| Add `UPLOAD_WALL_IMAGE` and `UPLOAD_PROBLEM_IMAGE` actions | Backend | Done |
+| Signed upload URL endpoints (reuse GCS adapter pattern) | Backend | Done |
+| Confirm/save metadata after client PUT | Backend | Done |
+| Image delete endpoints for wall and problem | Backend | Done |
 | Return `imageUrl` in wall/problem read DTOs and `/api/search` | Backend | Planned |
-| Update API docs and permissions matrix | Docs | Planned |
+| Update API docs and permissions matrix | Docs | Done |
 
 ### Phase 3 — Frontend upload and display
 
@@ -47,17 +48,21 @@ Estimated duration: 2 weeks
 
 | Task | Owner | Status |
 |------|-------|--------|
-| Backend integration tests (auth, validation, DTO shape) | Backend | Planned |
+| Backend integration tests (auth, validation, DTO shape) | Backend | Done (`ImageServiceTest`) |
+| MVC controller tests | Backend | Done (`SocialMediaControllerTest`) |
 | Frontend tests (role gating, lightbox, upload flow) | Frontend | Planned |
 | Manual test cases in `docs/testing/manual-test-cases.md` | QA/Docs | Planned |
 | Update `docs/features/wall-and-problems.md` when shipped | Docs | Planned |
 
 ### Sprint 6 acceptance criteria
 
-- [ ] Schema and contract documented; bootstrap SQL aligned in runtime + test schemas
+- [x] Schema and contract documented; bootstrap SQL aligned in runtime + test schemas
+- [x] Unauthorized roles cannot upload via API (backend enforced)
+- [x] Upload validation enforces allowed MIME types (extension/content-type)
+- [x] Core auth and happy-path tests merged (`ImageServiceTest`, `SocialMediaControllerTest`)
+- [x] API and permissions docs updated
 - [ ] Admin can upload/replace a wall section image via authenticated UI
 - [ ] Setter can upload/replace a problem image via authenticated UI
-- [ ] Unauthorized roles cannot upload via API
 - [ ] Wall/problem read APIs return `imageUrl: string | null`
 - [ ] UI renders thumbnails and supports click-to-view full image
 - [ ] Missing images show placeholder without layout break
@@ -71,8 +76,6 @@ Estimated duration: 2 weeks
 - In-app cropping or editing
 - Climber-uploaded problem photos
 - Automatic image moderation
-- Dedicated delete-image endpoint (replace-only in v1)
-- Immediate GCS purge on problem delete (deferred; same policy as solution-beta objects)
 - `image_content_type` / `image_uploaded_at` columns (deferred to a later sprint if needed)
 
 ## Data and Storage Contract (v1)
@@ -110,18 +113,12 @@ Reference: `SolutionBetaManager.createSignedUrl()`, `CloudFileStorageResponse`
 - **R3:** At most one active image per wall section / problem (enforced by columns on the entity row).
 - **R4:** `image_object_name` is the canonical storage identifier; `*_image_url` is the client-facing display URL.
 
-### Object key convention
-
-Wall section:
+### Object key convention (implemented)
 
 ```text
-walls/{wallSectionId}/section-image.{ext}
-```
-
-Problem:
-
-```text
-walls/{wallSectionId}/problems/{problemId}/problem-image.{ext}
+image/wallSection-{wallSectionId}/{uuid}-{sanitizedName}.{ext}
+image/problem-{problemId}/{uuid}-{sanitizedName}.{ext}
+image/userProfile-{userId}/{uuid}-{sanitizedName}.{ext}
 ```
 
 Key rules:
@@ -214,7 +211,7 @@ Problem list/detail/search:
 | Upload/replace problem image | Setter, Admin |
 | View image | Guest, all roles |
 
-Planned actions: `UPLOAD_WALL_SECTION_IMAGE`, `UPLOAD_PROBLEM_IMAGE` (see `docs/api/permissions-matrix.md` when endpoints ship).
+Planned actions: `UPLOAD_WALL_IMAGE`, `UPLOAD_PROBLEM_IMAGE` (see `docs/api/permissions-matrix.md`).
 
 ### Error contract
 
@@ -258,10 +255,12 @@ Planned actions: `UPLOAD_WALL_SECTION_IMAGE`, `UPLOAD_PROBLEM_IMAGE` (see `docs/
 - `server/src/main/java/app/VBeta/domain/model/climb/WallSection.java`
 - `server/src/main/java/app/VBeta/domain/model/climb/ClimbingProblem.java`
 
-### Storage (existing pattern)
+### Storage (implemented)
 
-- `server/src/main/java/app/VBeta/application/support/discussion/beta/GcpFileStorageAdapter.java`
-- `server/src/main/java/app/VBeta/application/support/discussion/beta/VideoStoragePort.java`
+- `server/src/main/java/app/VBeta/application/support/cloud/CloudStorageManager.java`
+- `server/src/main/java/app/VBeta/application/support/cloud/GcpFileStorageAdapter.java`
+- `server/src/main/java/app/VBeta/controller/SocialMediaController.java`
+- `server/src/main/java/app/VBeta/application/ImageService.java`
 
 ### Frontend (planned)
 
@@ -276,4 +275,5 @@ Planned actions: `UPLOAD_WALL_SECTION_IMAGE`, `UPLOAD_PROBLEM_IMAGE` (see `docs/
 - Roadmap: [`docs/implementation-roadmap.md`](../implementation-roadmap.md)
 - Schema setup: [`docs/setup/database-schema.md`](../setup/database-schema.md)
 - Data model: [`docs/architecture/data-model.md`](../architecture/data-model.md)
-- Shipped wall flows (update when feature ships): [`docs/features/wall-and-problems.md`](./wall-and-problems.md)
+- Shipped wall flows: [`docs/features/wall-and-problems.md`](../features/wall-and-problems.md)
+- Backend feature summary: [`docs/features/wall-problem-images.md`](../features/wall-problem-images.md)

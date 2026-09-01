@@ -151,8 +151,15 @@ public class UserAccountManager {
     }
 
     /**
-     * This function is current incomplete since user profile image is not yet implement
-     * */
+     * Persists profile image metadata for the given user.
+     * <p>
+     * Storage columns on {@link UserAccount} are not yet mapped; this method currently
+     * validates that the account exists and is a placeholder for future profile-image work.
+     *
+     * @param userId account identifier
+     * @param objectFileName GCS object key
+     * @param imageUrl public display URL
+     */
     public void updateUserProfile(Long userId, String objectFileName, String imageUrl){
         UserAccount user = findUserAccountById(userId);
         if (user == null){

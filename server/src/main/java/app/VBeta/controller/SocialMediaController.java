@@ -10,6 +10,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller for image upload and deletion flows backed by Google Cloud Storage.
+ * <p>
+ * Clients follow the same signed-PUT pattern as solution-beta videos:
+ * request a signed URL, upload bytes directly to GCS, then persist metadata through this API.
+ * Wall-section and problem images are action-gated; profile images require the caller to match
+ * {@code userId} on the request.
+ */
 @RestController
 @RequestMapping("/api/social")
 public class SocialMediaController {
@@ -22,6 +30,12 @@ public class SocialMediaController {
         this.imageService = imageService;
     }
 
+    /**
+     * Generates a signed GCS PUT URL for an image upload.
+     *
+     * @param request upload target and file metadata bound from query parameters
+     * @return signed upload details and resulting public URL, or an error status
+     */
     @GetMapping("/image/signed-url")
     public ResponseEntity<?> getImageSignedURL(@Valid @ModelAttribute ImageStorageRequest request){
         try {
@@ -37,6 +51,12 @@ public class SocialMediaController {
         }
     }
 
+    /**
+     * Persists uploaded image metadata after the client completes the GCS PUT.
+     *
+     * @param request target entity, object key, and public URL bound from query parameters
+     * @return {@code 200} when metadata is saved
+     */
     @PatchMapping("/image/upload")
     public ResponseEntity<?> uploadImage(@Valid @ModelAttribute ProfileImageCreationRequest request){
         try {
@@ -50,6 +70,12 @@ public class SocialMediaController {
         }
     }
 
+    /**
+     * Deletes a climbing problem image from storage and clears persisted metadata.
+     *
+     * @param climbingProblemId active problem identifier
+     * @return {@code 200} when deletion succeeds
+     */
     @DeleteMapping("/image/problem")
     public ResponseEntity<?> removeProblemImage(@RequestParam Long climbingProblemId){
         try {
@@ -63,6 +89,12 @@ public class SocialMediaController {
         }
     }
 
+    /**
+     * Deletes a wall section image from storage and clears persisted metadata.
+     *
+     * @param wallSectionId wall section identifier
+     * @return {@code 200} when deletion succeeds
+     */
     @DeleteMapping("/image/wall")
     public ResponseEntity<?> removeWallImage(@RequestParam Long wallSectionId){
         try {
