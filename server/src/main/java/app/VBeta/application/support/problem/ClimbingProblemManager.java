@@ -168,4 +168,10 @@ public class ClimbingProblemManager {
         problem.setProblemImageUrl(imageUrl);
         climbingProblemRepository.save(problem);
     }
+
+    public void removeProblemImage(ClimbingProblem problem){
+        problem.setProblemImageUrl(null);
+        problem.setProblemImageUrl(null);
+        climbingProblemRepository.save(problem);
+    }
 }

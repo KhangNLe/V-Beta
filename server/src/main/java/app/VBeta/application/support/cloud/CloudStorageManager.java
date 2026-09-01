@@ -40,6 +40,11 @@ public class CloudStorageManager {
         return createSignedUrl(objectName, contentType);
     }
 
+    public void deleteImageObject(String objectFileName){
+        if (objectFileName == null || objectFileName.isEmpty()) {return;}
+        gcpFileStorageAdapter.deleteFile(gcpFileStorageAdapter.getPublicBucketName(), objectFileName);
+    }
+
     private CloudFileStorageResponse createSignedUrl(String objectName, String contentType){
         URL signedURL;
         try {

@@ -29,9 +29,9 @@ public class SocialMediaController {
             CloudFileStorageResponse response = imageService.createSignedUrl(firebaseUid, request);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (IllegalArgumentException e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
-        } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -49,4 +49,31 @@ public class SocialMediaController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @DeleteMapping("/image/problem")
+    public ResponseEntity<?> removeProblemImage(@RequestParam Long climbingProblemId){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            imageService.problemImageDeletion(firebaseUid, climbingProblemId);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return  new  ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/image/wall")
+    public ResponseEntity<?> removeWallImage(@RequestParam Long wallSectionId){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            imageService.wallSectionImageDeletion(firebaseUid, wallSectionId);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return  new  ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }

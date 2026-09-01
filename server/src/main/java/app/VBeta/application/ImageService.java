@@ -9,6 +9,8 @@ import app.VBeta.application.support.cloud.CloudStorageManager;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.wall.WallSectionManager;
 import app.VBeta.domain.model.actions.ActionDefinition;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +59,36 @@ public class ImageService {
                     request.objectFileName(),
                     request.imageUrl()
             );
+        }
+    }
+
+    public void problemImageDeletion(String firebaseUid, Long problemId){
+        findAndValidateUserAccount(firebaseUid, ActionDefinition.UPLOAD_PROBLEM_IMAGE);
+
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+        if (problem == null){
+            throw new RuntimeException("Climbing problem not found");
+        }
+
+        cloudStorageManager.deleteImageObject(problem.getObjectImageName());
+        climbingProblemManager.removeProblemImage(problem);
+    }
+
+    public void wallSectionImageDeletion(String firebaseUid, Long wallSectionId){
+        findAndValidateUserAccount(firebaseUid, ActionDefinition.UPLOAD_WALL_IMAGE);
+
+        WallSection wall = wallSectionManager.findWallSection(wallSectionId);
+        cloudStorageManager.deleteImageObject(wall.getImageObjectName());
+        wallSectionManager.removeWallImage(wall);
+    }
+
+    private void findAndValidateUserAccount(String firebaseUid, ActionDefinition action){
+        UserAccount user = userAccountManager.findUserAccount(firebaseUid);
+        if (user == null){
+            throw new RuntimeException("User not found");
+        }
+        if (action != null){
+            authorizationService.authorize(user, action);
         }
     }
 

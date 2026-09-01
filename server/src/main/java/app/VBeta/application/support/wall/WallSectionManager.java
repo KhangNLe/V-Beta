@@ -81,4 +81,10 @@ public class WallSectionManager {
         section.setWallImageUrl(imageUrl);
         wallSectionRepository.save(section);
     }
+
+    public void removeWallImage(WallSection wall){
+        wall.setWallImageUrl(null);
+        wall.setImageObjectName(null);
+        wallSectionRepository.save(wall);
+    }
 }
