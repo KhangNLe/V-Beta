@@ -48,13 +48,17 @@ For manual regression, ensure:
 
 - Runtime schema seed file:
   - `server/src/main/resources/db/pg-v-beta.sql`
+- Local Docker runtime DB:
+  - `server/scripts/start-local-db.sh` / `.ps1` (start)
+  - `server/scripts/reset-local-db.sh` / `.ps1` (wipe + re-seed `v_beta`)
 - Setup reference:
   - `docs/setup/database-schema.md`
+  - `docs/setup/local-development.md`
 
 When data gets inconsistent during testing:
 
-1. Recreate test DB from schema SQL (recommended name: `v_beta_test`)
-2. Re-seed required baseline records
+1. Reset the **runtime** Docker DB with `./scripts/reset-local-db.sh` (or `.ps1`), **or**
+2. Recreate the **test** DB from schema SQL (`v_beta_test` via `start-local-test-db.*`)
 3. Re-run affected manual test cases
 
 ## Role Transition Testing
@@ -62,9 +66,36 @@ When data gets inconsistent during testing:
 When testing role promotion/demotion:
 
 1. Start from known role state (document it)
-2. Perform role change using admin account
+2. Perform role change using an admin account **or** update SQL in Docker (below)
 3. Re-login or refresh session for target user
 4. Validate expected UI and backend behavior for new role
+
+### Promote/demote via Docker (local runtime DB)
+
+With `vbeta-postgres` running:
+
+```powershell
+docker exec -it vbeta-postgres psql -U postgres -d v_beta
+```
+
+```sql
+-- CLIMBER=1, SETTER=2, ADMIN=3
+SELECT u.user_id, u.username, u.email, u.firebase_uid, r.role_type
+FROM user_account u
+LEFT JOIN gym_role r ON r.role_id = u.gym_role_id;
+
+UPDATE user_account
+SET gym_role_id = (SELECT role_id FROM gym_role WHERE role_type = 'SETTER')
+WHERE firebase_uid = 'YOUR_FIREBASE_UID';
+```
+
+Or one-liner:
+
+```powershell
+docker exec -i vbeta-postgres psql -U postgres -d v_beta -c "UPDATE user_account SET gym_role_id = 3 WHERE firebase_uid = 'YOUR_FIREBASE_UID';"
+```
+
+See also [local-development.md](../setup/local-development.md#change-a-users-role-in-docker-local-testing).
 
 ## Safety Notes
 
