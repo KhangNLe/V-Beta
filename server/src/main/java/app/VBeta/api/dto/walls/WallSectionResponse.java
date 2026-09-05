@@ -10,5 +10,6 @@ package app.VBeta.api.dto.walls;
 public record WallSectionResponse(
         Long wallSectionID,
         String wallSectionName,
-        String wallSectionInfo
+        String wallSectionInfo,
+        String imageUrl
 ) {}

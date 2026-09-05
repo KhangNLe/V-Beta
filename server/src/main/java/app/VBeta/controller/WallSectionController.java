@@ -187,6 +187,28 @@ public class WallSectionController {
         }
     }
 
+    @PatchMapping("/wall-sections/update")
+    public ResponseEntity<?> updateClimbingProblem(@RequestParam(required = false) Long problemId,
+                                                   @RequestParam Long wallSectionId,
+                                                   @Valid @RequestBody ClimbingProblemCreationRequest request){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+
+            if (problemId != null) {
+                authorizationService.authorize(firebaseUid, ActionDefinition.UPDATE_CLIMB_INFO);
+                ClimbingProblemResponse response = climbingWallService.updateClimbDetail(problemId, request);
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                authorizationService.authorize(firebaseUid, ActionDefinition.UPDATE_WALL_INFO);
+                return new ResponseEntity<>(HttpStatus.OK);
+            }
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     /**
      * Deletes a climbing problem and returns remaining active problems in the wall section.
      *

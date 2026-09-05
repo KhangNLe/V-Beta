@@ -6,6 +6,7 @@ import app.VBeta.api.dto.problems.ClimbingProblemDetailResponse;
 import app.VBeta.api.dto.problems.ClimbingProblemResponse;
 import app.VBeta.api.dto.walls.WallSectionCreationRequest;
 import app.VBeta.api.dto.walls.WallSectionResponse;
+import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
 import app.VBeta.application.support.grade.UserPerceiveGradeManager;
 import app.VBeta.application.support.problem.ClimbingProblemDeletionManager;
@@ -13,6 +14,7 @@ import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.wall.WallSectionManager;
 import app.VBeta.domain.model.climb.ClimbingProblem;
 import app.VBeta.domain.model.climb.WallSection;
+import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -78,7 +80,8 @@ public class ClimbingWallService {
             wallSectionInfo.add(new WallSectionResponse(
                     section.getId(),
                     section.getWallSectionName(),
-                    section.getWallInfo()));
+                    section.getWallInfo(),
+                    section.getWallImageUrl()));
         });
 
         return wallSectionInfo;
@@ -100,7 +103,8 @@ public class ClimbingWallService {
                         problem.getHoldColor(),
                         problem.getProblemInfo(),
                         problem.getCreatedDate().toString().split("T")[0],
-                        problem.getClimbingGrade().getGradeDefinition()),
+                        problem.getClimbingGrade().getGradeDefinition(),
+                        problem.getProblemImageUrl()),
                 perceiveGrade,
                 comments
         );
@@ -130,7 +134,8 @@ public class ClimbingWallService {
         return new WallSectionResponse(
                 newWall.getId(),
                 newWall.getWallSectionName(),
-                newWall.getWallInfo()
+                newWall.getWallInfo(),
+                newWall.getWallImageUrl()
         );
     }
 
@@ -169,6 +174,20 @@ public class ClimbingWallService {
         climbingProblemManager.archiveActiveProblems(problems);
     }
 
+    @CacheEvict(value = CLIMBING_PROBLEMS_CACHE, key = "#problemId")
+    public ClimbingProblemResponse updateClimbDetail(Long problemId, ClimbingProblemCreationRequest updateRequest){
+        ClimbingProblem problem = climbingProblemManager.updateProblem(problemId, updateRequest);
+        return new ClimbingProblemResponse(
+                problem.getId(),
+                problem.getHoldColor(),
+                problem.getProblemInfo(),
+                problem.getCreatedDate().toString().split("T")[0],
+                problem.getClimbingGrade().getGradeDefinition(),
+                problem.getProblemImageUrl()
+        );
+
+    }
+
 
     private List<ClimbingProblemResponse> mapProblemsForWall(WallSection wallSection) {
         List<ClimbingProblemResponse> problemsInfo = new ArrayList<>();
@@ -179,7 +198,8 @@ public class ClimbingWallService {
                         problem.getHoldColor(),
                         problem.getProblemInfo(),
                         problem.getCreatedDate().toString().split("T")[0],
-                        problem.getClimbingGrade().getGradeDefinition()
+                        problem.getClimbingGrade().getGradeDefinition(),
+                        problem.getProblemImageUrl()
                 ));
         });
         return problemsInfo;
@@ -201,7 +221,8 @@ public class ClimbingWallService {
                 newProblem.getHoldColor(),
                 newProblem.getProblemInfo(),
                 newProblem.getCreatedDate().toString().split("T")[0],
-                newProblem.getClimbingGrade().getGradeDefinition()
+                newProblem.getClimbingGrade().getGradeDefinition(),
+                newProblem.getProblemImageUrl()
         );
     }
 
@@ -228,7 +249,8 @@ public class ClimbingWallService {
         return new WallSectionResponse(
                 wallSection.getId(),
                 wallSection.getWallSectionName(),
-                wallSection.getWallInfo()
+                wallSection.getWallInfo(),
+                wallSection.getWallImageUrl()
         );
     }
 
@@ -238,7 +260,8 @@ public class ClimbingWallService {
                 problem.getHoldColor(),
                 problem.getProblemInfo(),
                 problem.getCreatedDate().toString().split("T")[0],
-                problem.getClimbingGrade().getGradeDefinition()
+                problem.getClimbingGrade().getGradeDefinition(),
+                problem.getProblemImageUrl()
         );
     }
 }

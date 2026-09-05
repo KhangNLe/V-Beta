@@ -13,11 +13,11 @@ REST surface includes account, wall/problem, discussion, reports, notifications,
 ## Prerequisites
 
 - **JDK 17+** (JDK 21 is also supported).
-- **PostgreSQL 14+** reachable by the backend when running locally (or Neon if you intentionally point `.env` at staging).
+- **Docker Desktop** (recommended) for local PostgreSQL via `scripts/start-local-db.*`, **or** PostgreSQL 14+ / Neon if you intentionally point `.env` elsewhere.
 - Optional for storage/auth flows: Firebase and Google Cloud credentials.
-- Optional for one-command backend PostgreSQL test runs: **Docker** (used by `scripts/test-with-postgres.sh`).
+- Optional for one-command backend PostgreSQL test runs: Docker (`scripts/test-with-postgres.sh` / `.ps1`).
 
-Use the Maven wrapper (`./mvnw` or `mvnw.cmd`) so no global Maven install is required.
+Use the Maven wrapper (`./mvnw` or `.\mvnw.cmd`) so no global Maven install is required.
 
 ## Runtime Configuration
 
@@ -57,7 +57,7 @@ DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_NAME=v_beta
 SQL_USERNAME=postgres
-SQL_PASSWORD=devpassword
+SQL_PASSWORD=postgres
 FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
 GCP_PROJECT_ID=your-gcp-project-id
 GOOGLE_SERVICE_CREDENTIALS_PATH=./google-account-credential.json
@@ -66,13 +66,15 @@ STORAGE_PUBLIC_BUCKET_NAME=your-public-bucket
 # DB_JDBC_PARAMS=
 ```
 
+Docker local defaults use `SQL_PASSWORD=postgres`. Change both the container env and `.env` together if you use a different password.
+
 ### Databases (local vs Neon)
 
 Do **not** use a git branch to switch databases. `server/.env` is gitignored; Cloud Run has its own env. Same code, same branch.
 
 | Environment | Database | Typical `server/.env` / Cloud Run |
 |---|---|---|
-| Local daily work | Postgres on `127.0.0.1` (or Cloud SQL Auth Proxy) | `DB_HOST=127.0.0.1`, empty `DB_JDBC_PARAMS` |
+| Local daily work | Docker `vbeta-postgres` on `127.0.0.1:5432` (or local Postgres / Cloud SQL Auth Proxy) | `DB_HOST=127.0.0.1`, empty `DB_JDBC_PARAMS` |
 | Hosted staging | Neon `v_beta` (AWS `us-east-2`, **pooler**) | See Neon values below |
 | `./mvnw test` | Docker/CI `v_beta_test` | `TEST_DB_*` only — ignores runtime `DB_*` / `SQL_*` |
 
@@ -93,7 +95,19 @@ To poke Neon from a laptop without replacing local settings, copy a gitignored `
 
 ## Run the Application
 
-From `server/`:
+Start the local runtime database (Docker) first if you are not using Neon / Cloud SQL Auth Proxy:
+
+```bash
+./scripts/start-local-db.sh
+```
+
+```powershell
+.\scripts\start-local-db.ps1
+```
+
+To change a signed-in user's role for local testing (`CLIMBER`/`SETTER`/`ADMIN`), see [Local development — change role in Docker](../docs/setup/local-development.md#change-a-users-role-in-docker-local-testing).
+
+Then from `server/`:
 
 ```bash
 ./mvnw spring-boot:run
@@ -102,7 +116,7 @@ From `server/`:
 Windows:
 
 ```bash
-mvnw.cmd spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
 
 Default API base URL: `http://localhost:8080`
@@ -126,7 +140,14 @@ For consistent local runs (bootstrap + tests):
 ./scripts/test-with-postgres.sh
 ```
 
-What this command does:
+On Windows (PowerShell, no WSL required):
+
+```powershell
+.\scripts\start-local-test-db.ps1
+.\mvnw.cmd test
+```
+
+What the bootstrap command does:
 
 - starts/reuses local Docker PostgreSQL (`vbeta-test-postgres` on `127.0.0.1:55432`)
 - recreates `v_beta_test` (never `v_beta`)
@@ -140,7 +161,12 @@ After the Docker test DB is already up, `./mvnw test` uses it by default. To res
 ./mvnw test
 ```
 
-`./scripts/reset-test-db.sh` also defaults to `127.0.0.1:55432` as user `postgres` (not `SQL_*` / `DB_PORT` from `.env`). CI overrides `TEST_DB_PORT=5432`.
+```powershell
+.\scripts\start-local-test-db.ps1
+.\mvnw.cmd test
+```
+
+`./scripts/reset-test-db.sh` / `.\scripts\reset-test-db.ps1` also default to `127.0.0.1:55432` as user `postgres` (not `SQL_*` / `DB_PORT` from `.env`). CI overrides `TEST_DB_PORT=5432`. Docker Desktop must be running; for WSL bash scripts, enable WSL integration in Docker Desktop settings.
 
 ## Build a Runnable JAR
 

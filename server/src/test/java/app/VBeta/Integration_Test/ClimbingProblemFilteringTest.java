@@ -59,14 +59,14 @@ public class ClimbingProblemFilteringTest {
 
     private WallSection createWallSection(String name) {
         return wallSectionManager.createNewWallSection(
-                new WallSectionCreationRequest("Filtering test wall", name)
+                new WallSectionCreationRequest("Filtering test wall", name, null, null)
         );
     }
 
     private ClimbingProblemResponse createProblem(Long wallSectionId, String color, GradeDefinition grade) {
         return climbingWallService.createNewClimbingProblem(
                 wallSectionId,
-                new ClimbingProblemCreationRequest(color, color + " " + grade.name(), grade)
+                new ClimbingProblemCreationRequest(color, color + " " + grade.name(), grade, null, null)
         );
     }
 

@@ -141,7 +141,7 @@ public class ProblemDiscussionControllerTest {
                 .addClimbingProblemPerceiveGrade(eq("testFirebaseUid"), eq(22L), any(PerceiveGradeRequest.class));
         when(climbingWallService.getClimbingProblem(22L)).thenReturn(
                 new ClimbingProblemDetailResponse(
-                        new ClimbingProblemResponse(22L, "BLUE", "Crimpy sequence", "2026-04-20", GradeDefinition.V5),
+                        new ClimbingProblemResponse(22L, "BLUE", "Crimpy sequence", "2026-04-20", GradeDefinition.V5, null),
                         "V6",
                         List.of()
                 )

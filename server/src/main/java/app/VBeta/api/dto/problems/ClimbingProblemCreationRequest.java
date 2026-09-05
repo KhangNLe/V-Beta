@@ -18,6 +18,8 @@ public record ClimbingProblemCreationRequest(
         @NotBlank @Size(max = 250)
         String info,
         @NotNull
-        GradeDefinition assignedGrade
+        GradeDefinition assignedGrade,
+        String objectFileName,
+        String imageUrl
 ) {
 }

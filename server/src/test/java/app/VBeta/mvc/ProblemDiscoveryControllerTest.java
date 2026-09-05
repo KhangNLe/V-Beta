@@ -32,7 +32,7 @@ public class ProblemDiscoveryControllerTest {
     private ProblemFilteringService problemFilteringService;
 
     private ClimbingProblemResponse sampleProblem() {
-        return new ClimbingProblemResponse(2L, "RED", "RED V0-V1", "2026-07-21T12:00:00", GradeDefinition.V0);
+        return new ClimbingProblemResponse(2L, "RED", "RED V0-V1", "2026-07-21T12:00:00", GradeDefinition.V0, null);
     }
 
     @Test

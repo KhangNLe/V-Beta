@@ -55,6 +55,32 @@ Use one runtime database:
 
 - Main app DB: `v_beta`
 
+### Option A (recommended): Docker
+
+From `server/`, with Docker Desktop running:
+
+```bash
+./scripts/start-local-db.sh
+```
+
+```powershell
+.\scripts\start-local-db.ps1
+```
+
+This creates/starts `vbeta-postgres` on `127.0.0.1:5432`, creates `v_beta`, and applies `pg-v-beta.sql` when needed. Details (reset, port conflicts, changing roles): [local-development.md](./local-development.md).
+
+Match `server/.env`:
+
+```bash
+SQL_USERNAME=postgres
+SQL_PASSWORD=postgres
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=v_beta
+```
+
+### Option B: manual PostgreSQL
+
 ## 1) Create database
 
 ```sql
@@ -97,7 +123,7 @@ Expected:
 
 ## 5) Validate with app startup
 
-1. Start PostgreSQL (or Cloud SQL Auth Proxy if using Cloud SQL PostgreSQL).
+1. Start PostgreSQL (Docker via `start-local-db.*`, local install, or Cloud SQL Auth Proxy).
 2. Start backend:
 
 ```bash
@@ -105,8 +131,30 @@ cd server
 ./mvnw spring-boot:run
 ```
 
+Windows: `.\mvnw.cmd spring-boot:run`
+
 3. Confirm no Hibernate schema validation errors.
 4. Hit `GET http://localhost:8080/api/health`.
+
+## Changing user roles in Docker (local)
+
+Seeded `gym_role` values: `CLIMBER` (1), `SETTER` (2), `ADMIN` (3).
+
+```powershell
+docker exec -it vbeta-postgres psql -U postgres -d v_beta
+```
+
+```sql
+SELECT u.user_id, u.username, u.email, u.firebase_uid, r.role_type
+FROM user_account u
+LEFT JOIN gym_role r ON r.role_id = u.gym_role_id;
+
+UPDATE user_account
+SET gym_role_id = (SELECT role_id FROM gym_role WHERE role_type = 'ADMIN')
+WHERE firebase_uid = 'YOUR_FIREBASE_UID';
+```
+
+Sign in once first if your Firebase user is not in `user_account` yet. Then refresh the session. Full steps: [local-development.md](./local-development.md#change-a-users-role-in-docker-local-testing).
 
 ## Discussion Index Verification (Sprint 3)
 

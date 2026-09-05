@@ -16,6 +16,7 @@ public record ClimbingProblemResponse(
         String holdColor,
         String info,
         String createdDate,
-        GradeDefinition assignedGrade
+        GradeDefinition assignedGrade,
+        String imageUrl
 ) {
 }

@@ -14,6 +14,9 @@ public record WallSectionCreationRequest(
         String wallSectionInfo,
 
         @NotBlank @Size(max = 30)
-        String wallSectionName
+        String wallSectionName,
+
+        String objectFileName,
+        String imageUrl
 ) {
 }

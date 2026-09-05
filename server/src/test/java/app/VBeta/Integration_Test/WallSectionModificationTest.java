@@ -109,7 +109,9 @@ public class WallSectionModificationTest {
         authorizationService.authorize(firebaseUid, ActionDefinition.CREATE_WALL);
         WallSectionCreationRequest req = new WallSectionCreationRequest(
             "Test Wall Section Info",
-                "Wall Section Test Name"
+                "Wall Section Test Name",
+                null,
+                null
         );
 
         wallSectionManager.createNewWallSection(req);
@@ -156,7 +158,9 @@ public class WallSectionModificationTest {
 
         WallSectionCreationRequest req = new WallSectionCreationRequest(
                 "Test Wall Section Info",
-                "Wall Section Test Name"
+                "Wall Section Test Name",
+                null,
+                null
         );
 
         wallSectionManager.createNewWallSection(req);

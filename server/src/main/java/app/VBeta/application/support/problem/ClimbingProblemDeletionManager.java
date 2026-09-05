@@ -1,5 +1,6 @@
 package app.VBeta.application.support.problem;
 
+import app.VBeta.application.support.cloud.CloudStorageManager;
 import app.VBeta.application.support.discussion.comment.DiscussionCommentManager;
 import app.VBeta.application.support.discussion.DiscussionRootManager;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
@@ -28,6 +29,7 @@ public class ClimbingProblemDeletionManager {
     private final SolutionBetaManager solutionBetaManager;
     private final ClimbingProblemRepository climbingProblemRepository;
     private final DiscussionRootManager discussionRootManager;
+    private final CloudStorageManager cloudStorageManager;
 
 
     /**
@@ -43,12 +45,14 @@ public class ClimbingProblemDeletionManager {
                                           SolutionBetaManager solutionBetaManager,
                                           DiscussionCommentManager discussionCommentManager,
                                           ClimbingProblemRepository climbingProblemRepository,
-                                          DiscussionRootManager discussionRootManager){
+                                          DiscussionRootManager discussionRootManager,
+                                          CloudStorageManager cloudStorageManager){
         this.userPerceiveGradeManager = userPerceiveGradeManager;
         this.discussionCommentManager = discussionCommentManager;
         this.solutionBetaManager = solutionBetaManager;
         this.climbingProblemRepository = climbingProblemRepository;
         this.discussionRootManager = discussionRootManager;
+        this.cloudStorageManager = cloudStorageManager;
     }
 
     /**
@@ -63,6 +67,7 @@ public class ClimbingProblemDeletionManager {
 
         deleteProblemDiscussions(problem);
         deleteProblemPerceiveGrades(problem);
+        cloudStorageManager.deleteImageObject(problem.getObjectImageName());
         climbingProblemRepository.delete(problem);
     }
 

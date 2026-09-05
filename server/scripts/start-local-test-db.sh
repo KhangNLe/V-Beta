@@ -3,7 +3,7 @@
 set -euo pipefail
 
 CONTAINER_NAME="${CONTAINER_NAME:-vbeta-test-postgres}"
-POSTGRES_IMAGE="${POSTGRES_IMAGE:-postgres:16-alpine}"
+POSTGRES_IMAGE="${POSTGRES_IMAGE:-postgres:16}"
 DB_HOST="${TEST_DB_HOST:-127.0.0.1}"
 DB_PORT="${TEST_DB_PORT:-55432}"
 TEST_DB_NAME="${TEST_DB_NAME:-v_beta_test}"

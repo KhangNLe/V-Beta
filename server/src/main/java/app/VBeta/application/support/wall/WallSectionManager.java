@@ -1,6 +1,7 @@
 package app.VBeta.application.support.wall;
 
 import app.VBeta.api.dto.walls.WallSectionCreationRequest;
+import app.VBeta.application.support.cloud.CloudStorageManager;
 import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.repository.WallSectionRepository;
 import org.springframework.stereotype.Service;
@@ -20,14 +21,17 @@ import java.util.List;
 @Transactional
 public class WallSectionManager {
     private final WallSectionRepository wallSectionRepository;
+    private final CloudStorageManager cloudStorageManager;
 
     /**
      * Constructs a new {@code WallSectionManager} with wall section repository access.
      *
      * @param wallSectionRepository repository for wall section entities
      */
-    public WallSectionManager(WallSectionRepository wallSectionRepository){
+    public WallSectionManager(WallSectionRepository wallSectionRepository,
+                              CloudStorageManager cloudStorageManager){
         this.wallSectionRepository = wallSectionRepository;
+        this.cloudStorageManager = cloudStorageManager;
     }
 
     /**
@@ -63,6 +67,8 @@ public class WallSectionManager {
         WallSection section = new WallSection();
         section.setWallInfo(request.wallSectionInfo());
         section.setWallSectionName(request.wallSectionName());
+        section.setImageObjectName(request.objectFileName());
+        section.setWallImageUrl(section.getWallImageUrl());
         return wallSectionRepository.save(section);
     }
 
@@ -72,6 +78,8 @@ public class WallSectionManager {
      * @param wallSectionId wall section identifier
      */
     public void removeWallSection(Long wallSectionId){
+        WallSection wall = findWallSection(wallSectionId);
+        cloudStorageManager.deleteImageObject(wall.getImageObjectName());
         wallSectionRepository.deleteById(wallSectionId);
     }
 }
