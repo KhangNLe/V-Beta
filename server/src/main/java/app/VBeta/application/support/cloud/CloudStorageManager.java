@@ -51,13 +51,17 @@ public class CloudStorageManager {
         return createSignedUrl(objectName, contentType);
     }
 
+    public void verifyImageSizeLimit(String objectFileName){
+        gcpFileStorageAdapter.assertImageObjectWithinSizeLimit(objectFileName);
+    }
+
     /**
-     * Deletes an image object from the public bucket when a key is present.
+     * Deletes a storage object from the public bucket when a key is present.
      * No-op when {@code objectFileName} is null or blank.
      *
      * @param objectFileName GCS object key
      */
-    public void deleteImageObject(String objectFileName){
+    public void deleteStorageObject(String objectFileName){
         if (objectFileName == null || objectFileName.isEmpty()) {return;}
         gcpFileStorageAdapter.deleteFile(gcpFileStorageAdapter.getPublicBucketName(), objectFileName);
     }

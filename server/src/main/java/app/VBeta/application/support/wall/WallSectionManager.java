@@ -1,8 +1,10 @@
 package app.VBeta.application.support.wall;
 
 import app.VBeta.api.dto.walls.WallSectionCreationRequest;
+import app.VBeta.application.support.cloud.CloudStorageManager;
 import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.repository.WallSectionRepository;
+import com.google.common.base.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,14 +22,17 @@ import java.util.List;
 @Transactional
 public class WallSectionManager {
     private final WallSectionRepository wallSectionRepository;
+    private final CloudStorageManager cloudStorageManager;
 
     /**
      * Constructs a new {@code WallSectionManager} with wall section repository access.
      *
      * @param wallSectionRepository repository for wall section entities
      */
-    public WallSectionManager(WallSectionRepository wallSectionRepository){
+    public WallSectionManager(WallSectionRepository wallSectionRepository,
+                              CloudStorageManager cloudStorageManager) {
         this.wallSectionRepository = wallSectionRepository;
+        this.cloudStorageManager =  cloudStorageManager;
     }
 
     /**
@@ -63,6 +68,8 @@ public class WallSectionManager {
         WallSection section = new WallSection();
         section.setWallInfo(request.wallSectionInfo());
         section.setWallSectionName(request.wallSectionName());
+        section.setImageObjectName(request.objectFileName());
+        section.setImageObjectName(request.imageURL());
         return wallSectionRepository.save(section);
     }
 
@@ -72,6 +79,8 @@ public class WallSectionManager {
      * @param wallSectionId wall section identifier
      */
     public void removeWallSection(Long wallSectionId){
+        WallSection section = findWallSection(wallSectionId);
+        cloudStorageManager.deleteStorageObject(section.getImageObjectName());
         wallSectionRepository.deleteById(wallSectionId);
     }
 
@@ -84,6 +93,7 @@ public class WallSectionManager {
      */
     public void updateWallImage(Long wallSectionId, String objectFileName, String imageUrl){
         WallSection section = findWallSection(wallSectionId);
+        cloudStorageManager.deleteStorageObject(section.getImageObjectName());
         section.setImageObjectName(objectFileName);
         section.setWallImageUrl(imageUrl);
         wallSectionRepository.save(section);
@@ -95,6 +105,7 @@ public class WallSectionManager {
      * @param wall wall section entity to update
      */
     public void removeWallImage(WallSection wall){
+
         wall.setWallImageUrl(null);
         wall.setImageObjectName(null);
         wallSectionRepository.save(wall);
@@ -104,8 +115,13 @@ public class WallSectionManager {
         WallSection wall = findWallSection(wallSectionId);
         wall.setWallInfo(update.wallSectionInfo());
         wall.setWallSectionName(update.wallSectionName());
-        wall.setImageObjectName(update.objectFileName());
-        wall.setWallImageUrl(update.imageURL());
+
+        if (!Objects.equal(wall.getImageObjectName(), update.objectFileName())){
+            cloudStorageManager.deleteStorageObject(wall.getImageObjectName());
+            wall.setImageObjectName(update.objectFileName());
+            wall.setWallImageUrl(update.imageURL());
+        }
+
         return wallSectionRepository.save(wall);
     }
 }

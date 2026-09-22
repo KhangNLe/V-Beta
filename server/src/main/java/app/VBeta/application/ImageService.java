@@ -68,6 +68,9 @@ public class ImageService {
      */
     public void saveImage(String firebaseUid, ProfileImageCreationRequest request){
         validateImageRequest(firebaseUid, request.targetType(), request.userId());
+
+        cloudStorageManager.verifyImageSizeLimit(request.objectFileName());
+
         switch (request.targetType()){
             case WALL_SECTION -> wallSectionManager.updateWallImage(
                     request.wallSectionId(),
@@ -102,7 +105,7 @@ public class ImageService {
             throw new RuntimeException("Climbing problem not found");
         }
 
-        cloudStorageManager.deleteImageObject(problem.getObjectImageName());
+        cloudStorageManager.deleteStorageObject(problem.getObjectImageName());
         climbingProblemManager.removeProblemImage(problem);
     }
 
@@ -117,7 +120,7 @@ public class ImageService {
         findAndValidateUserAccount(firebaseUid, ActionDefinition.UPLOAD_WALL_IMAGE);
 
         WallSection wall = wallSectionManager.findWallSection(wallSectionId);
-        cloudStorageManager.deleteImageObject(wall.getImageObjectName());
+        cloudStorageManager.deleteStorageObject(wall.getImageObjectName());
         wallSectionManager.removeWallImage(wall);
     }
 
