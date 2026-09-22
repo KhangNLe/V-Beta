@@ -99,4 +99,13 @@ public class WallSectionManager {
         wall.setImageObjectName(null);
         wallSectionRepository.save(wall);
     }
+
+    public WallSection updateWallSection(Long wallSectionId, WallSectionCreationRequest update){
+        WallSection wall = findWallSection(wallSectionId);
+        wall.setWallInfo(update.wallSectionInfo());
+        wall.setWallSectionName(update.wallSectionName());
+        wall.setImageObjectName(update.objectFileName());
+        wall.setWallImageUrl(update.imageURL());
+        return wallSectionRepository.save(wall);
+    }
 }

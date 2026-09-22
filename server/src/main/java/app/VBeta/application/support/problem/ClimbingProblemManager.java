@@ -186,4 +186,17 @@ public class ClimbingProblemManager {
         problem.setProblemImageUrl(null);
         climbingProblemRepository.save(problem);
     }
+
+    public ClimbingProblem updateProblem(Long problemId, ClimbingProblemCreationRequest update){
+        ClimbingProblem problem = getActiveProblem(problemId);
+        if (problem == null){
+            throw new RuntimeException("Problem not found or no longer active.");
+        }
+        problem.setHoldColor(update.holdColor());
+        problem.setProblemInfo(update.info());
+        problem.setClimbingGrade(getClimbingGrade(update.assignedGrade()));
+        problem.setObjectImageName(update.objectFileName());
+        problem.setProblemImageUrl(update.imageURL());
+        return climbingProblemRepository.save(problem);
+    }
 }

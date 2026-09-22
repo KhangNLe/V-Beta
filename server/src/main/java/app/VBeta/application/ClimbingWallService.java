@@ -78,7 +78,9 @@ public class ClimbingWallService {
             wallSectionInfo.add(new WallSectionResponse(
                     section.getId(),
                     section.getWallSectionName(),
-                    section.getWallInfo()));
+                    section.getWallInfo(),
+                    section.getWallImageUrl()
+                    ));
         });
 
         return wallSectionInfo;
@@ -100,7 +102,8 @@ public class ClimbingWallService {
                         problem.getHoldColor(),
                         problem.getProblemInfo(),
                         problem.getCreatedDate().toString().split("T")[0],
-                        problem.getClimbingGrade().getGradeDefinition()),
+                        problem.getClimbingGrade().getGradeDefinition(),
+                        problem.getProblemImageUrl()),
                 perceiveGrade,
                 comments
         );
@@ -130,7 +133,8 @@ public class ClimbingWallService {
         return new WallSectionResponse(
                 newWall.getId(),
                 newWall.getWallSectionName(),
-                newWall.getWallInfo()
+                newWall.getWallInfo(),
+                newWall.getWallImageUrl()
         );
     }
 
@@ -179,7 +183,8 @@ public class ClimbingWallService {
                         problem.getHoldColor(),
                         problem.getProblemInfo(),
                         problem.getCreatedDate().toString().split("T")[0],
-                        problem.getClimbingGrade().getGradeDefinition()
+                        problem.getClimbingGrade().getGradeDefinition(),
+                        problem.getProblemImageUrl()
                 ));
         });
         return problemsInfo;
@@ -201,7 +206,8 @@ public class ClimbingWallService {
                 newProblem.getHoldColor(),
                 newProblem.getProblemInfo(),
                 newProblem.getCreatedDate().toString().split("T")[0],
-                newProblem.getClimbingGrade().getGradeDefinition()
+                newProblem.getClimbingGrade().getGradeDefinition(),
+                newProblem.getProblemImageUrl()
         );
     }
 
@@ -228,7 +234,8 @@ public class ClimbingWallService {
         return new WallSectionResponse(
                 wallSection.getId(),
                 wallSection.getWallSectionName(),
-                wallSection.getWallInfo()
+                wallSection.getWallInfo(),
+                wallSection.getWallImageUrl()
         );
     }
 
@@ -238,7 +245,32 @@ public class ClimbingWallService {
                 problem.getHoldColor(),
                 problem.getProblemInfo(),
                 problem.getCreatedDate().toString().split("T")[0],
-                problem.getClimbingGrade().getGradeDefinition()
+                problem.getClimbingGrade().getGradeDefinition(),
+                problem.getProblemImageUrl()
+        );
+    }
+
+    @CacheEvict(value = CLIMBING_PROBLEMS_CACHE, key = "#problemId")
+    public ClimbingProblemResponse updateClimbDetail(Long problemId, ClimbingProblemCreationRequest update){
+        ClimbingProblem problem = climbingProblemManager.updateProblem(problemId, update);
+        return new ClimbingProblemResponse(
+                problem.getId(),
+                problem.getHoldColor(),
+                problem.getProblemInfo(),
+                problem.getCreatedDate().toString().split("T")[0],
+                problem.getClimbingGrade().getGradeDefinition(),
+                problem.getProblemImageUrl()
+        );
+    }
+
+    @CacheEvict(value = WALL_SECTIONS_CACHE, key = "#wallSectionId")
+    public WallSectionResponse updateWallSection(Long wallSectionId, WallSectionCreationRequest update){
+        WallSection wallSection = wallSectionManager.updateWallSection(wallSectionId, update);
+        return new WallSectionResponse(
+                wallSection.getId(),
+                wallSection.getWallSectionName(),
+                wallSection.getWallInfo(),
+                wallSection.getWallImageUrl()
         );
     }
 }
