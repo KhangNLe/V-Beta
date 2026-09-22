@@ -51,14 +51,14 @@ public class WallSectionControllerTest {
     private AuthorizationService authorizationService;
 
     private ClimbingProblemResponse sampleProblem() {
-        return new ClimbingProblemResponse(22L, "BLUE", "Crimpy sequence", "2026-04-20", GradeDefinition.V5);
+        return new ClimbingProblemResponse(22L, "BLUE", "Crimpy sequence", "2026-04-20", GradeDefinition.V5, null);
     }
 
     @Test
     @DisplayName("GET /api/home/wall-sections returns wall list")
     void returns200_whenListingWallSections() throws Exception {
         when(climbingWallService.getWallSections()).thenReturn(List.of(
-                new WallSectionResponse(1L, "Main Wall", "Comp style problems")
+                new WallSectionResponse(1L, "Main Wall", "Comp style problems", null)
         ));
 
         mockMvc.perform(get("/api/home/wall-sections"))
@@ -107,10 +107,10 @@ public class WallSectionControllerTest {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("adminUid");
         doNothing().when(authorizationService).authorize("adminUid", ActionDefinition.CREATE_WALL);
         when(climbingWallService.createNewWallSection(any(WallSectionCreationRequest.class)))
-                .thenReturn(new WallSectionResponse(5L, "Training Wall", "Endurance circuits"));
+                .thenReturn(new WallSectionResponse(5L, "Training Wall", "Endurance circuits", null));
 
         WallSectionCreationRequest request = new WallSectionCreationRequest(
-                "Endurance circuits", "Training Wall");
+                "Endurance circuits", "Training Wall", null, null);
 
         mockMvc.perform(post("/api/home/wall-section/creation")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -127,7 +127,7 @@ public class WallSectionControllerTest {
                 .when(authorizationService).authorize("climberUid", ActionDefinition.CREATE_WALL);
 
         WallSectionCreationRequest request = new WallSectionCreationRequest(
-                "Endurance circuits", "Training Wall");
+                "Endurance circuits", "Training Wall", null, null);
 
         mockMvc.perform(post("/api/home/wall-section/creation")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -172,7 +172,7 @@ public class WallSectionControllerTest {
                 .thenReturn(sampleProblem());
 
         ClimbingProblemCreationRequest request = new ClimbingProblemCreationRequest(
-                "BLUE", "Crimpy sequence", GradeDefinition.V5);
+                "BLUE", "Crimpy sequence", GradeDefinition.V5, null, null);
 
         mockMvc.perform(post("/api/home/wall-sections/1/problems/create")
                         .contentType(MediaType.APPLICATION_JSON)
