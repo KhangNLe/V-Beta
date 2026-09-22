@@ -31,6 +31,7 @@ public class ClimbingProblemManager {
      *
      * @param climbingProblemRepository repository for climbing problem entities
      * @param climbingGradeRepository repository for grade definition lookups
+     * @param cloudStorageManager manager for deleting superseded GCS image objects
      */
     public ClimbingProblemManager(ClimbingProblemRepository climbingProblemRepository,
                                   ClimbingGradeRepository climbingGradeRepository,
@@ -186,7 +187,6 @@ public class ClimbingProblemManager {
      * @param problem active problem entity to update
      */
     public void removeProblemImage(ClimbingProblem problem){
-        cloudStorageManager.deleteStorageObject(problem.getObjectImageName());
         problem.setProblemImageUrl(null);
         problem.setObjectImageName(null);
         climbingProblemRepository.save(problem);

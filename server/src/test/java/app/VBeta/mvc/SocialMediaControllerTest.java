@@ -235,6 +235,22 @@ public class SocialMediaControllerTest {
     }
 
     @Test
+    @DisplayName("PATCH /api/social/image/upload maps oversized image to 400")
+    void returns400_whenUploadedImageExceedsSizeLimit() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn(FIREBASE_UID);
+        doThrow(new IllegalArgumentException("Uploaded image exceeds 8 MB limit"))
+                .when(imageService).saveImage(eq(FIREBASE_UID), any());
+
+        mockMvc.perform(patch("/api/social/image/upload")
+                        .param("targetType", ImageTargetType.CLIMBING_PROBLEM.name())
+                        .param("objectFileName", "walls/1/problems/22/problem-image.jpg")
+                        .param("imageUrl", "https://storage.googleapis.com/bucket/walls/1/problems/22/problem-image.jpg")
+                        .param("climbingProblemId", "22"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Uploaded image exceeds 8 MB limit"));
+    }
+
+    @Test
     @DisplayName("PATCH /api/social/image/upload maps unexpected failure to 500")
     void returns500_whenUploadImageUnexpectedFailure() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn(FIREBASE_UID);

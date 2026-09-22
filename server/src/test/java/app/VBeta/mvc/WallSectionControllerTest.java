@@ -51,20 +51,32 @@ public class WallSectionControllerTest {
     private AuthorizationService authorizationService;
 
     private ClimbingProblemResponse sampleProblem() {
-        return new ClimbingProblemResponse(22L, "BLUE", "Crimpy sequence", "2026-04-20", GradeDefinition.V5, null);
+        return new ClimbingProblemResponse(
+                22L,
+                "BLUE",
+                "Crimpy sequence",
+                "2026-04-20",
+                GradeDefinition.V5,
+                "https://storage.googleapis.com/bucket/image/problem-22/photo.jpg");
     }
 
     @Test
-    @DisplayName("GET /api/home/wall-sections returns wall list")
+    @DisplayName("GET /api/home/wall-sections returns wall list with imageURL")
     void returns200_whenListingWallSections() throws Exception {
         when(climbingWallService.getWallSections()).thenReturn(List.of(
-                new WallSectionResponse(1L, "Main Wall", "Comp style problems", null)
+                new WallSectionResponse(
+                        1L,
+                        "Main Wall",
+                        "Comp style problems",
+                        "https://storage.googleapis.com/bucket/image/wallSection-1/photo.webp")
         ));
 
         mockMvc.perform(get("/api/home/wall-sections"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].wallSectionID").value(1))
-                .andExpect(jsonPath("$[0].wallSectionName").value("Main Wall"));
+                .andExpect(jsonPath("$[0].wallSectionName").value("Main Wall"))
+                .andExpect(jsonPath("$[0].imageURL")
+                        .value("https://storage.googleapis.com/bucket/image/wallSection-1/photo.webp"));
     }
 
     @Test
@@ -75,7 +87,9 @@ public class WallSectionControllerTest {
 
         mockMvc.perform(get("/api/home/wall-sections/1/problems"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].problemId").value(22));
+                .andExpect(jsonPath("$[0].problemId").value(22))
+                .andExpect(jsonPath("$[0].imageURL")
+                        .value("https://storage.googleapis.com/bucket/image/problem-22/photo.jpg"));
     }
 
     @Test
@@ -98,6 +112,8 @@ public class WallSectionControllerTest {
         mockMvc.perform(get("/api/home/wall-sections/1/problems/22"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.climbingProblem.problemId").value(22))
+                .andExpect(jsonPath("$.climbingProblem.imageURL")
+                        .value("https://storage.googleapis.com/bucket/image/problem-22/photo.jpg"))
                 .andExpect(jsonPath("$.perceiveGrade").value("V5"));
     }
 
@@ -178,7 +194,9 @@ public class WallSectionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.problemId").value(22));
+                .andExpect(jsonPath("$.problemId").value(22))
+                .andExpect(jsonPath("$.imageURL")
+                        .value("https://storage.googleapis.com/bucket/image/problem-22/photo.jpg"));
     }
 
     @Test

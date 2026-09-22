@@ -3,12 +3,15 @@ package app.VBeta.application.support.cloud;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageRequest;
 import app.VBeta.api.dto.discussions.video.CloudFileStorageResponse;
 import app.VBeta.api.dto.image.ImageStorageRequest;
-import app.VBeta.application.support.problem.ClimbingProblemManager;
+import app.VBeta.domain.model.climb.ClimbingProblem;
+import app.VBeta.domain.model.climb.LifecycleStatus;
+import app.VBeta.repository.ClimbingProblemRepository;
 import com.google.cloud.storage.StorageException;
 import org.springframework.stereotype.Service;
 
 import java.net.URL;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -18,12 +21,12 @@ import java.util.UUID;
 @Service
 public class CloudStorageManager {
     private final GcpFileStorageAdapter gcpFileStorageAdapter;
-    private final ClimbingProblemManager climbingProblemManager;
+    private final ClimbingProblemRepository climbingProblemRepository;
 
     public  CloudStorageManager(GcpFileStorageAdapter gcpFileStorageAdapter,
-                                ClimbingProblemManager climbingProblemManager) {
+                                ClimbingProblemRepository climbingProblemRepository) {
         this.gcpFileStorageAdapter = gcpFileStorageAdapter;
-        this.climbingProblemManager = climbingProblemManager;
+        this.climbingProblemRepository = climbingProblemRepository;
     }
 
     public CloudFileStorageResponse createVideoSignedUrl(CloudFileStorageRequest request) {
@@ -227,6 +230,8 @@ public class CloudStorageManager {
     }
 
     private boolean checkForActiveClimbingProblem(Long problemId){
-        return climbingProblemManager.getActiveProblem(problemId) != null;
+        Optional<ClimbingProblem> result = climbingProblemRepository.findById(problemId);
+        return result.isPresent()
+                && !LifecycleStatus.ARCHIVE.equals(result.get().getProblemStatus());
     }
 }

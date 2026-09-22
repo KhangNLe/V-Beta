@@ -69,7 +69,7 @@ public class WallSectionManager {
         section.setWallInfo(request.wallSectionInfo());
         section.setWallSectionName(request.wallSectionName());
         section.setImageObjectName(request.objectFileName());
-        section.setImageObjectName(request.imageURL());
+        section.setWallImageUrl(request.imageURL());
         return wallSectionRepository.save(section);
     }
 
