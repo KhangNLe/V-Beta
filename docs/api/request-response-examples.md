@@ -77,10 +77,19 @@ GET /api/home/wall-sections
   {
     "wallSectionID": 1,
     "wallSectionName": "Main Wall",
-    "wallSectionInfo": "Comp style problems"
+    "wallSectionInfo": "Comp style problems",
+    "imageURL": "https://storage.googleapis.com/bucket/image/wallSection-1/uuid-section.webp"
+  },
+  {
+    "wallSectionID": 2,
+    "wallSectionName": "Cave",
+    "wallSectionInfo": "Steep cave",
+    "imageURL": null
   }
 ]
 ```
+
+`imageURL` is `string | null`. When present, it is the public GCS URL for the wall thumbnail.
 
 ## 4) Create Wall Section (Admin Action)
 
@@ -95,9 +104,13 @@ Authorization: Bearer <firebase_id_token>
 ```json
 {
   "wallSectionName": "Training Wall",
-  "wallSectionInfo": "Endurance circuits"
+  "wallSectionInfo": "Endurance circuits",
+  "objectFileName": null,
+  "imageURL": null
 }
 ```
+
+`objectFileName` and `imageURL` are optional (omit or `null` when creating without an image).
 
 ### Response (201)
 
@@ -105,8 +118,40 @@ Authorization: Bearer <firebase_id_token>
 {
   "wallSectionID": 5,
   "wallSectionName": "Training Wall",
-  "wallSectionInfo": "Endurance circuits"
+  "wallSectionInfo": "Endurance circuits",
+  "imageURL": null
 }
+```
+
+## 4b) List Problems for Wall Section (Public)
+
+### Request
+
+```http
+GET /api/home/wall-sections/1/problems
+```
+
+### Response (200)
+
+```json
+[
+  {
+    "problemId": 22,
+    "holdColor": "BLUE",
+    "info": "Crimpy sequence",
+    "createdDate": "2026-04-20",
+    "assignedGrade": "V5",
+    "imageURL": "https://storage.googleapis.com/bucket/image/problem-22/uuid-photo.jpg"
+  },
+  {
+    "problemId": 23,
+    "holdColor": "RED",
+    "info": "Slab warmup",
+    "createdDate": "2026-04-21",
+    "assignedGrade": "V1",
+    "imageURL": null
+  }
+]
 ```
 
 ## 5) Get Problem Detail (Public)
@@ -126,7 +171,8 @@ GET /api/home/wall-sections/1/problems/22
     "holdColor": "BLUE",
     "info": "Crimpy sequence",
     "createdDate": "2026-04-20T18:10:00",
-    "assignedGrade": "V5"
+    "assignedGrade": "V5",
+    "imageURL": "https://storage.googleapis.com/bucket/image/problem-22/uuid-photo.jpg"
   },
   "perceiveGrade": "V5",
   "discussion": [
@@ -442,10 +488,21 @@ GET /api/search/1?min=V0&max=V5
     "holdColor": "RED",
     "info": "RED V0-V1",
     "createdDate": "2026-07-21T12:00:00",
-    "assignedGrade": "V0"
+    "assignedGrade": "V0",
+    "imageURL": "https://storage.googleapis.com/bucket/image/problem-2/uuid-photo.webp"
+  },
+  {
+    "problemId": 8,
+    "holdColor": "BLACK",
+    "info": "Compression boulder",
+    "createdDate": "2026-07-22T09:00:00",
+    "assignedGrade": "V4",
+    "imageURL": null
   }
 ]
 ```
+
+Same `ClimbingProblemResponse` shape as wall problem lists (`imageURL` is `string | null`).
 
 ## 13) Filter Problems by Grade Range Ascending (Public)
 
@@ -559,12 +616,14 @@ Authorization: Bearer <firebase_id_token>
           "holdColor": "Red",
           "info": "Crimpy warmup",
           "createdDate": "2026-08-01",
-          "assignedGrade": "V4"
+          "assignedGrade": "V4",
+          "imageURL": null
         },
         "wallSection": {
           "wallSectionID": 10,
           "wallSectionName": "Cave",
-          "wallSectionInfo": "Steep cave"
+          "wallSectionInfo": "Steep cave",
+          "imageURL": "https://storage.googleapis.com/bucket/image/wallSection-10/uuid-section.webp"
         },
         "user": null,
         "reporters": [
