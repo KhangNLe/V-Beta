@@ -1,6 +1,7 @@
 package app.VBeta.application.support.problem;
 
 import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;
+import app.VBeta.application.support.cloud.CloudStorageManager;
 import app.VBeta.domain.model.climb.*;
 import app.VBeta.repository.ClimbingGradeRepository;
 import app.VBeta.repository.ClimbingProblemRepository;
@@ -23,17 +24,21 @@ import java.util.*;
 public class ClimbingProblemManager {
     private final ClimbingProblemRepository climbingProblemRepository;
     private final ClimbingGradeRepository climbingGradeRepository;
+    private final CloudStorageManager cloudStorageManager;
 
     /**
      * Constructs a new {@code ClimbingProblemManager} with problem and grade repositories.
      *
      * @param climbingProblemRepository repository for climbing problem entities
      * @param climbingGradeRepository repository for grade definition lookups
+     * @param cloudStorageManager manager for deleting superseded GCS image objects
      */
     public ClimbingProblemManager(ClimbingProblemRepository climbingProblemRepository,
-                                  ClimbingGradeRepository climbingGradeRepository){
+                                  ClimbingGradeRepository climbingGradeRepository,
+                                  CloudStorageManager cloudStorageManager){
         this.climbingProblemRepository = climbingProblemRepository;
         this.climbingGradeRepository = climbingGradeRepository;
+        this.cloudStorageManager = cloudStorageManager;
     }
 
     /**
@@ -183,7 +188,25 @@ public class ClimbingProblemManager {
      */
     public void removeProblemImage(ClimbingProblem problem){
         problem.setProblemImageUrl(null);
-        problem.setProblemImageUrl(null);
+        problem.setObjectImageName(null);
         climbingProblemRepository.save(problem);
+    }
+
+    public ClimbingProblem updateProblem(Long problemId, ClimbingProblemCreationRequest update){
+        ClimbingProblem problem = getActiveProblem(problemId);
+        if (problem == null){
+            throw new RuntimeException("Problem not found or no longer active.");
+        }
+        problem.setHoldColor(update.holdColor());
+        problem.setProblemInfo(update.info());
+        problem.setClimbingGrade(getClimbingGrade(update.assignedGrade()));
+
+        if (!Objects.equals(problem.getObjectImageName(), update.objectFileName())){
+            cloudStorageManager.deleteStorageObject(problem.getObjectImageName());
+            problem.setObjectImageName(update.objectFileName());
+            problem.setProblemImageUrl(update.imageURL());
+        }
+
+        return climbingProblemRepository.save(problem);
     }
 }

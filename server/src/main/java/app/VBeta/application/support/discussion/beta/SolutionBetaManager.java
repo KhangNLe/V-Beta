@@ -132,7 +132,7 @@ public class SolutionBetaManager {
     public void removeAllDiscussionRelatedSolutionBeta(List<DiscussionRoot> discussionRoots){
         List<SolutionBeta> solutionBetas = getAllUserRelateSolutionBeta(discussionRoots);
         solutionBetas.forEach(sb ->
-                gcpFileStorageAdapter.deleteFile(gcpFileStorageAdapter.getPublicBucketName(), sb.getBetaName())
+                cloudStorageManager.deleteStorageObject(sb.getBetaName())
         );
         solutionBetaRepository.deleteAll(solutionBetas);
     }

@@ -50,18 +50,24 @@ Account session (`POST /api/accounts/session`) still throws `ResponseStatusExcep
 
 ### Wall and Problem Read Endpoints
 
+Guest-readable. Wall and problem summaries include optional thumbnail metadata so clients can render images without extra round-trips.
+
+- `WallSectionResponse` fields: `wallSectionID`, `wallSectionName`, `wallSectionInfo`, `imageURL` (`string | null`).
+- `ClimbingProblemResponse` fields: `problemId`, `holdColor`, `info`, `createdDate`, `assignedGrade`, `imageURL` (`string | null`).
+- `imageURL` is the public GCS display URL when an image is attached; `null` when none is set. JSON property name is `imageURL` (not `imageUrl`).
+
 - `GET /api/home/wall-sections`
-  - Purpose: list wall sections.
-  - Response: array of wall sections (`wallSectionID`, `wallSectionName`, `wallSectionInfo`).
+  - Purpose: list wall sections (main page wall list / section header source).
+  - Response: array of `WallSectionResponse`.
 
 - `GET /api/home/wall-sections/{wallSectionId}/problems`
   - Purpose: list active problems for a wall section.
-  - Response: array of problems (`problemId`, `holdColor`, `info`, `createdDate`, `assignedGrade`).
+  - Response: array of `ClimbingProblemResponse`.
 
 - `GET /api/home/wall-sections/{wallSectionId}/problems/{problemId}`
   - Purpose: problem detail with discussion and perceived grade.
   - Response:
-    - `climbingProblem` (problem details),
+    - `climbingProblem` (`ClimbingProblemResponse`, including `imageURL`),
     - `perceiveGrade` (aggregate/perceived value),
     - `discussion` (ordered `UserDiscussionData` entries).
 
@@ -76,7 +82,7 @@ Public guest-readable endpoints. Returns only **active** problems. Grade bounds 
   - Query params:
     - `min` / `max` (`GradeDefinition`, e.g. `V0`, `V5`)
     - `sort` (optional): `asc` or `desc`
-  - Response: array of `ClimbingProblemResponse` (`problemId`, `holdColor`, `info`, `createdDate`, `assignedGrade`).
+  - Response: array of `ClimbingProblemResponse` (`problemId`, `holdColor`, `info`, `createdDate`, `assignedGrade`, `imageURL`).
   - Errors:
     - `400` when `min` is harder than `max`
     - `404` when the wall section does not exist
@@ -303,7 +309,9 @@ There is no mark-all-read endpoint in this slice.
   - Request body:
     - `wallSectionName`
     - `wallSectionInfo`
-  - Response: created wall section.
+    - `objectFileName` (optional GCS object key)
+    - `imageURL` (optional public display URL)
+  - Response: created `WallSectionResponse` (includes `imageURL`).
 
 - `DELETE /api/home/wall-section/{wallSectionId}/delete`
   - Required action: `DELETE_WALL`
@@ -322,12 +330,14 @@ There is no mark-all-read endpoint in this slice.
     - `holdColor`
     - `info`
     - `assignedGrade`
-  - Response: created problem record.
+    - `objectFileName` (optional GCS object key)
+    - `imageURL` (optional public display URL)
+  - Response: created `ClimbingProblemResponse` (includes `imageURL`).
 
 - `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`
   - Required action: `DELETE_PROBLEM`
   - Purpose: delete problem and return updated section problems.
-  - Response: array of remaining problems.
+  - Response: array of remaining `ClimbingProblemResponse` records.
 
 ### Discussion Authorization
 

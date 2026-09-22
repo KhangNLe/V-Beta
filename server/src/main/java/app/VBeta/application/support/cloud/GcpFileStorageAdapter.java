@@ -23,6 +23,8 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
     private final String publicBucketName;
     private final long expirationMinutes;
 
+    private static final long MAX_IMAGE_BYTES = 8L * 1024 * 1024;
+
     /**
      * Creates a cloud storage adapter with configured bucket and URL expiration.
      *
@@ -84,4 +86,25 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
         storage.delete(idWithGeneration);
     }
 
+    public void assertImageObjectWithinSizeLimit(String objectFileName){
+        if (objectFileName == null || objectFileName.isEmpty()){
+            throw new IllegalArgumentException("Object file name cannot be null or empty");
+        }
+
+        Blob blob = storage.get(publicBucketName, objectFileName,
+                Storage.BlobGetOption.fields(Storage.BlobField.SIZE, Storage.BlobField.CONTENT_TYPE));
+
+        if (blob == null){
+            throw new IllegalArgumentException("Uploaded image not found in storage");
+        }
+
+        long size = blob.getSize();
+        if (size <= 0){
+            storage.delete(blob.getBlobId());
+            throw new IllegalArgumentException("Uploaded image is empty");
+        } else if (size > MAX_IMAGE_BYTES){
+            storage.delete(blob.getBlobId());
+            throw new IllegalArgumentException("Uploaded image exceeds 8 MB limit");
+        }
+    }
 }
