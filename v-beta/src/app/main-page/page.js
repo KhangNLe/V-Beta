@@ -25,12 +25,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   Card,
   CardAction,
   CardContent,
@@ -40,14 +34,28 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import GuestBanner from "@/components/GuestBanner";
+import WallSectionAdminMenu from "@/components/WallSectionAdminMenu";
 import PageLoader from "@/components/ui/PageLoader";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { getAccountRole } from "@/lib/accountSession";
+import {
+  isAllowedWallImageFile,
+  prepareWallImageFile,
+  uploadWallSectionImage,
+  WALL_IMAGE_ACCEPT,
+} from "@/api/socialImage";
 import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
-import { ChevronDown, MoreVertical } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
+
+const WALL_SECTION_PLACEHOLDER_SRC = "/co-op.png";
+
+/** @param {{ imageURL?: string | null, imageUrl?: string | null }} section */
+function sectionImageURL(section) {
+  return section?.imageURL ?? section?.imageUrl ?? null;
+}
 
 const GYM_INFO = {
   name: "Minnesota Climbing Cooperative",
@@ -74,9 +82,25 @@ export default function MainPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [newSectionInfo, setNewSectionInfo] = useState('');
+  const [newSectionPhoto, setNewSectionPhoto] = useState(/** @type {File | null} */ (null));
+  const [newSectionPhotoPreview, setNewSectionPhotoPreview] = useState(/** @type {string | null} */ (null));
+  const [addUploadProgress, setAddUploadProgress] = useState(0);
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const addPhotoInputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const isSignedIn = !!user;
+
+  const clearAddForm = useCallback(() => {
+    setNewSectionName('');
+    setNewSectionInfo('');
+    setNewSectionPhoto(null);
+    setNewSectionPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setAddUploadProgress(0);
+    if (addPhotoInputRef.current) addPhotoInputRef.current.value = '';
+  }, []);
 
   const loadSections = useCallback(async (currentUser) => {
     try {
@@ -98,6 +122,46 @@ export default function MainPage() {
     router.push(`/wall/${section.wallSectionID}`);
   };
 
+  const handleAddPhotoSelected = async (event) => {
+    const input = event.target;
+    const file = input.files?.[0] ?? null;
+    if (!file) return;
+
+    if (!isAllowedWallImageFile(file)) {
+      toast.error(
+        "Please choose a phone photo (JPEG/PNG/WebP, or iPhone HEIC/HEIF).",
+      );
+      input.value = "";
+      return;
+    }
+
+    try {
+      const prepared = await prepareWallImageFile(file);
+      setNewSectionPhotoPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(prepared);
+      });
+      setNewSectionPhoto(prepared);
+    } catch (err) {
+      console.error("Prepare wall photo failed:", err);
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Could not read that photo. Try another image.",
+      );
+      input.value = "";
+    }
+  };
+
+  const handleClearAddPhoto = () => {
+    setNewSectionPhoto(null);
+    setNewSectionPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    if (addPhotoInputRef.current) addPhotoInputRef.current.value = '';
+  };
+
   const handleAddSection = async (e) => {
     e.preventDefault();
     if (!isAdmin || !user || addSubmitting) return;
@@ -111,22 +175,42 @@ export default function MainPage() {
 
     try {
       setAddSubmitting(true);
-      await addWallSection(user, {
+      setAddUploadProgress(0);
+
+      const created = await addWallSection(user, {
         wallSectionName: name,
         wallSectionInfo: info,
       });
+      const createdId = created?.wallSectionID;
+
+      if (newSectionPhoto) {
+        if (createdId == null) {
+          throw new Error('Wall section was created but no id was returned for photo upload.');
+        }
+        await uploadWallSectionImage(user, createdId, newSectionPhoto, {
+          onProgress: setAddUploadProgress,
+        });
+      }
+
       await loadSections(user);
-      setNewSectionName('');
-      setNewSectionInfo('');
+      clearAddForm();
       setAddOpen(false);
-      toast.success('Wall section added.');
+      toast.success(
+        newSectionPhoto
+          ? 'Wall section added with photo.'
+          : 'Wall section added.',
+      );
     } catch (err) {
       console.error('Add wall section failed:', err);
-      toast.error(
-        err instanceof Error ? err.message : 'Failed to add wall section.',
-      );
+      // Section may already exist if photo upload failed after create — refresh list.
+      try {
+        await loadSections(user);
+      } catch {
+        /* ignore refresh error */
+      }
     } finally {
       setAddSubmitting(false);
+      setAddUploadProgress(0);
     }
   };
 
@@ -152,6 +236,16 @@ export default function MainPage() {
       setDeleteSubmitting(false);
     }
   }, [deleteSubmitting, deleteTarget, isAdmin, loadSections, user]);
+
+  const handleSectionUpdated = useCallback((wallSectionID, patch) => {
+    setSections((prev) =>
+      prev.map((section) =>
+        section.wallSectionID === wallSectionID
+          ? { ...section, ...patch }
+          : section,
+      ),
+    );
+  }, []);
 
   if (!ready) return <PageLoader message="Loading…" />;
 
@@ -263,48 +357,44 @@ export default function MainPage() {
           </p>
         ) : (
           <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
-            {sections.map((section) => (
+            {sections.map((section) => {
+              const imageURL = sectionImageURL(section);
+              return (
               <Card
                 key={section.wallSectionID}
-                className="gap-2.5 overflow-hidden p-0 py-5 ring-0"
+                className="gap-2.5 overflow-hidden p-0 py-0 ring-0"
                 style={{
                   ...card.surface,
                   fontFamily,
                   position: "relative",
                 }}
               >
-                <CardHeader className="px-5 pt-0 pb-0">
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imageURL || WALL_SECTION_PLACEHOLDER_SRC}
+                    alt={imageURL ? "" : "Default wall section photo"}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+
+                <CardHeader className="px-5 pt-5 pb-0">
                   <CardTitle
                     className="min-w-0 text-lg font-semibold leading-[1.3]"
                     style={{ color: colors.text }}
                   >
                     {section.wallSectionName}
                   </CardTitle>
-                  {isAdmin && (
+                  {isAdmin && user && (
                     <CardAction>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              className="shrink-0 text-muted-foreground"
-                              aria-label="Section actions"
-                            />
-                          }
-                        >
-                          <MoreVertical className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => setDeleteTarget(section)}
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <WallSectionAdminMenu
+                        user={user}
+                        section={section}
+                        onSectionUpdated={(patch) =>
+                          handleSectionUpdated(section.wallSectionID, patch)
+                        }
+                        onDeleteSection={() => setDeleteTarget(section)}
+                      />
                     </CardAction>
                   )}
                 </CardHeader>
@@ -326,7 +416,8 @@ export default function MainPage() {
                   </Button>
                 </CardFooter>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -335,21 +426,19 @@ export default function MainPage() {
       <Dialog
         open={addOpen}
         onOpenChange={(open) => {
+          if (addSubmitting) return;
           setAddOpen(open);
-          if (!open) {
-            setNewSectionName('');
-            setNewSectionInfo('');
-          }
+          if (!open) clearAddForm();
         }}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add Wall Section</DialogTitle>
             <DialogDescription>
-              Enter a name and description for this section.
+              Enter a name and description. You can optionally add a photo.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleAddSection} className="grid gap-3">
+          <form onSubmit={handleAddSection} className="grid gap-4">
             <div className="grid gap-1.5">
               <label htmlFor="add-ws-name" className="text-sm font-medium text-foreground">
                 Name
@@ -360,9 +449,10 @@ export default function MainPage() {
                 type="text"
                 autoComplete="off"
                 required
+                disabled={addSubmitting}
                 value={newSectionName}
                 onChange={(ev) => setNewSectionName(ev.target.value)}
-                className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-60"
                 placeholder="e.g. Bouldering Wall A"
               />
             </div>
@@ -375,22 +465,84 @@ export default function MainPage() {
                 name="info"
                 rows={3}
                 required
+                disabled={addSubmitting}
                 value={newSectionInfo}
                 onChange={(ev) => setNewSectionInfo(ev.target.value)}
-                className="resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-60"
                 placeholder="Short summary for climbers"
               />
             </div>
+
+            <div className="grid gap-2">
+              <span className="text-sm font-medium text-foreground">Photo (optional)</span>
+              <div className="overflow-hidden rounded-md border border-border">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={newSectionPhotoPreview || WALL_SECTION_PLACEHOLDER_SRC}
+                  alt={
+                    newSectionPhotoPreview
+                      ? "Selected wall section photo"
+                      : "Default wall section photo"
+                  }
+                  className="aspect-[16/10] w-full object-cover"
+                />
+              </div>
+              {!newSectionPhoto && (
+                <p className="m-0 text-sm text-muted-foreground">
+                  This default photo appears on the wall section until you upload one.
+                </p>
+              )}
+              <input
+                ref={addPhotoInputRef}
+                type="file"
+                accept={WALL_IMAGE_ACCEPT}
+                className="hidden"
+                aria-hidden
+                tabIndex={-1}
+                onChange={handleAddPhotoSelected}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={addSubmitting}
+                  onClick={() => addPhotoInputRef.current?.click()}
+                >
+                  {newSectionPhoto ? "Change photo" : "Upload photo"}
+                </Button>
+                {newSectionPhoto && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={addSubmitting}
+                    onClick={handleClearAddPhoto}
+                  >
+                    Remove photo
+                  </Button>
+                )}
+              </div>
+              {addSubmitting && newSectionPhoto && addUploadProgress > 0 && (
+                <p className="m-0 text-xs text-muted-foreground" role="status">
+                  Uploading photo… {addUploadProgress}%
+                </p>
+              )}
+            </div>
+
             <DialogFooter className="mt-1 gap-2 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
+                disabled={addSubmitting}
                 onClick={() => setAddOpen(false)}
               >
                 Cancel
               </Button>
               <Button type="submit" disabled={addSubmitting} style={buttons.primary}>
-                {addSubmitting ? "Adding..." : "Add section"}
+                {addSubmitting
+                  ? newSectionPhoto && addUploadProgress > 0
+                    ? `Uploading… ${addUploadProgress}%`
+                    : "Adding..."
+                  : "Add section"}
               </Button>
             </DialogFooter>
           </form>

@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import GuestBanner from "@/components/GuestBanner";
+import WallSectionAdminMenu from "@/components/WallSectionAdminMenu";
 import PageLoader from "@/components/ui/PageLoader";
 import { Button } from "@/components/ui/button";
 import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
@@ -51,6 +52,13 @@ import { getAccountRole } from "@/lib/accountSession";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
+
+const WALL_SECTION_PLACEHOLDER_SRC = "/co-op.png";
+
+/** @param {{ imageURL?: string | null, imageUrl?: string | null } | null} section */
+function sectionImageURL(section) {
+  return section?.imageURL ?? section?.imageUrl ?? null;
+}
 
 const GRADE_OPTIONS = [
   "VB",
@@ -127,6 +135,13 @@ export default function WallSectionPage() {
     const roleUpper = getAccountRole(account).toUpperCase();
     return roleUpper.includes("SETTER");
   }, [account]);
+  const isAdmin = useMemo(() => {
+    return getAccountRole(account).toUpperCase().includes("ADMIN");
+  }, [account]);
+
+  const handleSectionUpdated = useCallback((patch) => {
+    setSection((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
 
   const rawWallSectionID = params?.wallSectionID;
   const wallSectionID = useMemo(() => {
@@ -399,6 +414,7 @@ export default function WallSectionPage() {
     : null;
 
   const isInvalidGradeRange = gradeIndex(draftMinGrade) > gradeIndex(draftMaxGrade);
+  const wallImageURL = sectionImageURL(section);
 
   if (!ready) return <PageLoader message="Loading…" />;
   if (loading) return <PageLoader message="Loading wall section…" />;
@@ -429,21 +445,45 @@ export default function WallSectionPage() {
               position: "relative",
               overflow: "hidden",
               fontFamily,
-              padding: "22px 22px 22px 20px",
+              padding: "0",
             }}
           >
             <div style={card.accentBar} aria-hidden />
-            <CardHeader className="rounded-none px-0 pt-0 pb-0">
-              <CardTitle className="m-0 text-[1.75rem] font-bold" style={{ color: colors.text }}>
-                {section?.wallSectionName || `Section ${wallSectionID}`}
-              </CardTitle>
-              <CardDescription
-                className="mt-2 max-w-[65ch] text-[0.9375rem] leading-[1.55]"
-                style={{ color: colors.muted }}
-              >
-                {section?.wallSectionInfo || "No section description available."}
-              </CardDescription>
-            </CardHeader>
+            <div className="flex flex-col items-stretch sm:flex-row">
+              <div className="relative h-48 w-full shrink-0 overflow-hidden bg-muted sm:w-64">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={wallImageURL || WALL_SECTION_PLACEHOLDER_SRC}
+                  alt={
+                    wallImageURL
+                      ? `${section?.wallSectionName || "Wall section"} photo`
+                      : "Default wall section photo"
+                  }
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              </div>
+              <CardHeader className="min-w-0 flex-1 rounded-none px-5 pt-5 pb-5">
+                <CardTitle className="m-0 text-[1.75rem] font-bold" style={{ color: colors.text }}>
+                  {section?.wallSectionName || `Section ${wallSectionID}`}
+                </CardTitle>
+                {isAdmin && user && section && wallSectionID && (
+                  <CardAction>
+                    <WallSectionAdminMenu
+                      user={user}
+                      section={section}
+                      onSectionUpdated={handleSectionUpdated}
+                      ariaLabel="Wall section actions"
+                    />
+                  </CardAction>
+                )}
+                <CardDescription
+                  className="mt-2 max-w-[65ch] text-[0.9375rem] leading-[1.55]"
+                  style={{ color: colors.muted }}
+                >
+                  {section?.wallSectionInfo || "No section description available."}
+                </CardDescription>
+              </CardHeader>
+            </div>
           </Card>
         </section>
 
