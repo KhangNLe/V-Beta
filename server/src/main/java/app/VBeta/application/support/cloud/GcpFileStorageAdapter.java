@@ -1,4 +1,4 @@
-package app.VBeta.application.support.discussion.beta;
+package app.VBeta.application.support.cloud;
 
 import com.google.cloud.storage.*;
 import lombok.Getter;
@@ -22,6 +22,8 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
     @Getter
     private final String publicBucketName;
     private final long expirationMinutes;
+
+    private static final long MAX_IMAGE_BYTES = 8L * 1024 * 1024;
 
     /**
      * Creates a cloud storage adapter with configured bucket and URL expiration.
@@ -84,4 +86,43 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
         storage.delete(idWithGeneration);
     }
 
+    public void assertImageObjectWithinSizeLimit(String objectFileName){
+        if (objectFileName == null || objectFileName.isEmpty()){
+            throw new IllegalArgumentException("Object file name cannot be null or empty");
+        }
+
+        Blob blob = storage.get(publicBucketName, objectFileName,
+                Storage.BlobGetOption.fields(Storage.BlobField.SIZE, Storage.BlobField.CONTENT_TYPE));
+
+        if (blob == null){
+            throw new IllegalArgumentException("Uploaded image not found in storage");
+        }
+
+        long size = blob.getSize();
+        if (size <= 0){
+            storage.delete(blob.getBlobId());
+            throw new IllegalArgumentException("Uploaded image is empty");
+        } else if (size > MAX_IMAGE_BYTES){
+            storage.delete(blob.getBlobId());
+            throw new IllegalArgumentException("Uploaded image exceeds 8 MB limit");
+        }
+
+        grantPublicRead(blob);
+    }
+
+    /**
+     * Allows anonymous browser {@code <img>} loads of the uploaded object.
+     * No-op when the bucket uses uniform access and already grants public read via IAM.
+     */
+    private void grantPublicRead(Blob blob){
+        try {
+            storage.createAcl(
+                    blob.getBlobId(),
+                    Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)
+            );
+        } catch (StorageException ignored) {
+            // Uniform bucket-level access rejects object ACLs. Public GET then
+            // depends on bucket IAM (allUsers as Storage Object Viewer).
+        }
+    }
 }

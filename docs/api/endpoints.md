@@ -50,18 +50,24 @@ Account session (`POST /api/accounts/session`) still throws `ResponseStatusExcep
 
 ### Wall and Problem Read Endpoints
 
+Guest-readable. Wall and problem summaries include optional thumbnail metadata so clients can render images without extra round-trips.
+
+- `WallSectionResponse` fields: `wallSectionID`, `wallSectionName`, `wallSectionInfo`, `imageURL` (`string | null`).
+- `ClimbingProblemResponse` fields: `problemId`, `holdColor`, `info`, `createdDate`, `assignedGrade`, `imageURL` (`string | null`).
+- `imageURL` is the public GCS display URL when an image is attached; `null` when none is set. JSON property name is `imageURL` (not `imageUrl`).
+
 - `GET /api/home/wall-sections`
-  - Purpose: list wall sections.
-  - Response: array of wall sections (`wallSectionID`, `wallSectionName`, `wallSectionInfo`).
+  - Purpose: list wall sections (main page wall list / section header source).
+  - Response: array of `WallSectionResponse`.
 
 - `GET /api/home/wall-sections/{wallSectionId}/problems`
   - Purpose: list active problems for a wall section.
-  - Response: array of problems (`problemId`, `holdColor`, `info`, `createdDate`, `assignedGrade`).
+  - Response: array of `ClimbingProblemResponse`.
 
 - `GET /api/home/wall-sections/{wallSectionId}/problems/{problemId}`
   - Purpose: problem detail with discussion and perceived grade.
   - Response:
-    - `climbingProblem` (problem details),
+    - `climbingProblem` (`ClimbingProblemResponse`, including `imageURL`),
     - `perceiveGrade` (aggregate/perceived value),
     - `discussion` (ordered `UserDiscussionData` entries).
 
@@ -76,7 +82,7 @@ Public guest-readable endpoints. Returns only **active** problems. Grade bounds 
   - Query params:
     - `min` / `max` (`GradeDefinition`, e.g. `V0`, `V5`)
     - `sort` (optional): `asc` or `desc`
-  - Response: array of `ClimbingProblemResponse` (`problemId`, `holdColor`, `info`, `createdDate`, `assignedGrade`).
+  - Response: array of `ClimbingProblemResponse` (`problemId`, `holdColor`, `info`, `createdDate`, `assignedGrade`, `imageURL`).
   - Errors:
     - `400` when `min` is harder than `max`
     - `404` when the wall section does not exist
@@ -158,6 +164,59 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
     - `"User deleted their own discussion"` for owner deletes
     - `"Admin forced delete the discussion"` when an admin deletes another user's beta
   - Response: `200` (empty body).
+
+### Image Upload (Authenticated + Action-Gated)
+
+Wall-section and problem images use the signed-PUT pattern documented for solution betas. Requests bind DTOs from **query parameters** (`@ModelAttribute`), not JSON bodies.
+
+- `GET /api/social/image/signed-url`
+  - Purpose: generate signed upload URL for a wall section, climbing problem, or user profile image.
+  - Request (`ImageStorageRequest` query params):
+    - `fileName` (required)
+    - `contentType` (required; `image/jpeg`, `image/png`, or `image/webp`)
+    - `imageTargetType` (`WALL_SECTION`, `CLIMBING_PROBLEM`, `USER_ACCOUNT`)
+    - `wallSectionId` when `imageTargetType=WALL_SECTION`
+    - `problemId` when `imageTargetType=CLIMBING_PROBLEM`
+    - `userid` when `imageTargetType=USER_ACCOUNT`
+  - Authorization:
+    - `WALL_SECTION` → `UPLOAD_WALL_IMAGE` (admin)
+    - `CLIMBING_PROBLEM` → `UPLOAD_PROBLEM_IMAGE` (setter)
+    - `USER_ACCOUNT` → caller must match `userid`
+  - Response (`CloudFileStorageResponse`):
+    - `signedURL`
+    - `method` (`PUT`)
+    - `uploadObjectName`
+    - `publicURL`
+  - Errors:
+    - `400` unsupported extension/content type (`IllegalArgumentException`)
+    - `404` user missing or role not permitted (`RuntimeException`)
+
+- `PATCH /api/social/image/upload`
+  - Purpose: persist image metadata after the client uploads to GCS. The UI calls this when the user saves or submits add, not when they pick a file. A previous GCS object is deleted when its key differs from `objectFileName`. The stored object must be at most 8 MB. `USER_ACCOUNT` is accepted by the API; profile persistence and UI are not part of Sprint 6.
+  - Request (`ProfileImageCreationRequest` query params):
+    - `targetType` (required)
+    - `objectFileName` (required, max 250)
+    - `imageUrl` (required, max 250)
+    - `wallSectionId` when `targetType=WALL_SECTION`
+    - `climbingProblemId` when `targetType=CLIMBING_PROBLEM`
+    - `userId` when `targetType=USER_ACCOUNT`
+  - Response: `200` (empty body)
+  - Errors:
+    - `400` validation, authorization, or business rule failure (`RuntimeException`)
+
+- `DELETE /api/social/image/problem?climbingProblemId={id}`
+  - Purpose: delete the GCS object and clear problem image metadata.
+  - Required action: `UPLOAD_PROBLEM_IMAGE`
+  - Response: `200` (empty body)
+  - Errors: `404` when unauthorized, user/problem missing, or storage delete fails
+
+- `DELETE /api/social/image/wall?wallSectionId={id}`
+  - Purpose: delete the GCS object and clear wall section image metadata.
+  - Required action: `UPLOAD_WALL_IMAGE`
+  - Response: `200` (empty body)
+  - Errors: `404` when unauthorized, wall missing, or storage delete fails
+
+Feature overview: `docs/features/wall-problem-images.md`.
 
 ### Content Reports (Authenticated)
 
@@ -250,7 +309,19 @@ There is no mark-all-read endpoint in this slice.
   - Request body:
     - `wallSectionName`
     - `wallSectionInfo`
-  - Response: created wall section.
+    - `objectFileName` (optional GCS object key)
+    - `imageURL` (optional public display URL)
+  - Response: created `WallSectionResponse` (includes `imageURL`).
+
+- `PATCH /api/home/wall-section/{wallSectionId}/update`
+  - Required action: `CREATE_WALL`
+  - Purpose: update wall section name, description, and optional image metadata.
+  - Request body: `WallSectionCreationRequest` (`wallSectionName`, `wallSectionInfo`, `objectFileName`, `imageURL`).
+  - Photo rules:
+    - `objectFileName` null and current `imageURL` keeps the stored photo.
+    - `objectFileName` null and `imageURL` null deletes the GCS object and clears both image columns.
+    - A new `objectFileName` that differs from the stored key replaces the previous object.
+  - Response: updated `WallSectionResponse` (includes `imageURL`).
 
 - `DELETE /api/home/wall-section/{wallSectionId}/delete`
   - Required action: `DELETE_WALL`
@@ -269,12 +340,24 @@ There is no mark-all-read endpoint in this slice.
     - `holdColor`
     - `info`
     - `assignedGrade`
-  - Response: created problem record.
+    - `objectFileName` (optional GCS object key)
+    - `imageURL` (optional public display URL)
+  - Response: created `ClimbingProblemResponse` (includes `imageURL`).
+
+- `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/update`
+  - Required action: `CREATE_PROBLEM`
+  - Purpose: update hold color, notes, assigned grade, and optional image metadata.
+  - Request body: `ClimbingProblemCreationRequest` (`holdColor`, `info`, `assignedGrade`, `objectFileName`, `imageURL`).
+  - Photo rules:
+    - `objectFileName` null and current `imageURL` keeps the stored photo.
+    - `objectFileName` null and `imageURL` null deletes the GCS object and clears both image columns.
+    - A new `objectFileName` that differs from the stored key replaces the previous object.
+  - Response: updated `ClimbingProblemResponse` (includes `imageURL`).
 
 - `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`
   - Required action: `DELETE_PROBLEM`
   - Purpose: delete problem and return updated section problems.
-  - Response: array of remaining problems.
+  - Response: array of remaining `ClimbingProblemResponse` records.
 
 ### Discussion Authorization
 

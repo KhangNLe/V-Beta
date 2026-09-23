@@ -124,6 +124,29 @@ public class WallSectionController {
     }
 
     /**
+     * Updates wall section name/info (and optional image metadata when provided).
+     *
+     * @param wallSectionId wall section identifier
+     * @param body update payload
+     * @return updated wall section response
+     */
+    @PatchMapping("/wall-section/{wallSectionId}/update")
+    public ResponseEntity<?> updateWallSection(@PathVariable Long wallSectionId,
+                                               @Valid @RequestBody WallSectionCreationRequest body){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            authorizationService.authorize(firebaseUid, ActionDefinition.CREATE_WALL);
+
+            WallSectionResponse response = climbingWallService.updateWallSection(wallSectionId, body);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Deletes a wall section and related climbing problem data.
      *
      * @param wallSectionId wall section identifier
@@ -184,6 +207,32 @@ public class WallSectionController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e){
             return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Updates a climbing problem's details and optional image metadata.
+     * Both {@code objectFileName} and {@code imageURL} null clears the photo.
+     *
+     * @param wallSectionId wall section identifier
+     * @param problemId climbing problem identifier
+     * @param body update payload
+     * @return updated climbing problem response
+     */
+    @PatchMapping("/wall-sections/{wallSectionId}/problems/{problemId}/update")
+    public ResponseEntity<?> updateClimbingProblem(@PathVariable Long wallSectionId,
+                                                    @PathVariable Long problemId,
+                                                    @Valid @RequestBody ClimbingProblemCreationRequest body){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            authorizationService.authorize(firebaseUid, ActionDefinition.CREATE_PROBLEM);
+
+            ClimbingProblemResponse response = climbingWallService.updateClimbDetail(wallSectionId, problemId, body);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

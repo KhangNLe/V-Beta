@@ -77,10 +77,19 @@ GET /api/home/wall-sections
   {
     "wallSectionID": 1,
     "wallSectionName": "Main Wall",
-    "wallSectionInfo": "Comp style problems"
+    "wallSectionInfo": "Comp style problems",
+    "imageURL": "https://storage.googleapis.com/bucket/image/wallSection-1/uuid-section.webp"
+  },
+  {
+    "wallSectionID": 2,
+    "wallSectionName": "Cave",
+    "wallSectionInfo": "Steep cave",
+    "imageURL": null
   }
 ]
 ```
+
+`imageURL` is `string | null`. When present, it is the public GCS URL for the wall thumbnail.
 
 ## 4) Create Wall Section (Admin Action)
 
@@ -95,9 +104,13 @@ Authorization: Bearer <firebase_id_token>
 ```json
 {
   "wallSectionName": "Training Wall",
-  "wallSectionInfo": "Endurance circuits"
+  "wallSectionInfo": "Endurance circuits",
+  "objectFileName": null,
+  "imageURL": null
 }
 ```
+
+`objectFileName` and `imageURL` are optional (omit or `null` when creating without an image).
 
 ### Response (201)
 
@@ -105,8 +118,40 @@ Authorization: Bearer <firebase_id_token>
 {
   "wallSectionID": 5,
   "wallSectionName": "Training Wall",
-  "wallSectionInfo": "Endurance circuits"
+  "wallSectionInfo": "Endurance circuits",
+  "imageURL": null
 }
+```
+
+## 4b) List Problems for Wall Section (Public)
+
+### Request
+
+```http
+GET /api/home/wall-sections/1/problems
+```
+
+### Response (200)
+
+```json
+[
+  {
+    "problemId": 22,
+    "holdColor": "BLUE",
+    "info": "Crimpy sequence",
+    "createdDate": "2026-04-20",
+    "assignedGrade": "V5",
+    "imageURL": "https://storage.googleapis.com/bucket/image/problem-22/uuid-photo.jpg"
+  },
+  {
+    "problemId": 23,
+    "holdColor": "RED",
+    "info": "Slab warmup",
+    "createdDate": "2026-04-21",
+    "assignedGrade": "V1",
+    "imageURL": null
+  }
+]
 ```
 
 ## 5) Get Problem Detail (Public)
@@ -126,7 +171,8 @@ GET /api/home/wall-sections/1/problems/22
     "holdColor": "BLUE",
     "info": "Crimpy sequence",
     "createdDate": "2026-04-20T18:10:00",
-    "assignedGrade": "V5"
+    "assignedGrade": "V5",
+    "imageURL": "https://storage.googleapis.com/bucket/image/problem-22/uuid-photo.jpg"
   },
   "perceiveGrade": "V5",
   "discussion": [
@@ -204,6 +250,71 @@ Authorization: Bearer <firebase_id_token>
   "publicURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4"
 }
 ```
+
+## 7a) Request Signed Upload URL for Wall / Problem / Profile Image
+
+Same signed-PUT contract as solution betas. Spring binds `ImageStorageRequest` from query parameters (`@ModelAttribute`).
+
+### Request (wall section — admin)
+
+```http
+GET /api/social/image/signed-url?fileName=section-image.webp&contentType=image%2Fwebp&imageTargetType=WALL_SECTION&wallSectionId=1
+Authorization: Bearer <firebase_id_token>
+```
+
+### Request (climbing problem — setter)
+
+```http
+GET /api/social/image/signed-url?fileName=problem-image.jpg&contentType=image%2Fjpeg&imageTargetType=CLIMBING_PROBLEM&problemId=1
+Authorization: Bearer <firebase_id_token>
+```
+
+### Response (200)
+
+```json
+{
+  "signedURL": "https://storage.googleapis.com/...",
+  "method": "PUT",
+  "uploadObjectName": "image/wallSection-1/uuid-section-image.webp",
+  "publicURL": "https://storage.googleapis.com/bucket/image/wallSection-1/uuid-section-image.webp"
+}
+```
+
+## 7b) Save Image Metadata After GCS Upload
+
+### Request (wall section)
+
+```http
+PATCH /api/social/image/upload?targetType=WALL_SECTION&objectFileName=image/wallSection-1/uuid-section-image.webp&imageUrl=https://storage.googleapis.com/bucket/image/wallSection-1/uuid-section-image.webp&wallSectionId=1
+Authorization: Bearer <firebase_id_token>
+```
+
+### Request (climbing problem)
+
+```http
+PATCH /api/social/image/upload?targetType=CLIMBING_PROBLEM&objectFileName=image/problem-1/uuid-problem-image.jpg&imageUrl=https://storage.googleapis.com/bucket/image/problem-1/uuid-problem-image.jpg&climbingProblemId=1
+Authorization: Bearer <firebase_id_token>
+```
+
+### Response (200)
+
+Empty body.
+
+## 7c) Delete Wall or Problem Image
+
+```http
+DELETE /api/social/image/wall?wallSectionId=1
+Authorization: Bearer <admin_firebase_id_token>
+```
+
+```http
+DELETE /api/social/image/problem?climbingProblemId=1
+Authorization: Bearer <setter_firebase_id_token>
+```
+
+### Response (200)
+
+Empty body.
 
 ## 8) Save Solution Beta Metadata
 
@@ -360,6 +471,40 @@ Authorization: Bearer <firebase_id_token>
 
 Response: `200` array of remaining `ClimbingProblemResponse` records for that wall section.
 
+### Update climbing problem (keep or clear photo)
+
+```http
+PATCH /api/home/wall-sections/1/problems/22/update
+Authorization: Bearer <firebase_id_token>
+Content-Type: application/json
+```
+
+Keep the current photo (text-only save):
+
+```json
+{
+  "holdColor": "BLUE",
+  "info": "Crimpy sequence",
+  "assignedGrade": "V5",
+  "objectFileName": null,
+  "imageURL": "https://storage.googleapis.com/bucket/image/problem-22/uuid-photo.jpg"
+}
+```
+
+Clear the photo:
+
+```json
+{
+  "holdColor": "BLUE",
+  "info": "Crimpy sequence",
+  "assignedGrade": "V5",
+  "objectFileName": null,
+  "imageURL": null
+}
+```
+
+Response: `200` updated `ClimbingProblemResponse`. Required action: `CREATE_PROBLEM`.
+
 ## 12) Filter Problems by Grade Range (Public)
 
 ### Request
@@ -377,10 +522,21 @@ GET /api/search/1?min=V0&max=V5
     "holdColor": "RED",
     "info": "RED V0-V1",
     "createdDate": "2026-07-21T12:00:00",
-    "assignedGrade": "V0"
+    "assignedGrade": "V0",
+    "imageURL": "https://storage.googleapis.com/bucket/image/problem-2/uuid-photo.webp"
+  },
+  {
+    "problemId": 8,
+    "holdColor": "BLACK",
+    "info": "Compression boulder",
+    "createdDate": "2026-07-22T09:00:00",
+    "assignedGrade": "V4",
+    "imageURL": null
   }
 ]
 ```
+
+Same `ClimbingProblemResponse` shape as wall problem lists (`imageURL` is `string | null`).
 
 ## 13) Filter Problems by Grade Range Ascending (Public)
 
@@ -494,12 +650,14 @@ Authorization: Bearer <firebase_id_token>
           "holdColor": "Red",
           "info": "Crimpy warmup",
           "createdDate": "2026-08-01",
-          "assignedGrade": "V4"
+          "assignedGrade": "V4",
+          "imageURL": null
         },
         "wallSection": {
           "wallSectionID": 10,
           "wallSectionName": "Cave",
-          "wallSectionInfo": "Steep cave"
+          "wallSectionInfo": "Steep cave",
+          "imageURL": "https://storage.googleapis.com/bucket/image/wallSection-10/uuid-section.webp"
         },
         "user": null,
         "reporters": [

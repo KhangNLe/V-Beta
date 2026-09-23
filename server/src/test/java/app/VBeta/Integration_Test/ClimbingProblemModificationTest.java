@@ -73,12 +73,16 @@ public class ClimbingProblemModificationTest {
     private final ClimbingProblemCreationRequest request = new ClimbingProblemCreationRequest(
             "Yellow",
             "Yellow two hands start in the corner",
-            GradeDefinition.V5
+            GradeDefinition.V5,
+            null,
+            null
     );
     private WallSection createWallSection(){
         WallSectionCreationRequest req  = new WallSectionCreationRequest(
                 "Test Wall Section Info",
-                "Test Wall Section Name"
+                "Test Wall Section Name",
+                null,
+                null
         );
 
         return wallSectionManager.createNewWallSection(req);

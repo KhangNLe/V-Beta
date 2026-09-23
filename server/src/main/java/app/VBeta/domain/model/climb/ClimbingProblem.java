@@ -34,6 +34,14 @@ public class ClimbingProblem {
     @Enumerated(EnumType.STRING)
     private LifecycleStatus problemStatus;
 
+    /** Public GCS URL for the problem image; paired with {@link #objectImageName}. */
+    @Column(name = "problem_image_url", length = 250)
+    private String problemImageUrl;
+
+    /** GCS object key for the problem image; paired with {@link #problemImageUrl}. */
+    @Column(name = "image_object_name", length = 250)
+    private String objectImageName;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "wall_section_id", referencedColumnName = "wall_section_id")
     private WallSection wallSection;

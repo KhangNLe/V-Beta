@@ -18,7 +18,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  isAllowedWallImageFile,
+  prepareWallImageFile,
+  uploadClimbingProblemImage,
+  WALL_IMAGE_ACCEPT,
+} from "@/api/socialImage";
+import ClimbingProblemSetterMenu from "@/components/ClimbingProblemSetterMenu";
 import GuestBanner from "@/components/GuestBanner";
+import WallSectionAdminMenu from "@/components/WallSectionAdminMenu";
 import PageLoader from "@/components/ui/PageLoader";
 import { Button } from "@/components/ui/button";
 import { buttons, card, colors, fontFamily, layout } from "@/ui/appTheme";
@@ -39,18 +47,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ArrowLeftIcon, MoreVertical, SlidersHorizontal } from "lucide-react";
+import { ArrowLeftIcon, SlidersHorizontal } from "lucide-react";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { getAccountRole } from "@/lib/accountSession";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
+
+const WALL_SECTION_PLACEHOLDER_SRC = "/co-op.png";
+const PROBLEM_PLACEHOLDER_SRC = "/problem-holder.jpg";
+
+/** @param {{ imageURL?: string | null, imageUrl?: string | null } | null} section */
+function sectionImageURL(section) {
+  return section?.imageURL ?? section?.imageUrl ?? null;
+}
+
+/** @param {{ imageURL?: string | null, imageUrl?: string | null } | null | undefined} problem */
+function problemImageURL(problem) {
+  return problem?.imageURL ?? problem?.imageUrl ?? null;
+}
 
 const GRADE_OPTIONS = [
   "VB",
@@ -117,6 +132,11 @@ export default function WallSectionPage() {
   const [newHoldColor, setNewHoldColor] = useState("");
   const [newAssignedGrade, setNewAssignedGrade] = useState("VB");
   const [newProblemInfo, setNewProblemInfo] = useState("");
+  const [newProblemPhoto, setNewProblemPhoto] = useState(null);
+  const [newProblemPhotoPreview, setNewProblemPhotoPreview] = useState(null);
+  const [addUploadProgress, setAddUploadProgress] = useState(0);
+  const [convertingHeic, setConvertingHeic] = useState(false);
+  const addPhotoInputRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
@@ -127,6 +147,35 @@ export default function WallSectionPage() {
     const roleUpper = getAccountRole(account).toUpperCase();
     return roleUpper.includes("SETTER");
   }, [account]);
+  const isAdmin = useMemo(() => {
+    return getAccountRole(account).toUpperCase().includes("ADMIN");
+  }, [account]);
+
+  const handleSectionUpdated = useCallback((patch) => {
+    setSection((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
+  const handleProblemUpdated = useCallback((problemId, patch) => {
+    setProblems((prev) =>
+      prev.map((item) => (item.problemId === problemId ? { ...item, ...patch } : item)),
+    );
+  }, []);
+
+  const clearAddPhoto = () => {
+    setNewProblemPhoto(null);
+    setNewProblemPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    if (addPhotoInputRef.current) addPhotoInputRef.current.value = "";
+  };
+
+  const clearAddProblemForm = () => {
+    setNewHoldColor("");
+    setNewAssignedGrade("VB");
+    setNewProblemInfo("");
+    clearAddPhoto();
+  };
 
   const rawWallSectionID = params?.wallSectionID;
   const wallSectionID = useMemo(() => {
@@ -352,22 +401,72 @@ export default function WallSectionPage() {
 
     try {
       setAddSubmitting(true);
-      await createWallSectionProblem(user, wallSectionID, {
+      setAddUploadProgress(0);
+      const created = await createWallSectionProblem(user, wallSectionID, {
         holdColor,
         info,
         assignedGrade: assignedGradeEnum,
       });
+      const createdId = created?.problemId;
+      if (newProblemPhoto) {
+        if (createdId == null) {
+          throw new Error("Problem was created but no id was returned for photo upload.");
+        }
+        await uploadClimbingProblemImage(user, createdId, newProblemPhoto, {
+          onProgress: setAddUploadProgress,
+        });
+      }
       await reloadProblems(user);
-      setNewHoldColor("");
-      setNewAssignedGrade("VB");
-      setNewProblemInfo("");
+      clearAddProblemForm();
       setAddOpen(false);
-      toast.success("Problem added.");
+      toast.success(newProblemPhoto ? "Problem added with photo." : "Problem added.");
     } catch (err) {
       console.error(err);
-      toast.error(err instanceof Error ? err.message : "Failed to add problem.");
+      const message = err instanceof Error ? err.message : "Failed to add problem.";
+      const imageFlowAlreadyToasted =
+        /^(Failed to (upload|request|save)|Signed URL|Please choose)/.test(message);
+      if (!imageFlowAlreadyToasted) {
+        toast.error(message);
+      }
+      try {
+        await reloadProblems(user);
+      } catch {
+        /* ignore refresh error */
+      }
     } finally {
       setAddSubmitting(false);
+      setAddUploadProgress(0);
+    }
+  };
+
+  const handleAddPhotoSelected = async (event) => {
+    const input = event.target;
+    const file = input.files?.[0] ?? null;
+    if (!file) return;
+
+    if (!isAllowedWallImageFile(file)) {
+      toast.error("Please choose a phone photo (JPEG/PNG/WebP, or iPhone HEIC/HEIF).");
+      input.value = "";
+      return;
+    }
+
+    try {
+      const prepared = await prepareWallImageFile(file, {
+        onHeicConvertStart: () => setConvertingHeic(true),
+      });
+      setNewProblemPhotoPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(prepared);
+      });
+      setNewProblemPhoto(prepared);
+    } catch (err) {
+      console.error("Prepare problem photo failed:", err);
+      toast.error(
+        err instanceof Error ? err.message : "Could not read that photo. Try another image.",
+      );
+      input.value = "";
+    } finally {
+      setConvertingHeic(false);
     }
   };
 
@@ -399,6 +498,7 @@ export default function WallSectionPage() {
     : null;
 
   const isInvalidGradeRange = gradeIndex(draftMinGrade) > gradeIndex(draftMaxGrade);
+  const wallImageURL = sectionImageURL(section);
 
   if (!ready) return <PageLoader message="Loading…" />;
   if (loading) return <PageLoader message="Loading wall section…" />;
@@ -429,21 +529,45 @@ export default function WallSectionPage() {
               position: "relative",
               overflow: "hidden",
               fontFamily,
-              padding: "22px 22px 22px 20px",
+              padding: "0",
             }}
           >
             <div style={card.accentBar} aria-hidden />
-            <CardHeader className="rounded-none px-0 pt-0 pb-0">
-              <CardTitle className="m-0 text-[1.75rem] font-bold" style={{ color: colors.text }}>
-                {section?.wallSectionName || `Section ${wallSectionID}`}
-              </CardTitle>
-              <CardDescription
-                className="mt-2 max-w-[65ch] text-[0.9375rem] leading-[1.55]"
-                style={{ color: colors.muted }}
-              >
-                {section?.wallSectionInfo || "No section description available."}
-              </CardDescription>
-            </CardHeader>
+            <div className="flex flex-col items-stretch sm:flex-row">
+              <div className="relative h-48 w-full shrink-0 overflow-hidden bg-muted sm:w-64">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={wallImageURL || WALL_SECTION_PLACEHOLDER_SRC}
+                  alt={
+                    wallImageURL
+                      ? `${section?.wallSectionName || "Wall section"} photo`
+                      : "Default wall section photo"
+                  }
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              </div>
+              <CardHeader className="min-w-0 flex-1 rounded-none px-5 pt-5 pb-5">
+                <CardTitle className="m-0 text-[1.75rem] font-bold" style={{ color: colors.text }}>
+                  {section?.wallSectionName || `Section ${wallSectionID}`}
+                </CardTitle>
+                {isAdmin && user && section && wallSectionID && (
+                  <CardAction>
+                    <WallSectionAdminMenu
+                      user={user}
+                      section={section}
+                      onSectionUpdated={handleSectionUpdated}
+                      ariaLabel="Wall section actions"
+                    />
+                  </CardAction>
+                )}
+                <CardDescription
+                  className="mt-2 max-w-[65ch] text-[0.9375rem] leading-[1.55]"
+                  style={{ color: colors.muted }}
+                >
+                  {section?.wallSectionInfo || "No section description available."}
+                </CardDescription>
+              </CardHeader>
+            </div>
           </Card>
         </section>
 
@@ -508,14 +632,26 @@ export default function WallSectionPage() {
             {problems.map((problem) => (
               <article key={problem.problemId}>
                 <Card
-                  className="gap-2.5 overflow-hidden p-0 py-5 ring-0"
+                  className="gap-2.5 overflow-hidden p-0 py-0 ring-0"
                   style={{
                     ...card.surface,
                     fontFamily,
                     position: "relative",
                   }}
                 >
-                  <CardHeader className="px-5 pt-0 pb-0">
+                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={problemImageURL(problem) || PROBLEM_PLACEHOLDER_SRC}
+                      alt={
+                        problemImageURL(problem)
+                          ? ""
+                          : "Default problem photo"
+                      }
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <CardHeader className="px-5 pt-5 pb-0">
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle
                         className="min-w-0 text-lg font-semibold leading-[1.35]"
@@ -523,31 +659,17 @@ export default function WallSectionPage() {
                       >
                         {problem.holdColor}
                       </CardTitle>
-                      {canManageWallProblems && (
+                      {canManageWallProblems && user && wallSectionID && (
                         <CardAction>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger
-                              render={
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className="shrink-0 text-muted-foreground"
-                                  aria-label="Problem actions"
-                                />
-                              }
-                            >
-                              <MoreVertical className="size-4" />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={() => setDeleteTarget(problem)}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <ClimbingProblemSetterMenu
+                            user={user}
+                            wallSectionId={wallSectionID}
+                            problem={problem}
+                            onProblemUpdated={(patch) =>
+                              handleProblemUpdated(problem.problemId, patch)
+                            }
+                            onDeleteProblem={() => setDeleteTarget(problem)}
+                          />
                         </CardAction>
                       )}
                     </div>
@@ -697,19 +819,16 @@ export default function WallSectionPage() {
       <Dialog
         open={addOpen}
         onOpenChange={(open) => {
+          if (addSubmitting) return;
           setAddOpen(open);
-          if (!open) {
-            setNewHoldColor("");
-            setNewAssignedGrade("VB");
-            setNewProblemInfo("");
-          }
+          if (!open) clearAddProblemForm();
         }}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add Problem</DialogTitle>
             <DialogDescription>
-              Enter problem details for this wall section.
+              Enter problem details for this wall section. You can optionally add a photo.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddProblem} className="grid gap-3">
@@ -757,18 +876,87 @@ export default function WallSectionPage() {
                 name="problemInfo"
                 rows={3}
                 required
+                disabled={addSubmitting}
                 value={newProblemInfo}
                 onChange={(ev) => setNewProblemInfo(ev.target.value)}
-                className="resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-60"
                 placeholder="Short summary for climbers"
               />
             </div>
+            <div className="grid gap-2">
+              <span className="text-sm font-medium text-foreground">Photo (optional)</span>
+              <div className="overflow-hidden rounded-md border border-border">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={newProblemPhotoPreview || PROBLEM_PLACEHOLDER_SRC}
+                  alt={
+                    newProblemPhotoPreview
+                      ? "Selected problem photo"
+                      : "Default problem photo"
+                  }
+                  className="aspect-[16/10] w-full object-cover"
+                />
+              </div>
+              {!newProblemPhoto && !convertingHeic && (
+                <p className="m-0 text-sm text-muted-foreground">
+                  This default photo appears on the problem until you upload one.
+                </p>
+              )}
+              {convertingHeic && (
+                <p className="m-0 text-sm text-muted-foreground" role="status">
+                  Uploading iPhone photo…
+                </p>
+              )}
+              <input
+                ref={addPhotoInputRef}
+                type="file"
+                accept={WALL_IMAGE_ACCEPT}
+                className="hidden"
+                aria-hidden
+                tabIndex={-1}
+                onChange={handleAddPhotoSelected}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={addSubmitting || convertingHeic}
+                  onClick={() => addPhotoInputRef.current?.click()}
+                >
+                  {convertingHeic ? "Uploading…" : newProblemPhoto ? "Change photo" : "Upload photo"}
+                </Button>
+                {newProblemPhoto && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={addSubmitting || convertingHeic}
+                    onClick={clearAddPhoto}
+                  >
+                    Remove photo
+                  </Button>
+                )}
+              </div>
+              {addSubmitting && newProblemPhoto && addUploadProgress > 0 && (
+                <p className="m-0 text-xs text-muted-foreground" role="status">
+                  Uploading photo… {addUploadProgress}%
+                </p>
+              )}
+            </div>
             <DialogFooter className="mt-1 gap-2 sm:justify-end">
-              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={addSubmitting}
+                onClick={() => setAddOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={addSubmitting} style={buttons.primary}>
-                {addSubmitting ? "Adding…" : "Add problem"}
+              <Button type="submit" disabled={addSubmitting || convertingHeic} style={buttons.primary}>
+                {addSubmitting
+                  ? newProblemPhoto && addUploadProgress > 0
+                    ? `Uploading… ${addUploadProgress}%`
+                    : "Adding…"
+                  : "Add problem"}
               </Button>
             </DialogFooter>
           </form>

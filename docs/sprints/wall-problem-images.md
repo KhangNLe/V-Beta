@@ -1,0 +1,286 @@
+# Wall and Problem Images
+
+## Feature Overview
+
+Sprint 6 delivers image support for wall sections and climbing problems. Admins can upload wall section photos; setters can upload climbing problem photos. All users, including guests, can view thumbnails. Click-to-expand is only on the climbing problem page.
+
+This document is the **source of truth** for the v1 data/storage contract. Rules marked **MUST** are normative.
+
+**Status:** Complete. Wall and problem photos are in the UI. Choosing a photo prepares a local preview; the bucket upload starts on **Save changes**, **Add section**, or **Add problem**. Saving a new object key deletes the previous GCS object. Defaults are `/co-op.png` for walls and `/problem-holder.jpg` for problems. Read DTOs include nullable `imageURL`. User profile images are not part of this sprint.  
+**Feature doc:** [`docs/features/wall-problem-images.md`](../features/wall-problem-images.md)  
+**Roadmap:** [`docs/implementation-roadmap.md`](../implementation-roadmap.md)
+
+## Sprint 6 Implementation Plan
+
+Estimated duration: 2 weeks
+
+### Phase 1 — Contract and schema
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Document storage contract (this file) | Docs | Done |
+| Add nullable paired image columns to bootstrap SQL | Backend | Done |
+| Update `database-schema.md` and `data-model.md` | Docs | Done |
+| Agree API response shape (`imageURL` on read DTOs) | Backend + Frontend | Done |
+
+### Phase 2 — Backend APIs and permissions
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Add `UPLOAD_WALL_IMAGE` and `UPLOAD_PROBLEM_IMAGE` actions | Backend | Done |
+| Signed upload URL endpoints (reuse GCS adapter pattern) | Backend | Done |
+| Confirm/save metadata after client PUT | Backend | Done |
+| Image delete endpoints for wall and problem | Backend | Done |
+| Return `imageURL` in wall/problem read DTOs and `/api/search` | Backend | Done |
+| Update API docs and permissions matrix | Docs | Done |
+
+### Phase 3 — Frontend upload and display
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Signed PUT helper in `socialImage.js` plus wall/problem upload hooks | Frontend | Done |
+| Admin wall section upload/replace UI | Frontend | Done |
+| Setter problem upload/replace UI | Frontend | Done |
+| Thumbnails on main, wall, and problem pages; click-to-expand only on the problem page | Frontend | Done |
+| Placeholder when `imageURL` is null | Frontend | Done |
+
+### Phase 4 — Quality and release
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Backend integration tests (auth, validation, DTO shape) | Backend | Done (`ImageServiceTest`) |
+| MVC controller tests | Backend | Done (`SocialMediaControllerTest`) |
+| Frontend tests (role gating, problem-page expand, save-gated upload) | Frontend | Done |
+| Manual test cases in `docs/testing/manual-test-cases.md` | QA/Docs | Done |
+| Update `docs/features/wall-and-problems.md` when shipped | Docs | Done |
+
+### Sprint 6 acceptance criteria
+
+- [x] Schema and contract documented; bootstrap SQL aligned in runtime + test schemas
+- [x] Unauthorized roles cannot upload via API (backend enforced)
+- [x] Upload validation enforces allowed MIME types (extension/content-type)
+- [x] Core auth and happy-path tests merged (`ImageServiceTest`, `SocialMediaControllerTest`)
+- [x] API and permissions docs updated
+- [x] Admin can upload/replace a wall section image via authenticated UI
+- [x] Setter can upload/replace a problem image via authenticated UI
+- [x] Wall/problem read APIs return `imageURL: string | null`
+- [x] UI renders thumbnails; click-to-expand is only on the climbing problem page
+- [x] Missing images show placeholder without layout break
+- [x] Upload validation enforces allowed MIME types and max file size (8 MB on metadata save)
+- [x] Core auth and happy-path tests merged
+- [x] API and feature docs updated
+
+### Explicitly out of scope (Sprint 6 / v1)
+
+- Multiple images per wall section or problem (gallery)
+- In-app cropping or editing
+- Climber-uploaded problem photos
+- Click-to-expand on the main page or wall section page
+- User profile image persistence and UI (roadmap Sprint 10)
+- Automatic image moderation
+- `image_content_type` / `image_uploaded_at` columns (deferred to a later sprint if needed)
+
+## Data and Storage Contract (v1)
+
+### Design alignment
+
+Follow the existing solution-beta GCS pattern:
+
+- Signed PUT upload via `GcpFileStorageAdapter`
+- Persist both storage key and public URL (like `Solution_Beta.beta_name` + `Solution_Beta.video_url`)
+- Client uploads directly to GCS, then confirms metadata with the API
+
+Reference: `SolutionBetaManager.createSignedUrl()`, `CloudFileStorageResponse`
+
+### Database columns
+
+#### `Wall_Section`
+
+| Column | Type | Nullable | Rule |
+|--------|------|----------|------|
+| `wall_image_url` | `VARCHAR(250)` | Yes | Public GCS URL for display |
+| `image_object_name` | `VARCHAR(250)` | Yes | GCS object key |
+
+#### `Climbing_Problem`
+
+| Column | Type | Nullable | Rule |
+|--------|------|----------|------|
+| `problem_image_url` | `VARCHAR(250)` | Yes | Public GCS URL for display |
+| `image_object_name` | `VARCHAR(250)` | Yes | GCS object key |
+
+### Integrity rules
+
+- **R1:** `wall_image_url` and `image_object_name` MUST both be `NULL` or both be non-`NULL` (`chk_wall_img_obj`).
+- **R2:** `problem_image_url` and `image_object_name` MUST both be `NULL` or both be non-`NULL` (`chk_img_obj`).
+- **R3:** At most one active image per wall section / problem (enforced by columns on the entity row).
+- **R4:** `image_object_name` is the canonical storage identifier; `*_image_url` is the client-facing display URL.
+
+### Object key convention (implemented)
+
+```text
+image/wallSection-{wallSectionId}/{uuid}-{sanitizedName}.{ext}
+image/problem-{problemId}/{uuid}-{sanitizedName}.{ext}
+image/userProfile-{userId}/{uuid}-{sanitizedName}.{ext}
+```
+
+Key rules:
+
+- **R5:** Extension MUST match validated MIME type.
+- **R6:** Each upload uses a new object key. On replace, the previous key is deleted when it differs from the new key.
+- **R7:** Keys MUST NOT include user-supplied path segments.
+- **R8:** Allowed extensions: `.jpg`, `.jpeg`, `.png`, `.webp`.
+
+### Upload flow
+
+1. Client requests signed upload URL (authenticated, role-gated).
+2. Backend generates deterministic `image_object_name` and public URL.
+3. Backend returns `signedURL`, `method` (`PUT`), `uploadObjectName`, and `publicURL`.
+4. Client uploads bytes directly to GCS.
+5. Client calls confirm/save endpoint.
+6. Backend persists `image_object_name` + `*_image_url`.
+
+### Read strategy
+
+- **R9:** Read APIs MUST return `imageURL: string | null`.
+- **R10:** Read APIs MUST NOT return `image_object_name` to normal clients.
+- **R11:** URLs are public GCS URLs (same bucket strategy as beta videos), not signed read URLs in v1.
+- **R12:** If no image exists, APIs return `imageURL: null`; UI shows a neutral placeholder.
+
+### Validation rules
+
+| Rule | Value |
+|------|-------|
+| Allowed MIME types | `image/jpeg`, `image/png`, `image/webp` |
+| Max file size | 8 MB |
+| Reject on mismatch | Content-Type, extension, and magic bytes MUST agree |
+
+### API response shape (agreed contract)
+
+Wall section list/detail:
+
+```json
+{
+  "wallSectionId": 3,
+  "wallSectionName": "Cave",
+  "info": "Steep overhang",
+  "imageURL": "https://storage.googleapis.com/<bucket>/image/wallSection-3/uuid-section.webp"
+}
+```
+
+Problem list/detail/search:
+
+```json
+{
+  "problemId": 22,
+  "holdColor": "RED",
+  "info": "Crimp line",
+  "assignedGrade": "V5",
+  "createdDate": "2026-08-31T12:00:00",
+  "imageURL": "https://storage.googleapis.com/<bucket>/image/problem-22/uuid-photo.jpg"
+}
+```
+
+- **R13:** Read responses use `imageURL`. The metadata-save query parameter remains `imageUrl`.
+- **R14:** Missing image => `imageURL: null` (field present, not omitted).
+
+### Lifecycle rules
+
+**Upload / replace**
+
+- **R15:** Uploading a new image replaces DB metadata.
+- **R16:** Previous GCS object SHOULD be deleted on successful replace.
+- **R17:** If DB save fails after upload, orphaned object cleanup is best-effort (known limitation).
+
+**Problem archive (`lifecycle_status = ARCHIVE`)**
+
+- **R18:** Archived problems KEEP image metadata.
+- **R19:** New image upload MUST be rejected for archived problems.
+
+**Problem delete**
+
+- **R20:** Problem delete clears `problem_image_url` and `image_object_name`.
+- **R21:** Problem delete deletes the GCS object, then removes the row (image columns go with the row).
+
+**Wall section delete**
+
+- **R22:** Wall section delete follows existing wall-delete rules; image metadata is removed with the row when delete succeeds.
+
+### Permissions (contract)
+
+| Action | Role |
+|--------|------|
+| Upload/replace wall image | Admin |
+| Upload/replace problem image | Setter |
+| View image | Guest, all roles |
+
+Implemented actions: `UPLOAD_WALL_IMAGE`, `UPLOAD_PROBLEM_IMAGE` (see `docs/api/permissions-matrix.md`). The UI **Remove photo** action uses the wall or problem update endpoint with both image fields null. `DELETE /api/social/image/*` also clears a photo.
+
+### Error contract
+
+| Case | HTTP | Message intent |
+|------|------|----------------|
+| Unsupported MIME | 400 | Invalid image type |
+| File too large | 400 | Image exceeds 8 MB |
+| Unauthorized upload | 403 | Not permitted |
+| Missing wall/problem | 404 | Target not found |
+| Upload to archived problem | 409 | Problem is archived |
+
+## User Flows
+
+### View images (guest or signed-in)
+
+1. User opens the main page, a wall section page, or a problem page.
+2. A thumbnail renders when `imageURL` is present. A null wall `imageURL` shows `/co-op.png`. A null problem `imageURL` shows `/problem-holder.jpg`.
+3. On the problem page, the user can click the photo to expand it.
+4. Main-page and wall-section thumbnails do not expand.
+
+### Admin: wall section photo
+
+1. Admin opens the main page or a wall section page and chooses **Edit wall** or **Add Wall Section**.
+2. Choosing a photo validates it and shows a local preview. An iPhone HEIC/HEIF file shows **Uploading iPhone photo…** while the browser converts it to JPEG.
+3. The signed URL, GCS `PUT`, and metadata save run when the admin clicks **Save changes** or **Add section**.
+4. The metadata save deletes the previous GCS object when the new key differs.
+5. **Remove photo** clears the saved photo immediately.
+
+### Setter: problem photo
+
+1. Setter opens **Edit problem** or **Add Problem**.
+2. Choosing a photo follows the same preview and HEIC conversion as wall photos.
+3. The bucket upload runs when the setter clicks **Save changes** or **Add problem**.
+4. The new photo appears on the problem card and problem page. Any viewer can expand it on the problem page.
+
+## Key Files
+
+### Schema and entities
+
+- `server/src/main/resources/db/pg-v-beta.sql`
+- `server/src/test/resources/db/v_beta_test_schema.sql`
+- `server/src/main/java/app/VBeta/domain/model/climb/WallSection.java`
+- `server/src/main/java/app/VBeta/domain/model/climb/ClimbingProblem.java`
+
+### Storage (implemented)
+
+- `server/src/main/java/app/VBeta/application/support/cloud/CloudStorageManager.java`
+- `server/src/main/java/app/VBeta/application/support/cloud/GcpFileStorageAdapter.java`
+- `server/src/main/java/app/VBeta/controller/SocialMediaController.java`
+- `server/src/main/java/app/VBeta/application/ImageService.java`
+
+### Frontend
+
+- `v-beta/src/app/main-page/page.js`
+- `v-beta/src/app/wall/[wallSectionID]/page.js`
+- `v-beta/src/app/wall/[wallSectionID]/problem/[problemId]/page.js`
+- `v-beta/src/api/wallSections.js`
+- `v-beta/src/api/socialImage.js`
+- `v-beta/src/hooks/useWallSectionImageUpload.js`
+- `v-beta/src/hooks/useClimbingProblemImageUpload.js`
+- `v-beta/src/components/WallSectionAdminMenu.js`
+- `v-beta/src/components/ClimbingProblemSetterMenu.js`
+
+## Related documentation
+
+- Roadmap: [`docs/implementation-roadmap.md`](../implementation-roadmap.md)
+- Schema setup: [`docs/setup/database-schema.md`](../setup/database-schema.md)
+- Data model: [`docs/architecture/data-model.md`](../architecture/data-model.md)
+- Shipped wall flows: [`docs/features/wall-and-problems.md`](../features/wall-and-problems.md)
+- Backend feature summary: [`docs/features/wall-problem-images.md`](../features/wall-problem-images.md)

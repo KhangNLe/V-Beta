@@ -134,7 +134,8 @@ public class ProblemFilteringService {
                         problem.getHoldColor(),
                         problem.getProblemInfo(),
                         problem.getCreatedDate().toString(),
-                        problem.getClimbingGrade().getGradeDefinition())
+                        problem.getClimbingGrade().getGradeDefinition(),
+                        problem.getProblemImageUrl())
         ).toList();
     }
 

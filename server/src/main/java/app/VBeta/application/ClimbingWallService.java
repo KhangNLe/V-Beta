@@ -78,7 +78,9 @@ public class ClimbingWallService {
             wallSectionInfo.add(new WallSectionResponse(
                     section.getId(),
                     section.getWallSectionName(),
-                    section.getWallInfo()));
+                    section.getWallInfo(),
+                    section.getWallImageUrl()
+                    ));
         });
 
         return wallSectionInfo;
@@ -100,7 +102,8 @@ public class ClimbingWallService {
                         problem.getHoldColor(),
                         problem.getProblemInfo(),
                         problem.getCreatedDate().toString().split("T")[0],
-                        problem.getClimbingGrade().getGradeDefinition()),
+                        problem.getClimbingGrade().getGradeDefinition(),
+                        problem.getProblemImageUrl()),
                 perceiveGrade,
                 comments
         );
@@ -130,7 +133,8 @@ public class ClimbingWallService {
         return new WallSectionResponse(
                 newWall.getId(),
                 newWall.getWallSectionName(),
-                newWall.getWallInfo()
+                newWall.getWallInfo(),
+                newWall.getWallImageUrl()
         );
     }
 
@@ -179,7 +183,8 @@ public class ClimbingWallService {
                         problem.getHoldColor(),
                         problem.getProblemInfo(),
                         problem.getCreatedDate().toString().split("T")[0],
-                        problem.getClimbingGrade().getGradeDefinition()
+                        problem.getClimbingGrade().getGradeDefinition(),
+                        problem.getProblemImageUrl()
                 ));
         });
         return problemsInfo;
@@ -201,7 +206,8 @@ public class ClimbingWallService {
                 newProblem.getHoldColor(),
                 newProblem.getProblemInfo(),
                 newProblem.getCreatedDate().toString().split("T")[0],
-                newProblem.getClimbingGrade().getGradeDefinition()
+                newProblem.getClimbingGrade().getGradeDefinition(),
+                newProblem.getProblemImageUrl()
         );
     }
 
@@ -228,7 +234,8 @@ public class ClimbingWallService {
         return new WallSectionResponse(
                 wallSection.getId(),
                 wallSection.getWallSectionName(),
-                wallSection.getWallInfo()
+                wallSection.getWallInfo(),
+                wallSection.getWallImageUrl()
         );
     }
 
@@ -238,7 +245,41 @@ public class ClimbingWallService {
                 problem.getHoldColor(),
                 problem.getProblemInfo(),
                 problem.getCreatedDate().toString().split("T")[0],
-                problem.getClimbingGrade().getGradeDefinition()
+                problem.getClimbingGrade().getGradeDefinition(),
+                problem.getProblemImageUrl()
+        );
+    }
+
+    /**
+     * Updates problem details. A null object key with a null image URL clears the photo.
+     * A null object key with the current image URL leaves the stored photo in place.
+     *
+     * @param wallSectionId wall section that owns the problem
+     * @param problemId climbing problem identifier
+     * @param update problem fields and optional image metadata
+     * @return updated climbing problem response
+     */
+    @CacheEvict(value = CLIMBING_PROBLEMS_CACHE, key = "#wallSectionId")
+    public ClimbingProblemResponse updateClimbDetail(Long wallSectionId, Long problemId,
+                                                      ClimbingProblemCreationRequest update){
+        ClimbingProblem existing = climbingProblemManager.getActiveProblem(problemId);
+        if (existing == null
+                || existing.getWallSection() == null
+                || !wallSectionId.equals(existing.getWallSection().getId())) {
+            throw new RuntimeException("Problem does not belong to this wall section.");
+        }
+        ClimbingProblem problem = climbingProblemManager.updateProblem(problemId, update);
+        return getClimbingProblemResponse(problem);
+    }
+
+    @CacheEvict(value = WALL_SECTIONS_CACHE, allEntries = true)
+    public WallSectionResponse updateWallSection(Long wallSectionId, WallSectionCreationRequest update){
+        WallSection wallSection = wallSectionManager.updateWallSection(wallSectionId, update);
+        return new WallSectionResponse(
+                wallSection.getId(),
+                wallSection.getWallSectionName(),
+                wallSection.getWallInfo(),
+                wallSection.getWallImageUrl()
         );
     }
 }

@@ -1,6 +1,7 @@
 package app.VBeta.application.support.problem;
 
 import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;
+import app.VBeta.application.support.cloud.CloudStorageManager;
 import app.VBeta.domain.model.climb.*;
 import app.VBeta.repository.ClimbingGradeRepository;
 import app.VBeta.repository.ClimbingProblemRepository;
@@ -23,17 +24,21 @@ import java.util.*;
 public class ClimbingProblemManager {
     private final ClimbingProblemRepository climbingProblemRepository;
     private final ClimbingGradeRepository climbingGradeRepository;
+    private final CloudStorageManager cloudStorageManager;
 
     /**
      * Constructs a new {@code ClimbingProblemManager} with problem and grade repositories.
      *
      * @param climbingProblemRepository repository for climbing problem entities
      * @param climbingGradeRepository repository for grade definition lookups
+     * @param cloudStorageManager manager for deleting superseded GCS image objects
      */
     public ClimbingProblemManager(ClimbingProblemRepository climbingProblemRepository,
-                                  ClimbingGradeRepository climbingGradeRepository){
+                                  ClimbingGradeRepository climbingGradeRepository,
+                                  CloudStorageManager cloudStorageManager){
         this.climbingProblemRepository = climbingProblemRepository;
         this.climbingGradeRepository = climbingGradeRepository;
+        this.cloudStorageManager = cloudStorageManager;
     }
 
     /**
@@ -157,5 +162,61 @@ public class ClimbingProblemManager {
                                                              ClimbingGrade maxGrade){
         return climbingProblemRepository.findByWallSectionAndProblemStatusAndClimbingGradeBetweenOrderByClimbingGradeDesc
                 (wall, LifecycleStatus.ACTIVE, minGrade, maxGrade);
+    }
+
+    /**
+     * Persists climbing problem image metadata after a successful client upload.
+     *
+     * @param problemId active problem identifier
+     * @param objectFileName GCS object key
+     * @param imageUrl public display URL
+     */
+    public void updateProblemImage(Long problemId, String objectFileName, String imageUrl){
+        ClimbingProblem problem = getActiveProblem(problemId);
+        if (problem == null){
+            throw new RuntimeException("Problem with id " + problemId + " does not exist");
+        }
+        String previousKey = problem.getObjectImageName();
+        if (previousKey != null && !previousKey.equals(objectFileName)) {
+            cloudStorageManager.deleteStorageObject(previousKey);
+        }
+        problem.setObjectImageName(objectFileName);
+        problem.setProblemImageUrl(imageUrl);
+        climbingProblemRepository.save(problem);
+    }
+
+    /**
+     * Clears persisted climbing problem image metadata.
+     *
+     * @param problem active problem entity to update
+     */
+    public void removeProblemImage(ClimbingProblem problem){
+        problem.setProblemImageUrl(null);
+        problem.setObjectImageName(null);
+        climbingProblemRepository.save(problem);
+    }
+
+    public ClimbingProblem updateProblem(Long problemId, ClimbingProblemCreationRequest update){
+        ClimbingProblem problem = getActiveProblem(problemId);
+        if (problem == null){
+            throw new RuntimeException("Problem not found or no longer active.");
+        }
+        problem.setHoldColor(update.holdColor());
+        problem.setProblemInfo(update.info());
+        problem.setClimbingGrade(getClimbingGrade(update.assignedGrade()));
+
+        String nextKey = update.objectFileName();
+        String nextUrl = update.imageURL();
+        if (nextKey == null && nextUrl == null) {
+            cloudStorageManager.deleteStorageObject(problem.getObjectImageName());
+            problem.setObjectImageName(null);
+            problem.setProblemImageUrl(null);
+        } else if (nextKey != null && !Objects.equals(problem.getObjectImageName(), nextKey)) {
+            cloudStorageManager.deleteStorageObject(problem.getObjectImageName());
+            problem.setObjectImageName(nextKey);
+            problem.setProblemImageUrl(nextUrl);
+        }
+
+        return climbingProblemRepository.save(problem);
     }
 }
