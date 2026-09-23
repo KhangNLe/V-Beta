@@ -8,11 +8,12 @@ import {
   fetchWallSectionProblemsForUser,
   fetchWallSectionsForUser,
   resetWallSection,
+  updateClimbingProblem,
 } from "@/api/wallSections";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { uploadWallSectionImage } from "@/api/socialImage";
+import { uploadClimbingProblemImage, uploadWallSectionImage } from "@/api/socialImage";
 
 jest.mock("@/api/wallSections", () => ({
   createWallSectionProblem: jest.fn(),
@@ -417,6 +418,116 @@ describe("WallSectionPage coverage", () => {
         expect(toast.error).toHaveBeenCalledWith("Failed to upload image: network error");
       });
       expect(screen.getAllByAltText("Default wall section photo").length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("climbing problem photo", () => {
+    it("shows the default photo in the add dialog until a file is chosen", async () => {
+      renderWall({ problems: [] });
+      fireEvent.click(await screen.findByRole("button", { name: "Add New Problem" }));
+
+      expect(screen.getByAltText("Default problem photo")).toHaveAttribute("src", "/problem-holder.jpg");
+      expect(
+        screen.getByText("This default photo appears on the problem until you upload one."),
+      ).toBeInTheDocument();
+    });
+
+    it("shows the default photo when a problem has no imageURL", async () => {
+      renderWall({ problems: oneProblem });
+      expect(await screen.findByAltText("Default problem photo")).toHaveAttribute("src", "/problem-holder.jpg");
+    });
+
+    it("shows the uploaded thumbnail when imageURL is present", async () => {
+      renderWall({
+        problems: [{ ...oneProblem[0], imageURL: "https://cdn.example/blue.jpg" }],
+      });
+      await screen.findByText("Blue");
+      expect(document.querySelector('img[src="https://cdn.example/blue.jpg"]')).toBeTruthy();
+    });
+
+    it("hides edit controls for non-setters", async () => {
+      renderWall({
+        user: { uid: "climber-1", email: "climber@example.com" },
+        account: { roleName: "CLIMBER" },
+      });
+      expect(await screen.findByAltText("Default problem photo")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Problem actions")).not.toBeInTheDocument();
+    });
+
+    it("lets a setter upload a photo and updates the thumbnail without reload", async () => {
+      uploadClimbingProblemImage.mockResolvedValue("https://cdn.example/new-blue.jpg");
+      renderWall({ problems: oneProblem });
+      await screen.findByText("Blue");
+
+      fireEvent.click(screen.getByLabelText("Problem actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Edit problem" }));
+      const file = new File(["img"], "blue.jpg", { type: "image/jpeg" });
+      fireEvent.change(document.querySelector('input[type="file"]'), {
+        target: { files: [file] },
+      });
+
+      await waitFor(() => {
+        expect(uploadClimbingProblemImage).toHaveBeenCalledWith(
+          setterUser,
+          1,
+          file,
+          expect.objectContaining({ onProgress: expect.any(Function) }),
+        );
+      });
+      expect(toast.success).toHaveBeenCalledWith("Problem photo updated.");
+      expect(document.querySelector('img[src="https://cdn.example/new-blue.jpg"]')).toBeTruthy();
+    });
+
+    it("shows an actionable error when problem photo upload fails", async () => {
+      uploadClimbingProblemImage.mockImplementation(async () => {
+        toast.error("Failed to upload image: network error");
+        throw new Error("Failed to upload image: network error");
+      });
+      renderWall({ problems: oneProblem });
+      await screen.findByText("Blue");
+
+      fireEvent.click(screen.getByLabelText("Problem actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Edit problem" }));
+      fireEvent.change(document.querySelector('input[type="file"]'), {
+        target: { files: [new File(["img"], "blue.jpg", { type: "image/jpeg" })] },
+      });
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to upload image: network error");
+      });
+      expect(
+        screen.getAllByAltText("Default problem photo").every((img) => img.getAttribute("src") === "/problem-holder.jpg"),
+      ).toBe(true);
+    });
+
+    it("removes a problem photo through the problem update payload", async () => {
+      updateClimbingProblem.mockResolvedValue({
+        holdColor: "Blue",
+        info: "Balance move",
+        assignedGrade: "VB",
+        imageURL: null,
+      });
+      renderWall({
+        problems: [{ ...oneProblem[0], imageURL: "https://cdn.example/blue.jpg" }],
+      });
+      await screen.findByText("Blue");
+
+      fireEvent.click(screen.getByLabelText("Problem actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Edit problem" }));
+      fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
+
+      await waitFor(() => {
+        expect(updateClimbingProblem).toHaveBeenCalledWith(setterUser, 10, 1, {
+          holdColor: "Blue",
+          info: "Balance move",
+          assignedGrade: "VB",
+          objectFileName: null,
+          imageURL: null,
+        });
+      });
+      expect(toast.success).toHaveBeenCalledWith("Problem photo removed.");
+      expect(document.querySelector('img[src="https://cdn.example/blue.jpg"]')).toBeNull();
+      expect(document.querySelectorAll('img[src="/problem-holder.jpg"]').length).toBeGreaterThan(0);
     });
   });
 

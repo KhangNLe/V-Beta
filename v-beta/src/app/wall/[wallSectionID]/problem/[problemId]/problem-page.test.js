@@ -1,7 +1,8 @@
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import ProblemPage from "./page";
-import { fetchProblemForUser } from "@/api/wallSections";
+import { fetchProblemForUser, updateClimbingProblem } from "@/api/wallSections";
+import { uploadClimbingProblemImage } from "@/api/socialImage";
 import { addUserSuggestedGrade, deleteUserComment, postCommentForUser } from "@/api/comments";
 import { createContentReport } from "@/api/reports";
 import {
@@ -20,6 +21,14 @@ import { toast } from "react-toastify";
 
 jest.mock("@/api/wallSections", () => ({
   fetchProblemForUser: jest.fn(),
+  updateClimbingProblem: jest.fn(),
+}));
+
+jest.mock("@/api/socialImage", () => ({
+  WALL_IMAGE_ACCEPT: "image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif",
+  isAllowedWallImageFile: jest.fn(() => true),
+  prepareWallImageFile: jest.fn(async (file) => file),
+  uploadClimbingProblemImage: jest.fn(),
 }));
 
 jest.mock("@/api/comments", () => ({
@@ -698,6 +707,112 @@ describe("ProblemPage coverage", () => {
       fireEvent.change(input, { target: { files: [file] } });
       fireEvent.click(screen.getByRole("button", { name: "Upload Solution Beta" }));
       expect(await screen.findByText(/Upload failed before completion: signed-url failed/)).toBeInTheDocument();
+    });
+  });
+
+  describe("problem photo", () => {
+    const setterAccount = { id: 2, roleName: "SETTER" };
+    const setterProblem = { ...baseProblem, problemId: 100 };
+
+    it("shows the default photo and lets any viewer expand it", async () => {
+      renderProblemPage();
+      const thumbnail = await screen.findByAltText("Default problem photo");
+      expect(thumbnail).toHaveAttribute("src", "/problem-holder.jpg");
+      expect(screen.getByText("Click to expand")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Problem actions")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Expand problem photo" }));
+      expect(screen.getByText("Expanded view of this problem photo.")).toBeInTheDocument();
+      expect(screen.getAllByAltText("Default problem photo").every((img) => img.getAttribute("src") === "/problem-holder.jpg")).toBe(true);
+    });
+
+    it("expands the uploaded photo", async () => {
+      renderProblemPage({
+        problem: { ...baseProblem, imageURL: "https://cdn.example/blue.jpg" },
+      });
+      expect(await screen.findByAltText("Blue photo")).toHaveAttribute("src", "https://cdn.example/blue.jpg");
+
+      fireEvent.click(screen.getByRole("button", { name: "Expand problem photo" }));
+      expect(
+        screen.getAllByAltText("Blue photo").every((img) => img.getAttribute("src") === "https://cdn.example/blue.jpg"),
+      ).toBe(true);
+    });
+
+    it("lets a setter upload a photo and updates the header without reload", async () => {
+      uploadClimbingProblemImage.mockResolvedValue("https://cdn.example/new-blue.jpg");
+      renderProblemPage({ account: setterAccount, problem: setterProblem });
+      await screen.findByText("Blue");
+
+      fireEvent.click(screen.getByLabelText("Problem actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Edit problem" }));
+      const file = new File(["img"], "blue.jpg", { type: "image/jpeg" });
+      const dialog = screen.getByTestId("report-dialog");
+      fireEvent.change(dialog.querySelector('input[type="file"]'), {
+        target: { files: [file] },
+      });
+
+      await waitFor(() => {
+        expect(uploadClimbingProblemImage).toHaveBeenCalledWith(
+          user,
+          100,
+          file,
+          expect.objectContaining({ onProgress: expect.any(Function) }),
+        );
+      });
+      expect(toast.success).toHaveBeenCalledWith("Problem photo updated.");
+      expect(document.querySelector('img[src="https://cdn.example/new-blue.jpg"]')).toBeTruthy();
+    });
+
+    it("shows an actionable error when the problem photo upload fails", async () => {
+      uploadClimbingProblemImage.mockImplementation(async () => {
+        toast.error("Failed to upload image: network error");
+        throw new Error("Failed to upload image: network error");
+      });
+      renderProblemPage({ account: setterAccount, problem: setterProblem });
+      await screen.findByText("Blue");
+
+      fireEvent.click(screen.getByLabelText("Problem actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Edit problem" }));
+      const dialog = screen.getByTestId("report-dialog");
+      fireEvent.change(dialog.querySelector('input[type="file"]'), {
+        target: { files: [new File(["img"], "blue.jpg", { type: "image/jpeg" })] },
+      });
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to upload image: network error");
+      });
+      expect(screen.getAllByAltText("Default problem photo").every((img) => img.getAttribute("src") === "/problem-holder.jpg")).toBe(true);
+    });
+
+    it("removes a problem photo through the problem update payload", async () => {
+      updateClimbingProblem.mockResolvedValue({
+        holdColor: "Blue",
+        info: "Crimp to gaston",
+        assignedGrade: "V4",
+        imageURL: null,
+      });
+      renderProblemPage({
+        account: setterAccount,
+        problem: { ...setterProblem, imageURL: "https://cdn.example/blue.jpg" },
+      });
+      await screen.findByText("Blue");
+
+      fireEvent.click(screen.getByLabelText("Problem actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Edit problem" }));
+      fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
+
+      await waitFor(() => {
+        expect(updateClimbingProblem).toHaveBeenCalledWith(user, 10, 100, {
+          holdColor: "Blue",
+          info: "Crimp to gaston",
+          assignedGrade: "V4",
+          objectFileName: null,
+          imageURL: null,
+        });
+      });
+      expect(toast.success).toHaveBeenCalledWith("Problem photo removed.");
+      expect(document.querySelector('img[src="https://cdn.example/blue.jpg"]')).toBeNull();
+      expect(screen.getAllByAltText("Default problem photo").length).toBeGreaterThan(0);
     });
   });
 });
