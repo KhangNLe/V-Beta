@@ -334,6 +334,16 @@ There is no mark-all-read endpoint in this slice.
     - `imageURL` (optional public display URL)
   - Response: created `ClimbingProblemResponse` (includes `imageURL`).
 
+- `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/update`
+  - Required action: `CREATE_PROBLEM`
+  - Purpose: update hold color, notes, assigned grade, and optional image metadata.
+  - Request body: `ClimbingProblemCreationRequest` (`holdColor`, `info`, `assignedGrade`, `objectFileName`, `imageURL`).
+  - Photo rules:
+    - `objectFileName` null and current `imageURL` keeps the stored photo.
+    - `objectFileName` null and `imageURL` null deletes the GCS object and clears both image columns.
+    - A new `objectFileName` replaces the previous object.
+  - Response: updated `ClimbingProblemResponse` (includes `imageURL`).
+
 - `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`
   - Required action: `DELETE_PROBLEM`
   - Purpose: delete problem and return updated section problems.

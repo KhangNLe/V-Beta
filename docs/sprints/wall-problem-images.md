@@ -6,7 +6,7 @@ Sprint 6 delivers image support for wall sections and climbing problems. Admins 
 
 This document is the **source of truth** for the v1 data/storage contract and Sprint 6 implementation plan. API endpoint names may be refined during implementation; rules marked **MUST** are normative.
 
-**Status:** In progress (Sprint 6) — backend APIs shipped; frontend and read DTOs pending  
+**Status:** Wall and problem photos are in the UI (upload, replace, remove, wall default `/co-op.png`, problem default `/problem-holder.jpg`, problem-page expand). Read DTOs include nullable `imageURL`. Profile avatar persistence is still outstanding.  
 **Feature doc:** [`docs/features/wall-problem-images.md`](../features/wall-problem-images.md)  
 **Roadmap:** [`docs/implementation-roadmap.md`](../implementation-roadmap.md)
 

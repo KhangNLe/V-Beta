@@ -4,9 +4,18 @@
 
 Sprint 6 adds backend support for wall section photos, climbing problem photos, and (partially) user profile avatars. Images use the same Google Cloud Storage signed-PUT flow as solution-beta videos: the client requests a signed URL, uploads directly to GCS, then saves metadata through the API.
 
-**Status:** Wall section photos are available in the admin UI (upload, replace, remove, default `/co-op.png`). Problem-photo upload UI is still outstanding. Read DTOs include nullable `imageURL`.
+**Status:** Wall section photos are available in the admin UI (default `/co-op.png`), and climbing problem photos are available in the setter UI (default `/problem-holder.jpg`). Any viewer can expand a problem photo on the problem page. Read DTOs include nullable `imageURL`. Profile avatars are still outstanding.
 
 Sprint contract and remaining work: [`docs/sprints/wall-problem-images.md`](../sprints/wall-problem-images.md)
+
+## Implemented (Frontend)
+
+- Admin **Edit wall** on the main page and wall section page (name, description, upload/replace/remove)
+- Setter **Edit problem** on the wall section page and problem page (hold color, grade, notes, upload/replace/remove)
+- Optional photo on **Add Wall Section** and **Add Problem**
+- Default `/co-op.png` for wall sections and `/problem-holder.jpg` for problems when `imageURL` is null
+- Problem page click-to-expand photo
+- Component tests in `main-page.test.js`, `wall-page.test.js`, and `problem-page.test.js`
 
 ## Implemented (Backend)
 
@@ -82,7 +91,6 @@ Both columns are nullable but must be set together (CHECK constraints `chk_wall_
 
 ## Limitations and Notes
 
-- Wall/problem **read** endpoints do not yet expose `imageUrl` on list/detail DTOs (planned).
 - Profile image signed-url/save is wired, but `UserAccountManager.updateUserProfile` does not persist avatar columns yet.
 - Problem image deletion clears `problem_image_url` but may leave `image_object_name` set until a follow-up fix.
 - Replace-on-reupload does not automatically delete the previous GCS object.
@@ -90,8 +98,6 @@ Both columns are nullable but must be set together (CHECK constraints `chk_wall_
 
 ## Future Enhancements
 
-- Frontend thumbnails, lightbox, and role-gated upload UI
-- `imageUrl` on wall/problem read and search responses
 - Complete user profile image persistence
 - Deferred GCS purge policy alignment with solution-beta objects
 
