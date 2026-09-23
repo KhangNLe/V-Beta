@@ -227,14 +227,16 @@ function jpegFileFromBlob(sourceFile, jpegBlob) {
  * the signed-upload API and cross-browser img tags can use.
  *
  * @param {File} file
+ * @param {{ onHeicConvertStart?: () => void }} [options]
  * @returns {Promise<File>}
  */
-export async function prepareWallImageFile(file) {
+export async function prepareWallImageFile(file, options = {}) {
   if (!file) {
     throw new Error("No image file selected.");
   }
 
   if (isHeicLike(file) || (await looksLikeHeic(file))) {
+    options.onHeicConvertStart?.();
     const nativeJpeg = await decodeHeicWithBrowser(file);
     if (nativeJpeg) return jpegFileFromBlob(file, nativeJpeg);
 

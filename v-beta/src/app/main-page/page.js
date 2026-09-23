@@ -85,6 +85,7 @@ export default function MainPage() {
   const [newSectionPhoto, setNewSectionPhoto] = useState(/** @type {File | null} */ (null));
   const [newSectionPhotoPreview, setNewSectionPhotoPreview] = useState(/** @type {string | null} */ (null));
   const [addUploadProgress, setAddUploadProgress] = useState(0);
+  const [convertingHeic, setConvertingHeic] = useState(false);
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const addPhotoInputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
@@ -136,7 +137,9 @@ export default function MainPage() {
     }
 
     try {
-      const prepared = await prepareWallImageFile(file);
+      const prepared = await prepareWallImageFile(file, {
+        onHeicConvertStart: () => setConvertingHeic(true),
+      });
       setNewSectionPhotoPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return URL.createObjectURL(prepared);
@@ -150,6 +153,8 @@ export default function MainPage() {
           : "Could not read that photo. Try another image.",
       );
       input.value = "";
+    } finally {
+      setConvertingHeic(false);
     }
   };
 
@@ -487,9 +492,14 @@ export default function MainPage() {
                   className="aspect-[16/10] w-full object-cover"
                 />
               </div>
-              {!newSectionPhoto && (
+              {!newSectionPhoto && !convertingHeic && (
                 <p className="m-0 text-sm text-muted-foreground">
                   This default photo appears on the wall section until you upload one.
+                </p>
+              )}
+              {convertingHeic && (
+                <p className="m-0 text-sm text-muted-foreground" role="status">
+                  Uploading iPhone photo…
                 </p>
               )}
               <input
@@ -505,16 +515,16 @@ export default function MainPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={addSubmitting}
+                  disabled={addSubmitting || convertingHeic}
                   onClick={() => addPhotoInputRef.current?.click()}
                 >
-                  {newSectionPhoto ? "Change photo" : "Upload photo"}
+                  {convertingHeic ? "Uploading…" : newSectionPhoto ? "Change photo" : "Upload photo"}
                 </Button>
                 {newSectionPhoto && (
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={addSubmitting}
+                    disabled={addSubmitting || convertingHeic}
                     onClick={handleClearAddPhoto}
                   >
                     Remove photo
@@ -537,7 +547,7 @@ export default function MainPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={addSubmitting} style={buttons.primary}>
+              <Button type="submit" disabled={addSubmitting || convertingHeic} style={buttons.primary}>
                 {addSubmitting
                   ? newSectionPhoto && addUploadProgress > 0
                     ? `Uploading… ${addUploadProgress}%`

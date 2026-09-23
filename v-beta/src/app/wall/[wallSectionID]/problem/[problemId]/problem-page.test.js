@@ -752,6 +752,13 @@ describe("ProblemPage coverage", () => {
       });
 
       await waitFor(() => {
+        expect(screen.getByRole("button", { name: "Replace photo" })).toBeInTheDocument();
+      });
+      expect(uploadClimbingProblemImage).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+      await waitFor(() => {
         expect(uploadClimbingProblemImage).toHaveBeenCalledWith(
           user,
           100,
@@ -759,7 +766,7 @@ describe("ProblemPage coverage", () => {
           expect.objectContaining({ onProgress: expect.any(Function) }),
         );
       });
-      expect(toast.success).toHaveBeenCalledWith("Problem photo updated.");
+      expect(toast.success).toHaveBeenCalledWith("Problem updated.");
       expect(document.querySelector('img[src="https://cdn.example/new-blue.jpg"]')).toBeTruthy();
     });
 
@@ -777,6 +784,10 @@ describe("ProblemPage coverage", () => {
       fireEvent.change(dialog.querySelector('input[type="file"]'), {
         target: { files: [new File(["img"], "blue.jpg", { type: "image/jpeg" })] },
       });
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: "Replace photo" })).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Failed to upload image: network error");

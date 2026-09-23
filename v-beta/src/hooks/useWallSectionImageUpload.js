@@ -9,27 +9,53 @@ import {
   WALL_IMAGE_ACCEPT,
 } from "@/api/socialImage";
 
+/** @param {Blob} file */
+function previewObjectUrl(file) {
+  try {
+    return URL.createObjectURL(file);
+  } catch {
+    return null;
+  }
+}
+
+/** @param {string | null} url */
+function revokeObjectUrl(url) {
+  if (!url) return;
+  try {
+    URL.revokeObjectURL(url);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
- * Admin wall-section image upload helpers (replace/upload via signed URL).
- * Photo removal is handled by wall-section update (null image fields).
+ * Stages a wall photo locally. The bucket upload runs only when `uploadPending` is called.
  *
  * @param {{
  *   user: import("firebase/auth").User | null | undefined,
  *   wallSectionId: number | null | undefined,
- *   onImageChange?: (imageURL: string | null) => void,
  * }} options
  */
-export function useWallSectionImageUpload({ user, wallSectionId, onImageChange }) {
+export function useWallSectionImageUpload({ user, wallSectionId }) {
   const fileInputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
+  const [pendingFile, setPendingFile] = useState(/** @type {File | null} */ (null));
+  const [previewURL, setPreviewURL] = useState(/** @type {string | null} */ (null));
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [convertingHeic, setConvertingHeic] = useState(false);
 
-  const busy = uploading;
+  const clearPending = useCallback(() => {
+    setPendingFile(null);
+    setPreviewURL((prev) => {
+      revokeObjectUrl(prev);
+      return null;
+    });
+  }, []);
 
   const openFilePicker = useCallback(() => {
-    if (busy) return;
+    if (uploading || convertingHeic) return;
     fileInputRef.current?.click();
-  }, [busy]);
+  }, [convertingHeic, uploading]);
 
   const handleFileSelected = useCallback(
     async (event) => {
@@ -37,7 +63,7 @@ export function useWallSectionImageUpload({ user, wallSectionId, onImageChange }
       const file = input.files?.[0] ?? null;
       input.value = "";
 
-      if (!file || !user || wallSectionId == null || busy) return;
+      if (!file || uploading || convertingHeic) return;
 
       if (!isAllowedWallImageFile(file)) {
         toast.error(
@@ -47,29 +73,48 @@ export function useWallSectionImageUpload({ user, wallSectionId, onImageChange }
       }
 
       try {
-        setUploading(true);
-        setUploadProgress(0);
-        const prepared = await prepareWallImageFile(file);
-        const publicURL = await uploadWallSectionImage(
-          user,
-          wallSectionId,
-          prepared,
-          { onProgress: setUploadProgress },
-        );
-        onImageChange?.(publicURL);
-        toast.success("Wall photo updated.");
+        const prepared = await prepareWallImageFile(file, {
+          onHeicConvertStart: () => setConvertingHeic(true),
+        });
+        setPreviewURL((prev) => {
+          revokeObjectUrl(prev);
+          return previewObjectUrl(prepared);
+        });
+        setPendingFile(prepared);
       } catch (err) {
-        console.error("Wall image upload failed:", err);
-        if (!(err instanceof Error && err.message)) {
-          toast.error("Failed to upload wall photo.");
-        }
+        console.error("Prepare wall photo failed:", err);
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Could not read that photo. Try another image.",
+        );
       } finally {
-        setUploading(false);
-        setUploadProgress(0);
+        setConvertingHeic(false);
       }
     },
-    [busy, onImageChange, user, wallSectionId],
+    [convertingHeic, uploading],
   );
+
+  const uploadPending = useCallback(async () => {
+    if (!pendingFile || !user || wallSectionId == null) return null;
+
+    try {
+      setUploading(true);
+      setUploadProgress(0);
+      return await uploadWallSectionImage(user, wallSectionId, pendingFile, {
+        onProgress: setUploadProgress,
+      });
+    } catch (err) {
+      console.error("Wall image upload failed:", err);
+      if (!(err instanceof Error && err.message)) {
+        toast.error("Failed to upload wall photo.");
+      }
+      throw err;
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  }, [pendingFile, user, wallSectionId]);
 
   const fileInputProps = {
     ref: fileInputRef,
@@ -82,10 +127,14 @@ export function useWallSectionImageUpload({ user, wallSectionId, onImageChange }
   };
 
   return {
-    busy,
+    pendingFile,
+    previewURL,
+    convertingHeic,
     uploading,
     uploadProgress,
     openFilePicker,
     fileInputProps,
+    uploadPending,
+    clearPending,
   };
 }

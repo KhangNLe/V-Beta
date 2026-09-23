@@ -101,28 +101,31 @@ export default function ClimbingProblemSetterMenu({
   const [removing, setRemoving] = useState(false);
 
   const {
-    busy: imageBusy,
+    pendingFile,
+    previewURL,
+    convertingHeic,
     uploading,
     uploadProgress,
     openFilePicker,
     fileInputProps,
+    uploadPending,
+    clearPending,
   } = useClimbingProblemImageUpload({
     user,
     problemId,
-    onImageChange: (nextImageURL) => {
-      onProblemUpdated({ imageURL: nextImageURL });
-    },
   });
 
   const openEditDialog = () => {
+    clearPending();
     setEditHoldColor(problem.holdColor || "");
     setEditGrade(normalizeGrade(problem.assignedGrade));
     setEditInfo(problem.info || "");
     setEditOpen(true);
   };
 
-  const dialogBusy = saveSubmitting || removing || imageBusy;
-  const hasImage = Boolean(currentImageURL);
+  const dialogBusy = saveSubmitting || removing || uploading || convertingHeic;
+  const hasSavedImage = Boolean(currentImageURL);
+  const displaySrc = previewURL || currentImageURL || PROBLEM_PLACEHOLDER_SRC;
 
   const handleSave = async (event) => {
     event.preventDefault();
@@ -137,19 +140,24 @@ export default function ClimbingProblemSetterMenu({
 
     try {
       setSaveSubmitting(true);
+      let nextImageURL = currentImageURL;
+      if (pendingFile) {
+        nextImageURL = await uploadPending();
+      }
       const updated = await updateClimbingProblem(user, wallSectionId, problemId, {
         holdColor,
         info,
         assignedGrade: editGrade,
         objectFileName: null,
-        imageURL: currentImageURL,
+        imageURL: nextImageURL,
       });
       onProblemUpdated({
-        holdColor: updated.holdColor ?? holdColor,
-        info: updated.info ?? info,
-        assignedGrade: updated.assignedGrade ?? editGrade,
-        imageURL: problemImageURL(updated) ?? currentImageURL,
+        holdColor: updated?.holdColor ?? holdColor,
+        info: updated?.info ?? info,
+        assignedGrade: updated?.assignedGrade ?? editGrade,
+        imageURL: problemImageURL(updated) ?? nextImageURL,
       });
+      clearPending();
       setEditOpen(false);
       toast.success("Problem updated.");
     } catch (err) {
@@ -172,6 +180,7 @@ export default function ClimbingProblemSetterMenu({
 
     try {
       setRemoving(true);
+      clearPending();
       const updated = await updateClimbingProblem(user, wallSectionId, problemId, {
         holdColor,
         info,
@@ -233,6 +242,7 @@ export default function ClimbingProblemSetterMenu({
         open={editOpen}
         onOpenChange={(open) => {
           if (dialogBusy) return;
+          if (!open) clearPending();
           setEditOpen(open);
         }}
       >
@@ -313,14 +323,30 @@ export default function ClimbingProblemSetterMenu({
               <div className="overflow-hidden rounded-md border border-border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={currentImageURL || PROBLEM_PLACEHOLDER_SRC}
-                  alt={hasImage ? "" : "Default problem photo"}
+                  src={displaySrc}
+                  alt={
+                    previewURL
+                      ? "Selected problem photo"
+                      : hasSavedImage
+                        ? ""
+                        : "Default problem photo"
+                  }
                   className="aspect-[16/10] w-full object-cover"
                 />
               </div>
-              {!hasImage && (
+              {!hasSavedImage && !previewURL && (
                 <p className="m-0 text-sm text-muted-foreground">
                   Using the default photo until you upload one.
+                </p>
+              )}
+              {convertingHeic && (
+                <p className="m-0 text-sm text-muted-foreground" role="status">
+                  Uploading iPhone photo…
+                </p>
+              )}
+              {previewURL && (
+                <p className="m-0 text-sm text-muted-foreground">
+                  This photo uploads when you save changes.
                 </p>
               )}
 
@@ -333,13 +359,13 @@ export default function ClimbingProblemSetterMenu({
                   disabled={dialogBusy}
                   onClick={openFilePicker}
                 >
-                  {uploading
-                    ? `Uploading… ${uploadProgress}%`
-                    : hasImage
+                  {convertingHeic
+                    ? "Uploading…"
+                    : pendingFile || hasSavedImage
                       ? "Replace photo"
                       : "Upload photo"}
                 </Button>
-                {hasImage && (
+                {hasSavedImage && (
                   <Button
                     type="button"
                     variant="outline"
@@ -368,7 +394,11 @@ export default function ClimbingProblemSetterMenu({
                 disabled={dialogBusy}
                 style={buttons.primary}
               >
-                {saveSubmitting ? "Saving…" : "Save changes"}
+                {saveSubmitting
+                  ? pendingFile && uploadProgress > 0
+                    ? `Uploading… ${uploadProgress}%`
+                    : "Saving…"
+                  : "Save changes"}
               </Button>
             </DialogFooter>
           </form>
