@@ -22,6 +22,7 @@
 - `src/hooks/`
   - Auth/session hook (`useRequireAuth`)
   - Wall section image upload hook (`useWallSectionImageUpload`)
+  - Climbing problem image upload hook (`useClimbingProblemImageUpload`)
 - `src/lib/`
   - Session persistence, email verification helpers, formatting utilities, notification click/read helpers, report/appeal queue helpers
 
@@ -101,6 +102,7 @@ Supporting auth/session modules:
 - `/logbook` is admin-only (`VIEW_MODERATION_LOGS` / role gate). It pages `GET /api/moderate/logbook` (25 rows, newest first), shows a read-only detail dialog, links to `/reports?reportId=` or `/appeal-queue?reportId=` when a report id exists, and downloads all pages as `.txt`. Non-admins are sent to `/main-page`.
 - Account list/session helpers map `UserAccountDTO` (`userId`, `role`) onto the existing client session shape (`id`, `roleName`).
 - Wall section photos: list and detail responses include nullable `imageURL`. When it is null, the main page, wall section page, add dialog, and edit dialog show `/co-op.png` (`v-beta/public/co-op.png`) as the default photo. Admins open **Edit wall** from the section ⋮ menu (main page and wall section page) to change the name, description, upload/replace a JPEG/PNG/WebP or iPhone HEIC/HEIF photo, or remove the photo. Upload is `GET /api/social/image/signed-url` → GCS `PUT` → `PATCH /api/social/image/upload`. Remove clears the photo with `PATCH /api/home/wall-section/{id}/update` (`objectFileName` and `imageURL` null). Text-only saves pass the current `imageURL` so the photo stays. Non-admins do not see these controls.
+- Climbing problem photos use the same signed upload. When `imageURL` is null, the wall section page, problem page, add dialog, and edit dialog show `/problem-holder.jpg`. Setters open **Edit problem** from the problem ⋮ menu (wall section page and problem page) to change hold color, grade, notes, upload/replace a photo, or remove it. **Add Problem** can attach a photo after create. Remove clears the photo with `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/update` (`objectFileName` and `imageURL` null). On the problem page, any viewer can click the photo to expand it. Climbers, admins, and guests do not see **Edit problem**.
 
 ## Constraints and Considerations
 

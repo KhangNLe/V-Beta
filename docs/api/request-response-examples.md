@@ -471,6 +471,40 @@ Authorization: Bearer <firebase_id_token>
 
 Response: `200` array of remaining `ClimbingProblemResponse` records for that wall section.
 
+### Update climbing problem (keep or clear photo)
+
+```http
+PATCH /api/home/wall-sections/1/problems/22/update
+Authorization: Bearer <firebase_id_token>
+Content-Type: application/json
+```
+
+Keep the current photo (text-only save):
+
+```json
+{
+  "holdColor": "BLUE",
+  "info": "Crimpy sequence",
+  "assignedGrade": "V5",
+  "objectFileName": null,
+  "imageURL": "https://storage.googleapis.com/bucket/image/problem-22/uuid-photo.jpg"
+}
+```
+
+Clear the photo:
+
+```json
+{
+  "holdColor": "BLUE",
+  "info": "Crimpy sequence",
+  "assignedGrade": "V5",
+  "objectFileName": null,
+  "imageURL": null
+}
+```
+
+Response: `200` updated `ClimbingProblemResponse`. Required action: `CREATE_PROBLEM`.
+
 ## 12) Filter Problems by Grade Range (Public)
 
 ### Request
