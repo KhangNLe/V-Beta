@@ -250,17 +250,26 @@ public class ClimbingWallService {
         );
     }
 
-    @CacheEvict(value = CLIMBING_PROBLEMS_CACHE, key = "#problemId")
-    public ClimbingProblemResponse updateClimbDetail(Long problemId, ClimbingProblemCreationRequest update){
+    /**
+     * Updates problem details. A null object key with a null image URL clears the photo.
+     * A null object key with the current image URL leaves the stored photo in place.
+     *
+     * @param wallSectionId wall section that owns the problem
+     * @param problemId climbing problem identifier
+     * @param update problem fields and optional image metadata
+     * @return updated climbing problem response
+     */
+    @CacheEvict(value = CLIMBING_PROBLEMS_CACHE, key = "#wallSectionId")
+    public ClimbingProblemResponse updateClimbDetail(Long wallSectionId, Long problemId,
+                                                      ClimbingProblemCreationRequest update){
+        ClimbingProblem existing = climbingProblemManager.getActiveProblem(problemId);
+        if (existing == null
+                || existing.getWallSection() == null
+                || !wallSectionId.equals(existing.getWallSection().getId())) {
+            throw new RuntimeException("Problem does not belong to this wall section.");
+        }
         ClimbingProblem problem = climbingProblemManager.updateProblem(problemId, update);
-        return new ClimbingProblemResponse(
-                problem.getId(),
-                problem.getHoldColor(),
-                problem.getProblemInfo(),
-                problem.getCreatedDate().toString().split("T")[0],
-                problem.getClimbingGrade().getGradeDefinition(),
-                problem.getProblemImageUrl()
-        );
+        return getClimbingProblemResponse(problem);
     }
 
     @CacheEvict(value = WALL_SECTIONS_CACHE, allEntries = true)

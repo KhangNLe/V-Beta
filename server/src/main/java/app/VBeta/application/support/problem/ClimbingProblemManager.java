@@ -201,10 +201,16 @@ public class ClimbingProblemManager {
         problem.setProblemInfo(update.info());
         problem.setClimbingGrade(getClimbingGrade(update.assignedGrade()));
 
-        if (!Objects.equals(problem.getObjectImageName(), update.objectFileName())){
+        String nextKey = update.objectFileName();
+        String nextUrl = update.imageURL();
+        if (nextKey == null && nextUrl == null) {
             cloudStorageManager.deleteStorageObject(problem.getObjectImageName());
-            problem.setObjectImageName(update.objectFileName());
-            problem.setProblemImageUrl(update.imageURL());
+            problem.setObjectImageName(null);
+            problem.setProblemImageUrl(null);
+        } else if (nextKey != null && !Objects.equals(problem.getObjectImageName(), nextKey)) {
+            cloudStorageManager.deleteStorageObject(problem.getObjectImageName());
+            problem.setObjectImageName(nextKey);
+            problem.setProblemImageUrl(nextUrl);
         }
 
         return climbingProblemRepository.save(problem);

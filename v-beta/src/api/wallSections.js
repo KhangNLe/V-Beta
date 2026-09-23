@@ -269,6 +269,42 @@ export async function createWallSectionProblem(user, sectionId, body) {
 }
 
 /**
+ * Update a climbing problem (setter).
+ * - Pass current `imageURL` (and omit/null `objectFileName`) to keep the photo.
+ * - Pass `objectFileName: null` and `imageURL: null` to clear the photo.
+ *
+ * @param {import("firebase/auth").User} user
+ * @param {number} sectionId
+ * @param {number} problemId
+ * @param {{holdColor: string, info: string, assignedGrade: string, objectFileName?: string | null, imageURL?: string | null}} requestPayload
+ */
+export async function updateClimbingProblem(user, sectionId, problemId, requestPayload) {
+  const idToken = await user.getIdToken();
+  const response = await fetch(
+    `${API_BASE_URL}/api/home/wall-sections/${sectionId}/problems/${problemId}/update`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(requestPayload),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    const message =
+      errorText.trim() || `Failed to update problem: ${response.status}`;
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
  * Delete a climbing problem; returns the updated list of active problems for the section.
  *
  * @param {import("firebase/auth").User} user

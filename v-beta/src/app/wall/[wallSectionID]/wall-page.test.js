@@ -22,6 +22,7 @@ jest.mock("@/api/wallSections", () => ({
   fetchWallSectionsForUser: jest.fn(),
   resetWallSection: jest.fn(),
   updateWallSection: jest.fn(),
+  updateClimbingProblem: jest.fn(),
 }));
 
 jest.mock("@/api/socialImage", () => ({
@@ -29,6 +30,7 @@ jest.mock("@/api/socialImage", () => ({
   isAllowedWallImageFile: jest.fn(() => true),
   prepareWallImageFile: jest.fn(async (file) => file),
   uploadWallSectionImage: jest.fn(),
+  uploadClimbingProblemImage: jest.fn(),
 }));
 
 jest.mock("@/hooks/useRequireAuth", () => ({

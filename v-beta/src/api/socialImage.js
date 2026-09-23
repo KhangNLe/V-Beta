@@ -542,3 +542,77 @@ export async function uploadWallSectionImage(user, wallSectionId, file, options 
 
   return publicURL;
 }
+
+/**
+ * Full climbing-problem image upload: signed URL → GCS PUT → save metadata.
+ *
+ * @param {import("firebase/auth").User} user
+ * @param {number} problemId
+ * @param {File} file
+ * @param {{ onProgress?: (percent: number) => void }} [options]
+ * @returns {Promise<string>} public image URL
+ */
+export async function uploadClimbingProblemImage(user, problemId, file, options = {}) {
+  let uploadFile;
+  try {
+    uploadFile = await prepareWallImageFile(file);
+  } catch (err) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Please choose a phone photo (JPEG/PNG/WebP, or iPhone HEIC/HEIF).";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  const contentType = resolveImageContentType(uploadFile);
+  if (!contentType) {
+    const message =
+      "Please choose a phone photo (JPEG/PNG/WebP, or iPhone HEIC/HEIF).";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  const signedData = await requestImageSignedUrl(user, {
+    fileName: uploadFile.name,
+    contentType,
+    imageTargetType: "CLIMBING_PROBLEM",
+    problemId,
+  });
+
+  if (!signedData?.signedURL) {
+    const message = "Signed URL response is missing signedURL.";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  const uploadObjectName =
+    signedData.uploadObjectName || signedData.objectName || "";
+  if (!uploadObjectName) {
+    const message = "Signed URL response is missing uploadObjectName.";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  const publicURL = signedData.publicURL || "";
+  if (!publicURL) {
+    const message = "Signed URL response is missing publicURL.";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  await uploadImageToSignedUrl(
+    uploadFile,
+    { ...signedData, contentType },
+    { onProgress: options.onProgress },
+  );
+
+  await saveImageMetadata(user, {
+    targetType: "CLIMBING_PROBLEM",
+    objectFileName: uploadObjectName,
+    imageUrl: publicURL,
+    climbingProblemId: problemId,
+  });
+
+  return publicURL;
+}

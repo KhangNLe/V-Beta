@@ -17,6 +17,7 @@ import {
   REPORT_CATEGORIES,
   REPORT_REASON_MAX_LENGTH,
 } from "@/api/reports";
+import ClimbingProblemSetterMenu from "@/components/ClimbingProblemSetterMenu";
 import PageLoader from "@/components/ui/PageLoader";
 import { Button } from "@/components/ui/button";
 import {
@@ -145,6 +146,13 @@ function getDiscussionType(discussionItem) {
   return typeof value === 'string' ? value.toUpperCase() : '';
 }
 
+const PROBLEM_PLACEHOLDER_SRC = "/problem-holder.jpg";
+
+/** @param {{ imageURL?: string | null, imageUrl?: string | null } | null | undefined} problem */
+function problemImageURL(problem) {
+  return problem?.imageURL ?? problem?.imageUrl ?? null;
+}
+
 /** @param {unknown} discussionItem */
 function getDiscussionMediaUrl(discussionItem) {
   if (!discussionItem || typeof discussionItem !== 'object') return '';
@@ -171,6 +179,8 @@ export default function ProblemPage() {
   const [entryMode, setEntryMode] = useState('comment'); // "comment" | "file"
   const [solutionFile, setSolutionFile] = useState(null);
   const isAdmin = getAccountRole(account).toUpperCase().includes('ADMIN');
+  const isSetter = getAccountRole(account).toUpperCase().includes('SETTER');
+  const [photoExpanded, setPhotoExpanded] = useState(false);
   const currentUserId = useMemo(() => {
     const accountId = getAccountId(account);
     if (accountId != null) return String(accountId);
@@ -617,42 +627,81 @@ export default function ProblemPage() {
               }}
             >
               <div style={card.accentBar} aria-hidden />
-              <h1
-                style={{
-                  margin: '0 0 8px',
-                  fontSize: '1.75rem',
-                  fontWeight: 700,
-                  color: colors.text,
-                }}
-              >
-                {problem.holdColor}
-              </h1>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'baseline',
-                  gap: '12px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55 }}>
-                  Assigned Grade: {problem.assignedGrade || 'V?'}
-                </p>
-                <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55 }}>
-                  Perceived Difficulty: {problem.perceiveGrade.trim() || 'N/A'}
-                </p>
+              <div className="flex flex-col items-stretch sm:flex-row">
+                <div className="w-full shrink-0 sm:w-64">
+                  <button
+                    type="button"
+                    className="relative block h-48 w-full overflow-hidden bg-muted text-left"
+                    aria-label="Expand problem photo"
+                    onClick={() => setPhotoExpanded(true)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={problemImageURL(problem) || PROBLEM_PLACEHOLDER_SRC}
+                      alt={
+                        problemImageURL(problem)
+                          ? `${problem.holdColor || "Problem"} photo`
+                          : "Default problem photo"
+                      }
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  </button>
+                  <p className="m-0 px-3 py-1.5 text-xs" style={{ color: colors.subtle }}>
+                    Click to expand
+                  </p>
+                </div>
+                <div className="min-w-0 flex-1 px-5 pt-5 pb-5">
+                  <div className="flex items-start justify-between gap-2">
+                    <h1
+                      style={{
+                        margin: '0 0 8px',
+                        fontSize: '1.75rem',
+                        fontWeight: 700,
+                        color: colors.text,
+                      }}
+                    >
+                      {problem.holdColor}
+                    </h1>
+                    {isSetter && user && wallSectionID && problem.problemId && (
+                      <ClimbingProblemSetterMenu
+                        user={user}
+                        wallSectionId={wallSectionID}
+                        problem={problem}
+                        onProblemUpdated={(patch) =>
+                          setProblem((prev) => (prev ? { ...prev, ...patch } : prev))
+                        }
+                        ariaLabel="Problem actions"
+                      />
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                      gap: '12px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55 }}>
+                      Assigned Grade: {problem.assignedGrade || 'V?'}
+                    </p>
+                    <p style={{ margin: 0, color: colors.muted, lineHeight: 1.55 }}>
+                      Perceived Difficulty: {problem.perceiveGrade.trim() || 'N/A'}
+                    </p>
+                  </div>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: colors.muted,
+                      lineHeight: 1.55,
+                      maxWidth: '65ch',
+                    }}
+                  >
+                    Info: {problem.info || 'No problem notes available.'}
+                  </p>
+                </div>
               </div>
-              <p
-                style={{
-                  margin: 0,
-                  color: colors.muted,
-                  lineHeight: 1.55,
-                  maxWidth: '65ch',
-                }}
-              >
-                Info: {problem.info || 'No problem notes available.'}
-              </p>
             </section>
 
             {/* Discussion Section */}
@@ -1127,6 +1176,31 @@ export default function ProblemPage() {
           </>
         )}
       </div>
+
+      <Dialog open={photoExpanded} onOpenChange={setPhotoExpanded}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {problem?.holdColor || "Problem"} photo
+            </DialogTitle>
+            <DialogDescription>
+              Expanded view of this problem photo.
+            </DialogDescription>
+          </DialogHeader>
+          {problem && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={problemImageURL(problem) || PROBLEM_PLACEHOLDER_SRC}
+              alt={
+                problemImageURL(problem)
+                  ? `${problem.holdColor || "Problem"} photo`
+                  : "Default problem photo"
+              }
+              className="max-h-[70vh] w-full object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={!!reportTarget}
