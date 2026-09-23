@@ -4,7 +4,7 @@
 
 Sprint 6 adds backend support for wall section photos, climbing problem photos, and (partially) user profile avatars. Images use the same Google Cloud Storage signed-PUT flow as solution-beta videos: the client requests a signed URL, uploads directly to GCS, then saves metadata through the API.
 
-**Status:** Backend APIs shipped; frontend display/upload UI and `imageUrl` on wall/problem read DTOs are still in progress.
+**Status:** Wall section photos are available in the admin UI (upload, replace, remove, default `/co-op.png`). Problem-photo upload UI is still outstanding. Read DTOs include nullable `imageURL`.
 
 Sprint contract and remaining work: [`docs/sprints/wall-problem-images.md`](../sprints/wall-problem-images.md)
 

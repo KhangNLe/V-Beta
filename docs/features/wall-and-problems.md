@@ -9,7 +9,8 @@ This section documents wall section and climbing problem features currently avai
 - View wall sections on the main page
 - View active problems within a selected wall section
 - View problem details, discussion, and suggested grade context
-- Admin wall section creation and deletion
+- Admin wall section creation, edit (name, description, photo), and deletion
+- Wall section photos on the main page and wall section page, with `/co-op.png` as the default when `imageURL` is null
 - Setter problem creation and deletion
 - Setter wall section reset/archive operation
 - Authenticated discussion actions (comments, beta upload, grade suggestion, content report)
@@ -54,14 +55,23 @@ Keyword/text search is deferred to a later sprint (completed Sprint 4 delivered 
 3. Setter can reset/archive active problems for a section.
 4. Updated problem list is refreshed after create/delete/reset operations.
 
-### Image Upload Flow (API — backend shipped)
+### Admin Wall Photo
 
-1. Admin or setter requests `GET /api/social/image/signed-url` with `imageTargetType` and target id.
+1. Admin opens `/main-page` or a wall section page.
+2. Sections without `imageURL` show the default co-op photo. **Add Wall Section** previews that same default and explains it is what climbers see until a photo is uploaded.
+3. Admin opens **Edit wall** from the section menu.
+4. Upload or replace uses a signed URL (`GET /api/social/image/signed-url`), a direct GCS `PUT`, then `PATCH /api/social/image/upload`. JPEG, PNG, WebP, and iPhone HEIC/HEIF are accepted; HEIC is converted to JPEG in the browser before upload.
+5. **Remove photo** calls `PATCH /api/home/wall-section/{id}/update` with `objectFileName` and `imageURL` set to null. The default photo returns without a full page reload.
+6. Climbers, setters, and guests do not see Edit wall.
+
+### Image Upload Flow (API)
+
+1. Admin requests `GET /api/social/image/signed-url` with `imageTargetType=WALL_SECTION` and `wallSectionId`.
 2. Client uploads the image to GCS with the returned signed PUT URL.
 3. Client calls `PATCH /api/social/image/upload` with `objectFileName` and `imageUrl`.
-4. Optional: authorized caller deletes via `DELETE /api/social/image/wall` or `/image/problem`.
+4. The card or section header updates from the returned public URL.
 
-Frontend upload UI and `imageUrl` on read responses are not yet shipped. See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
+See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
 
 ### Discussion Flow
 
@@ -96,11 +106,13 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
     - `v-beta/src/app/wall/[wallSectionID]/problem/[problemId]/page.js`
 - Frontend API modules: 
     - `v-beta/src/api/wallSections.js`
+    - `v-beta/src/api/socialImage.js`
+    - `v-beta/src/components/WallSectionAdminMenu.js`
+    - `v-beta/src/hooks/useWallSectionImageUpload.js`
     - `v-beta/src/api/comments.js`
     - `v-beta/src/api/solutionBeta.js`
     - `v-beta/src/api/reports.js`
     - `v-beta/src/lib/discussionDeletion.js`
-    - `v-beta/src/api/socialMedia.js` (planned)
 - Backend controllers/services:
     - `server/src/main/java/app/VBeta/controller/SocialMediaController.java`
     - `server/src/main/java/app/VBeta/application/ImageService.java`

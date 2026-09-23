@@ -95,6 +95,14 @@ Setter and Admin users can perform route-setting and management operations.
    - reset/archive wall section problems (setter workflow)
 4. Verify the wall/problem list refreshes with updates.
 
+### A2) Wall Section Photo (Admin)
+1. On `/main-page` or a wall section page, confirm sections without a photo show the default co-op image.
+2. Open **Add Wall Section** and confirm the same default photo is shown, with text that it appears until you upload one.
+3. Open the section ⋮ menu and choose **Edit wall**.
+4. Upload or replace a photo (JPEG, PNG, WebP, or iPhone HEIC). Confirm the thumbnail updates and a success toast appears.
+5. Choose **Remove photo**. Confirm the default co-op image returns.
+6. Sign in as a climber or setter and confirm **Edit wall** is not shown.
+
 ### B) Admin Account Role Management (Admin)
 1. Open `/accounts`.
 2. Review all user accounts.
