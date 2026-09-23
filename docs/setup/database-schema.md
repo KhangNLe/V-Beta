@@ -411,7 +411,7 @@ Keep `pg-v-beta.sql` and `v_beta_test_schema.sql` aligned when changing image co
   - `Gym_Role.role_type` as `NOT NULL`
   - composite primary key on `Role_Permission (role_id, action_id)`
   - `Discussion_Root` with:
-    - nullable `parent_discussion_id` (self-FK for future threading)
+    - nullable `parent_discussion_id` (self-FK reserved for Sprint 7 replies)
     - `discussion_type` backed by PostgreSQL enum `discussion_kind`
     - `create_at` timestamp used by runtime entity mapping
     - nullable soft-delete columns `deleted_by`, `deleted_reason`, `deleted_at`

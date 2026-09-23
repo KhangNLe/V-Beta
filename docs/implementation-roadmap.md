@@ -11,69 +11,44 @@ This roadmap tracks only active and upcoming work. Completed foundation delivery
 
 ## Current Sprint
 
-Sprint 6 (Wall and Problem Images) is in progress. Sprint 5 (Moderation MVP) is complete.
+Sprint 6 (Wall and Problem Images) is complete. Sprint 7 (Unified Discussion) is next.
 
 ## Upcoming Sprints
 
-### Sprint 6: Wall and Problem Images
+### Sprint 7: Unified Discussion
 
-Status: In progress
+Status: Next
 
 Estimated Duration: 2 weeks
 
 ### Summary
 
-Deliver image support for wall sections and climbing problems: admins upload wall photos, setters upload problem photos, and all users (including guests) view thumbnails with click-to-expand. Builds on the existing GCS signed-upload pattern used for solution betas.
+Merge comments and solution betas into one discussion post. A signed-in user can post a written comment and a video beta together. Other users can reply to that discussion. The author receives an in-app notification when someone replies.
 
 ### Scope
 
-**Phase 1 — Contract and schema**
-
-- Data/storage contract and lifecycle rules
-- Nullable paired image columns on `Wall_Section` and `Climbing_Problem`
-- Agreed API response field: `imageUrl: string | null`
-
-**Phase 2 — Backend** (partial)
-
-- `UPLOAD_WALL_IMAGE` / `UPLOAD_PROBLEM_IMAGE` permissions — done
-- Signed upload URL + metadata save + delete endpoints — done
-- `imageUrl` on wall/problem list, detail, and search DTOs — planned
-
-**Phase 3 — Frontend**
-
-- Admin wall image upload/replace
-- Setter problem image upload/replace
-- Thumbnails + lightbox on main page, wall page, and problem page
-
-**Phase 4 — Quality**
-
-- Backend/frontend tests, manual cases, API docs
+- One discussion post can include comment text, a beta video, or both
+- Replies attach to another discussion (`Discussion_Root.parent_discussion_id` is already nullable for this)
+- In-app notification to the discussion author when someone replies
+- Problem-page composer and timeline show the combined post and its replies
+- Existing separate comment and beta posts stay readable
 
 ### Acceptance Criteria
 
-- [ ] Schema and contract documented; bootstrap SQL aligned in runtime + test schemas
-- [ ] Admin can upload/replace wall section image via authenticated UI
-- [ ] Setter can upload/replace problem image via authenticated UI
-- [ ] Unauthorized roles cannot upload via API
-- [ ] Read APIs return `imageUrl: string | null` on wall and problem payloads
-- [ ] UI supports click-to-view; null images show placeholder
-- [ ] MIME type and 8 MB size limits enforced server-side
-- [ ] Tests and docs updated for Sprint 6
+- [ ] A user can publish one discussion that includes a comment and a video beta together
+- [ ] A user can publish a comment-only post or a video-only post
+- [ ] A user can reply to another discussion
+- [ ] The discussion author receives an in-app notification when someone replies
+- [ ] Report, soft-delete, and appeal still apply to the unified post and its replies
+- [ ] Tests and docs updated for the unified discussion
 
-### Explicitly out of scope (Sprint 6 / v1)
+### Explicitly out of scope
 
-- Image galleries, in-app cropping, climber-uploaded photos
-- Dedicated delete-image endpoint (replace-only)
-- Immediate GCS purge on problem delete
-- `image_content_type` / `image_uploaded_at` columns
+- Email or push notifications (in-app inbox only)
+- Cursor pagination and deep thread performance (Sprint 9)
+- Reactions, pins, and edit history
 
-### Notes
-
-- Contract and plan: `docs/sprints/wall-problem-images.md`
-- Feature summary: `docs/features/wall-problem-images.md`
-- Schema: `docs/setup/database-schema.md` (Wall / Problem Image Columns)
-
-### Sprint 7: API Reliability
+### Sprint 8: API Reliability
 
 Estimated Duration: 2 weeks
 
@@ -83,7 +58,7 @@ Focus:
 - Standardized error payload contract (`code`, `message`, `status`, `path`, `timestamp`)
 - Frontend/API client parsing alignment
 
-### Sprint 8: Discussion Scalability
+### Sprint 9: Discussion Scalability
 
 Estimated Duration: 2 weeks
 
@@ -93,17 +68,17 @@ Focus:
 - Continuation-token contract and deterministic feed retrieval
 - Performance verification on larger datasets
 
-### Sprint 9: UX Enhancements
+### Sprint 10: UX Enhancements
 
 Estimated Duration: 2 weeks
 
 Focus:
 
-- Profile images
+- Profile images (left out of Sprint 6)
 - Account activity history
 - Perceived-grade detail views
 
-### Sprint 10: Problem Text Search (Later)
+### Sprint 11: Problem Text Search (Later)
 
 Estimated Duration: 1–2 weeks
 
@@ -111,9 +86,51 @@ Focus:
 
 - Keyword / free-text search for climbing problems (and optionally wall sections)
 - Prefer client-side filtering first if lists stay small; add a backend search query only if needed
-- Not part of Sprint 4 discovery (grade filter/sort already covers current discovery needs); scheduled after Sprint 9
+- Not part of Sprint 4 discovery (grade filter/sort already covers current discovery needs); scheduled after Sprint 10
 
 ## Completed Sprints
+
+### Sprint 6: Wall and Problem Images
+
+Status: Completed
+
+### Summary
+
+Delivered wall section and climbing problem photos on the existing GCS signed-upload flow. Admins manage wall photos. Setters manage problem photos. Guests and signed-in users see thumbnails. Click-to-expand is only on the climbing problem page.
+
+### Scope delivered
+
+- Nullable paired image columns and read-field `imageURL` on wall and problem payloads
+- Admin **Edit wall** / **Add Wall Section** and setter **Edit problem** / **Add Problem**
+- Local preview on file pick; bucket upload on **Save changes**, **Add section**, or **Add problem**
+- Replace deletes the previous GCS object when the new key differs
+- Defaults `/co-op.png` (wall) and `/problem-holder.jpg` (problem)
+- HEIC/HEIF converts to JPEG in the browser, with **Uploading iPhone photo…** while that conversion runs
+- Problem-page click-to-expand
+
+### Acceptance Criteria
+
+- [x] Schema and contract documented; bootstrap SQL aligned in runtime + test schemas
+- [x] Admin can upload/replace a wall section image via authenticated UI
+- [x] Setter can upload/replace a problem image via authenticated UI
+- [x] Unauthorized roles cannot upload via API
+- [x] Read APIs return `imageURL: string | null` on wall and problem payloads
+- [x] Thumbnails render; click-to-expand is only on the climbing problem page; null images show a placeholder
+- [x] MIME type and 8 MB size limits enforced on metadata save
+- [x] Tests and docs updated for Sprint 6
+
+### Explicitly out of scope
+
+- User profile image persistence and UI (Sprint 10)
+- Click-to-expand on the main page or wall section page
+- Image galleries, in-app cropping, climber-uploaded photos
+- `image_content_type` / `image_uploaded_at` columns
+
+### Notes
+
+- Contract: `docs/sprints/wall-problem-images.md`
+- Feature summary: `docs/features/wall-problem-images.md`
+- Manual cases: WALL-04, WALL-05
 
 ### Sprint 5: Moderation MVP
 
@@ -179,7 +196,7 @@ Delivered discovery improvements for wall sections and climbing problems via gra
 
 ### Explicitly out of scope (deferred)
 
-- Keyword / free-text search for problems → Sprint 9
+- Keyword / free-text search for problems → Sprint 11
 
 ### Acceptance Criteria
 

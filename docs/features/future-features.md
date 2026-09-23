@@ -58,17 +58,16 @@ This document tracks ideas that are not fully implemented in the current release
 - **Area:** Account/Discussion UI
 - **Current Gap:** User identity in comments and solution beta sections is text-only.
 - **Potential Work:** Add profile picture upload/display so each user avatar appears in comments and solution beta entries.
-- **Dependencies:** User profile image storage strategy, account schema updates, frontend rendering updates.
+- **Dependencies:** User profile image storage strategy, account schema updates, frontend rendering updates. Not part of Sprint 6. Tracked for roadmap Sprint 10.
 
 ### 7) Images for Wall Sections and Climbing Problems
 
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** Wall/Problem Experience
-- **Target sprint:** Sprint 6 (in progress — backend APIs shipped)
-- **Current Gap:** Frontend upload/display and `imageUrl` on read DTOs are not yet shipped.
-- **Shipped:** `/api/social/image/*`, schema columns, permissions, tests.
-- **Remaining:** UI, read DTO `imageUrl`, profile image persistence.
+- **Target sprint:** Sprint 6 (complete)
+- **Shipped:** Admin wall photos, setter problem photos, nullable `imageURL` on read DTOs, save-gated GCS upload, replace deletes the previous object, problem-page click-to-expand, defaults `/co-op.png` and `/problem-holder.jpg`.
+- **Out of this sprint:** User profile images (item 5, roadmap Sprint 10). Click-to-expand on the main page and wall section page.
 - **Tracking:** [`docs/features/wall-problem-images.md`](./wall-problem-images.md), [`docs/sprints/wall-problem-images.md`](../sprints/wall-problem-images.md)
 
 ### 8) Text Search for Problems
@@ -76,7 +75,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Low
 - **Effort:** Medium
 - **Area:** Wall/Problem Discovery
-- **Target sprint:** Later (roadmap Sprint 9) — **not** part of completed Sprint 4
+- **Target sprint:** Later (roadmap Sprint 11) — **not** part of completed Sprint 4
 - **Current Gap:** Sprint 4 shipped grade-range filter and most recent / easiest / hardest sort; free-text search is intentionally deferred.
 - **Potential Work:** Add client-side text filtering on loaded results first; add a backend text-search endpoint only if lists grow.
 - **Dependencies:** UX for search input; optional API contract if server-side search is required.
@@ -132,18 +131,20 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Medium
 - **Effort:** Small
 - **Area:** API Reliability / Developer Experience
+- **Target sprint:** Sprint 8
 - **Current Gap:** Error responses are not fully standardized across all backend failure paths.
 - **Potential Work:** Add a centralized global exception handler in the server using Spring `@RestControllerAdvice` and enforce a standardized error message format across all server endpoints (for example: `code`, `message`, `status`, `path`, `timestamp`).
 - **Dependencies:** Exception mapping strategy, standardized error payload contract, and frontend/API client error parsing updates.
 
-### 15) Nested Discussion Threads (Replies) on `discussion_root`
+### 15) Unified Discussion Posts, Replies, and Reply Notifications
 
 - **Priority:** High
 - **Effort:** Large
 - **Area:** Discussion Architecture / User Experience
-- **Current Gap:** Data model foundation exists, but full user-facing threaded reply UX and pagination are not shipped.
-- **Potential Work:** Build reply creation/retrieval UX with depth rules and moderation controls on top of existing `discussion_root` parent linkage.
-- **Dependencies:** Thread query strategy (recursive CTE or iterative API), frontend threaded rendering, and cursor pagination contract.
+- **Target sprint:** Sprint 7 (next)
+- **Current Gap:** A problem timeline is split into comment posts and solution-beta posts. Users cannot put a video beta and a written comment on the same post, reply to a discussion, or get notified when someone replies.
+- **Potential Work:** One discussion post can include comment text, a beta video, or both. Replies use `Discussion_Root.parent_discussion_id`. The author gets an in-app notification when someone replies.
+- **Dependencies:** Combined create/read payload, problem-page composer and timeline, and the existing notification inbox. Cursor pagination stays in Sprint 9.
 
 ### 16) DB-Enforced XOR Integrity for `discussion_root` Children
 
@@ -151,7 +152,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Effort:** Medium
 - **Area:** Data Integrity
 - **Current Gap:** The application can enforce that a root points to either comment or beta, but the database may still allow drift without stricter constraints.
-- **Potential Work:** Add database triggers/check logic so a `discussion_root` of `type='comment'` can only have one `discussion_comment` child and never a `solution_beta` child (and vice versa).
+- **Potential Work:** Deferred. Sprint 7 allows one discussion post to hold both a comment and a beta, so an exclusive comment-or-beta database check would block that sprint.
 - **Dependencies:** Final table design, trigger migration strategy, and integration tests for invalid insert attempts.
 
 ### 17) Discussion Reactions (Like/Helpful) for Comments and Betas
@@ -186,6 +187,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** High
 - **Effort:** Large
 - **Area:** API Performance / Scalability
+- **Target sprint:** Sprint 9
 - **Current Gap:** Cursor pagination API/UX is not implemented yet.
 - **Potential Work:** Implement cursor-based pagination on `discussion_root` (for example by `created_at` + `id`) and extend mixed comment/beta feed retrieval for infinite-scroll UX.
 - **Dependencies:** Pagination API contract, frontend infinite-scroll support, and continuation-token semantics.

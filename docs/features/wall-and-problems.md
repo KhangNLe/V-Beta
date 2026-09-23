@@ -25,7 +25,7 @@ This section documents wall section and climbing problem features currently avai
 - Wall section Filter UI: grade range (min–max), sort by most recent / easiest / hardest, Apply / Clear
 - Add Problem grade picker uses a grade dropdown (`VB`–`V17`)
 - Backend image upload/delete APIs for wall sections and climbing problems (`/api/social/image/*`)
-- Signed GCS PUT flow for wall, problem, and profile image targets (profile persistence incomplete)
+- Signed GCS PUT for wall and problem photos; the file is sent to the bucket on save or add, and replace deletes the previous object
 
 ## User Flows
 
@@ -62,9 +62,9 @@ Keyword/text search is deferred to a later sprint (completed Sprint 4 delivered 
 1. Setter opens a wall section or a problem page.
 2. Problems without `imageURL` show `/problem-holder.jpg`. **Add Problem** previews that same default and explains it is what climbers see until a photo is uploaded.
 3. Setter opens **Edit problem** from the problem menu.
-4. Upload or replace uses a signed URL (`GET /api/social/image/signed-url` with `imageTargetType=CLIMBING_PROBLEM`), a direct GCS `PUT`, then `PATCH /api/social/image/upload`. JPEG, PNG, WebP, and iPhone HEIC/HEIF are accepted; HEIC is converted to JPEG in the browser before upload.
+4. Choosing a photo only prepares a local preview. JPEG, PNG, WebP, and iPhone HEIC/HEIF are accepted. HEIC/HEIF converts to JPEG in the browser and shows **Uploading iPhone photo…** while that runs. The signed URL, GCS `PUT`, and `PATCH /api/social/image/upload` run when the setter clicks **Save changes** or **Add problem**. Saving a new object key deletes the previous GCS object.
 5. **Remove photo** calls `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/update` with `objectFileName` and `imageURL` set to null. The default photo returns without a full page reload.
-6. On the problem page, any viewer can click the photo to expand it.
+6. On the problem page, any viewer can click the photo to expand it. Wall-section problem cards do not expand.
 7. Climbers, admins, and guests do not see Edit problem.
 
 ### Admin Wall Photo
@@ -72,7 +72,7 @@ Keyword/text search is deferred to a later sprint (completed Sprint 4 delivered 
 1. Admin opens `/main-page` or a wall section page.
 2. Sections without `imageURL` show the default co-op photo. **Add Wall Section** previews that same default and explains it is what climbers see until a photo is uploaded.
 3. Admin opens **Edit wall** from the section menu.
-4. Upload or replace uses a signed URL (`GET /api/social/image/signed-url`), a direct GCS `PUT`, then `PATCH /api/social/image/upload`. JPEG, PNG, WebP, and iPhone HEIC/HEIF are accepted; HEIC is converted to JPEG in the browser before upload.
+4. Choosing a photo only prepares a local preview. JPEG, PNG, WebP, and iPhone HEIC/HEIF are accepted. HEIC/HEIF converts to JPEG in the browser and shows **Uploading iPhone photo…** while that runs. The signed URL, GCS `PUT`, and `PATCH /api/social/image/upload` run when the admin clicks **Save changes** or **Add section**. Saving a new object key deletes the previous GCS object.
 5. **Remove photo** calls `PATCH /api/home/wall-section/{id}/update` with `objectFileName` and `imageURL` set to null. The default photo returns without a full page reload.
 6. Climbers, setters, and guests do not see Edit wall.
 
@@ -150,7 +150,8 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 - The rest of the moderation loop (admin queue, logbook, notifications, appeals) is documented in `docs/features/moderation.md`.
 - Discovery grade-range endpoints use `/api/search/{wallSectionId}?min=&max=&sort=`.
 - CORS allows `/api/**` for the frontend origin (covers `/api/home/**` and `/api/search/**`).
-- Keyword/text search is deferred to a later sprint (roadmap Sprint 10); Sprint 4 discovery (grade filter/sort) is complete.
+- Keyword/text search is deferred to a later sprint (roadmap Sprint 11); Sprint 4 discovery (grade filter/sort) is complete.
+- Comments and solution betas are separate posts. Sprint 7 will let one discussion include a comment and a video beta, allow replies, and notify the author in-app when someone replies.
 - Wall and problem read DTOs expose nullable `imageURL`. A null wall `imageURL` displays `/co-op.png`. A null problem `imageURL` displays `/problem-holder.jpg`. See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
 
 ## Future Enhancements

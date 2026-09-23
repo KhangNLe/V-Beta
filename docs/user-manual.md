@@ -99,17 +99,17 @@ Setter and Admin users can perform route-setting and management operations.
 1. On `/main-page` or a wall section page, confirm sections without a photo show the default co-op image.
 2. Open **Add Wall Section** and confirm the same default photo is shown, with text that it appears until you upload one.
 3. Open the section ⋮ menu and choose **Edit wall**.
-4. Upload or replace a photo (JPEG, PNG, WebP, or iPhone HEIC). Confirm the thumbnail updates and a success toast appears.
-5. Choose **Remove photo**. Confirm the default co-op image returns.
+4. Choose a photo (JPEG, PNG, WebP, or iPhone HEIC). Confirm it stays a preview until **Save changes** or **Add section**. An iPhone HEIC photo shows **Uploading iPhone photo…** while it converts. After save, confirm the thumbnail updates and a success toast appears.
+5. Choose **Remove photo**. Confirm the default co-op image returns. Wall thumbnails do not expand.
 6. Sign in as a climber or setter and confirm **Edit wall** is not shown.
 
 ### A3) Climbing Problem Photo (Setter)
 1. On a wall section page, confirm problems without a photo show the default problem-holder image.
 2. Open **Add Problem** and confirm the same default photo is shown, with text that it appears until you upload one.
 3. Open the problem ⋮ menu and choose **Edit problem**.
-4. Upload or replace a photo (JPEG, PNG, WebP, or iPhone HEIC). Confirm the thumbnail updates and a success toast appears.
+4. Choose a photo (JPEG, PNG, WebP, or iPhone HEIC). Confirm it stays a preview until **Save changes** or **Add problem**. An iPhone HEIC photo shows **Uploading iPhone photo…** while it converts. After save, confirm the thumbnail updates and a success toast appears.
 5. Choose **Remove photo**. Confirm the default problem-holder image returns.
-6. Open the problem page and click the photo. Confirm a larger view opens.
+6. Open the problem page and click the photo. Confirm a larger view opens. Problem cards on the wall section page do not expand.
 7. Sign in as a climber or admin and confirm **Edit problem** is not shown.
 
 ### B) Admin Account Role Management (Admin)

@@ -1,17 +1,17 @@
 # Known Issues and Limitations
 
-This document reflects the current repository state on `sprint5/moderation_mvp`.
+This document reflects known limitations after Sprint 6 (wall and problem images).
 
 ## Functional Limitations
 
 ### 1) Keyword/text search for problems is deferred to a later sprint
 - Grade-range filtering and sort (most recent / easiest / hardest) shipped in completed Sprint 4 discovery.
-- Text/keyword search was intentionally not in Sprint 4; tracked for a later sprint (see roadmap Sprint 9).
+- Text/keyword search was intentionally not in Sprint 4; tracked for a later sprint (see roadmap Sprint 11).
 - Impact: users filter by grade/sort only until that later sprint.
 
-### 2) Comment model is problem-level, not beta-level
-- Discussion comments are attached to climbing problems (with user-comment linkage), not directly to a specific beta submission.
-- Impact: limited threading/granularity when discussing multiple betas for the same problem.
+### 2) Comments and betas are separate posts
+- A problem timeline stores a written comment and a solution beta as different discussion posts. Users cannot attach both to one post, reply to a discussion, or get a notification when someone replies.
+- Impact: discussion stays a flat list of separate comments and betas until Sprint 7.
 
 ### 3) Account page is read-only for profile fields
 - Users can view account info (and delete account) but cannot self-edit profile attributes such as username/email in the app.
@@ -51,6 +51,8 @@ This document reflects the current repository state on `sprint5/moderation_mvp`.
 
 ## Planned Follow-up Areas
 
+- Unified discussion posts: comment and video beta on one post, replies, and an in-app notification when someone replies (roadmap Sprint 7).
+- User profile images (left out of Sprint 6; roadmap Sprint 10).
 - Delayed GCS purge of soft-deleted beta objects after a retention window (appeal restore is already shipped).
 - Reporting wall sections or problems (Sprint 5 covers comments and betas only).
 - Email/push notification channels (in-app inbox only).

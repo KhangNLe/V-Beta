@@ -14,8 +14,8 @@ Use this together with:
 | Authentication | login, signup, verify-email, reset-password, Google auth | AUTH-01, AUTH-02, AUTH-03, AUTH-04 | High |
 | Session and Access Control | guest browse, protected route behavior, role-based UI visibility | NAV-01 + auth/account role checks | High |
 | Account Management | profile load, delete account, role promotion/demotion | ACCOUNT-01, ACCOUNT-02, ACCOUNT-03 | High |
-| Wall Section Management | list, create/delete section, invalid section navigation | WALL-01, WALL-03 | High |
-| Problem Management | create/delete/reset problem flows as setter/admin-allowed | WALL-02 | High |
+| Wall Section Management | list, create/delete section, invalid section navigation, admin wall photo | WALL-01, WALL-03, WALL-04 | High |
+| Problem Management | create/delete/reset problem flows as setter/admin-allowed, setter problem photo, problem-page expand | WALL-02, WALL-05 | High |
 | Discussion Comments | post comment, soft-delete as owner/admin, block unauthorized delete | DISC-01 | High |
 | Solution Beta | signed URL request, upload, save metadata, soft-delete beta | DISC-02 | High |
 | Perceived Grade | submit perceived grade and verify reflected result | DISC-03 | Medium |
@@ -39,7 +39,7 @@ When code changes in these areas, minimum regression scope should include:
 - **Role/permission/backend security changed**:
   - Re-run account role changes + setter/admin/guest restricted actions.
 - **Wall/problem controllers or APIs changed**:
-  - Re-run WALL-01/02/03 and DISC-03.
+  - Re-run WALL-01/02/03/04/05 and DISC-03.
   - Confirm `/api/home/...` paths and `PATCH` for wall reset / problem delete.
 - **Discovery/filter APIs changed** (`/api/search`, `ProblemFilteringService`):
   - Re-run DISC-04 and related integration tests in `ClimbingProblemFilteringTest`.

@@ -86,6 +86,39 @@ This document defines the manual regression checklist for validating core user f
   - setter actions succeed
   - updated problem list reflects operations
 
+### WALL-04: Admin Wall Section Photo
+
+- Steps:
+  1. Sign in as admin
+  2. On `/main-page`, confirm a section without a photo shows the default co-op image
+  3. Open **Edit wall**, choose a JPEG/PNG/WebP (or iPhone HEIC) photo, and confirm the bucket is not updated until **Save changes**
+  4. Save and confirm the thumbnail updates
+  5. Replace the photo, save, and confirm the new photo is shown
+  6. Choose **Remove photo** and confirm the default co-op image returns
+  7. Sign in as a climber or setter and confirm **Edit wall** is hidden
+- Expected:
+  - file pick only previews; upload starts on **Save changes** or **Add section**
+  - HEIC shows **Uploading iPhone photo…** while it converts
+  - replace removes the previous stored object
+  - wall thumbnails do not expand
+  - non-admins cannot open **Edit wall**
+
+### WALL-05: Setter Climbing Problem Photo
+
+- Steps:
+  1. Sign in as setter
+  2. On a wall section page, confirm a problem without a photo shows the default problem-holder image
+  3. Open **Edit problem**, choose a photo, and confirm the bucket is not updated until **Save changes**
+  4. Save and confirm the problem card updates
+  5. Open the problem page and click the photo
+  6. Choose **Remove photo** and confirm the default problem-holder image returns
+  7. Sign in as a climber or admin and confirm **Edit problem** is hidden
+- Expected:
+  - file pick only previews; upload starts on **Save changes** or **Add problem**
+  - the problem page opens a larger view; wall-section problem cards do not
+  - replace removes the previous stored object
+  - climbers and admins cannot open **Edit problem**
+
 ### WALL-03: Invalid Wall Section Routing
 
 - Steps:

@@ -2,28 +2,31 @@
 
 ## Feature Overview
 
-Sprint 6 adds backend support for wall section photos, climbing problem photos, and (partially) user profile avatars. Images use the same Google Cloud Storage signed-PUT flow as solution-beta videos: the client requests a signed URL, uploads directly to GCS, then saves metadata through the API.
+Sprint 6 adds wall section photos and climbing problem photos. Images use the same Google Cloud Storage signed-PUT flow as solution-beta videos: the client requests a signed URL, uploads directly to GCS, then saves metadata through the API. User profile images are not part of this sprint.
 
-**Status:** Wall section photos are available in the admin UI (default `/co-op.png`), and climbing problem photos are available in the setter UI (default `/problem-holder.jpg`). Any viewer can expand a problem photo on the problem page. Read DTOs include nullable `imageURL`. Profile avatars are still outstanding.
+**Status:** Complete. Admins manage wall photos (default `/co-op.png`). Setters manage problem photos (default `/problem-holder.jpg`). Choosing a photo prepares a local preview. The bucket upload starts on **Save changes**, **Add section**, or **Add problem**, and that save deletes the previous GCS object when the new key differs. Any viewer can expand a photo on the problem page only. Read DTOs include nullable `imageURL`.
 
-Sprint contract and remaining work: [`docs/sprints/wall-problem-images.md`](../sprints/wall-problem-images.md)
+Sprint contract: [`docs/sprints/wall-problem-images.md`](../sprints/wall-problem-images.md)
 
 ## Implemented (Frontend)
 
 - Admin **Edit wall** on the main page and wall section page (name, description, upload/replace/remove)
 - Setter **Edit problem** on the wall section page and problem page (hold color, grade, notes, upload/replace/remove)
 - Optional photo on **Add Wall Section** and **Add Problem**
+- File pick previews locally; GCS upload runs on save or add submit
+- HEIC/HEIF conversion shows **Uploading iPhone photo…**
 - Default `/co-op.png` for wall sections and `/problem-holder.jpg` for problems when `imageURL` is null
-- Problem page click-to-expand photo
+- Problem page click-to-expand photo (main page and wall section thumbnails do not expand)
 - Component tests in `main-page.test.js`, `wall-page.test.js`, and `problem-page.test.js`
 
 ## Implemented (Backend)
 
 - Nullable paired image columns on `Wall_Section` and `Climbing_Problem`
 - `UPLOAD_WALL_IMAGE` (admin) and `UPLOAD_PROBLEM_IMAGE` (setter) permissions
-- Signed upload URL generation for wall, problem, and profile targets
-- Metadata save after client upload
-- Wall section and problem image deletion (GCS object + DB metadata)
+- Signed upload URL generation for wall and problem targets (the profile target exists on the API and is unused by this sprint)
+- Metadata save after client upload; a different previous object key is deleted
+- Wall section and problem image deletion (GCS object + both image columns)
+- 8 MB size check when metadata is saved
 - MVC and integration tests (`SocialMediaControllerTest`, `ImageServiceTest`)
 
 ## API Endpoints
@@ -53,7 +56,7 @@ Details: [`docs/api/endpoints.md`](../api/endpoints.md), examples in [`docs/api/
 |--------|--------|-------|
 | Wall section | `UPLOAD_WALL_IMAGE` | Admin |
 | Climbing problem | `UPLOAD_PROBLEM_IMAGE` | Setter |
-| User profile | Caller must match `userId` | Any authenticated user (persistence not yet complete) |
+| User profile | Caller must match `userId` | API accepts the target; persistence and UI are Sprint 10, not Sprint 6 |
 
 Guests cannot upload. Authorization failures are thrown as `RuntimeException` and mapped by the controller (typically **404** for signed-url, **400** for upload).
 
@@ -91,14 +94,13 @@ Both columns are nullable but must be set together (CHECK constraints `chk_wall_
 
 ## Limitations and Notes
 
-- Profile image signed-url/save is wired, but `UserAccountManager.updateUserProfile` does not persist avatar columns yet.
-- Problem image deletion clears `problem_image_url` but may leave `image_object_name` set until a follow-up fix.
-- Replace-on-reupload does not automatically delete the previous GCS object.
-- Max file size enforcement is a client/contract target (8 MB); server validates MIME/extension only today.
+- Click-to-expand is only on the climbing problem page.
+- User profile image upload and display are not part of Sprint 6. The signed-url API still lists `USER_ACCOUNT`; `UserAccountManager.updateUserProfile` does not persist avatar columns.
+- If the GCS `PUT` succeeds and the metadata save fails, the new object can remain in the bucket while the previous photo stays.
+- **Remove photo** in the UI uses the wall or problem update endpoint with both image fields null. `DELETE /api/social/image/wall` and `DELETE /api/social/image/problem` also clear a photo and its object.
 
 ## Future Enhancements
 
-- Complete user profile image persistence
-- Deferred GCS purge policy alignment with solution-beta objects
+- User profile image persistence and display (roadmap Sprint 10)
 
-Tracked in [`docs/sprints/wall-problem-images.md`](../sprints/wall-problem-images.md) and [`docs/features/future-features.md`](./future-features.md).
+Tracked in [`docs/features/future-features.md`](./future-features.md).

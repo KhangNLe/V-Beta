@@ -192,7 +192,7 @@ Wall-section and problem images use the signed-PUT pattern documented for soluti
     - `404` user missing or role not permitted (`RuntimeException`)
 
 - `PATCH /api/social/image/upload`
-  - Purpose: persist image metadata after the client uploads to GCS.
+  - Purpose: persist image metadata after the client uploads to GCS. The UI calls this when the user saves or submits add, not when they pick a file. A previous GCS object is deleted when its key differs from `objectFileName`. The stored object must be at most 8 MB. `USER_ACCOUNT` is accepted by the API; profile persistence and UI are not part of Sprint 6.
   - Request (`ProfileImageCreationRequest` query params):
     - `targetType` (required)
     - `objectFileName` (required, max 250)
@@ -313,6 +313,16 @@ There is no mark-all-read endpoint in this slice.
     - `imageURL` (optional public display URL)
   - Response: created `WallSectionResponse` (includes `imageURL`).
 
+- `PATCH /api/home/wall-section/{wallSectionId}/update`
+  - Required action: `CREATE_WALL`
+  - Purpose: update wall section name, description, and optional image metadata.
+  - Request body: `WallSectionCreationRequest` (`wallSectionName`, `wallSectionInfo`, `objectFileName`, `imageURL`).
+  - Photo rules:
+    - `objectFileName` null and current `imageURL` keeps the stored photo.
+    - `objectFileName` null and `imageURL` null deletes the GCS object and clears both image columns.
+    - A new `objectFileName` that differs from the stored key replaces the previous object.
+  - Response: updated `WallSectionResponse` (includes `imageURL`).
+
 - `DELETE /api/home/wall-section/{wallSectionId}/delete`
   - Required action: `DELETE_WALL`
   - Purpose: delete wall section.
@@ -341,7 +351,7 @@ There is no mark-all-read endpoint in this slice.
   - Photo rules:
     - `objectFileName` null and current `imageURL` keeps the stored photo.
     - `objectFileName` null and `imageURL` null deletes the GCS object and clears both image columns.
-    - A new `objectFileName` replaces the previous object.
+    - A new `objectFileName` that differs from the stored key replaces the previous object.
   - Response: updated `ClimbingProblemResponse` (includes `imageURL`).
 
 - `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`
