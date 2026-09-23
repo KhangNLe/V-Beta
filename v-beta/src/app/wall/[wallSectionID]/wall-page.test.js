@@ -12,6 +12,7 @@ import {
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import { uploadWallSectionImage } from "@/api/socialImage";
 
 jest.mock("@/api/wallSections", () => ({
   createWallSectionProblem: jest.fn(),
@@ -20,6 +21,14 @@ jest.mock("@/api/wallSections", () => ({
   fetchWallSectionProblemsForUser: jest.fn(),
   fetchWallSectionsForUser: jest.fn(),
   resetWallSection: jest.fn(),
+  updateWallSection: jest.fn(),
+}));
+
+jest.mock("@/api/socialImage", () => ({
+  WALL_IMAGE_ACCEPT: "image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif",
+  isAllowedWallImageFile: jest.fn(() => true),
+  prepareWallImageFile: jest.fn(async (file) => file),
+  uploadWallSectionImage: jest.fn(),
 }));
 
 jest.mock("@/hooks/useRequireAuth", () => ({
@@ -135,6 +144,7 @@ jest.mock("@/components/ui/dropdown-menu", () => {
         {children}
       </button>
     ),
+    DropdownMenuSeparator: () => <hr />,
   };
 });
 
@@ -345,6 +355,66 @@ describe("WallSectionPage coverage", () => {
       await waitFor(() => {
         expect(screen.queryByTestId("add-dialog")).not.toBeInTheDocument();
       });
+    });
+  });
+
+  describe("wall section photo", () => {
+    const adminUser = { uid: "admin-1", email: "admin@example.com", getIdToken: jest.fn() };
+
+    it("shows the default photo and hides edit controls for non-admins", async () => {
+      renderWall();
+      expect(await screen.findByAltText("Default wall section photo")).toHaveAttribute("src", "/co-op.png");
+      expect(screen.queryByLabelText("Wall section actions")).not.toBeInTheDocument();
+    });
+
+    it("lets an admin upload a photo and updates the header thumbnail", async () => {
+      uploadWallSectionImage.mockResolvedValue("https://cdn.example/main-wall.jpg");
+      renderWall({
+        user: adminUser,
+        account: { roleName: "ADMIN" },
+      });
+      await screen.findByText("Main Wall");
+
+      fireEvent.click(screen.getByLabelText("Wall section actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Edit wall" }));
+      const file = new File(["img"], "wall.jpg", { type: "image/jpeg" });
+      fireEvent.change(document.querySelector('input[type="file"]'), {
+        target: { files: [file] },
+      });
+
+      await waitFor(() => {
+        expect(uploadWallSectionImage).toHaveBeenCalledWith(
+          adminUser,
+          10,
+          file,
+          expect.objectContaining({ onProgress: expect.any(Function) }),
+        );
+      });
+      expect(toast.success).toHaveBeenCalledWith("Wall photo updated.");
+      expect(document.querySelector('img[src="https://cdn.example/main-wall.jpg"]')).toBeTruthy();
+    });
+
+    it("shows an actionable error when the wall photo upload fails", async () => {
+      uploadWallSectionImage.mockImplementation(async () => {
+        toast.error("Failed to upload image: network error");
+        throw new Error("Failed to upload image: network error");
+      });
+      renderWall({
+        user: adminUser,
+        account: { roleName: "ADMIN" },
+      });
+      await screen.findByText("Main Wall");
+
+      fireEvent.click(screen.getByLabelText("Wall section actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Edit wall" }));
+      fireEvent.change(document.querySelector('input[type="file"]'), {
+        target: { files: [new File(["img"], "wall.jpg", { type: "image/jpeg" })] },
+      });
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to upload image: network error");
+      });
+      expect(screen.getAllByAltText("Default wall section photo").length).toBeGreaterThan(0);
     });
   });
 

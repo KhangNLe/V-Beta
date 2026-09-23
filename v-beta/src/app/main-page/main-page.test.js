@@ -5,7 +5,9 @@ import {
   addWallSection,
   deleteWallSection,
   fetchWallSectionsForUser,
+  updateWallSection,
 } from "@/api/wallSections";
+import { uploadWallSectionImage } from "@/api/socialImage";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -14,6 +16,14 @@ jest.mock("@/api/wallSections", () => ({
   addWallSection: jest.fn(),
   deleteWallSection: jest.fn(),
   fetchWallSectionsForUser: jest.fn(),
+  updateWallSection: jest.fn(),
+}));
+
+jest.mock("@/api/socialImage", () => ({
+  WALL_IMAGE_ACCEPT: "image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif",
+  isAllowedWallImageFile: jest.fn(() => true),
+  prepareWallImageFile: jest.fn(async (file) => file),
+  uploadWallSectionImage: jest.fn(),
 }));
 
 jest.mock("@/hooks/useRequireAuth", () => ({
@@ -123,6 +133,7 @@ jest.mock("@/components/ui/dropdown-menu", () => {
         {children}
       </button>
     ),
+    DropdownMenuSeparator: () => <hr />,
   };
 });
 
@@ -264,6 +275,102 @@ describe("MainPage coverage", () => {
     expect(fetchWallSectionsForUser).toHaveBeenCalledTimes(2);
     expect(toast.success).toHaveBeenCalledWith("Wall section added.");
     expect(screen.queryByTestId("add-dialog")).not.toBeInTheDocument();
+  });
+
+  it("shows the default wall photo in the add dialog until a file is chosen", async () => {
+    renderMainPage({ sections: [] });
+    fireEvent.click(await screen.findByRole("button", { name: "Add Wall Section" }));
+
+    expect(screen.getByAltText("Default wall section photo")).toHaveAttribute("src", "/co-op.png");
+    expect(
+      screen.getByText("This default photo appears on the wall section until you upload one."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the default photo when a wall section has no imageURL", async () => {
+    renderMainPage({ sections: oneSection });
+    expect(await screen.findByAltText("Default wall section photo")).toHaveAttribute("src", "/co-op.png");
+  });
+
+  it("shows the uploaded thumbnail when imageURL is present", async () => {
+    renderMainPage({
+      sections: [{ ...oneSection[0], imageURL: "https://cdn.example/slab.jpg" }],
+    });
+    await screen.findByText("Slab");
+    expect(document.querySelector('img[src="https://cdn.example/slab.jpg"]')).toBeTruthy();
+  });
+
+  it("lets an admin upload a photo and updates the thumbnail without reload", async () => {
+    uploadWallSectionImage.mockResolvedValue("https://cdn.example/new-slab.jpg");
+    renderMainPage({ sections: oneSection });
+    await screen.findByText("Slab");
+
+    fireEvent.click(screen.getByLabelText("Section actions"));
+    fireEvent.click(screen.getByRole("button", { name: "Edit wall" }));
+
+    const file = new File(["img"], "slab.jpg", { type: "image/jpeg" });
+    const input = document.querySelector('input[type="file"]');
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(uploadWallSectionImage).toHaveBeenCalledWith(
+        mockUser,
+        1,
+        file,
+        expect.objectContaining({ onProgress: expect.any(Function) }),
+      );
+    });
+    expect(toast.success).toHaveBeenCalledWith("Wall photo updated.");
+    expect(document.querySelector('img[src="https://cdn.example/new-slab.jpg"]')).toBeTruthy();
+  });
+
+  it("shows an actionable error when wall photo upload fails", async () => {
+    uploadWallSectionImage.mockImplementation(async () => {
+      toast.error("Failed to upload image: network error");
+      throw new Error("Failed to upload image: network error");
+    });
+    renderMainPage({ sections: oneSection });
+    await screen.findByText("Slab");
+
+    fireEvent.click(screen.getByLabelText("Section actions"));
+    fireEvent.click(screen.getByRole("button", { name: "Edit wall" }));
+    const file = new File(["img"], "slab.jpg", { type: "image/jpeg" });
+    fireEvent.change(document.querySelector('input[type="file"]'), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to upload image: network error");
+    });
+    expect(screen.getAllByAltText("Default wall section photo").every((img) => img.getAttribute("src") === "/co-op.png")).toBe(true);
+  });
+
+  it("removes a wall photo through the wall update payload", async () => {
+    updateWallSection.mockResolvedValue({
+      wallSectionName: "Slab",
+      wallSectionInfo: "Technical slab",
+      imageURL: null,
+    });
+    renderMainPage({
+      sections: [{ ...oneSection[0], imageURL: "https://cdn.example/slab.jpg" }],
+    });
+    await screen.findByText("Slab");
+
+    fireEvent.click(screen.getByLabelText("Section actions"));
+    fireEvent.click(screen.getByRole("button", { name: "Edit wall" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
+
+    await waitFor(() => {
+      expect(updateWallSection).toHaveBeenCalledWith(mockUser, 1, {
+        wallSectionName: "Slab",
+        wallSectionInfo: "Technical slab",
+        objectFileName: null,
+        imageURL: null,
+      });
+    });
+    expect(toast.success).toHaveBeenCalledWith("Wall photo removed.");
+    expect(document.querySelectorAll('img[src="/co-op.png"]').length).toBeGreaterThan(0);
+    expect(document.querySelector('img[src="https://cdn.example/slab.jpg"]')).toBeNull();
   });
 
   it("shows pending add state and prevents duplicate submit", async () => {
