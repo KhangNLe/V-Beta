@@ -263,7 +263,7 @@ public class ClimbingWallService {
         );
     }
 
-    @CacheEvict(value = WALL_SECTIONS_CACHE, key = "#wallSectionId")
+    @CacheEvict(value = WALL_SECTIONS_CACHE, allEntries = true)
     public WallSectionResponse updateWallSection(Long wallSectionId, WallSectionCreationRequest update){
         WallSection wallSection = wallSectionManager.updateWallSection(wallSectionId, update);
         return new WallSectionResponse(

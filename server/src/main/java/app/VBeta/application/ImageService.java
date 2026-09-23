@@ -12,6 +12,8 @@ import app.VBeta.domain.model.actions.ActionDefinition;
 import app.VBeta.domain.model.climb.ClimbingProblem;
 import app.VBeta.domain.model.climb.WallSection;
 import app.VBeta.domain.model.user.UserAccount;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,6 +68,10 @@ public class ImageService {
      * @param firebaseUid authenticated Firebase UID
      * @param request target type, object key, public URL, and entity identifiers
      */
+    @Caching(evict = {
+            @CacheEvict(value = "wallSections", allEntries = true),
+            @CacheEvict(value = "climbingProblems", allEntries = true)
+    })
     public void saveImage(String firebaseUid, ProfileImageCreationRequest request){
         validateImageRequest(firebaseUid, request.targetType(), request.userId());
 
@@ -97,6 +103,10 @@ public class ImageService {
      * @param problemId active problem identifier
      * @throws RuntimeException when the caller lacks permission or the problem is not found
      */
+    @Caching(evict = {
+            @CacheEvict(value = "wallSections", allEntries = true),
+            @CacheEvict(value = "climbingProblems", allEntries = true)
+    })
     public void problemImageDeletion(String firebaseUid, Long problemId){
         findAndValidateUserAccount(firebaseUid, ActionDefinition.UPLOAD_PROBLEM_IMAGE);
 
@@ -116,6 +126,10 @@ public class ImageService {
      * @param wallSectionId wall section identifier
      * @throws RuntimeException when the caller lacks permission or the wall section is not found
      */
+    @Caching(evict = {
+            @CacheEvict(value = "wallSections", allEntries = true),
+            @CacheEvict(value = "climbingProblems", allEntries = true)
+    })
     public void wallSectionImageDeletion(String firebaseUid, Long wallSectionId){
         findAndValidateUserAccount(firebaseUid, ActionDefinition.UPLOAD_WALL_IMAGE);
 
