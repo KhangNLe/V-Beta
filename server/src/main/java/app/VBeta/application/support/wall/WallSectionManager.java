@@ -93,7 +93,10 @@ public class WallSectionManager {
      */
     public void updateWallImage(Long wallSectionId, String objectFileName, String imageUrl){
         WallSection section = findWallSection(wallSectionId);
-        cloudStorageManager.deleteStorageObject(section.getImageObjectName());
+        String previousKey = section.getImageObjectName();
+        if (previousKey != null && !previousKey.equals(objectFileName)) {
+            cloudStorageManager.deleteStorageObject(previousKey);
+        }
         section.setImageObjectName(objectFileName);
         section.setWallImageUrl(imageUrl);
         wallSectionRepository.save(section);

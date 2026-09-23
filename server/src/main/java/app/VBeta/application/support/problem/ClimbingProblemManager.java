@@ -176,6 +176,10 @@ public class ClimbingProblemManager {
         if (problem == null){
             throw new RuntimeException("Problem with id " + problemId + " does not exist");
         }
+        String previousKey = problem.getObjectImageName();
+        if (previousKey != null && !previousKey.equals(objectFileName)) {
+            cloudStorageManager.deleteStorageObject(previousKey);
+        }
         problem.setObjectImageName(objectFileName);
         problem.setProblemImageUrl(imageUrl);
         climbingProblemRepository.save(problem);

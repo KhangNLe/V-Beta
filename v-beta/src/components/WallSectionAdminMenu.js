@@ -68,27 +68,30 @@ export default function WallSectionAdminMenu({
   const [removing, setRemoving] = useState(false);
 
   const {
-    busy: imageBusy,
+    pendingFile,
+    previewURL,
+    convertingHeic,
     uploading,
     uploadProgress,
     openFilePicker,
     fileInputProps,
+    uploadPending,
+    clearPending,
   } = useWallSectionImageUpload({
     user,
     wallSectionId,
-    onImageChange: (nextImageURL) => {
-      onSectionUpdated({ imageURL: nextImageURL });
-    },
   });
 
   const openEditDialog = () => {
+    clearPending();
     setEditName(section.wallSectionName || "");
     setEditInfo(section.wallSectionInfo || "");
     setEditOpen(true);
   };
 
-  const dialogBusy = saveSubmitting || removing || imageBusy;
-  const hasImage = Boolean(currentImageURL);
+  const dialogBusy = saveSubmitting || removing || uploading || convertingHeic;
+  const hasSavedImage = Boolean(currentImageURL);
+  const displaySrc = previewURL || currentImageURL || WALL_SECTION_PLACEHOLDER_SRC;
 
   const handleSave = async (event) => {
     event.preventDefault();
@@ -103,18 +106,22 @@ export default function WallSectionAdminMenu({
 
     try {
       setSaveSubmitting(true);
-      // Keep photo: pass current imageURL so backend does not treat both-null as clear.
+      let nextImageURL = currentImageURL;
+      if (pendingFile) {
+        nextImageURL = await uploadPending();
+      }
       const updated = await updateWallSection(user, wallSectionId, {
         wallSectionName: name,
         wallSectionInfo: info,
         objectFileName: null,
-        imageURL: currentImageURL,
+        imageURL: nextImageURL,
       });
       onSectionUpdated({
-        wallSectionName: updated.wallSectionName ?? name,
-        wallSectionInfo: updated.wallSectionInfo ?? info,
-        imageURL: sectionImageURL(updated) ?? currentImageURL,
+        wallSectionName: updated?.wallSectionName ?? name,
+        wallSectionInfo: updated?.wallSectionInfo ?? info,
+        imageURL: sectionImageURL(updated) ?? nextImageURL,
       });
+      clearPending();
       setEditOpen(false);
       toast.success("Wall section updated.");
     } catch (err) {
@@ -136,6 +143,7 @@ export default function WallSectionAdminMenu({
 
     try {
       setRemoving(true);
+      clearPending();
       const updated = await updateWallSection(user, wallSectionId, {
         wallSectionName: name,
         wallSectionInfo: info,
@@ -198,6 +206,7 @@ export default function WallSectionAdminMenu({
         open={editOpen}
         onOpenChange={(open) => {
           if (dialogBusy) return;
+          if (!open) clearPending();
           setEditOpen(open);
         }}
       >
@@ -254,14 +263,30 @@ export default function WallSectionAdminMenu({
               <div className="overflow-hidden rounded-md border border-border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={currentImageURL || WALL_SECTION_PLACEHOLDER_SRC}
-                  alt={hasImage ? "" : "Default wall section photo"}
+                  src={displaySrc}
+                  alt={
+                    previewURL
+                      ? "Selected wall section photo"
+                      : hasSavedImage
+                        ? ""
+                        : "Default wall section photo"
+                  }
                   className="aspect-[16/10] w-full object-cover"
                 />
               </div>
-              {!hasImage && (
+              {!hasSavedImage && !previewURL && (
                 <p className="m-0 text-sm text-muted-foreground">
                   Using the default photo until you upload one.
+                </p>
+              )}
+              {convertingHeic && (
+                <p className="m-0 text-sm text-muted-foreground" role="status">
+                  Uploading iPhone photo…
+                </p>
+              )}
+              {previewURL && (
+                <p className="m-0 text-sm text-muted-foreground">
+                  This photo uploads when you save changes.
                 </p>
               )}
 
@@ -274,13 +299,13 @@ export default function WallSectionAdminMenu({
                   disabled={dialogBusy}
                   onClick={openFilePicker}
                 >
-                  {uploading
-                    ? `Uploading… ${uploadProgress}%`
-                    : hasImage
+                  {convertingHeic
+                    ? "Uploading…"
+                    : pendingFile || hasSavedImage
                       ? "Replace photo"
                       : "Upload photo"}
                 </Button>
-                {hasImage && (
+                {hasSavedImage && (
                   <Button
                     type="button"
                     variant="outline"
@@ -309,7 +334,11 @@ export default function WallSectionAdminMenu({
                 disabled={dialogBusy}
                 style={buttons.primary}
               >
-                {saveSubmitting ? "Saving…" : "Save changes"}
+                {saveSubmitting
+                  ? pendingFile && uploadProgress > 0
+                    ? `Uploading… ${uploadProgress}%`
+                    : "Saving…"
+                  : "Save changes"}
               </Button>
             </DialogFooter>
           </form>

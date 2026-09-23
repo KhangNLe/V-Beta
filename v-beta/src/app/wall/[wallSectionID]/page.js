@@ -135,6 +135,7 @@ export default function WallSectionPage() {
   const [newProblemPhoto, setNewProblemPhoto] = useState(null);
   const [newProblemPhotoPreview, setNewProblemPhotoPreview] = useState(null);
   const [addUploadProgress, setAddUploadProgress] = useState(0);
+  const [convertingHeic, setConvertingHeic] = useState(false);
   const addPhotoInputRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [addSubmitting, setAddSubmitting] = useState(false);
@@ -450,7 +451,9 @@ export default function WallSectionPage() {
     }
 
     try {
-      const prepared = await prepareWallImageFile(file);
+      const prepared = await prepareWallImageFile(file, {
+        onHeicConvertStart: () => setConvertingHeic(true),
+      });
       setNewProblemPhotoPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return URL.createObjectURL(prepared);
@@ -462,6 +465,8 @@ export default function WallSectionPage() {
         err instanceof Error ? err.message : "Could not read that photo. Try another image.",
       );
       input.value = "";
+    } finally {
+      setConvertingHeic(false);
     }
   };
 
@@ -892,9 +897,14 @@ export default function WallSectionPage() {
                   className="aspect-[16/10] w-full object-cover"
                 />
               </div>
-              {!newProblemPhoto && (
+              {!newProblemPhoto && !convertingHeic && (
                 <p className="m-0 text-sm text-muted-foreground">
                   This default photo appears on the problem until you upload one.
+                </p>
+              )}
+              {convertingHeic && (
+                <p className="m-0 text-sm text-muted-foreground" role="status">
+                  Uploading iPhone photo…
                 </p>
               )}
               <input
@@ -910,16 +920,16 @@ export default function WallSectionPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={addSubmitting}
+                  disabled={addSubmitting || convertingHeic}
                   onClick={() => addPhotoInputRef.current?.click()}
                 >
-                  {newProblemPhoto ? "Change photo" : "Upload photo"}
+                  {convertingHeic ? "Uploading…" : newProblemPhoto ? "Change photo" : "Upload photo"}
                 </Button>
                 {newProblemPhoto && (
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={addSubmitting}
+                    disabled={addSubmitting || convertingHeic}
                     onClick={clearAddPhoto}
                   >
                     Remove photo
@@ -941,7 +951,7 @@ export default function WallSectionPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={addSubmitting} style={buttons.primary}>
+              <Button type="submit" disabled={addSubmitting || convertingHeic} style={buttons.primary}>
                 {addSubmitting
                   ? newProblemPhoto && addUploadProgress > 0
                     ? `Uploading… ${addUploadProgress}%`
