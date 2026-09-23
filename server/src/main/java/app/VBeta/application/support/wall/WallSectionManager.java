@@ -116,10 +116,17 @@ public class WallSectionManager {
         wall.setWallInfo(update.wallSectionInfo());
         wall.setWallSectionName(update.wallSectionName());
 
-        if (!Objects.equal(wall.getImageObjectName(), update.objectFileName())){
+        String nextKey = update.objectFileName();
+        String nextUrl = update.imageURL();
+
+        if (nextKey == null && nextUrl == null) {
             cloudStorageManager.deleteStorageObject(wall.getImageObjectName());
-            wall.setImageObjectName(update.objectFileName());
-            wall.setWallImageUrl(update.imageURL());
+            wall.setImageObjectName(null);
+            wall.setWallImageUrl(null);
+        } else if (nextKey != null && !Objects.equal(wall.getImageObjectName(), nextKey)) {
+            cloudStorageManager.deleteStorageObject(wall.getImageObjectName());
+            wall.setImageObjectName(nextKey);
+            wall.setWallImageUrl(nextUrl);
         }
 
         return wallSectionRepository.save(wall);

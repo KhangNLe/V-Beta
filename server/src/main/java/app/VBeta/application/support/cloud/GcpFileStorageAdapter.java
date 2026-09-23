@@ -106,5 +106,23 @@ public class GcpFileStorageAdapter implements VideoStoragePort {
             storage.delete(blob.getBlobId());
             throw new IllegalArgumentException("Uploaded image exceeds 8 MB limit");
         }
+
+        grantPublicRead(blob);
+    }
+
+    /**
+     * Allows anonymous browser {@code <img>} loads of the uploaded object.
+     * No-op when the bucket uses uniform access and already grants public read via IAM.
+     */
+    private void grantPublicRead(Blob blob){
+        try {
+            storage.createAcl(
+                    blob.getBlobId(),
+                    Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)
+            );
+        } catch (StorageException ignored) {
+            // Uniform bucket-level access rejects object ACLs. Public GET then
+            // depends on bucket IAM (allUsers as Storage Object Viewer).
+        }
     }
 }

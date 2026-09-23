@@ -136,7 +136,7 @@ export async function fetchProblemForUser(user, sectionId, problemId) {
  * Add Wall Section into the server (admin only)
  *
  * @param {import("firebase/auth").User} user
- * @param {{wallSectionName: string, wallSectionInfo: string}} requestPayload
+ * @param {{wallSectionName: string, wallSectionInfo: string, objectFileName?: string | null, imageURL?: string | null}} requestPayload
  */
 export async function addWallSection(user, requestPayload) {
   const idToken = await user.getIdToken();
@@ -151,7 +151,46 @@ export async function addWallSection(user, requestPayload) {
   });
 
   if (!response.ok) {
-    toast.error(`Failed to add wall section: ${response.status}`);
+    const errorText = await response.text().catch(() => '');
+    const message =
+      errorText.trim() || `Failed to add wall section: ${response.status}`;
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Update wall section name/info (admin).
+ * - Pass current `imageURL` (and omit/null `objectFileName`) to keep the photo.
+ * - Pass `objectFileName: null` and `imageURL: null` to clear the photo.
+ *
+ * @param {import("firebase/auth").User} user
+ * @param {number} wallSectionId
+ * @param {{wallSectionName: string, wallSectionInfo: string, objectFileName?: string | null, imageURL?: string | null}} requestPayload
+ */
+export async function updateWallSection(user, wallSectionId, requestPayload) {
+  const idToken = await user.getIdToken();
+  const response = await fetch(
+    `${API_BASE_URL}/api/home/wall-section/${wallSectionId}/update`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(requestPayload),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    const message =
+      errorText.trim() || `Failed to update wall section: ${response.status}`;
+    toast.error(message);
+    throw new Error(message);
   }
 
   return response.json();
