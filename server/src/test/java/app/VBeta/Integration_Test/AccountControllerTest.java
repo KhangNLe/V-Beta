@@ -2,6 +2,7 @@ package app.VBeta.Integration_Test;
 
 import app.VBeta.api.dto.account.AccountRequest;
 import app.VBeta.api.dto.account.UserAccountDTO;
+import app.VBeta.api.dto.discussions.DiscussionContentRequest;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
 import app.VBeta.api.dto.discussions.PerceiveGradeRequest;
 import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
@@ -254,6 +255,39 @@ public class AccountControllerTest {
         assertTrue(discussionRootRepository.findByUserAccount_AndDiscussionType(account, DiscussionType.COMMENT).isEmpty());
         assertTrue(userPerceiveGradeRepository.findByUserAccount(account).isEmpty());
         assertTrue(discussionRootRepository.findByUserAccount_AndDiscussionType(account, DiscussionType.BETA).isEmpty());
+        assertTrue(accountRepository.findById(account.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("test account deletion removes MIXED posts with their comment, beta, and storage object")
+    void testDeleteAccountRemovesMixedDiscussion() {
+        String firebaseUid = "mixed-related-user-firebase-uid";
+        Long problemId = 2L;
+        UserAccount account = creatFakeAccount("mixed-related-user", "mixed-related-user@gmail.com", firebaseUid);
+        when(gcpFileStorageAdapter.getPublicBucketName()).thenReturn("test-bucket");
+
+        String objectKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
+        String publicUrl = "https://storage.googleapis.com/test-bucket/" + objectKey;
+        problemDiscussionService.saveUserDiscussionContent(
+                firebaseUid,
+                new DiscussionContentRequest(problemId, "mixed post comment", objectKey, publicUrl)
+        );
+        problemDiscussionService.addComment(firebaseUid, new DiscussionCommentRequest(problemId, "plain comment"));
+
+        List<DiscussionRoot> mixedRoots = discussionRootRepository.findByUserAccount_AndDiscussionType(
+                account, DiscussionType.MIXED
+        );
+        assertEquals(1, mixedRoots.size());
+        assertEquals(1, discussionCommentRepository.findByDiscussionRootIn(mixedRoots).size());
+        assertEquals(1, solutionBetaRepository.findByDiscussionRootIn(mixedRoots).size());
+
+        assertDoesNotThrow(() -> accountService.deleteAccount(firebaseUid));
+        verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(objectKey));
+
+        assertNull(userAccountManager.findUserAccount(firebaseUid));
+        assertTrue(discussionRootRepository.findByUserAccount_AndDiscussionType(account, DiscussionType.MIXED).isEmpty());
+        assertTrue(discussionRootRepository.findByUserAccount_AndDiscussionType(account, DiscussionType.COMMENT).isEmpty());
+        assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isEmpty());
         assertTrue(accountRepository.findById(account.getId()).isEmpty());
     }
 
