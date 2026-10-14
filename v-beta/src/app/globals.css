@@ -29,6 +29,17 @@ body {
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Avoid iOS tap-highlight flash on interactive rows */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent iOS zoom-on-focus for form controls under 16px */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 a {
@@ -126,4 +137,11 @@ html[data-theme="light"] [data-slot="button"]:hover:not(:disabled) {
 
 .solution-beta-file-input:disabled::file-selector-button {
   opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  .discussion-composer textarea {
+    min-height: 64px;
+    font-size: 16px;
+  }
 }

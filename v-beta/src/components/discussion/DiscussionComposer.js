@@ -67,12 +67,13 @@ export default function DiscussionComposer({
 
   return (
     <div
+      className="discussion-composer"
       style={{
         ...card.surface,
         position: 'sticky',
-        bottom: '16px',
+        bottom: 'max(12px, env(safe-area-inset-bottom, 0px))',
         zIndex: 10,
-        padding: '16px',
+        padding: '14px',
         boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
         fontFamily,
       }}

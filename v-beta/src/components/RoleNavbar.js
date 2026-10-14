@@ -38,6 +38,7 @@ export default function RoleNavbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [theme, setTheme] = useState("light");
+  const [menuOpen, setMenuOpen] = useState(false);
   const { user, account, ready } = useRequireAuth({
     skip: isAuthShellPath(pathname),
     allowGuest: isGuestAllowedPath(pathname),
@@ -56,6 +57,19 @@ export default function RoleNavbar() {
     document.documentElement.setAttribute("data-theme", nextTheme);
     document.documentElement.style.colorScheme = nextTheme;
   }, []);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
 
   const roleType = useMemo(() => {
     if (!user || !ready) return "guest";
@@ -90,6 +104,7 @@ export default function RoleNavbar() {
 
   const handleLogout = async () => {
     try {
+      setMenuOpen(false);
       await signOut(auth);
       router.push("/");
     } catch (error) {
@@ -109,17 +124,24 @@ export default function RoleNavbar() {
     return null;
   }
 
+  const showSessionActions = user && roleType !== "guest";
+
   return (
     <nav className="role-navbar" aria-label="Primary navigation">
       <div className="role-navbar__inner">
         <Link
           href={user ? "/main-page" : "/"}
-          className="role-navbar__link"
+          className="role-navbar__brand"
         >
           V-Beta
         </Link>
 
-        <ul className="role-navbar__links role-navbar__links--right">
+        <ul
+          id="role-navbar-menu"
+          className={`role-navbar__links role-navbar__links--right${
+            menuOpen ? " role-navbar__links--open" : ""
+          }`}
+        >
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -127,18 +149,14 @@ export default function RoleNavbar() {
                 <Link
                   href={item.href}
                   className={`role-navbar__link ${isActive ? "role-navbar__link--active" : ""}`}
+                  onClick={() => setMenuOpen(false)}
                 >
                   {item.label}
                 </Link>
               </li>
             );
           })}
-          {user && roleType !== "guest" && (
-            <li>
-              <NotificationBell user={user} />
-            </li>
-          )}
-          {user && roleType !== "guest" && (
+          {showSessionActions && (
             <li>
               <span
                 className="role-navbar__link role-navbar__link--action"
@@ -156,50 +174,80 @@ export default function RoleNavbar() {
               </span>
             </li>
           )}
-          <li>
-            <button
-              type="button"
-              className="role-navbar__theme-toggle"
-              onClick={handleThemeToggle}
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-              aria-pressed={theme === "dark"}
-            >
-              {theme === "dark" ? (
-                <svg
-                  className="role-navbar__theme-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2" />
-                  <path
-                    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="role-navbar__theme-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M21 12.79A9 9 0 1 1 11.21 3c-.13.6-.21 1.22-.21 1.86a9 9 0 0 0 10 8.93Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-            </button>
-          </li>
         </ul>
+
+        <div className="role-navbar__toolbar">
+          {showSessionActions && <NotificationBell user={user} />}
+          <button
+            type="button"
+            className="role-navbar__theme-toggle"
+            onClick={handleThemeToggle}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            aria-pressed={theme === "dark"}
+          >
+            {theme === "dark" ? (
+              <svg
+                className="role-navbar__theme-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2" />
+                <path
+                  d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="role-navbar__theme-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M21 12.79A9 9 0 1 1 11.21 3c-.13.6-.21 1.22-.21 1.86a9 9 0 0 0 10 8.93Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+          </button>
+          <button
+            type="button"
+            className="role-navbar__menu-toggle"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="role-navbar-menu"
+          >
+            {menuOpen ? (
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M6 6l12 12M18 6L6 18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M4 7h16M4 12h16M4 17h16"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
     </nav>
   );

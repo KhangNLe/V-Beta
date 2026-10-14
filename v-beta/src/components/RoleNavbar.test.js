@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import RoleNavbar from "./RoleNavbar";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { usePathname, useRouter } from "next/navigation";
@@ -50,6 +50,22 @@ describe("RoleNavbar notifications entry", () => {
     render(<RoleNavbar />);
     expect(screen.queryByTestId("notification-bell")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "V-Beta" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("button", { name: "Open menu" })).toBeInTheDocument();
+  });
+
+  it("toggles the mobile menu open and closed", () => {
+    useRequireAuth.mockReturnValue({ ready: true, user: null, account: null });
+    render(<RoleNavbar />);
+    const toggle = screen.getByRole("button", { name: "Open menu" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Close menu" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(document.getElementById("role-navbar-menu")).toHaveClass(
+      "role-navbar__links--open",
+    );
   });
 
   it("sends signed-in users to the gym from the V-Beta brand", () => {

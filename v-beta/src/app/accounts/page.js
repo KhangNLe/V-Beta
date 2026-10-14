@@ -162,7 +162,7 @@ export default function AccountsPage() {
               <CardHeader>
                 <CardTitle className="text-lg">{account.username}</CardTitle>
                 <CardDescription>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span>Role:</span>
                     <span className="text-xs capitalize font-medium text-muted-foreground">
                       {currentRole ?? "No role"}
@@ -170,7 +170,7 @@ export default function AccountsPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-6 px-2 text-xs"
+                      className="h-8 min-h-8 px-3 text-xs"
                       disabled={isSaving}
                       onClick={() => openRoleDialog(account)}
                     >

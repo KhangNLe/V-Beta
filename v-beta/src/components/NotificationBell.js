@@ -99,7 +99,10 @@ export default function NotificationBell({ user }) {
           </span>
         ) : null}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 min-w-80 p-1">
+      <DropdownMenuContent
+        align="end"
+        className="w-[min(20rem,calc(100vw-1.5rem))] min-w-0 max-w-[calc(100vw-1.5rem)] p-1"
+      >
         {unreadItems.length === 0 ? (
           <div className="px-2 py-3 text-sm text-muted-foreground">
             No unread notifications.
