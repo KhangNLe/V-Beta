@@ -492,7 +492,7 @@ export default function MainPage() {
                       ? "Selected wall section photo"
                       : "Default wall section photo"
                   }
-                  className="aspect-[16/10] w-full object-cover"
+                  className="aspect-[16/10] max-h-40 w-full object-cover sm:max-h-none"
                 />
               </div>
               {!newSectionPhoto && !convertingHeic && (
