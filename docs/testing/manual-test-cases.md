@@ -143,21 +143,33 @@ This document defines the manual regression checklist for validating core user f
 ### DISC-02: Solution Beta Upload/Delete
 
 - Steps:
-  1. Upload a valid beta video on problem page
-  2. Confirm metadata appears in discussion
+  1. On the problem page composer, attach a video only (no text) and Post
+  2. Confirm beta appears in discussion
   3. Delete beta as owner
   4. As admin, delete another user's beta
 - Expected:
-  - signed URL/upload/save flow succeeds
+  - signed URL/upload/save flow succeeds (`POST /api/discussion/solution-beta/save`)
   - beta entry is visible after refresh
   - owner/admin deletion rules are enforced
   - deleted betas disappear from the timeline; video metadata/GCS object is not immediately removed
   - owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
 
+### DISC-02b: Mixed Comment + Beta Post/Delete
+
+- Steps:
+  1. On the problem page composer, enter text, attach a video, and Post
+  2. Confirm the timeline shows the comment text and **Watch Beta**
+  3. Delete the post as owner (**Delete Post**)
+  4. As admin, delete another user's mixed post
+- Expected:
+  - signed URL upload then `POST /api/discussion/discussion-content` succeeds
+  - soft-delete uses `DELETE /api/discussion/discussion-content` with matching comment + videoURL
+  - post disappears from the timeline; comment/beta child rows and GCS object remain
+
 ### DISC-03: Suggest Perceived Grade
 
 - Steps:
-  1. Submit perceived grade on problem page
+  1. Use **Suggest Difficulty** next to the climb info card and submit a grade
 - Expected:
   - request succeeds
   - perceived grade display updates

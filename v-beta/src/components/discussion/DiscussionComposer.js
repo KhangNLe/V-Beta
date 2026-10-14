@@ -7,8 +7,12 @@ import { useRef, useState } from 'react';
 export const DISCUSSION_COMMENT_MAX_LENGTH = 250;
 
 /**
- * Floating composer for a discussion post with optional comment text and an
- * optional beta video. The parent decides which API to call from what was filled in.
+ * Sticky/floating composer for a discussion post with optional comment text and an
+ * optional beta video. Built for reuse as a reply composer later.
+ *
+ * The parent decides which API to call from what was filled in:
+ * text only → comment; video only → beta save; both → mixed discussion-content
+ * (after the signed-URL upload).
  *
  * @param {{
  *   heading?: string,

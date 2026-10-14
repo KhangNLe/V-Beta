@@ -204,6 +204,14 @@ public class DiscussionRootManager {
         return beta.getVideoURL().equals(betaUrl);
     }
 
+    /**
+     * Confirms a {@code MIXED} root has matching comment text and beta URL.
+     *
+     * @param root discussion root expected to be {@link DiscussionType#MIXED}
+     * @param commentContent expected comment body
+     * @param videoUrl expected public beta URL
+     * @return {@code true} when both child payloads match
+     */
     public boolean validateDiscussionMixedContent(DiscussionRoot root, String commentContent, String videoUrl){
         if (!root.getDiscussionType().equals(DiscussionType.MIXED)){
             throw new RuntimeException("Mismatching discussion information");

@@ -48,17 +48,15 @@ Located in `domain/model/discussions/` and `domain/model/user/`:
 
 - `DiscussionRoot`
   - Unified discussion anchor row for comments and solution betas.
-  - Nullable self-reference (`parent_discussion_id`) is reserved for Sprint 7 replies. Sprint 7 also plans one post that can hold both a comment and a beta video.
-  - Stores discussion type (`COMMENT` / `BETA`) and soft-delete metadata (`deleted_by`, `deleted_reason`, `deleted_at`).
-  - Owner/admin delete endpoints set those fields and hide the row from problem timelines. Comment/beta child rows are not removed. Appeal approve clears those fields so the row is visible again. Delayed GCS purge remains future work.
-- `UserComment`
-  - User-to-problem comment anchor.
+  - Nullable self-reference (`parent_discussion_id`) is reserved for Sprint 7 replies.
+  - Stores discussion type (`COMMENT` / `BETA` / `MIXED`) and soft-delete metadata (`deleted_by`, `deleted_reason`, `deleted_at`).
+  - `COMMENT`: one `Discussion_Comment` child. `BETA`: one `Solution_Beta` child. `MIXED`: both children on the same root (one post with text + video).
+  - Owner/admin delete endpoints set soft-delete fields and hide the row from problem timelines. Comment/beta child rows are not removed. Appeal approve clears those fields so the row is visible again. Delayed GCS purge remains future work.
+  - Account/problem hard-delete cascades must collect `MIXED` roots when removing comment and beta children.
 - `DiscussionComment`
-  - Text discussion payload tied to a user comment record.
-- `UserBeta`
-  - User-to-problem beta relation.
+  - Text discussion payload tied to a discussion root (`COMMENT` or `MIXED`).
 - `SolutionBeta`
-  - Uploaded beta metadata (object file/video URL/time).
+  - Uploaded beta metadata (object file/video URL/time) tied to a discussion root (`BETA` or `MIXED`).
 - `UserPerceiveGrade`
   - User-submitted perceived grade per problem.
 

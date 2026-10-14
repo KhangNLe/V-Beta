@@ -18,9 +18,9 @@ import java.util.List;
 
 /**
  * {@code ClimbingProblemDiscussionManager} composes a unified discussion timeline for a climbing problem.
- * It merges text comments and beta video submissions into a shared
- * {@link UserDiscussionData} stream ordered by creation time, omitting roots whose
- * {@code deletedAt} is set.
+ * It maps {@code COMMENT}, {@code BETA}, and {@code MIXED} roots into
+ * {@link UserDiscussionData} (nullable {@code comment} + {@code videoURL}) ordered by creation time,
+ * omitting roots whose {@code deletedAt} is set.
  * <p>
  * Data is sourced from {@link DiscussionCommentManager} and {@link SolutionBetaManager}.
  */
@@ -135,6 +135,13 @@ public class ClimbingProblemDiscussionManager {
         return solutionBetaManager.storeUserSolutionBeta(reply, objectName, publicUrl);
     }
 
+    /**
+     * Persists comment and beta children for a {@code MIXED} discussion root.
+     *
+     * @param root discussion root already typed as {@link DiscussionType#MIXED}
+     * @param request create payload with text and uploaded video metadata
+     * @return timeline DTO with both payloads set
+     */
     public UserDiscussionData storeNewMixedDiscussion(DiscussionRoot root, DiscussionContentRequest request){
         discussionCommentManager.storeDiscussionComment(root, request.commentInfo());
         solutionBetaManager.storeUserSolutionBeta(root, request.objectFileName(), request.videoURL());

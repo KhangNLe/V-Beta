@@ -116,22 +116,27 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
 
 ### Discussion / Beta (Authenticated)
 
+`UserDiscussionData` (timeline / create responses) fields:
+
+- `discussionId`
+- `userId`
+- `username`
+- `parentCommentId` (nullable; reserved for replies)
+- `comment` (nullable text payload)
+- `videoURL` (nullable public beta URL)
+- `createdDate`
+
+Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the root).
+
 - `POST /api/discussion/add-comments`
-  - Purpose: add a comment to a problem.
+  - Purpose: add a text-only comment to a problem (`DiscussionType.COMMENT`).
   - Request body:
     - `problemId`
     - `commentInfo`
-  - Response: `201` with created `UserDiscussionData`:
-    - `discussionId`
-    - `userId`
-    - `username`
-    - `parentCommentId`
-    - `discussionType`
-    - `discussionContent`
-    - `createdDate`
+  - Response: `201` with created `UserDiscussionData` (`comment` set, `videoURL` null).
 
 - `GET /api/discussion/solution-beta/upload-url`
-  - Purpose: generate signed upload URL for solution beta video.
+  - Purpose: generate signed upload URL for solution beta video (also used before mixed comment+video posts).
   - Request: `CloudFileStorageRequest` bound from query params (`@ModelAttribute`, not `@RequestBody`). Browsers reject GET with a JSON body.
     - `fileName`
     - `contentType`
@@ -144,15 +149,37 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
     - `publicURL`
 
 - `POST /api/discussion/solution-beta/save`
-  - Purpose: persist uploaded beta metadata.
+  - Purpose: persist uploaded beta metadata for a video-only post (`DiscussionType.BETA`).
   - Request body:
     - `problemId`
     - `objectFileName`
     - `videoURL`
-  - Response: `201` with `UserDiscussionData` record.
+  - Response: `201` with `UserDiscussionData` (`comment` null, `videoURL` set).
+
+- `POST /api/discussion/discussion-content`
+  - Purpose: persist a mixed post with both text and video (`DiscussionType.MIXED`). Call after the signed-URL upload completes (same flow as beta save).
+  - Request body (`DiscussionContentRequest`):
+    - `problemId`
+    - `commentInfo` (required, max 250)
+    - `objectFileName` (required, max 250)
+    - `videoURL` (required, max 250)
+  - Response: `201` with `UserDiscussionData` (`comment` and `videoURL` both set).
+  - Creates one `Discussion_Root` plus both `Discussion_Comment` and `Solution_Beta` child rows.
+
+- `DELETE /api/discussion/discussion-content`
+  - Purpose: **soft-delete** a mixed discussion. The `Discussion_Root` row stays; comment/beta child rows and GCS object are kept.
+  - Request body (`DiscussionContentDeletionRequest`):
+    - `authorId`
+    - `discussionId`
+    - `problemId`
+    - `commentContent`
+    - `videoURL`
+    - `deleteReason` (required, max 100)
+  - Additional service rule: requester must be the author or an admin; both payloads must match the stored rows. A second delete of an already-deleted discussion fails.
+  - Response: `200` (empty body).
 
 - `DELETE /api/discussion/solution-beta`
-  - Purpose: **soft-delete** a solution beta discussion. The `Discussion_Root` row stays; child `Solution_Beta` metadata and GCS object are kept. Problem timelines omit rows with `deleted_at` set.
+  - Purpose: **soft-delete** a video-only solution beta discussion. The `Discussion_Root` row stays; child `Solution_Beta` metadata and GCS object are kept. Problem timelines omit rows with `deleted_at` set.
   - Request body:
     - `userId` (discussion author)
     - `problemId`

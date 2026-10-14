@@ -113,6 +113,13 @@ public class ProblemDiscussionService {
         );
     }
 
+    /**
+     * Persists a mixed discussion post (text + uploaded beta) after GCS upload completes.
+     *
+     * @param firebaseUid Firebase UID of the authenticated user
+     * @param request mixed create payload (comment, object key, public URL)
+     * @return timeline entry with both {@code comment} and {@code videoURL}
+     */
     public UserDiscussionData saveUserDiscussionContent(String firebaseUid, DiscussionContentRequest request){
         UserAccount user = getUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
@@ -140,6 +147,15 @@ public class ProblemDiscussionService {
                 request.deleteReason());
     }
 
+    /**
+     * Soft-deletes a mixed discussion when requester is owner or admin.
+     * <p>
+     * Validates that both comment text and video URL match the stored children,
+     * then sets soft-delete metadata on the root. Child rows and GCS objects remain.
+     *
+     * @param firebaseUid Firebase UID of the authenticated requester
+     * @param request mixed deletion payload
+     */
     public void softDeleteUserDiscussionContent(String firebaseUid, DiscussionContentDeletionRequest request){
         UserAccount requester =  getUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());

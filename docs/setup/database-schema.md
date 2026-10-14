@@ -45,9 +45,20 @@ Primary runtime schema SQL:
 
 - core table definitions
 - discussion model (`Discussion_Root`, comments, solution betas)
+- `discussion_kind` enum values: `COMMENT`, `BETA`, `MIXED`
 - Sprint 5 moderation/reporting model (reports, appeals, moderation actions, events, notifications)
 - baseline seed data for roles/actions/grades/permissions, report categories, and event types
 - sample wall/problem/user records for local validation
+
+### Existing databases (Neon / local already bootstrapped)
+
+`CREATE TYPE discussion_kind AS ENUM (...)` does **not** update an enum that already exists. After deploying code that writes `MIXED`, apply:
+
+```sql
+ALTER TYPE discussion_kind ADD VALUE IF NOT EXISTS 'MIXED';
+```
+
+On Neon, run that against database `v_beta` (SQL Editor or `psql` with the pooler connection). Fresh local resets via `./scripts/start-local-db.sh` / `reset-*-db` scripts already get `MIXED` from the updated bootstrap SQL.
 
 ## Recommended local setup
 
@@ -412,10 +423,11 @@ Keep `pg-v-beta.sql` and `v_beta_test_schema.sql` aligned when changing image co
   - composite primary key on `Role_Permission (role_id, action_id)`
   - `Discussion_Root` with:
     - nullable `parent_discussion_id` (self-FK reserved for Sprint 7 replies)
-    - `discussion_type` backed by PostgreSQL enum `discussion_kind`
+    - `discussion_type` backed by PostgreSQL enum `discussion_kind` (`COMMENT`, `BETA`, `MIXED`)
     - `create_at` timestamp used by runtime entity mapping
     - nullable soft-delete columns `deleted_by`, `deleted_reason`, `deleted_at`
     - referential integrity FKs for `problem_id`, `user_id`, and `deleted_by`
+    - `MIXED` roots join both `Discussion_Comment` and `Solution_Beta` (one post with text + video)
   - Sprint 5 moderation tables with:
     - enum-backed statuses / target / action types
     - lookup tables for `Report_Category` and `Event_Type`
