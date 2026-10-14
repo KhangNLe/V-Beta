@@ -902,7 +902,7 @@ export default function WallSectionPage() {
                       ? "Selected problem photo"
                       : "Default problem photo"
                   }
-                  className="aspect-[16/10] w-full object-cover"
+                  className="aspect-[16/10] max-h-40 w-full object-cover sm:max-h-none"
                 />
               </div>
               {!newProblemPhoto && !convertingHeic && (

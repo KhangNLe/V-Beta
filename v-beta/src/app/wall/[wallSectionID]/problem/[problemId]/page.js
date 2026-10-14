@@ -911,9 +911,8 @@ export default function ProblemPage() {
                                   controls
                                   playsInline
                                   preload="metadata"
+                                  className="w-full max-w-full sm:max-w-[360px]"
                                   style={{
-                                    width: '100%',
-                                    maxWidth: '100%',
                                     borderRadius: '8px',
                                     border: `1px solid ${colors.border}`,
                                     background: '#000',
