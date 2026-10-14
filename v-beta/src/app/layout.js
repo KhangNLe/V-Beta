@@ -21,6 +21,24 @@ export const metadata = {
     shortcut: "/VBetaLogo.svg",
     apple: "/VBetaLogo.svg",
   },
+  appleWebApp: {
+    capable: true,
+    title: "V-Beta",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f4f5" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a1120" },
+  ],
 };
 
 export default function RootLayout({ children }) {

@@ -547,7 +547,10 @@ export default function WallSectionPage() {
                 />
               </div>
               <CardHeader className="min-w-0 flex-1 rounded-none px-5 pt-5 pb-5">
-                <CardTitle className="m-0 text-[1.75rem] font-bold" style={{ color: colors.text }}>
+                <CardTitle
+                  className="m-0 text-2xl font-bold leading-tight sm:text-[1.75rem]"
+                  style={{ color: colors.text }}
+                >
                   {section?.wallSectionName || `Section ${wallSectionID}`}
                 </CardTitle>
                 {isAdmin && user && section && wallSectionID && (
@@ -628,18 +631,18 @@ export default function WallSectionPage() {
             No problems found for this wall section.
           </p>
         ) : (
-          <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
+          <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr))]">
             {problems.map((problem) => (
-              <article key={problem.problemId}>
+              <article key={problem.problemId} className="h-full">
                 <Card
-                  className="gap-2.5 overflow-hidden p-0 py-0 ring-0"
+                  className="flex h-full flex-col gap-2.5 overflow-hidden p-0 py-0 ring-0"
                   style={{
                     ...card.surface,
                     fontFamily,
                     position: "relative",
                   }}
                 >
-                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
+                  <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-muted">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={problemImageURL(problem) || PROBLEM_PLACEHOLDER_SRC}
@@ -651,11 +654,12 @@ export default function WallSectionPage() {
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <CardHeader className="px-5 pt-5 pb-0">
+                  <CardHeader className="shrink-0 px-5 pt-5 pb-0">
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle
-                        className="min-w-0 text-lg font-semibold leading-[1.35]"
+                        className="min-w-0 truncate text-lg font-semibold leading-[1.35]"
                         style={{ color: colors.text }}
+                        title={problem.holdColor}
                       >
                         {problem.holdColor}
                       </CardTitle>
@@ -675,13 +679,17 @@ export default function WallSectionPage() {
                     </div>
                   </CardHeader>
 
-                  <CardContent className="flex flex-grow flex-col px-5 pb-0 pt-0">
-                    <p className="m-0 text-sm leading-6" style={{ color: colors.muted }}>
+                  <CardContent className="flex min-h-0 flex-1 flex-col px-5 pb-0 pt-0">
+                    <p
+                      className="m-0 line-clamp-3 text-sm leading-6"
+                      style={{ color: colors.muted }}
+                      title={problem.info || "No problem notes available."}
+                    >
                       {problem.info || "No problem notes available."}
                     </p>
                   </CardContent>
 
-                  <CardFooter className="mt-1.5 flex w-full flex-col rounded-none border-border border-t bg-transparent px-5 py-4">
+                  <CardFooter className="mt-auto flex w-full shrink-0 flex-col rounded-none border-border border-t bg-transparent px-5 py-4">
                     <Button
                       type="button"
                       className="w-full"

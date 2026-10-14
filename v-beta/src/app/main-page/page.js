@@ -261,7 +261,10 @@ export default function MainPage() {
           <GuestBanner message="You are browsing as a guest. Sign in to manage your account and access all features." />
         )}
         <header className="mb-6">
-          <h1 className="m-0 text-[1.75rem] font-bold" style={{ color: colors.text }}>
+          <h1
+            className="m-0 text-2xl font-bold leading-tight sm:text-[1.75rem]"
+            style={{ color: colors.text }}
+          >
             {GYM_INFO.name}
           </h1>
         </header>
@@ -361,7 +364,7 @@ export default function MainPage() {
             No wall sections found.
           </p>
         ) : (
-          <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+          <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))]">
             {sections.map((section) => {
               const imageURL = sectionImageURL(section);
               return (

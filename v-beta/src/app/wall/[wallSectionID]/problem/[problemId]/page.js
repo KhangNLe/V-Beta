@@ -652,12 +652,8 @@ export default function ProblemPage() {
                 <div className="min-w-0 flex-1 px-5 pt-5 pb-5">
                   <div className="flex items-start justify-between gap-2">
                     <h1
-                      style={{
-                        margin: '0 0 8px',
-                        fontSize: '1.75rem',
-                        fontWeight: 700,
-                        color: colors.text,
-                      }}
+                      className="m-0 mb-2 text-2xl font-bold sm:text-[1.75rem]"
+                      style={{ color: colors.text }}
                     >
                       {problem.holdColor}
                     </h1>
@@ -913,10 +909,11 @@ export default function ProblemPage() {
                               <div style={{ marginTop: '10px' }}>
                                 <video
                                   controls
+                                  playsInline
                                   preload="metadata"
                                   style={{
                                     width: '100%',
-                                    maxWidth: '360px',
+                                    maxWidth: '100%',
                                     borderRadius: '8px',
                                     border: `1px solid ${colors.border}`,
                                     background: '#000',
