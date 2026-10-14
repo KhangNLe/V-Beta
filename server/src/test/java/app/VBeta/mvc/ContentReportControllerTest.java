@@ -268,8 +268,8 @@ public class ContentReportControllerTest {
                         8L,
                         "alex",
                         null,
-                        DiscussionType.COMMENT,
                         "hello",
+                        null,
                         LocalDateTime.of(2026, 8, 16, 10, 0)
                 ),
                 null,

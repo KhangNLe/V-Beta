@@ -738,7 +738,6 @@ public class ModerationReportTest {
         Report report = createReport(climber.getFirebaseUid(), setter.getFirebaseUid(), 1L, BETA);
         ReportsPayload payload = reportService.getReportQueue(admin.getFirebaseUid());
         validateReportsPayload(payload, List.of(report));
-        assertEquals(DiscussionType.BETA, payload.reports().get(0).report().discussion().discussionType());
     }
 
     @Test

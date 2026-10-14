@@ -42,20 +42,23 @@ Climber users can participate in problem discussion and feedback.
 2. Sign in with email/password or supported provider.
 3. After successful auth/session sync, continue to `/main-page`.
 
-### B) Post a Comment
+### B) Post to User Discussion
 1. Open `/main-page` and select a wall section.
 2. Open a problem page.
-3. Enter comment text and submit.
-4. Verify the new comment appears in the discussion.
+3. In the floating **Add a comment or solution beta** box under User Discussion:
+   - Text only → **Post** (comment).
+   - Video only → **Attach video**, then **Post** (signed upload, then beta save).
+   - Text + video → enter text, **Attach video**, then **Post** (signed upload, then mixed discussion-content save).
+4. Verify the new post appears in the discussion (mixed posts show text and **Watch Beta**).
 
-### B2) Delete a Comment
-1. On a problem page, open the actions menu on a comment you own (or, as admin, on another user's comment).
-2. Choose Delete Comment.
-3. Verify the comment disappears from the discussion after refresh.
+### B2) Delete a Discussion Post
+1. On a problem page, open the actions menu on a post you own (or, as admin, on another user's post).
+2. Choose **Delete Comment**, **Delete Solution Beta**, or **Delete Post** (label matches what the post contains).
+3. Verify the post disappears from the discussion after refresh.
 
 ### B3) Report a Comment or Beta
 1. Sign in and open a problem page.
-2. Open the ⋮ menu on another user's comment or beta (not your own).
+2. Open the ⋮ menu on another user's comment, beta, or mixed post (not your own).
 3. Choose **Report**, pick a category, enter a reason (required, at most 250 characters), and submit.
 4. Verify a success toast. Duplicate or invalid reports show an error toast.
 
@@ -66,20 +69,9 @@ Climber users can participate in problem discussion and feedback.
 4. Confirm the page lists read and unread history (`GET /api/notification/all`, 10 per page). Use **Next** / **Previous** when there are more than 10 rows.
 5. Open an item. It is marked read (`PATCH /api/notification/short?notificationId=`) and you land on `/reports?reportId=`, `/appeals?reportId=`, or `/appeal-queue?reportId=` depending on the event type.
 
-### C) Submit a Beta Video
-1. On a problem page, choose beta upload flow.
-2. Request signed upload URL.
-3. Upload video and save beta metadata.
-4. Verify your beta appears in discussion.
-
-### C2) Delete a Beta Video
-1. On a problem page, open the actions menu on a beta you own (or, as admin, on another user's beta).
-2. Choose Delete Solution Beta.
-3. Verify the beta disappears from the discussion after refresh.
-
 ### D) Suggest a Grade
-1. On a problem page, choose a perceived grade.
-2. Submit grade suggestion.
+1. On a problem page, use **Suggest Difficulty** next to the climb info card.
+2. Choose a perceived grade and submit.
 3. Verify perceived grade display updates after submission.
 
 ## 4) Setter/Admin Flow (Wall/Problem Management + Account Role Management)

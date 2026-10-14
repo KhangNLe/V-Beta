@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.*;
 /**
  * {@code ProblemDiscussionController} handles discussion interactions for climbing problems.
  * <p>
- * Endpoints include user comments, solution beta upload lifecycle, perceived grade submissions,
- * and owner/admin soft-delete of comments and betas.
+ * Endpoints include user comments, solution beta upload lifecycle, mixed comment+video posts,
+ * perceived grade submissions, and owner/admin soft-delete of comments, betas, and mixed posts.
  * Business logic is delegated to {@link ProblemDiscussionService} and {@link ClimbingWallService}.
  * Authorization checks are performed via {@link AuthorizationService} for privileged actions.
  */
@@ -127,6 +127,45 @@ public class ProblemDiscussionController {
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (RuntimeException e){
             return  new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Persists a mixed discussion post (comment text + beta video) after upload completes.
+     *
+     * @param request mixed create payload including comment, object key, and public URL
+     * @return discussion timeline item with both {@code comment} and {@code videoURL}
+     */
+    @PostMapping("/discussion-content")
+    public ResponseEntity<?> storeUserDiscussionContent(@Valid @RequestBody DiscussionContentRequest request){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            UserDiscussionData response = problemDiscussionService.saveUserDiscussionContent(firebaseUid, request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Soft-deletes a mixed discussion when requester is owner or admin.
+     * <p>
+     * Marks the discussion root deleted. Does not remove comment/beta rows or the GCS object.
+     *
+     * @param request mixed deletion payload including matching comment text and video URL
+     */
+    @DeleteMapping("/discussion-content")
+    public ResponseEntity<?> deleteUserDiscussionContent(@Valid @RequestBody DiscussionContentDeletionRequest request){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            problemDiscussionService.softDeleteUserDiscussionContent(firebaseUid, request);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e){
             return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }

@@ -195,8 +195,8 @@ public class UserCommentTest {
         );
 
         Optional<UserDiscussionData> created = timeline.stream()
-                .filter(item -> item.discussionType() == DiscussionType.COMMENT)
-                .filter(item -> request.commentInfo().equals(item.discussionContent()))
+                .filter(item -> item.videoURL() == null)
+                .filter(item -> request.commentInfo().equals(item.comment()))
                 .findFirst();
 
         assertTrue(created.isPresent());

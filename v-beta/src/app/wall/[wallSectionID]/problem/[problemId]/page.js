@@ -13,11 +13,18 @@ import {
   postCommentForUser,
 } from "@/api/comments";
 import {
+  deleteDiscussionContent,
+  saveDiscussionContent,
+} from "@/api/discussionContent";
+import {
   createContentReport,
   REPORT_CATEGORIES,
   REPORT_REASON_MAX_LENGTH,
 } from "@/api/reports";
 import ClimbingProblemSetterMenu from "@/components/ClimbingProblemSetterMenu";
+import DiscussionComposer, {
+  DISCUSSION_COMMENT_MAX_LENGTH,
+} from "@/components/discussion/DiscussionComposer";
 import PageLoader from "@/components/ui/PageLoader";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,7 +47,6 @@ import { getAccountId, getAccountRole } from '@/lib/accountSession';
 import { discussionDeletionReason } from '@/lib/discussionDeletion';
 import {
   buildShortUploadFileName,
-  SOLUTION_VIDEO_ACCEPT,
   toPlaybackStorageRefs,
   videoUploadContentType,
   waitForPublicVideo,
@@ -48,7 +54,7 @@ import {
 import { buttons, card, colors, layout, fontFamily } from '@/ui/appTheme';
 import { ArrowLeftIcon, MoreVertical } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import GuestBanner from '@/components/GuestBanner';
 
@@ -131,22 +137,19 @@ function getDiscussionId(discussionItem) {
 }
 
 /** @param {unknown} discussionItem */
-function getDiscussionContent(discussionItem) {
+function getDiscussionComment(discussionItem) {
   if (!discussionItem || typeof discussionItem !== 'object') return '';
   const discussionRecord = /** @type {Record<string, unknown>} */ (discussionItem);
-  const value = discussionRecord.discussionContent ?? discussionRecord.comment ?? '';
+  const value = discussionRecord.comment;
   return typeof value === 'string' ? value : '';
 }
 
-/** @param {unknown} discussionItem */
-function getDiscussionType(discussionItem) {
-  if (!discussionItem || typeof discussionItem !== 'object') return '';
-  const discussionRecord = /** @type {Record<string, unknown>} */ (discussionItem);
-  const value = discussionRecord.discussionType;
-  return typeof value === 'string' ? value.toUpperCase() : '';
-}
-
 const PROBLEM_PLACEHOLDER_SRC = "/problem-holder.jpg";
+
+const SUGGESTED_GRADES = [
+  'VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8',
+  'V9', 'V10', 'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17',
+];
 
 /** @param {{ imageURL?: string | null, imageUrl?: string | null } | null | undefined} problem */
 function problemImageURL(problem) {
@@ -157,8 +160,14 @@ function problemImageURL(problem) {
 function getDiscussionMediaUrl(discussionItem) {
   if (!discussionItem || typeof discussionItem !== 'object') return '';
   const discussionRecord = /** @type {Record<string, unknown>} */ (discussionItem);
-  const value = discussionRecord.videoURL ?? discussionRecord.discussionContent ?? '';
+  const value = discussionRecord.videoURL;
   return typeof value === 'string' ? value : '';
+}
+
+/** @param {{ comment: string, mediaUrl: string }} content */
+function getDeleteLabel({ comment, mediaUrl }) {
+  if (comment && mediaUrl) return 'Delete Post';
+  return mediaUrl ? 'Delete Solution Beta' : 'Delete Comment';
 }
 
 export default function ProblemPage() {
@@ -173,11 +182,8 @@ export default function ProblemPage() {
   const [problem, setProblem] = useState(null);
   const [fetchError, setFetchError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [commentText, setCommentText] = useState('');
-  const [submittingComment, setSubmittingComment] = useState(false);
+  const [submittingDiscussion, setSubmittingDiscussion] = useState(false);
   const [perceivedGrade, setPerceivedGrade] = useState('VB');
-  const [entryMode, setEntryMode] = useState('comment'); // "comment" | "file"
-  const [solutionFile, setSolutionFile] = useState(null);
   const isAdmin = getAccountRole(account).toUpperCase().includes('ADMIN');
   const isSetter = getAccountRole(account).toUpperCase().includes('SETTER');
   const [photoExpanded, setPhotoExpanded] = useState(false);
@@ -186,20 +192,11 @@ export default function ProblemPage() {
     if (accountId != null) return String(accountId);
     return getCurrentUserId(user);
   }, [account, user]);
-  const [uploadingSolution, setUploadingSolution] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [reportCategory, setReportCategory] = useState('');
   const [reportReason, setReportReason] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
-  const fileInputRef = useRef(null);
-
-  const clearSelectedSolutionFile = () => {
-    setSolutionFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
 
   const refreshProblem = async () => {
     const refreshedProblem = await fetchProblemForUser(
@@ -210,76 +207,67 @@ export default function ProblemPage() {
     setProblem(refreshedProblem);
   };
 
-  const handleDeleteComment = async (targetComment) => {
-    if (!user || !problemId) {
+  const handleDeleteDiscussion = async (targetDiscussion) => {
+    if (!targetDiscussion || !user || !problemId) {
       return;
     }
 
-    const authorId = getCommentAuthorId(targetComment);
+    const authorId = getCommentAuthorId(targetDiscussion);
     const isOwner = !!currentUserId && !!authorId && currentUserId === authorId;
-    const canDeleteComment = isAdmin || isOwner;
-    if (!canDeleteComment) {
+    if (!isAdmin && !isOwner) {
       return;
     }
 
     const payloadAuthorId = parsePositiveNumberId(authorId);
-    const discussionId = getDiscussionId(targetComment);
-    const commentContent = getDiscussionContent(targetComment).trim();
-    if (!payloadAuthorId || !discussionId || !commentContent) {
-      toast.error("Unable to determine comment payload for deletion.");
+    const discussionId = getDiscussionId(targetDiscussion);
+    const commentContent = getDiscussionComment(targetDiscussion).trim();
+    const mediaUrl = getDiscussionMediaUrl(targetDiscussion);
+    const deleteReason = discussionDeletionReason(isOwner);
+
+    if (!payloadAuthorId || !discussionId || (!commentContent && !mediaUrl)) {
+      toast.error(
+        mediaUrl
+          ? 'Unable to determine owner id for solution beta deletion.'
+          : 'Unable to determine comment payload for deletion.',
+      );
       return;
     }
 
     try {
-      await deleteUserComment(user, {
-        authorId: payloadAuthorId,
-        problemId,
-        discussionId,
-        commentContent,
-        deletedReason: discussionDeletionReason(isOwner),
-      });
-      await refreshProblem();
-      toast.success("Comment deleted.");
+      if (commentContent && mediaUrl) {
+        await deleteDiscussionContent(user, {
+          authorId: payloadAuthorId,
+          discussionId,
+          problemId,
+          commentContent,
+          videoURL: mediaUrl,
+          deleteReason,
+        });
+        await refreshProblem();
+        toast.success('Post deleted.');
+      } else if (mediaUrl) {
+        await deleteSolutionBetaFromDatabase(user, {
+          userId: payloadAuthorId,
+          problemId,
+          discussionId,
+          publicUrl: mediaUrl,
+          deleteReason,
+        });
+        await refreshProblem();
+        toast.success('Solution beta deletion requested.');
+      } else {
+        await deleteUserComment(user, {
+          authorId: payloadAuthorId,
+          problemId,
+          discussionId,
+          commentContent,
+          deletedReason: deleteReason,
+        });
+        await refreshProblem();
+        toast.success('Comment deleted.');
+      }
     } catch (err) {
-      toast.error(`Failed to delete comment: ${extractErrorMessage(err)}`);
-    }
-  };
-
-  const handleDeleteSolutionBeta = async (targetComment) => {
-    if (!targetComment || !user || !problemId) {
-      return;
-    }
-    const mediaUrl = getDiscussionMediaUrl(targetComment);
-    if (!mediaUrl) return;
-
-    const authorId = getCommentAuthorId(targetComment);
-    const isOwner = !!currentUserId && !!authorId && currentUserId === authorId;
-    const canDeleteSolutionBeta = isAdmin || isOwner;
-    if (!canDeleteSolutionBeta) {
-      return;
-    }
-
-    const payloadUserId = parsePositiveNumberId(authorId);
-    const discussionId = getDiscussionId(targetComment);
-    if (!payloadUserId || !discussionId) {
-      toast.error('Unable to determine owner id for solution beta deletion.');
-      return;
-    }
-
-    try {
-      await deleteSolutionBetaFromDatabase(user, {
-        userId: payloadUserId,
-        problemId,
-        discussionId,
-        publicUrl: mediaUrl,
-        deleteReason: discussionDeletionReason(isOwner),
-      });
-      await refreshProblem();
-      clearSelectedSolutionFile();
-      toast.success('Solution beta deletion requested.');
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      toast.error(`Failed to delete solution beta: ${message}`);
+      toast.error(`Failed to delete post: ${extractErrorMessage(err)}`);
     }
   };
 
@@ -414,46 +402,52 @@ export default function ProblemPage() {
     router.push(`/wall/${wallSectionID}`);
   };
 
-  const handlePostComment = async () => {
-    if (!user) {
-      toast.error('Please sign in to post a comment.');
-      return;
-    }
-
-    const charCount = commentText.length;
-    if (!commentText.trim() || charCount > 250) return;
-
-    setSubmittingComment(true);
+  const postTextComment = async (commentInfo) => {
     try {
-      await postCommentForUser(user, problemId, commentText.trim());
-      setCommentText('');
-      const refreshedProblem = await fetchProblemForUser(
-        user,
-        wallSectionID,
-        problemId,
-      );
-      setProblem(refreshedProblem);
+      await postCommentForUser(user, problemId, commentInfo);
+      await refreshProblem();
       toast.success('Comment posted successfully!');
+      return true;
     } catch (err) {
       toast.error('Failed to post comment:', err);
       setFetchError(
         err instanceof Error ? err.message : 'Failed to post comment',
       );
-    } finally {
-      setSubmittingComment(false);
+      return false;
     }
   };
 
-  const handleUploadSolutionBeta = async () => {
+  const handleSubmitDiscussion = async ({ text, file }) => {
     if (!user) {
-      toast.error('Please sign in to upload a solution beta.');
-      return;
+      toast.error('Please sign in to join the discussion.');
+      return false;
     }
+    if (!problemId || !wallSectionID) return false;
 
-    if (!solutionFile || !user || !problemId || !wallSectionID) return;
-    setUploadingSolution(true);
+    const commentInfo = text.trim();
+    if (!commentInfo && !file) return false;
+    if (commentInfo.length > DISCUSSION_COMMENT_MAX_LENGTH) return false;
+
+    setSubmittingDiscussion(true);
     setUploadStatus(null);
+    try {
+      return file
+        ? await uploadVideoDiscussion(file, commentInfo)
+        : await postTextComment(commentInfo);
+    } finally {
+      setSubmittingDiscussion(false);
+    }
+  };
 
+  /**
+   * Signed-URL upload shared by beta-only and comment + beta posts. The save step
+   * calls the mixed discussion-content API when a comment is attached.
+   *
+   * @param {File} solutionFile
+   * @param {string} commentInfo trimmed comment text, empty for beta-only posts
+   * @returns {Promise<boolean>} whether the composer should clear its inputs
+   */
+  const uploadVideoDiscussion = async (solutionFile, commentInfo) => {
     try {
       const shortenedUploadName = buildShortUploadFileName(
         solutionFile.name,
@@ -520,11 +514,20 @@ export default function ProblemPage() {
       }
 
       try {
-        await saveSolutionBetaToDatabase(user, {
-          problemId,
-          objectFileName: playback.objectName,
-          videoURL: playback.publicURL || '',
-        });
+        if (commentInfo) {
+          await saveDiscussionContent(user, {
+            problemId,
+            commentInfo,
+            objectFileName: playback.objectName,
+            videoURL: playback.publicURL || '',
+          });
+        } else {
+          await saveSolutionBetaToDatabase(user, {
+            problemId,
+            objectFileName: playback.objectName,
+            videoURL: playback.publicURL || '',
+          });
+        }
         verificationMessage = `${verificationMessage} Metadata saved to database.`;
       } catch (dbError) {
         const dbMessage = extractErrorMessage(dbError);
@@ -545,7 +548,7 @@ export default function ProblemPage() {
         message: verificationMessage,
         publicURL: playback.publicURL || null,
       });
-      clearSelectedSolutionFile();
+      return true;
     } catch (err) {
       setUploadStatus({
         type: 'error',
@@ -554,8 +557,7 @@ export default function ProblemPage() {
         }`,
         publicURL: null,
       });
-    } finally {
-      setUploadingSolution(false);
+      return false;
     }
   };
 
@@ -563,10 +565,6 @@ export default function ProblemPage() {
   if (loading) return <PageLoader message="Loading problem…" />;
 
   const isSignedIn = !!user;
-  const commentCharCount = commentText.length;
-  const commentOverLimit = commentCharCount > 250;
-  const canPostComment =
-    !!user && !!commentText.trim() && !commentOverLimit && !submittingComment;
   const reportReasonOverLimit = reportReason.length > REPORT_REASON_MAX_LENGTH;
   const canSubmitReport =
     !!reportCategory &&
@@ -615,13 +613,14 @@ export default function ProblemPage() {
 
         {problem && (
           <>
+            <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-stretch">
             {/* Problem Details Card */}
             <section
+              className="min-w-0 flex-1"
               style={{
                 ...card.surface,
                 position: 'relative',
                 padding: '22px 22px 22px 20px',
-                marginBottom: '28px',
                 overflow: 'hidden',
                 fontFamily,
               }}
@@ -704,6 +703,71 @@ export default function ProblemPage() {
               </div>
             </section>
 
+            {/* Suggest Difficulty Card */}
+            <aside
+              className="md:w-52 md:shrink-0"
+              style={{
+                ...card.surface,
+                padding: '16px',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                fontFamily,
+              }}
+            >
+              <p style={{ margin: '0 0 12px', fontWeight: 600, color: colors.text }}>
+                Suggest Difficulty
+              </p>
+              <p
+                style={{
+                  margin: '0 0 10px',
+                  fontSize: '1.625rem',
+                  fontWeight: 700,
+                  color: colors.text,
+                }}
+              >
+                {perceivedGrade || 'N/A'}
+              </p>
+              <select
+                value={perceivedGrade}
+                onChange={(e) => setPerceivedGrade(e.target.value)}
+                disabled={!isSignedIn}
+                aria-label="Suggested grade"
+                style={{
+                  alignSelf: 'center',
+                  fontSize: '0.75rem',
+                  padding: '4px 6px',
+                  marginBottom: '10px',
+                  border: `1px solid ${colors.borderHairline}`,
+                  borderRadius: '6px',
+                  fontFamily,
+                  background: colors.surfaceAlt,
+                  color: colors.text,
+                  cursor: 'pointer',
+                }}
+              >
+                {SUGGESTED_GRADES.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleSuggestPerceivedGrade}
+                disabled={!isSignedIn}
+                style={{
+                  ...buttons.primary,
+                  width: '100%',
+                  fontSize: '0.75rem',
+                }}
+              >
+                Suggest Grade
+              </button>
+            </aside>
+            </div>
+
             {/* Discussion Section */}
             <section style={{ marginBottom: '28px' }}>
               <h2
@@ -729,8 +793,7 @@ export default function ProblemPage() {
                   {problem.discussion.map((comment, index) =>
                     (() => {
                       const authorId = getCommentAuthorId(comment);
-                      const discussionType = getDiscussionType(comment);
-                      const discussionContent = getDiscussionContent(comment);
+                      const commentText = getDiscussionComment(comment);
                       const mediaUrl = getDiscussionMediaUrl(comment);
                       const isOwner =
                         !!currentUserId &&
@@ -740,14 +803,10 @@ export default function ProblemPage() {
                       const canReportComment = isSignedIn && !isOwner;
                       const showDiscussionMenu =
                         isSignedIn && (canDeleteComment || canReportComment);
-                      const isSolutionBeta =
-                        discussionType === 'BETA' ||
-                        (discussionType !== 'COMMENT' &&
-                          !discussionContent &&
-                          !!mediaUrl);
                       return (
                         <article
                           key={
+                            getDiscussionId(comment) ||
                             mediaUrl ||
                             `${comment.username || 'anonymous'}-${
                               comment.createdDate || index
@@ -819,22 +878,27 @@ export default function ProblemPage() {
                                   {canDeleteComment && (
                                     <DropdownMenuItem
                                       variant="destructive"
-                                      onClick={() =>
-                                        isSolutionBeta
-                                          ? handleDeleteSolutionBeta(comment)
-                                          : handleDeleteComment(comment)
-                                      }
+                                      onClick={() => handleDeleteDiscussion(comment)}
                                     >
-                                      {isSolutionBeta
-                                        ? 'Delete Solution Beta'
-                                        : 'Delete Comment'}
+                                      {getDeleteLabel({ comment: commentText, mediaUrl })}
                                     </DropdownMenuItem>
                                   )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             )}
                           </div>
-                          {isSolutionBeta ? (
+                          {commentText && (
+                            <p
+                              style={{
+                                margin: mediaUrl ? '0 0 8px' : 0,
+                                color: colors.text,
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {commentText}
+                            </p>
+                          )}
+                          {mediaUrl && (
                             <details>
                               <summary
                                 style={{
@@ -866,16 +930,6 @@ export default function ProblemPage() {
                                 </video>
                               </div>
                             </details>
-                          ) : (
-                            <p
-                              style={{
-                                margin: 0,
-                                color: colors.text,
-                                lineHeight: 1.5,
-                              }}
-                            >
-                              {discussionContent}
-                            </p>
                           )}
                         </article>
                       );
@@ -888,290 +942,14 @@ export default function ProblemPage() {
                 </p>
               )}
 
-              {/* Add Comment Form */}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '16px',
-                  alignItems: 'flex-start',
-                }}
-              >
-                <div
-                  style={{
-                    ...card.surface,
-                    padding: '20px',
-                    borderRadius: '8px',
-                    marginBottom: '16px',
-                    flex: 1,
-                  }}
-                >
-                  <p
-                    style={{
-                      margin: '0 0 12px',
-                      fontWeight: 600,
-                      color: colors.text,
-                    }}
-                  >
-                    Add a Comment or Solution Beta
-                  </p>
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '8px',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setEntryMode('comment')}
-                      style={{
-                        ...buttons.secondary,
-                        ...(entryMode === 'comment'
-                          ? {
-                              border: `1px solid ${colors.primary}`,
-                              color: colors.primary,
-                              background: colors.accentSoft,
-                            }
-                          : {}),
-                      }}
-                    >
-                      Add Comment
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEntryMode('file')}
-                      style={{
-                        ...buttons.secondary,
-                        ...(entryMode === 'file'
-                          ? {
-                              border: `1px solid ${colors.primary}`,
-                              color: colors.primary,
-                              background: colors.accentSoft,
-                            }
-                          : {}),
-                      }}
-                    >
-                      Submit Beta
-                    </button>
-                  </div>
-
-                  {entryMode === 'comment' ? (
-                    <>
-                      <textarea
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Write a comment here!"
-                        style={{
-                          width: '100%',
-                          minHeight: '100px',
-                          padding: '12px',
-                          border: `1px solid ${
-                            commentOverLimit ? colors.danger : colors.muted
-                          }`,
-                          borderRadius: '6px',
-                          fontFamily,
-                          fontSize: '0.875rem',
-                          resize: 'vertical',
-                          marginBottom: '8px',
-                        }}
-                      />
-                      <p
-                        style={{
-                          margin: '0 0 12px',
-                          fontSize: '0.8rem',
-                          color: commentOverLimit
-                            ? colors.danger
-                            : colors.subtle,
-                          textAlign: 'right',
-                        }}
-                      >
-                        {commentCharCount}/250
-                      </p>
-                    </>
-                  ) : (
-                    <div style={{ marginBottom: '12px' }}>
-                      <input
-                        ref={fileInputRef}
-                        id="solution-beta-file-input"
-                        className="solution-beta-file-input"
-                        type="file"
-                        accept={SOLUTION_VIDEO_ACCEPT}
-                        aria-label="Choose Video"
-                        onChange={(e) => {
-                          setSolutionFile(e.target.files?.[0] || null);
-                          setUploadStatus(null);
-                        }}
-                        disabled={!isSignedIn}
-                      />
-                      <p
-                        style={{
-                          margin: '8px 0 0',
-                          fontSize: '0.8rem',
-                          color: colors.subtle,
-                        }}
-                      >
-                        Allowed file types: .mp4, .webm, .mov (iPhone videos are converted to MP4)
-                      </p>
-                      {uploadStatus && (
-                        <div
-                          style={{
-                            marginTop: '10px',
-                            fontSize: '0.85rem',
-                            color:
-                              uploadStatus.type === 'success'
-                                ? colors.primary
-                                : colors.danger,
-                          }}
-                        >
-                          {uploadStatus.message}
-                          {uploadStatus.publicURL && (
-                            <>
-                              {' '}
-                              <a
-                                href={uploadStatus.publicURL}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                View file
-                              </a>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    {entryMode === 'comment' ? (
-                      <button
-                        type="button"
-                        onClick={handlePostComment}
-                        disabled={!canPostComment}
-                        style={{
-                          ...buttons.primary,
-                          opacity: !canPostComment ? 0.6 : 1,
-                          cursor: !canPostComment ? 'not-allowed' : 'pointer',
-                        }}
-                      >
-                        {submittingComment ? 'Posting...' : 'Post Comment'}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleUploadSolutionBeta}
-                        disabled={
-                          !isSignedIn || !solutionFile || uploadingSolution
-                        }
-                        style={{
-                          ...buttons.primary,
-                          opacity: !solutionFile || uploadingSolution ? 0.6 : 1,
-                          cursor:
-                            !solutionFile || uploadingSolution
-                              ? 'not-allowed'
-                              : 'pointer',
-                        }}
-                      >
-                        {uploadingSolution
-                          ? 'Uploading...'
-                          : 'Upload Solution Beta'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {/* Aggregate Perceived Grade Card */}
-                <div
-                  style={{
-                    ...card.surface,
-                    padding: '16px',
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    minWidth: '160px',
-                    marginBottom: '16px',
-                  }}
-                >
-                  <p
-                    style={{
-                      margin: '0 0 12px',
-                      fontWeight: 600,
-                      color: colors.text,
-                    }}
-                  >
-                    Suggest Difficulty
-                  </p>
-                  <p
-                    style={{
-                      margin: '0 0 10px',
-                      fontSize: '1.625rem',
-                      fontWeight: 700,
-                      color: colors.text,
-                    }}
-                  >
-                    {perceivedGrade || 'N/A'}
-                  </p>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      marginBottom: '10px',
-                    }}
-                  >
-                    <select
-                      value={perceivedGrade}
-                      onChange={(e) => setPerceivedGrade(e.target.value)}
-                      disabled={!isSignedIn}
-                      style={{
-                        fontSize: '0.75rem',
-                        padding: '4px 6px',
-                        border: `1px solid ${colors.borderHairline}`,
-                        borderRadius: '6px',
-                        fontFamily,
-                        background: colors.surfaceAlt,
-                        color: colors.text,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {[
-                        'VB',
-                        'V0',
-                        'V1',
-                        'V2',
-                        'V3',
-                        'V4',
-                        'V5',
-                        'V6',
-                        'V7',
-                        'V8',
-                        'V9',
-                        'V10',
-                        'V11',
-                        'V12',
-                        'V13',
-                        'V14',
-                        'V15',
-                        'V16',
-                        'V17',
-                      ].map((g) => (
-                        <option key={g} value={g}>
-                          {g}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleSuggestPerceivedGrade}
-                    disabled={!isSignedIn}
-                    style={{
-                      ...buttons.primary,
-                      width: '100%',
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    Suggest Grade
-                  </button>
-                </div>
-              </div>
+              {/* Floating discussion composer */}
+              <DiscussionComposer
+                disabled={!isSignedIn}
+                submitting={submittingDiscussion}
+                status={uploadStatus}
+                onSubmit={handleSubmitDiscussion}
+                onFileChange={() => setUploadStatus(null)}
+              />
             </section>
           </>
         )}

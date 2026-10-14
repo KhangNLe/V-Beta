@@ -97,7 +97,7 @@ See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
 
 Current discussion payload contract is unified through `DiscussionRoot` metadata:
 
-- Discussion entries include `discussionId`, `discussionType`, and `discussionContent`.
+- Discussion entries include `discussionId`, nullable `comment`, and nullable `videoURL` (kind inferred from which payloads are set; mixed posts have both).
 - Deletion payloads for both comments and solution betas include `discussionId` and a reason string (max 100).
 - Comment deletes send `deletedReason`; beta deletes send `deleteReason`.
 - The problem page currently sends `"User deleted their own discussion"` for owner deletes and `"Admin forced delete the discussion"` when an admin deletes another user's item.

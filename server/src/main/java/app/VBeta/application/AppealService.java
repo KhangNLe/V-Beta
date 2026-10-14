@@ -375,8 +375,8 @@ public class AppealService {
                 root.getUserAccount() == null ? null : root.getUserAccount().getId(),
                 root.getUserAccount() == null ? null : root.getUserAccount().getUsername(),
                 null,
-                root.getDiscussionType(),
-                "",
+                null,
+                null,
                 root.getCreatedAt()
         );
         return new ReportDTO(

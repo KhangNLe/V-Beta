@@ -107,10 +107,24 @@ public class ProblemDiscussionService {
                 userAccount.getId(),
                 userAccount.getUsername(),
                 null,
-                DiscussionType.BETA,
+                null,
                 solutionBeta.getVideoURL(),
                 solutionBeta.getCreateDate()
         );
+    }
+
+    /**
+     * Persists a mixed discussion post (text + uploaded beta) after GCS upload completes.
+     *
+     * @param firebaseUid Firebase UID of the authenticated user
+     * @param request mixed create payload (comment, object key, public URL)
+     * @return timeline entry with both {@code comment} and {@code videoURL}
+     */
+    public UserDiscussionData saveUserDiscussionContent(String firebaseUid, DiscussionContentRequest request){
+        UserAccount user = getUserAccount(firebaseUid);
+        ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
+        DiscussionRoot newRoot = discussionRootManager.createNewDiscussion(user, problem, DiscussionType.MIXED);
+        return climbingProblemDiscussionManager.storeNewMixedDiscussion(newRoot, request);
     }
 
     /**
@@ -130,6 +144,25 @@ public class ProblemDiscussionService {
                 new DiscussionContent(null, request.publicUrl()));
 
         climbingProblemDiscussionManager.softDeleteDiscussionRoot(requestUser, request.discussionId(),
+                request.deleteReason());
+    }
+
+    /**
+     * Soft-deletes a mixed discussion when requester is owner or admin.
+     * <p>
+     * Validates that both comment text and video URL match the stored children,
+     * then sets soft-delete metadata on the root. Child rows and GCS objects remain.
+     *
+     * @param firebaseUid Firebase UID of the authenticated requester
+     * @param request mixed deletion payload
+     */
+    public void softDeleteUserDiscussionContent(String firebaseUid, DiscussionContentDeletionRequest request){
+        UserAccount requester =  getUserAccount(firebaseUid);
+        ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
+        validateDeletionOwnerObject(requester, request.authorId());
+        validateDiscussionExisting(request.discussionId(), requester, problem,
+                new DiscussionContent(request.commentContent(), request.videoURL()));
+        climbingProblemDiscussionManager.softDeleteDiscussionRoot(requester, request.discussionId(),
                 request.deleteReason());
     }
 
@@ -240,12 +273,15 @@ public class ProblemDiscussionService {
         }
 
         boolean isExist;
-        if (discussionContent.commentContent() != null){
+        if (discussionContent.betaUrl() == null){
             isExist = discussionRootManager.validateDiscussionCommentContent(discussion,
                     discussionContent.commentContent());
-        } else {
+        } else if (discussionContent.commentContent() == null){
             isExist = discussionRootManager.validateDiscussionBetaContent(discussion,
                     discussionContent.betaUrl());
+        } else {
+            isExist = discussionRootManager.validateDiscussionMixedContent(discussion,
+                    discussionContent.commentContent(), discussionContent.betaUrl());
         }
         if (!isExist){
             throw new RuntimeException("Could not find discussion with the given information.");

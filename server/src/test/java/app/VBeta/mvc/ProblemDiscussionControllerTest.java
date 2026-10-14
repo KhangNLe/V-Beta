@@ -1,6 +1,8 @@
 package app.VBeta.mvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import app.VBeta.api.dto.discussions.DiscussionContentDeletionRequest;
+import app.VBeta.api.dto.discussions.DiscussionContentRequest;
 import app.VBeta.api.dto.discussions.PerceiveGradeRequest;
 import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
@@ -71,8 +73,8 @@ public class ProblemDiscussionControllerTest {
                 1L,
                 "test-user",
                 null,
-                DiscussionType.COMMENT,
                 "Nice",
+                null,
                 LocalDateTime.of(2026, 5, 7, 14, 0)
         );
     }
@@ -91,8 +93,8 @@ public class ProblemDiscussionControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.discussionId").value(101L))
                 .andExpect(jsonPath("$.userId").value(1L))
-                .andExpect(jsonPath("$.discussionType").value("COMMENT"))
-                .andExpect(jsonPath("$.discussionContent").value("Nice"));
+                .andExpect(jsonPath("$.videoURL").isEmpty())
+                .andExpect(jsonPath("$.comment").value("Nice"));
         verify(problemDiscussionService, times(1)).addComment(eq("testFirebaseUid"), any(DiscussionCommentRequest.class));
     }
 
@@ -176,7 +178,7 @@ public class ProblemDiscussionControllerTest {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         when(problemDiscussionService.saveSolutionBeta(any(SolutionBetaCreateRequest.class), eq("testFirebaseUid")))
                 .thenReturn(new UserDiscussionData(
-                        402L, 1L, "test-user", null, DiscussionType.BETA,
+                        402L, 1L, "test-user", null, null,
                         "https://storage.googleapis.com/bucket/video.mp4",
                         LocalDateTime.of(2026, 4, 20, 20, 2)
                 ));
@@ -192,7 +194,8 @@ public class ProblemDiscussionControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.discussionId").value(402))
-                .andExpect(jsonPath("$.discussionType").value("BETA"));
+                .andExpect(jsonPath("$.videoURL").isNotEmpty())
+                .andExpect(jsonPath("$.comment").isEmpty());
     }
 
     @Test
@@ -248,6 +251,126 @@ public class ProblemDiscussionControllerTest {
                 1L, 22L, 101L, "Nice", "User deleted their own discussion");
 
         mockMvc.perform(delete("/api/discussion/comment/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /api/discussion/discussion-content returns created post with comment and video")
+    void returns201_whenSavingDiscussionContent() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        when(problemDiscussionService.saveUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentRequest.class)))
+                .thenReturn(new UserDiscussionData(
+                        503L, 1L, "test-user", null, "Heel hook on the left",
+                        "https://storage.googleapis.com/bucket/video.mp4",
+                        LocalDateTime.of(2026, 10, 14, 15, 0)
+                ));
+
+        DiscussionContentRequest request = new DiscussionContentRequest(
+                22L,
+                "Heel hook on the left",
+                "wallSection-1/problem-22/uuid-beta_22.mp4",
+                "https://storage.googleapis.com/bucket/video.mp4"
+        );
+
+        mockMvc.perform(post("/api/discussion/discussion-content")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.discussionId").value(503))
+                .andExpect(jsonPath("$.comment").value("Heel hook on the left"))
+                .andExpect(jsonPath("$.videoURL").value("https://storage.googleapis.com/bucket/video.mp4"));
+        verify(problemDiscussionService, times(1))
+                .saveUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentRequest.class));
+    }
+
+    @Test
+    @DisplayName("POST discussion-content rejects blank comment with 400")
+    void returns400_whenDiscussionContentCommentBlank() throws Exception {
+        DiscussionContentRequest request = new DiscussionContentRequest(
+                22L,
+                "",
+                "wallSection-1/problem-22/uuid-beta_22.mp4",
+                "https://storage.googleapis.com/bucket/video.mp4"
+        );
+
+        mockMvc.perform(post("/api/discussion/discussion-content")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+        verify(problemDiscussionService, never()).saveUserDiscussionContent(any(), any());
+    }
+
+    @Test
+    @DisplayName("POST discussion-content maps service failure to 404")
+    void returns404_whenSavingDiscussionContentFails() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        when(problemDiscussionService.saveUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentRequest.class)))
+                .thenThrow(new RuntimeException("The problem with ID 22 does not exist or no longer active."));
+
+        DiscussionContentRequest request = new DiscussionContentRequest(
+                22L,
+                "Heel hook on the left",
+                "wallSection-1/problem-22/uuid-beta_22.mp4",
+                "https://storage.googleapis.com/bucket/video.mp4"
+        );
+
+        mockMvc.perform(post("/api/discussion/discussion-content")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/discussion/discussion-content returns 200")
+    void returns200_whenDeletingDiscussionContent() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        doNothing().when(problemDiscussionService)
+                .softDeleteUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentDeletionRequest.class));
+
+        DiscussionContentDeletionRequest request = new DiscussionContentDeletionRequest(
+                1L, 503L, 22L, "Heel hook on the left",
+                "https://storage.googleapis.com/bucket/video.mp4",
+                "User deleted their own discussion");
+
+        mockMvc.perform(delete("/api/discussion/discussion-content")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        verify(problemDiscussionService, times(1))
+                .softDeleteUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentDeletionRequest.class));
+    }
+
+    @Test
+    @DisplayName("DELETE discussion-content rejects missing video URL with 400")
+    void returns400_whenDeletingDiscussionContentWithoutVideo() throws Exception {
+        DiscussionContentDeletionRequest request = new DiscussionContentDeletionRequest(
+                1L, 503L, 22L, "Heel hook on the left", null,
+                "User deleted their own discussion");
+
+        mockMvc.perform(delete("/api/discussion/discussion-content")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+        verify(problemDiscussionService, never()).softDeleteUserDiscussionContent(any(), any());
+    }
+
+    @Test
+    @DisplayName("DELETE discussion-content maps service failure to 404")
+    void returns404_whenDeletingDiscussionContentFails() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        doThrow(new RuntimeException("Could not find discussion with the given information."))
+                .when(problemDiscussionService)
+                .softDeleteUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentDeletionRequest.class));
+
+        DiscussionContentDeletionRequest request = new DiscussionContentDeletionRequest(
+                1L, 503L, 22L, "Heel hook on the left",
+                "https://storage.googleapis.com/bucket/video.mp4",
+                "User deleted their own discussion");
+
+        mockMvc.perform(delete("/api/discussion/discussion-content")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());

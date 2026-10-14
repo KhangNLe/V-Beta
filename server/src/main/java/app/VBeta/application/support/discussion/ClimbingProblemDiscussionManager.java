@@ -1,5 +1,6 @@
 package app.VBeta.application.support.discussion;
 
+import app.VBeta.api.dto.discussions.DiscussionContentRequest;
 import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
 import app.VBeta.application.support.discussion.comment.DiscussionCommentManager;
@@ -17,9 +18,9 @@ import java.util.List;
 
 /**
  * {@code ClimbingProblemDiscussionManager} composes a unified discussion timeline for a climbing problem.
- * It merges text comments and beta video submissions into a shared
- * {@link UserDiscussionData} stream ordered by creation time, omitting roots whose
- * {@code deletedAt} is set.
+ * It maps {@code COMMENT}, {@code BETA}, and {@code MIXED} roots into
+ * {@link UserDiscussionData} (nullable {@code comment} + {@code videoURL}) ordered by creation time,
+ * omitting roots whose {@code deletedAt} is set.
  * <p>
  * Data is sourced from {@link DiscussionCommentManager} and {@link SolutionBetaManager}.
  */
@@ -61,12 +62,7 @@ public class ClimbingProblemDiscussionManager {
             if (root.getDeletedAt() != null) {
                 return;
             }
-            UserDiscussionData dataContent = null;
-            if (root.getDiscussionType().equals(DiscussionType.COMMENT)){
-                dataContent = getCommentDiscussion(root);
-            } else if (root.getDiscussionType().equals(DiscussionType.BETA)){
-                dataContent = getSolutionBeta(root);
-            }
+            UserDiscussionData dataContent = getDiscussionData(root);
             if (dataContent != null){
                 data.add(dataContent);
             }
@@ -137,6 +133,27 @@ public class ClimbingProblemDiscussionManager {
                 DiscussionType.BETA, parent);
 
         return solutionBetaManager.storeUserSolutionBeta(reply, objectName, publicUrl);
+    }
+
+    /**
+     * Persists comment and beta children for a {@code MIXED} discussion root.
+     *
+     * @param root discussion root already typed as {@link DiscussionType#MIXED}
+     * @param request create payload with text and uploaded video metadata
+     * @return timeline DTO with both payloads set
+     */
+    public UserDiscussionData storeNewMixedDiscussion(DiscussionRoot root, DiscussionContentRequest request){
+        discussionCommentManager.storeDiscussionComment(root, request.commentInfo());
+        solutionBetaManager.storeUserSolutionBeta(root, request.objectFileName(), request.videoURL());
+        return new UserDiscussionData(
+                root.getDiscussionId(),
+                root.getUserAccount().getId(),
+                root.getUserAccount().getUsername(),
+                null,
+                request.commentInfo(),
+                request.videoURL(),
+                root.getCreatedAt()
+        );
     }
 
     /**
@@ -214,8 +231,10 @@ public class ClimbingProblemDiscussionManager {
         UserDiscussionData dataContent = null;
         if (discussionRoot.getDiscussionType().equals(DiscussionType.COMMENT)){
             dataContent = getCommentDiscussion(discussionRoot);
-        } else {
+        } else if (discussionRoot.getDiscussionType().equals(DiscussionType.BETA)){
             dataContent = getSolutionBeta(discussionRoot);
+        } else {
+            dataContent = getMixedDiscussionContent(discussionRoot);
         }
         return dataContent;
     }
@@ -229,8 +248,8 @@ public class ClimbingProblemDiscussionManager {
                 discussionRoot.getUserAccount().getId(),
                 discussionRoot.getUserAccount().getUsername(),
                 parentId,
-                discussionRoot.getDiscussionType(),
                 comment.getCommentInfo(),
+                null,
                 comment.getCreateDate()
         );
     }
@@ -244,9 +263,25 @@ public class ClimbingProblemDiscussionManager {
                 discussionRoot.getUserAccount().getId(),
                 discussionRoot.getUserAccount().getUsername(),
                 parentId,
-                discussionRoot.getDiscussionType(),
+                null,
                 beta.getVideoURL(),
                 beta.getCreateDate()
+        );
+    }
+
+    private UserDiscussionData getMixedDiscussionContent(DiscussionRoot root){
+        DiscussionComment comment =  discussionCommentManager.getDiscussionComment(root);
+        SolutionBeta beta = solutionBetaManager.getSolutionBetaFromDiscussionRoot(root);
+        if (comment == null || beta == null) return null;
+        Long parentId =  root.getParent() == null ? null : root.getParent().getDiscussionId();
+        return new UserDiscussionData(
+                root.getDiscussionId(),
+                root.getUserAccount().getId(),
+                root.getUserAccount().getUsername(),
+                parentId,
+                comment.getCommentInfo(),
+                beta.getVideoURL(),
+                root.getCreatedAt()
         );
     }
 

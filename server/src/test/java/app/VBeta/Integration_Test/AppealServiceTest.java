@@ -211,7 +211,6 @@ public class AppealServiceTest {
         assertNull(notice.appealStatus());
         assertNull(notice.appeal());
         assertNotNull(notice.report().discussion());
-        assertEquals(DiscussionType.COMMENT, notice.report().discussion().discussionType());
         assertEquals(1, notice.report().reporters().size());
         assertNull(notice.report().reporters().get(0).reporter());
         assertEquals(ReportCategoryName.SPAM, notice.report().reporters().get(0).categoryName());

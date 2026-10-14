@@ -1,6 +1,9 @@
 package app.VBeta.Integration_Test;
 
+import app.VBeta.api.dto.discussions.DiscussionContentRequest;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
+import app.VBeta.application.support.cloud.GcpFileStorageAdapter;
+import app.VBeta.repository.SolutionBetaRepository;
 import app.VBeta.api.dto.discussions.PerceiveGradeRequest;
 import app.VBeta.api.dto.problems.ClimbingProblemCreationRequest;
 import app.VBeta.api.dto.problems.ClimbingProblemResponse;
@@ -32,10 +35,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @Import(TestGcpStorageConfig.class)
@@ -69,6 +76,10 @@ public class ClimbingProblemModificationTest {
     private DiscussionCommentRepository discussionCommentRepository;
     @Autowired
     private UserPerceiveGradeRepository userPerceiveGradeRepository;
+    @Autowired
+    private SolutionBetaRepository solutionBetaRepository;
+    @MockitoBean
+    private GcpFileStorageAdapter gcpFileStorageAdapter;
 
     private final ClimbingProblemCreationRequest request = new ClimbingProblemCreationRequest(
             "Yellow",
@@ -157,6 +168,42 @@ public class ClimbingProblemModificationTest {
 
         List<ClimbingProblem> problems = climbingProblemManager.getAllProblemsFromWallSection(wall);
         assertTrue(problems.isEmpty());
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("Test Delete Climbing Problem removes MIXED posts with their comment, beta, and storage object")
+    void testDeletingClimbingProblemWithMixedDiscussion(){
+        WallSection wall = createWallSection();
+        climbingWallService.createNewClimbingProblem(wall.getId(), request);
+        ClimbingProblem problem = climbingProblemManager.getAllProblemsFromWallSection(wall).get(0);
+
+        List<UserAccount> accounts = userAccountRepository.findAll();
+        assertFalse(accounts.isEmpty(), "There is no accounts inside the database");
+        when(gcpFileStorageAdapter.getPublicBucketName()).thenReturn("test-bucket");
+
+        String objectKey = "w1/p" + problem.getId() + "/" + UUID.randomUUID() + ".mp4";
+        String publicUrl = "https://storage.googleapis.com/test-bucket/" + objectKey;
+        problemDiscussionService.saveUserDiscussionContent(
+                accounts.get(0).getFirebaseUid(),
+                new DiscussionContentRequest(problem.getId(), "mixed post comment", objectKey, publicUrl)
+        );
+        addCommentsToProblem(problem.getId());
+
+        List<DiscussionRoot> mixedRoots = discussionRootManager.getDiscussionsByProblemAndType(
+                problem, DiscussionType.MIXED
+        );
+        assertEquals(1, mixedRoots.size());
+
+        climbingWallService.deleteClimbingProblem(problem.getId());
+
+        assertTrue(climbingProblemRepository.findById(problem.getId()).isEmpty());
+        verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(objectKey));
+        assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isEmpty());
+        mixedRoots.forEach(root -> {
+            assertTrue(discussionCommentRepository.findByDiscussionRoot(root).isEmpty());
+            assertNull(discussionRootManager.findDiscussionRootById(root.getDiscussionId()));
+        });
     }
 
     @Test

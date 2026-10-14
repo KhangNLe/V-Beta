@@ -181,8 +181,8 @@ GET /api/home/wall-sections/1/problems/22
       "userId": 7,
       "username": "climber01",
       "parentCommentId": null,
-      "discussionType": "COMMENT",
-      "discussionContent": "Fun movement.",
+      "comment": "Fun movement.",
+      "videoURL": null,
       "createdDate": "2026-04-20T19:00:00"
     },
     {
@@ -190,9 +190,18 @@ GET /api/home/wall-sections/1/problems/22
       "userId": 7,
       "username": "climber01",
       "parentCommentId": null,
-      "discussionType": "BETA",
-      "discussionContent": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
+      "comment": null,
+      "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
       "createdDate": "2026-04-20T20:02:00"
+    },
+    {
+      "discussionId": 303,
+      "userId": 7,
+      "username": "climber01",
+      "parentCommentId": null,
+      "comment": "Heel hook then match",
+      "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-mixed_22.mp4",
+      "createdDate": "2026-04-20T20:15:00"
     }
   ]
 }
@@ -223,8 +232,8 @@ Authorization: Bearer <firebase_id_token>
   "userId": 7,
   "username": "climber01",
   "parentCommentId": null,
-  "discussionType": "COMMENT",
-  "discussionContent": "Felt like soft V5.",
+  "comment": "Felt like soft V5.",
+  "videoURL": null,
   "createdDate": "2026-04-21T09:11:00"
 }
 ```
@@ -342,11 +351,71 @@ Authorization: Bearer <firebase_id_token>
   "userId": 7,
   "username": "climber01",
   "parentCommentId": null,
-  "discussionType": "BETA",
-  "discussionContent": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
+  "comment": null,
+  "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
   "createdDate": "2026-04-20T20:02:00"
 }
 ```
+
+## 8a) Save Mixed Discussion Content (comment + video)
+
+Call after the same signed-URL upload used for solution betas.
+
+### Request
+
+```http
+POST /api/discussion/discussion-content
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "problemId": 22,
+  "commentInfo": "Heel hook then match",
+  "objectFileName": "wallSection-1/problem-22/uuid-mixed_22.mp4",
+  "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-mixed_22.mp4"
+}
+```
+
+### Response (201)
+
+```json
+{
+  "discussionId": 403,
+  "userId": 7,
+  "username": "climber01",
+  "parentCommentId": null,
+  "comment": "Heel hook then match",
+  "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-mixed_22.mp4",
+  "createdDate": "2026-04-20T20:15:00"
+}
+```
+
+## 8b) Soft-Delete Mixed Discussion Content
+
+### Request
+
+```http
+DELETE /api/discussion/discussion-content
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "authorId": 7,
+  "discussionId": 403,
+  "problemId": 22,
+  "commentContent": "Heel hook then match",
+  "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-mixed_22.mp4",
+  "deleteReason": "User deleted their own discussion"
+}
+```
+
+### Response (200)
+
+Empty body.
 
 ## 9) Suggest Perceived Grade
 
@@ -641,8 +710,8 @@ Authorization: Bearer <firebase_id_token>
           "userId": 8,
           "username": "alex",
           "parentCommentId": null,
-          "discussionType": "COMMENT",
-          "discussionContent": "hello",
+          "comment": "hello",
+          "videoURL": null,
           "createdDate": "2026-08-16T10:00:00"
         },
         "climbingProblem": {
@@ -946,8 +1015,8 @@ Authorization: Bearer <firebase_id_token>
           "userId": 8,
           "username": "alex",
           "parentCommentId": null,
-          "discussionType": "COMMENT",
-          "discussionContent": "hello",
+          "comment": "hello",
+          "videoURL": null,
           "createdDate": "2026-08-16T10:00:00"
         },
         "climbingProblem": null,
@@ -1050,8 +1119,8 @@ Authorization: Bearer <firebase_id_token>
       "userId": 8,
       "username": "alex",
       "parentCommentId": null,
-      "discussionType": "COMMENT",
-      "discussionContent": "hello",
+      "comment": "hello",
+      "videoURL": null,
       "createdDate": "2026-08-16T10:00:00"
     },
     "climbingProblem": null,
@@ -1113,8 +1182,8 @@ Authorization: Bearer <firebase_id_token>
           "userId": 8,
           "username": "alex",
           "parentCommentId": null,
-          "discussionType": "COMMENT",
-          "discussionContent": "hello",
+          "comment": "hello",
+          "videoURL": null,
           "createdDate": "2026-08-16T10:00:00"
         },
         "climbingProblem": null,

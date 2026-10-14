@@ -1,27 +1,28 @@
 package app.VBeta.api.dto.discussions;
 
-import app.VBeta.domain.model.discussions.DiscussionType;
-
 import java.time.LocalDateTime;
 
 /**
- * Response DTO describing one discussion item (comment or beta) in a problem thread.
+ * Response DTO describing one discussion item in a problem thread.
+ * <p>
+ * Kind is inferred from payloads: {@code comment} only, {@code videoURL} only,
+ * or both for a mixed post. Either field may be {@code null}.
  *
  * @param discussionId identifier of the discussion root row
- * @param userId identifier of the commenting user
- * @param username display name of the commenting user
+ * @param userId identifier of the authoring user
+ * @param username display name of the authoring user
  * @param parentCommentId optional parent discussion id for replies
- * @param discussionType discussion kind (COMMENT or BETA)
- * @param discussionContent comment text or beta URL
- * @param createdDate timestamp when the comment was created
+ * @param comment nullable text body from {@code Discussion_Comment}
+ * @param videoURL nullable public beta URL from {@code Solution_Beta}
+ * @param createdDate timestamp when the discussion root was created
  */
 public record UserDiscussionData(
         Long discussionId,
         Long userId,
         String username,
         Long parentCommentId,
-        DiscussionType discussionType,
-        String discussionContent,
+        String comment,
+        String videoURL,
         LocalDateTime createdDate
 ) {
 }

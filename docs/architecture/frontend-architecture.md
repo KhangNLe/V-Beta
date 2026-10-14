@@ -18,7 +18,7 @@
 - `src/components/ui/`
   - Shared UI primitives (button, card, dialog, etc.)
 - `src/api/`
-  - Backend API calls grouped by domain (`account`, `accounts`, `promoteOrDemote`, `wallSections`, `socialImage`, `comments`, `solutionBeta`, `reports`, `moderation`, `appeals`, `notifications`)
+  - Backend API calls grouped by domain (`account`, `accounts`, `promoteOrDemote`, `wallSections`, `socialImage`, `comments`, `discussionContent`, `solutionBeta`, `reports`, `moderation`, `appeals`, `notifications`)
 - `src/hooks/`
   - Auth/session hook (`useRequireAuth`)
   - Wall section image upload hook (`useWallSectionImageUpload`)
@@ -85,7 +85,10 @@ Supporting auth/session modules:
   - `src/api/promoteOrDemote.js`
   - `src/api/wallSections.js`
   - `src/api/socialImage.js`
-  - `src/api/comments.js`
+  - `src/api/comments.js` (text-only create/delete + suggest grade)
+  - `src/api/discussionContent.js` (mixed comment+video create/delete)
+  - `src/api/solutionBeta.js` (signed upload URL, GCS PUT, video-only save/delete)
+  - Problem page (`wall/[wallSectionID]/problem/[problemId]/page.js`): Suggest Difficulty sits beside the climb info card; User Discussion uses floating `DiscussionComposer` for optional text + optional video. Submit routes to comment / beta / mixed APIs from which fields are filled. Timeline items render nullable `comment` and `videoURL`.
   - `src/api/solutionBeta.js`
   - `src/api/reports.js`
   - `src/api/moderation.js`
