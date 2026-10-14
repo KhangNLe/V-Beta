@@ -5,6 +5,7 @@ import { fetchProblemForUser, updateClimbingProblem } from "@/api/wallSections";
 import { uploadClimbingProblemImage } from "@/api/socialImage";
 import { addUserSuggestedGrade, deleteUserComment, postCommentForUser } from "@/api/comments";
 import { createContentReport } from "@/api/reports";
+import { deleteDiscussionContent, saveDiscussionContent } from "@/api/discussionContent";
 import {
   deleteSolutionBetaFromDatabase,
   requestSignedUploadUrl,
@@ -35,6 +36,11 @@ jest.mock("@/api/comments", () => ({
   addUserSuggestedGrade: jest.fn(),
   deleteUserComment: jest.fn(),
   postCommentForUser: jest.fn(),
+}));
+
+jest.mock("@/api/discussionContent", () => ({
+  deleteDiscussionContent: jest.fn(),
+  saveDiscussionContent: jest.fn(),
 }));
 
 jest.mock("@/api/reports", () => ({
@@ -208,7 +214,7 @@ describe("ProblemPage coverage", () => {
       });
       expect(await screen.findByTestId("guest-banner")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Suggest Grade" })).toBeDisabled();
-      expect(screen.getByRole("button", { name: "Post Comment" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Post" })).toBeDisabled();
       expect(screen.queryByLabelText("Comment actions")).not.toBeInTheDocument();
     });
   });
@@ -244,7 +250,7 @@ describe("ProblemPage coverage", () => {
       fireEvent.change(screen.getByPlaceholderText("Write a comment here!"), {
         target: { value: "Try heel hook" },
       });
-      fireEvent.click(screen.getByRole("button", { name: "Post Comment" }));
+      fireEvent.click(screen.getByRole("button", { name: "Post" }));
 
       await waitFor(() => {
         expect(postCommentForUser).toHaveBeenCalledWith(user, 100, "Try heel hook");
@@ -261,7 +267,7 @@ describe("ProblemPage coverage", () => {
         target: { value: "a".repeat(251) },
       });
       expect(screen.getByText("251/250")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Post Comment" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Post" })).toBeDisabled();
       expect(postCommentForUser).not.toHaveBeenCalled();
     });
 
@@ -272,7 +278,7 @@ describe("ProblemPage coverage", () => {
         target: { value: "a".repeat(250) },
       });
       expect(screen.getByText("250/250")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Post Comment" })).not.toBeDisabled();
+      expect(screen.getByRole("button", { name: "Post" })).not.toBeDisabled();
     });
 
     it("calls suggest-grade API with route problem id and selected grade", async () => {
@@ -574,12 +580,11 @@ describe("ProblemPage coverage", () => {
 
       renderProblemPage();
       await screen.findByText("Blue");
-      fireEvent.click(screen.getByRole("button", { name: "Submit Beta" }));
       const input = screen.getByLabelText("Choose Video");
       const file = new File(["video"], "beta.mp4", { type: "video/mp4" });
       fireEvent.change(input, { target: { files: [file] } });
 
-      fireEvent.click(screen.getByRole("button", { name: "Upload Solution Beta" }));
+      fireEvent.click(screen.getByRole("button", { name: "Post" }));
       await waitFor(() => {
         expect(requestSignedUploadUrl).toHaveBeenCalled();
       });
@@ -590,6 +595,69 @@ describe("ProblemPage coverage", () => {
       });
       expect(await screen.findByText(/Uploaded and verified from bucket\./)).toBeInTheDocument();
       headSpy.mockRestore();
+    });
+
+    it("uploads video with a comment and saves it as one mixed post", async () => {
+      requestSignedUploadUrl.mockResolvedValue({
+        signedURL: "https://upload.example.com",
+        uploadObjectName: "obj-name",
+        publicURL: "https://cdn.example.com/beta.mp4",
+      });
+      uploadSolutionBeta.mockResolvedValue({ ok: true });
+      saveDiscussionContent.mockResolvedValue(null);
+      const headSpy = jest.spyOn(global, "fetch").mockResolvedValue({ ok: true });
+
+      renderProblemPage();
+      await screen.findByText("Blue");
+      fireEvent.change(screen.getByPlaceholderText("Write a comment here!"), {
+        target: { value: "  Heel hook then match  " },
+      });
+      fireEvent.change(screen.getByLabelText("Choose Video"), {
+        target: { files: [new File(["video"], "beta.mp4", { type: "video/mp4" })] },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Post" }));
+
+      await waitFor(() => {
+        expect(saveDiscussionContent).toHaveBeenCalledWith(user, {
+          problemId: 100,
+          commentInfo: "Heel hook then match",
+          objectFileName: "obj-name",
+          videoURL: "https://cdn.example.com/beta.mp4",
+        });
+      });
+      expect(requestSignedUploadUrl).toHaveBeenCalled();
+      expect(saveSolutionBetaToDatabase).not.toHaveBeenCalled();
+      expect(postCommentForUser).not.toHaveBeenCalled();
+      headSpy.mockRestore();
+    });
+
+    it("deletes a mixed post through the discussion-content API", async () => {
+      const mixedByOwner = {
+        ...betaByOwner,
+        discussionId: 303,
+        comment: "Heel hook then match",
+      };
+      deleteDiscussionContent.mockResolvedValue(undefined);
+      fetchProblemForUser
+        .mockResolvedValueOnce({ ...baseProblem, discussion: [mixedByOwner] })
+        .mockResolvedValueOnce({ ...baseProblem, discussion: [] });
+      renderProblemPage({ account: ownerAccount });
+      await screen.findByText("Heel hook then match");
+      expect(screen.getByText("Watch Beta")).toBeInTheDocument();
+      fireEvent.click(screen.getByLabelText("Comment actions"));
+      fireEvent.click(screen.getByRole("button", { name: "Delete Post" }));
+      await waitFor(() => {
+        expect(deleteDiscussionContent).toHaveBeenCalledWith(user, {
+          authorId: 5,
+          discussionId: 303,
+          problemId: 100,
+          commentContent: "Heel hook then match",
+          videoURL: "https://example.com/beta.mp4",
+          deleteReason: USER_DELETED_OWN_DISCUSSION,
+        });
+      });
+      expect(deleteUserComment).not.toHaveBeenCalled();
+      expect(deleteSolutionBetaFromDatabase).not.toHaveBeenCalled();
     });
 
     it("accepts iPhone MOV, waits for MP4 conversion, and saves the mp4 URL", async () => {
@@ -607,12 +675,11 @@ describe("ProblemPage coverage", () => {
 
       renderProblemPage();
       await screen.findByText("Blue");
-      fireEvent.click(screen.getByRole("button", { name: "Submit Beta" }));
       const input = screen.getByLabelText("Choose Video");
       const file = new File(["video"], "IMG_1.MOV", { type: "video/quicktime" });
       fireEvent.change(input, { target: { files: [file] } });
 
-      fireEvent.click(screen.getByRole("button", { name: "Upload Solution Beta" }));
+      fireEvent.click(screen.getByRole("button", { name: "Post" }));
       await waitFor(() => {
         expect(requestSignedUploadUrl).toHaveBeenCalledWith(
           user,
@@ -650,7 +717,7 @@ describe("ProblemPage coverage", () => {
       fireEvent.change(screen.getByPlaceholderText("Write a comment here!"), {
         target: { value: "Try heel hook" },
       });
-      fireEvent.click(screen.getByRole("button", { name: "Post Comment" }));
+      fireEvent.click(screen.getByRole("button", { name: "Post" }));
       expect(await screen.findByText("Failed to post comment: 500")).toBeInTheDocument();
     });
 
@@ -687,12 +754,11 @@ describe("ProblemPage coverage", () => {
 
       renderProblemPage();
       await screen.findByText("Blue");
-      fireEvent.click(screen.getByRole("button", { name: "Submit Beta" }));
       const input = screen.getByLabelText("Choose Video");
       const file = new File(["video"], "beta.mp4", { type: "video/mp4" });
       fireEvent.change(input, { target: { files: [file] } });
 
-      fireEvent.click(screen.getByRole("button", { name: "Upload Solution Beta" }));
+      fireEvent.click(screen.getByRole("button", { name: "Post" }));
       expect(await screen.findByText(/Upload succeeded, but DB save failed: db write failed/)).toBeInTheDocument();
       headSpy.mockRestore();
     });
@@ -701,11 +767,10 @@ describe("ProblemPage coverage", () => {
       requestSignedUploadUrl.mockRejectedValue(new Error("signed-url failed"));
       renderProblemPage();
       await screen.findByText("Blue");
-      fireEvent.click(screen.getByRole("button", { name: "Submit Beta" }));
       const input = screen.getByLabelText("Choose Video");
       const file = new File(["video"], "beta.mp4", { type: "video/mp4" });
       fireEvent.change(input, { target: { files: [file] } });
-      fireEvent.click(screen.getByRole("button", { name: "Upload Solution Beta" }));
+      fireEvent.click(screen.getByRole("button", { name: "Post" }));
       expect(await screen.findByText(/Upload failed before completion: signed-url failed/)).toBeInTheDocument();
     });
   });
