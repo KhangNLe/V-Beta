@@ -132,6 +132,32 @@ public class ProblemDiscussionController {
         }
     }
 
+    @PostMapping("/discussion-content")
+    public ResponseEntity<?> storeUserDiscussionContent(@Valid @RequestBody DiscussionContentRequest request){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            UserDiscussionData response = problemDiscussionService.saveUserDiscussionContent(firebaseUid, request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/discussion-content")
+    public ResponseEntity<?> deleteUserDiscussionContent(@Valid @RequestBody DiscussionContentDeletionRequest request){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            problemDiscussionService.softDeleteUserDiscussionContent(firebaseUid, request);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     /**
      * Soft-deletes a user solution beta when requester is owner or admin.
      * <p>

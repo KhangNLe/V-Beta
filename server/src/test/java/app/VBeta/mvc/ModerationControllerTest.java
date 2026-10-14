@@ -73,8 +73,8 @@ public class ModerationControllerTest {
                                 45L,
                                 "spammyUser",
                                 null,
-                                DiscussionType.COMMENT,
                                 "This is a spam comment",
+                                null,
                                 LocalDateTime.now()
                         ),
                         null,
@@ -286,8 +286,8 @@ public class ModerationControllerTest {
                                 45L,
                                 "spammyUser",
                                 null,
-                                DiscussionType.COMMENT,
                                 "This is a spam comment",
+                                null,
                                 LocalDateTime.now()
                         ),
                         null,

@@ -7,5 +7,6 @@ public enum DiscussionType {
     /** Text discussion comment entry. */
     COMMENT,
     /** Solution beta media entry. */
-    BETA
+    BETA,
+    MIXED
 }

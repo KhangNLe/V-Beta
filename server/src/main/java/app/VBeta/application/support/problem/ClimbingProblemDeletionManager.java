@@ -12,6 +12,7 @@ import app.VBeta.repository.ClimbingProblemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -80,12 +81,20 @@ public class ClimbingProblemDeletionManager {
                 DiscussionType.COMMENT);
         List<DiscussionRoot> discussionBetas = discussionRootManager.getDiscussionsByProblemAndType(problem,
                 DiscussionType.BETA);
-        discussionCommentManager.removeAllDiscussionRelatedComments(discussionComments);
-        solutionBetaManager.removeAllDiscussionRelatedSolutionBeta(discussionBetas);
+        List<DiscussionRoot> discussionMixed = discussionRootManager.getDiscussionsByProblemAndType(problem,
+                DiscussionType.MIXED);
 
-        //join the two list for group deletion
-        discussionComments.addAll(discussionBetas);
-        discussionRootManager.removeDiscussions(discussionComments);
+        List<DiscussionRoot> rootsWithComment = new ArrayList<>(discussionComments);
+        rootsWithComment.addAll(discussionMixed);
+        List<DiscussionRoot> rootsWithBeta = new ArrayList<>(discussionBetas);
+        rootsWithBeta.addAll(discussionMixed);
+
+        discussionCommentManager.removeAllDiscussionRelatedComments(rootsWithComment);
+        solutionBetaManager.removeAllDiscussionRelatedSolutionBeta(rootsWithBeta);
+
+        List<DiscussionRoot> allRoots = new ArrayList<>(rootsWithComment);
+        allRoots.addAll(discussionBetas);
+        discussionRootManager.removeDiscussions(allRoots);
     }
 
     private void deleteProblemPerceiveGrades(ClimbingProblem problem){

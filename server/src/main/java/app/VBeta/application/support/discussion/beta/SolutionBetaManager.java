@@ -55,7 +55,7 @@ public class SolutionBetaManager {
      */
     public List<SolutionBeta> getProblemSolutionBeta(List<DiscussionRoot> discussionRoots){
         return discussionRoots.stream()
-                .filter(d -> d.getDiscussionType().equals(DiscussionType.BETA))
+                .filter(d -> d.getDiscussionType() != DiscussionType.COMMENT)
                 .map(this::getSolutionBetaFromDiscussionRoot)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());

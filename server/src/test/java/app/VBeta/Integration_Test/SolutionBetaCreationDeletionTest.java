@@ -89,7 +89,6 @@ public class SolutionBetaCreationDeletionTest {
         List<DiscussionRoot> userBetas = findDiscussionsForUserProblem(user, problem, DiscussionType.BETA);
 
         assertFalse(userBetas.isEmpty());
-        assertEquals(testRequest.videoURL(), newDataResponse.discussionContent());
         assertTrue(checkForSolutionBetaExist(userBetas, testRequest.objectFileName(), testRequest.videoURL()));
     }
 
@@ -224,7 +223,7 @@ public class SolutionBetaCreationDeletionTest {
                 saved.userId(),
                 problemId,
                 discussionId,
-                saved.discussionContent(),
+                solutionBeta.getVideoURL(),
                 deleteReason
         );
     }

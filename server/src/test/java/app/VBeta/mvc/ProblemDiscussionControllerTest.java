@@ -71,8 +71,8 @@ public class ProblemDiscussionControllerTest {
                 1L,
                 "test-user",
                 null,
-                DiscussionType.COMMENT,
                 "Nice",
+                null,
                 LocalDateTime.of(2026, 5, 7, 14, 0)
         );
     }
@@ -91,8 +91,8 @@ public class ProblemDiscussionControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.discussionId").value(101L))
                 .andExpect(jsonPath("$.userId").value(1L))
-                .andExpect(jsonPath("$.discussionType").value("COMMENT"))
-                .andExpect(jsonPath("$.discussionContent").value("Nice"));
+                .andExpect(jsonPath("$.videoURL").isEmpty())
+                .andExpect(jsonPath("$.comment").value("Nice"));
         verify(problemDiscussionService, times(1)).addComment(eq("testFirebaseUid"), any(DiscussionCommentRequest.class));
     }
 
@@ -176,7 +176,7 @@ public class ProblemDiscussionControllerTest {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         when(problemDiscussionService.saveSolutionBeta(any(SolutionBetaCreateRequest.class), eq("testFirebaseUid")))
                 .thenReturn(new UserDiscussionData(
-                        402L, 1L, "test-user", null, DiscussionType.BETA,
+                        402L, 1L, "test-user", null, null,
                         "https://storage.googleapis.com/bucket/video.mp4",
                         LocalDateTime.of(2026, 4, 20, 20, 2)
                 ));
@@ -192,7 +192,8 @@ public class ProblemDiscussionControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.discussionId").value(402))
-                .andExpect(jsonPath("$.discussionType").value("BETA"));
+                .andExpect(jsonPath("$.videoURL").isNotEmpty())
+                .andExpect(jsonPath("$.comment").isEmpty());
     }
 
     @Test

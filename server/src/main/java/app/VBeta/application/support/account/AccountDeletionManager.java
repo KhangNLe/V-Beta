@@ -10,6 +10,7 @@ import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -60,13 +61,21 @@ public class AccountDeletionManager {
                 DiscussionType.COMMENT);
         List<DiscussionRoot> userDiscussionBetas = discussionRootManager.getUserDiscussionsByType(userAccount,
                 DiscussionType.BETA);
+        List<DiscussionRoot> userDiscussionMixed = discussionRootManager.getUserDiscussionsByType(userAccount,
+                DiscussionType.MIXED);
 
-        discussionCommentManager.removeAllDiscussionRelatedComments(userDiscussionComments);
+        List<DiscussionRoot> rootsWithComment = new ArrayList<>(userDiscussionComments);
+        rootsWithComment.addAll(userDiscussionMixed);
+        List<DiscussionRoot> rootsWithBeta = new ArrayList<>(userDiscussionBetas);
+        rootsWithBeta.addAll(userDiscussionMixed);
+
+        discussionCommentManager.removeAllDiscussionRelatedComments(rootsWithComment);
         userPerceiveGradeManager.removeAllUserRelatedPerceiveGrade(userAccount);
-        solutionBetaManager.removeAllDiscussionRelatedSolutionBeta(userDiscussionBetas);
+        solutionBetaManager.removeAllDiscussionRelatedSolutionBeta(rootsWithBeta);
 
-        userDiscussionComments.addAll(userDiscussionBetas);
-        discussionRootManager.removeDiscussions(userDiscussionComments);
+        List<DiscussionRoot> allRoots = new ArrayList<>(rootsWithComment);
+        allRoots.addAll(userDiscussionBetas);
+        discussionRootManager.removeDiscussions(allRoots);
         userAccountManager.removeAccount(userAccount);
     }
 

@@ -189,7 +189,7 @@ public class DiscussionRootManager {
     }
 
     public boolean validateDiscussionCommentContent(DiscussionRoot discussionRoot, String commentContent){
-        if (!discussionRoot.getDiscussionType().equals(DiscussionType.COMMENT)){
+        if (discussionRoot.getDiscussionType().equals(DiscussionType.BETA)){
             throw new RuntimeException("Mismatching discussion information");
         }
         DiscussionComment comment = discussionCommentManager.getDiscussionComment(discussionRoot);
@@ -197,10 +197,17 @@ public class DiscussionRootManager {
     }
 
     public boolean validateDiscussionBetaContent(DiscussionRoot discussionRoot, String betaUrl){
-        if (!discussionRoot.getDiscussionType().equals(DiscussionType.BETA)){
+        if (discussionRoot.getDiscussionType().equals(DiscussionType.COMMENT)){
             throw new RuntimeException("Mismatching discussion information");
         }
         SolutionBeta beta = solutionBetaManager.getSolutionBetaFromDiscussionRoot(discussionRoot);
         return beta.getVideoURL().equals(betaUrl);
+    }
+
+    public boolean validateDiscussionMixedContent(DiscussionRoot root, String commentContent, String videoUrl){
+        if (!root.getDiscussionType().equals(DiscussionType.MIXED)){
+            throw new RuntimeException("Mismatching discussion information");
+        }
+        return validateDiscussionCommentContent(root, commentContent) && validateDiscussionBetaContent(root, videoUrl);
     }
 }
