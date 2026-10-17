@@ -1,5 +1,6 @@
 package app.VBeta.application.support.discussion;
 
+import app.VBeta.api.dto.discussions.DiscussionContentReplyRequest;
 import app.VBeta.api.dto.discussions.DiscussionContentRequest;
 import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
@@ -92,14 +93,14 @@ public class ClimbingProblemDiscussionManager {
      * @param user reply author account
      * @param problem target climbing problem
      * @param commentContent comment body text
-     * @param discussionParentId parent discussion identifier
+     * @param parentRoot parent discussion root
      */
-    public void storeReplyComment(UserAccount user, ClimbingProblem problem, String commentContent,
-                                  Long discussionParentId){
-        DiscussionRoot parent = getDiscussionNode(discussionParentId);
+    public UserDiscussionData storeReplyComment(UserAccount user, ClimbingProblem problem, String commentContent,
+                                  DiscussionRoot parentRoot){
         DiscussionRoot replyDiscussion = discussionRootManager.createReplyDiscussionRoot(user, problem,
-                DiscussionType.COMMENT, parent);
+                DiscussionType.COMMENT, parentRoot);
         discussionCommentManager.storeDiscussionComment(replyDiscussion, commentContent);
+        return convertDiscussionData(replyDiscussion, commentContent, null);
     }
 
     /**
@@ -123,16 +124,16 @@ public class ClimbingProblemDiscussionManager {
      * @param problem target climbing problem
      * @param objectName storage object key/name
      * @param publicUrl public media URL
-     * @param discussionParentId parent discussion identifier
+     * @param parentRoot parent discussion identifier
      * @return persisted reply solution beta
      */
-    public SolutionBeta storeReplySolutionBeta(UserAccount userAccount, ClimbingProblem problem,
-                                       String objectName, String publicUrl, Long discussionParentId){
-        DiscussionRoot parent = getDiscussionNode(discussionParentId);
+    public UserDiscussionData storeReplySolutionBeta(UserAccount userAccount, ClimbingProblem problem,
+                                       String objectName, String publicUrl, DiscussionRoot parentRoot){
         DiscussionRoot reply = discussionRootManager.createReplyDiscussionRoot(userAccount, problem,
-                DiscussionType.BETA, parent);
+                DiscussionType.BETA, parentRoot);
 
-        return solutionBetaManager.storeUserSolutionBeta(reply, objectName, publicUrl);
+        solutionBetaManager.storeUserSolutionBeta(reply, objectName, publicUrl);
+        return convertDiscussionData(reply, null, publicUrl);
     }
 
     /**
@@ -145,15 +146,16 @@ public class ClimbingProblemDiscussionManager {
     public UserDiscussionData storeNewMixedDiscussion(DiscussionRoot root, DiscussionContentRequest request){
         discussionCommentManager.storeDiscussionComment(root, request.commentInfo());
         solutionBetaManager.storeUserSolutionBeta(root, request.objectFileName(), request.videoURL());
-        return new UserDiscussionData(
-                root.getDiscussionId(),
-                root.getUserAccount().getId(),
-                root.getUserAccount().getUsername(),
-                null,
-                request.commentInfo(),
-                request.videoURL(),
-                root.getCreatedAt()
-        );
+        return convertDiscussionData(root, request.commentInfo(), request.videoURL());
+    }
+
+    public UserDiscussionData storeReplyMixedDiscussion(UserAccount user, ClimbingProblem problem,
+                                                        DiscussionContentReplyRequest request, DiscussionRoot parentRoot){
+        DiscussionRoot replyRoot = discussionRootManager.createReplyDiscussionRoot(user, problem, DiscussionType.MIXED,
+                parentRoot);
+        discussionCommentManager.storeDiscussionComment(replyRoot, request.commentInfo());
+        solutionBetaManager.storeUserSolutionBeta(replyRoot, request.objectFileName(), request.videoURL());
+        return convertDiscussionData(replyRoot, request.commentInfo(), request.videoURL());
     }
 
     /**
@@ -292,5 +294,18 @@ public class ClimbingProblemDiscussionManager {
             );
         }
         return parent;
+    }
+
+    private UserDiscussionData convertDiscussionData(DiscussionRoot root, String comment, String videoURL){
+        Long parentId = root.getParent() == null ? null : root.getParent().getDiscussionId();
+        return new UserDiscussionData(
+                root.getDiscussionId(),
+                root.getUserAccount().getId(),
+                root.getUserAccount().getUsername(),
+                parentId,
+                comment,
+                videoURL,
+                root.getCreatedAt()
+        );
     }
 }

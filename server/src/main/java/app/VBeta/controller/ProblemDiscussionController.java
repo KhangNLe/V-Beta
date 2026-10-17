@@ -11,12 +11,14 @@ import app.VBeta.api.dto.discussions.video.SolutionBetaDeletionRequest;
 import app.VBeta.api.dto.problems.ClimbingProblemDetailResponse;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ClimbingWallService;
+import app.VBeta.application.DiscussionReplyService;
 import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.domain.model.actions.ActionDefinition;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * {@code ProblemDiscussionController} handles discussion interactions for climbing problems.
@@ -32,6 +34,7 @@ public class ProblemDiscussionController {
     private final ProblemDiscussionService problemDiscussionService;
     private final AuthorizationService authorizationService;
     private final ClimbingWallService climbingWallService;
+    private final DiscussionReplyService discussionReplyService;
 
     /**
      * Constructs a new {@code ProblemDiscussionController} with required services.
@@ -42,10 +45,12 @@ public class ProblemDiscussionController {
      */
     public ProblemDiscussionController(ProblemDiscussionService problemDiscussionService,
                                        AuthorizationService authorizationService,
-                                       ClimbingWallService climbingWallService){
+                                       ClimbingWallService climbingWallService,
+                                       DiscussionReplyService discussionReplyService){
         this.problemDiscussionService = problemDiscussionService;
         this.authorizationService = authorizationService;
         this.climbingWallService = climbingWallService;
+        this.discussionReplyService = discussionReplyService;
     }
 
     /**
@@ -144,6 +149,21 @@ public class ProblemDiscussionController {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
             UserDiscussionData response = problemDiscussionService.saveUserDiscussionContent(firebaseUid, request);
             return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/discussion/reply")
+    public ResponseEntity<?> storeUserReplyContent(@Valid @RequestBody DiscussionContentReplyRequest request){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            UserDiscussionData response = discussionReplyService.storeUserReply(firebaseUid, request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (RuntimeException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e){

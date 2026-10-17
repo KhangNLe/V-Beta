@@ -121,7 +121,7 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
 - `discussionId`
 - `userId`
 - `username`
-- `parentCommentId` (nullable; reserved for replies)
+- `parentDiscussionId` (nullable; reserved for replies)
 - `comment` (nullable text payload)
 - `videoURL` (nullable public beta URL)
 - `createdDate`

@@ -8,6 +8,7 @@ import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.events.EventsManager;
 import app.VBeta.application.support.events.NotificationManager;
 import app.VBeta.domain.model.actions.RoleType;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.moderation.ModerationAction;
 import app.VBeta.domain.model.notification.EventTypeName;
 import app.VBeta.domain.model.notification.Events;
@@ -64,6 +65,12 @@ public class NotificationService {
             }
             notificationManager.pushNotification(event, admin);
         }
+    }
+
+    public void saveNewDiscussionReplyNotification(UserAccount fromUser, UserAccount toUser,
+                                                   DiscussionRoot discussionRoot) {
+        Events event = eventManager.createDiscussionReplyEvent(fromUser, discussionRoot, EventTypeName.DISCUSSION_REPLY);
+        notificationManager.pushNotification(event, toUser);
     }
 
     /**

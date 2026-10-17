@@ -1,7 +1,9 @@
 package app.VBeta.application.support.events;
 
+import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.moderation.ModerationAction;
 import app.VBeta.domain.model.notification.EventTargetType;
+import app.VBeta.domain.model.notification.EventType;
 import app.VBeta.domain.model.notification.EventTypeName;
 import app.VBeta.domain.model.notification.Events;
 import app.VBeta.domain.model.report.Report;
@@ -96,15 +98,26 @@ public class EventsManager {
      */
     public Events createModeratedReportEvent(Report report, EventTypeName eventTypeName, ModerationAction decision) {
         return eventsRepository.save(Events.builder()
-                .eventType(
-                        eventTypeRepository.findByEventTypeName(eventTypeName)
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                        String.format("%s event type does not exist", eventTypeName)))
-                )
+                .eventType(getEventType(eventTypeName))
                 .actorUser(decision.getAdminUser())
                 .targetType(EventTargetType.REPORT)
                 .report(report)
                 .build()
         );
+    }
+
+    public Events createDiscussionReplyEvent(UserAccount fromUser, DiscussionRoot discussionRoot, EventTypeName eventTypeName){
+        return eventsRepository.save(Events.builder()
+                .eventType(getEventType(eventTypeName))
+                .actorUser(fromUser)
+                .targetType(EventTargetType.DISCUSSION)
+                .discussion(discussionRoot)
+                .build());
+    }
+
+    private EventType getEventType(EventTypeName eventTypeName){
+        return eventTypeRepository.findByEventTypeName(eventTypeName)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("%s event type does not exist", eventTypeName)));
     }
 }

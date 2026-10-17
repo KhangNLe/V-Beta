@@ -17,5 +17,6 @@ public enum EventTypeName {
     /** An admin denied an appeal. */
     APPEAL_DENIED,
     /** Reported content was removed; sent to the reporter. */
-    REPORT_APPROVED
+    REPORT_APPROVED,
+    DISCUSSION_REPLY
 }
