@@ -1,7 +1,9 @@
 package app.VBeta.mvc;
 
+import app.VBeta.application.DiscussionReplyService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import app.VBeta.api.dto.discussions.DiscussionContentDeletionRequest;
+import app.VBeta.api.dto.discussions.DiscussionContentReplyRequest;
 import app.VBeta.api.dto.discussions.DiscussionContentRequest;
 import app.VBeta.api.dto.discussions.PerceiveGradeRequest;
 import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
@@ -66,6 +68,9 @@ public class ProblemDiscussionControllerTest {
 
     @MockitoBean
     private ClimbingWallService climbingWallService;
+
+    @MockitoBean
+    private DiscussionReplyService discussionReplyService;
 
     private UserDiscussionData sampleComment() {
         return new UserDiscussionData(
@@ -374,5 +379,143 @@ public class ProblemDiscussionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /api/discussion/discussion/reply returns created comment reply")
+    void returns201_whenSavingReplyComment() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        when(discussionReplyService.storeUserReply(eq("testFirebaseUid"), any(DiscussionContentReplyRequest.class)))
+                .thenReturn(new UserDiscussionData(
+                        601L, 2L, "reply-user", 503L, "Very insightful comment dawg",
+                        null, LocalDateTime.of(2026, 10, 20, 18, 0)
+                ));
+
+        DiscussionContentReplyRequest request = new DiscussionContentReplyRequest(
+                503L, 22L, 1L, "Very insightful comment dawg", null, null);
+
+        mockMvc.perform(post("/api/discussion/discussion/reply")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.discussionId").value(601))
+                .andExpect(jsonPath("$.parentDiscussionId").value(503))
+                .andExpect(jsonPath("$.comment").value("Very insightful comment dawg"))
+                .andExpect(jsonPath("$.videoURL").isEmpty());
+        verify(discussionReplyService, times(1))
+                .storeUserReply(eq("testFirebaseUid"), any(DiscussionContentReplyRequest.class));
+    }
+
+    @Test
+    @DisplayName("POST /api/discussion/discussion/reply returns created solution beta reply")
+    void returns201_whenSavingReplySolutionBeta() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        when(discussionReplyService.storeUserReply(eq("testFirebaseUid"), any(DiscussionContentReplyRequest.class)))
+                .thenReturn(new UserDiscussionData(
+                        602L, 2L, "reply-user", 503L, null,
+                        "https://storage.googleapis.com/bucket/reply.mp4",
+                        LocalDateTime.of(2026, 10, 20, 18, 5)
+                ));
+
+        DiscussionContentReplyRequest request = new DiscussionContentReplyRequest(
+                503L, 22L, 1L, null,
+                "wallSection-1/problem-22/uuid-reply.mp4",
+                "https://storage.googleapis.com/bucket/reply.mp4");
+
+        mockMvc.perform(post("/api/discussion/discussion/reply")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.discussionId").value(602))
+                .andExpect(jsonPath("$.parentDiscussionId").value(503))
+                .andExpect(jsonPath("$.comment").isEmpty())
+                .andExpect(jsonPath("$.videoURL").value("https://storage.googleapis.com/bucket/reply.mp4"));
+    }
+
+    @Test
+    @DisplayName("POST /api/discussion/discussion/reply returns created mixed reply")
+    void returns201_whenSavingReplyMixed() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        when(discussionReplyService.storeUserReply(eq("testFirebaseUid"), any(DiscussionContentReplyRequest.class)))
+                .thenReturn(new UserDiscussionData(
+                        603L, 2L, "reply-user", 503L, "Here is another way of doing it",
+                        "https://storage.googleapis.com/bucket/mixed-reply.mp4",
+                        LocalDateTime.of(2026, 10, 20, 18, 10)
+                ));
+
+        DiscussionContentReplyRequest request = new DiscussionContentReplyRequest(
+                503L, 22L, 1L, "Here is another way of doing it",
+                "wallSection-1/problem-22/uuid-mixed-reply.mp4",
+                "https://storage.googleapis.com/bucket/mixed-reply.mp4");
+
+        mockMvc.perform(post("/api/discussion/discussion/reply")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.discussionId").value(603))
+                .andExpect(jsonPath("$.parentDiscussionId").value(503))
+                .andExpect(jsonPath("$.comment").value("Here is another way of doing it"))
+                .andExpect(jsonPath("$.videoURL").value("https://storage.googleapis.com/bucket/mixed-reply.mp4"));
+    }
+
+    @Test
+    @DisplayName("POST discussion/reply rejects missing parentDiscussionId with 400")
+    void returns400_whenReplyMissingParentDiscussionId() throws Exception {
+        DiscussionContentReplyRequest request = new DiscussionContentReplyRequest(
+                null, 22L, 1L, "Nice reply", null, null);
+
+        mockMvc.perform(post("/api/discussion/discussion/reply")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+        verify(discussionReplyService, never()).storeUserReply(any(), any());
+    }
+
+    @Test
+    @DisplayName("POST discussion/reply maps IllegalArgumentException to 400")
+    void returns400_whenReplyServiceThrowsIllegalArgument() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        when(discussionReplyService.storeUserReply(eq("testFirebaseUid"), any(DiscussionContentReplyRequest.class)))
+                .thenThrow(new IllegalArgumentException("Missing require field for request"));
+
+        DiscussionContentReplyRequest request = new DiscussionContentReplyRequest(
+                503L, 22L, 1L, null, null, null);
+
+        mockMvc.perform(post("/api/discussion/discussion/reply")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST discussion/reply maps service failure to 404")
+    void returns404_whenSavingReplyFails() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
+        when(discussionReplyService.storeUserReply(eq("testFirebaseUid"), any(DiscussionContentReplyRequest.class)))
+                .thenThrow(new RuntimeException("Discussion not found from provided ID."));
+
+        DiscussionContentReplyRequest request = new DiscussionContentReplyRequest(
+                999L, 22L, 1L, "Nice reply", null, null);
+
+        mockMvc.perform(post("/api/discussion/discussion/reply")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST discussion/reply maps auth failure to 404")
+    void returns404_whenReplyUnauthenticated() throws Exception {
+        when(authorizationService.getAuthenticatedFirebaseUid())
+                .thenThrow(new RuntimeException("Missing or invalid authentication token"));
+
+        DiscussionContentReplyRequest request = new DiscussionContentReplyRequest(
+                503L, 22L, 1L, "Nice reply", null, null);
+
+        mockMvc.perform(post("/api/discussion/discussion/reply")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+        verify(discussionReplyService, never()).storeUserReply(any(), any());
     }
 }
