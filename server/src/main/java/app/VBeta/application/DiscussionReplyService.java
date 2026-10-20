@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import app.VBeta.api.dto.discussions.DiscussionContentReplyRequest;
 import app.VBeta.application.NotificationService;
 
+import java.util.List;
+
 @Service
 public class DiscussionReplyService {
     private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
@@ -38,6 +40,7 @@ public class DiscussionReplyService {
         ClimbingProblem problem = getActiveProblem(request.problemId());
         DiscussionRoot parentRoot = findParentDiscussionRoot(request.parentDiscussionId());
         verifyRequest(parentRoot, problem, request.replyToId());
+        checkForDuplicateReply(author, problem, request);
 
         UserDiscussionData reply;
         if (request.commentInfo() == null){
@@ -49,12 +52,18 @@ public class DiscussionReplyService {
         } else if (request.objectFileName() != null && request.videoURL() != null){
             reply = climbingProblemDiscussionManager.storeReplyMixedDiscussion(author, problem, request, parentRoot);
         } else {
+            if ((request.objectFileName() == null && request.videoURL() != null) ||
+                    (request.objectFileName() != null && request.videoURL() == null)) {
+                throw new IllegalArgumentException("Missing require field for request");
+            }
             reply = climbingProblemDiscussionManager.storeReplyComment(author, problem, request.commentInfo(),
                     parentRoot);
         }
 
         DiscussionRoot root = discussionRootManager.findDiscussionRootById(reply.discussionId());
-        notificationService.saveNewDiscussionReplyNotification(author, parentRoot.getUserAccount(), root);
+        if (!author.equals(parentRoot.getUserAccount())) {
+            notificationService.saveNewDiscussionReplyNotification(author, parentRoot.getUserAccount(), root);
+        }
         return reply;
     }
 
@@ -76,7 +85,7 @@ public class DiscussionReplyService {
 
     private DiscussionRoot findParentDiscussionRoot(Long discussionId){
         DiscussionRoot root = discussionRootManager.findDiscussionRootById(discussionId);
-        if (root == null){
+        if (root == null || root.getDeletedAt() != null){
             throw new RuntimeException("Discussion not found from provided ID.");
         }
         return root;
@@ -86,6 +95,24 @@ public class DiscussionReplyService {
         UserAccount user = userAccountManager.findUserAccountById(replyToId);
         if (!parentRoot.getUserAccount().equals(user) || !parentRoot.getProblem().equals(problem)){
             throw new IllegalArgumentException("Mismatching information.");
+        }
+    }
+
+    private void checkForDuplicateReply(UserAccount user, ClimbingProblem problem,
+                                        DiscussionContentReplyRequest request){
+        List<DiscussionRoot> discussions = discussionRootManager.findDiscussionRootByUserAndProblem(user, problem);
+        UserDiscussionData data;
+        for (DiscussionRoot discussion : discussions){
+            data = discussionRootManager.getUserDiscussionData(discussion);
+            if (data.parentDiscussionId() != null && data.parentDiscussionId().equals(request.parentDiscussionId())){
+                boolean isCommentDuplicate = data.comment() != null && data.comment().equals(request.commentInfo());
+                boolean isBetaDuplicate = data.videoURL() != null && data.videoURL().equals(request.videoURL());
+
+                if ((isCommentDuplicate && isBetaDuplicate) || (request.commentInfo() == null && isBetaDuplicate) ||
+                        (request.videoURL() == null && isCommentDuplicate)){
+                    throw new IllegalArgumentException("Duplicate discussion found.");
+                }
+            }
         }
     }
 }

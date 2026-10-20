@@ -239,9 +239,9 @@ public class NotificationService {
                 break;
             case DISCUSSION:
                 click = NotificationClickKind.PROBLEM_DISCUSSION;
-                wallSectionId = event.getWallSection().getId();
-                climbingProblemId = event.getWallSection().getId();
-                discussionId = event.getWallSection().getId();
+                wallSectionId = event.getDiscussion().getProblem().getWallSection().getId();
+                climbingProblemId = event.getDiscussion().getProblem().getId();
+                discussionId = event.getDiscussion().getDiscussionId();
                 break;
             case USER_ACCOUNT:
                 userId = event.getUser().getId();
