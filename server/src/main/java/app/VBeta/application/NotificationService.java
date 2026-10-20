@@ -8,6 +8,7 @@ import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.application.support.events.EventsManager;
 import app.VBeta.application.support.events.NotificationManager;
 import app.VBeta.domain.model.actions.RoleType;
+import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.moderation.ModerationAction;
 import app.VBeta.domain.model.notification.EventTypeName;
 import app.VBeta.domain.model.notification.Events;
@@ -64,6 +65,23 @@ public class NotificationService {
             }
             notificationManager.pushNotification(event, admin);
         }
+    }
+
+    /**
+     * Records a {@code DISCUSSION_REPLY} event and pushes one inbox row to {@code toUser}.
+     * <p>
+     * Callers should skip this when the replier is the parent discussion author.
+     * Inbox click metadata resolves to {@code PROBLEM_DISCUSSION} with wall, problem,
+     * and discussion ids taken from the reply root.
+     *
+     * @param fromUser user who wrote the reply (event actor)
+     * @param toUser author of the discussion that was replied to (inbox recipient)
+     * @param discussionRoot newly created reply discussion root
+     */
+    public void saveNewDiscussionReplyNotification(UserAccount fromUser, UserAccount toUser,
+                                                   DiscussionRoot discussionRoot) {
+        Events event = eventManager.createDiscussionReplyEvent(fromUser, discussionRoot, EventTypeName.DISCUSSION_REPLY);
+        notificationManager.pushNotification(event, toUser);
     }
 
     /**
@@ -203,9 +221,10 @@ public class NotificationService {
     /**
      * Builds click metadata from the event's typed target.
      * <p>
-     * Current moderation events use {@code target_type = REPORT}, so
-     * {@code kind} is {@link NotificationClickKind#REPORT_QUEUE} and
-     * {@code reportId} is set. Other kinds are reserved for later event targets.
+     * Moderation events with {@code target_type = REPORT} map to
+     * {@link NotificationClickKind#REPORT_QUEUE}. Discussion reply events with
+     * {@code target_type = DISCUSSION} map to {@link NotificationClickKind#PROBLEM_DISCUSSION}
+     * using wall section, problem, and discussion ids from the reply root.
      * This does not leak reporter identity or report reason.
      *
      * @param event happened-fact row the notification points at
@@ -232,9 +251,9 @@ public class NotificationService {
                 break;
             case DISCUSSION:
                 click = NotificationClickKind.PROBLEM_DISCUSSION;
-                wallSectionId = event.getWallSection().getId();
-                climbingProblemId = event.getWallSection().getId();
-                discussionId = event.getWallSection().getId();
+                wallSectionId = event.getDiscussion().getProblem().getWallSection().getId();
+                climbingProblemId = event.getDiscussion().getProblem().getId();
+                discussionId = event.getDiscussion().getDiscussionId();
                 break;
             case USER_ACCOUNT:
                 userId = event.getUser().getId();

@@ -200,7 +200,7 @@ public class UserCommentTest {
                 .findFirst();
 
         assertTrue(created.isPresent());
-        assertNull(created.get().parentCommentId());
+        assertNull(created.get().parentDiscussionId());
     }
 
     @Test

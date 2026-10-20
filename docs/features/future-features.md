@@ -136,15 +136,15 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Add a centralized global exception handler in the server using Spring `@RestControllerAdvice` and enforce a standardized error message format across all server endpoints (for example: `code`, `message`, `status`, `path`, `timestamp`).
 - **Dependencies:** Exception mapping strategy, standardized error payload contract, and frontend/API client error parsing updates.
 
-### 15) Unified Discussion Posts, Replies, and Reply Notifications
+### 15) Problem-Page Reply Composer and Threaded Timeline UI
 
 - **Priority:** High
-- **Effort:** Large
+- **Effort:** Medium
 - **Area:** Discussion Architecture / User Experience
-- **Target sprint:** Sprint 7 (next)
-- **Current Gap:** A problem timeline is split into comment posts and solution-beta posts. Users cannot put a video beta and a written comment on the same post, reply to a discussion, or get notified when someone replies.
-- **Potential Work:** One discussion post can include comment text, a beta video, or both. Replies use `Discussion_Root.parent_discussion_id`. The author gets an in-app notification when someone replies.
-- **Dependencies:** Combined create/read payload, problem-page composer and timeline, and the existing notification inbox. Cursor pagination stays in Sprint 9.
+- **Target sprint:** Sprint 7
+- **Current Gap:** Backend reply API and `DISCUSSION_REPLY` notifications are available, but the problem page does not yet expose reply actions or render threaded replies from `parentDiscussionId`.
+- **Potential Work:** Wire reply create to `POST /api/discussion/discussion/reply`, show replies under parents on the timeline, and deep-link `PROBLEM_DISCUSSION` inbox clicks to the problem discussion.
+- **Dependencies:** Existing mixed composer, notification inbox navigation, and backend reply contract. Cursor pagination stays in Sprint 9.
 
 ### 16) DB-Enforced XOR Integrity for `discussion_root` Children
 

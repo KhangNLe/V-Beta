@@ -89,18 +89,22 @@ See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
 ### Discussion Flow
 
 1. Authenticated user opens a problem.
-2. User can post a comment.
-3. User can upload a beta video and save metadata.
+2. User can post a comment, a beta video, or a mixed comment+video post.
+3. Authenticated users can reply to a discussion (top-level or another reply) via `POST /api/discussion/discussion/reply` with comment, beta, or mixed content.
 4. User can submit perceived grade.
-5. Comment/solution beta **soft-delete** is allowed for owner or admin (when checks pass). Deleted items disappear from the problem timeline after refresh.
-6. Signed-in users who do **not** own the discussion can open **Report** from the ⋮ menu, choose a category, enter a reason (required, max 250 characters), and submit. Guests do not see the menu. Owners see Delete only (self-report is rejected by the API).
+5. Comment/solution beta/mixed **soft-delete** is allowed for owner or admin (when checks pass). Deleted items disappear from the problem timeline after refresh; replies to a soft-deleted parent are rejected.
+6. Signed-in users who do **not** own the discussion can open **Report** from the ⋮ menu, choose a category, enter a reason (required, max 250 characters), and submit. Guests do not see the menu. Owners see Delete only (self-report is rejected by the API). Report/soft-delete/appeal apply to reply roots the same way as top-level posts.
 
 Current discussion payload contract is unified through `DiscussionRoot` metadata:
 
-- Discussion entries include `discussionId`, nullable `comment`, and nullable `videoURL` (kind inferred from which payloads are set; mixed posts have both).
+- Discussion entries include `discussionId`, nullable `parentDiscussionId`, nullable `comment`, and nullable `videoURL` (kind inferred from which payloads are set; mixed posts have both).
+- Replies set `parentDiscussionId` to the parent root; top-level posts leave it null.
+- A reply from someone else creates a `DISCUSSION_REPLY` inbox notification for the parent author (self-replies are skipped).
 - Deletion payloads for both comments and solution betas include `discussionId` and a reason string (max 100).
 - Comment deletes send `deletedReason`; beta deletes send `deleteReason`.
 - The problem page currently sends `"User deleted their own discussion"` for owner deletes and `"Admin forced delete the discussion"` when an admin deletes another user's item.
+
+Backend reply API is available; problem-page reply composer/timeline UI is tracked separately (Sprint 7 frontend).
 
 ## Permissions and Visibility
 
@@ -129,6 +133,8 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
     - `v-beta/src/api/reports.js`
     - `v-beta/src/lib/discussionDeletion.js`
 - Backend controllers/services:
+    - `server/src/main/java/app/VBeta/controller/ProblemDiscussionController.java`
+    - `server/src/main/java/app/VBeta/application/DiscussionReplyService.java`
     - `server/src/main/java/app/VBeta/controller/SocialMediaController.java`
     - `server/src/main/java/app/VBeta/application/ImageService.java`
     - `server/src/main/java/app/VBeta/application/support/cloud/CloudStorageManager.java`

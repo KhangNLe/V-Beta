@@ -17,7 +17,7 @@ Sprint 6 (Wall and Problem Images) is complete. Sprint 7 (Unified Discussion) is
 
 ### Sprint 7: Unified Discussion
 
-Status: Next
+Status: In progress (backend reply API shipped; problem-page reply UI pending)
 
 Estimated Duration: 2 weeks
 
@@ -35,12 +35,12 @@ Merge comments and solution betas into one discussion post. A signed-in user can
 
 ### Acceptance Criteria
 
-- [ ] A user can publish one discussion that includes a comment and a video beta together
-- [ ] A user can publish a comment-only post or a video-only post
-- [ ] A user can reply to another discussion
-- [ ] The discussion author receives an in-app notification when someone replies
-- [ ] Report, soft-delete, and appeal still apply to the unified post and its replies
-- [ ] Tests and docs updated for the unified discussion
+- [x] A user can publish one discussion that includes a comment and a video beta together
+- [x] A user can publish a comment-only post or a video-only post
+- [x] A user can reply to another discussion (backend API; problem-page UI pending)
+- [x] The discussion author receives an in-app notification when someone replies
+- [x] Report, soft-delete, and appeal still apply to the unified post and its replies
+- [x] Tests and docs updated for the unified discussion / reply API (frontend reply UX still open)
 
 ### Explicitly out of scope
 

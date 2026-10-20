@@ -33,6 +33,9 @@ All routes below are under `/api`.
 | `POST /api/discussion/add-comments` | No | Yes | Yes | Yes | Authenticated |
 | `GET /api/discussion/solution-beta/upload-url` | No | Yes | Yes | Yes | Authenticated |
 | `POST /api/discussion/solution-beta/save` | No | Yes | Yes | Yes | Authenticated |
+| `POST /api/discussion/discussion-content` | No | Yes | Yes | Yes | Authenticated |
+| `POST /api/discussion/discussion/reply` | No | Yes | Yes | Yes | Authenticated |
+| `DELETE /api/discussion/discussion-content` | No | Depends | Depends | Yes | Authenticated + owner/admin **soft-delete** |
 | `POST /api/discussion/problems/{problemId}/suggest-grade` | No | Yes | Yes | Yes | Action-gated (`GRADE_PROBLEM`) |
 | `DELETE /api/discussion/comment/delete` | No | Depends | Depends | Yes | Action-gated (`DELETE_COMMENT`) + owner/admin **soft-delete** |
 | `DELETE /api/discussion/solution-beta` | No | Depends | Depends | Yes | Authenticated + owner/admin **soft-delete** |
@@ -92,7 +95,8 @@ Image upload notes:
 - Some discussion endpoints are authenticated but not action-gated at controller level.
 - `POST /api/report/create`, `POST /api/moderate/appeal`, `GET /api/moderate/appeal/notice`, `GET /api/notification/short`, `GET /api/notification/all`, and `PATCH /api/notification/short` are authenticated only. Guest `401` comes from Spring Security. There is no `CREATE_REPORT` action. Queue/detail uses `VIEW_REPORTS` (admin). Resolve uses `MODERATE_REPORT` (admin). Logbook uses `VIEW_MODERATION_LOGS` (admin). Appeal queue/detail uses `VIEW_APPEALS` (admin). Appeal resolve uses `MODERATE_APPEAL` (admin). Inbox mark-read is own-row only (another user's id is **404**).
 - Create-report notifies **admins** of `REPORT_CREATED`. Climber/setter callers still get `200`; they do not receive that inbox event. If the reporter is an admin, they are skipped as a recipient.
-- `GET /api/notification/short` returns the caller's unread rows with `notificationId`, catalog `summary`, and `click` metadata. Current moderation events map to `click.kind = REPORT_QUEUE` and `click.reportId`. Report reason and admin notes are omitted.
+- `GET /api/notification/short` returns the caller's unread rows with `notificationId`, catalog `summary`, and `click` metadata. Moderation events map to `click.kind = REPORT_QUEUE` and `click.reportId`. `DISCUSSION_REPLY` maps to `click.kind = PROBLEM_DISCUSSION` with wall/problem/discussion ids. Report reason and admin notes are omitted.
+- `POST /api/discussion/discussion/reply` is authenticated only. Incomplete, mismatched, or duplicate payloads map to **400**. Missing/deleted parent, inactive problem, or auth failure map to **404**.
 - `GET /api/notification/all` returns a 10-row page of the caller's read **and** unread rows (newest first). `offset` is 1-based (default `1`). Same DTO as `/short`; `readAt` is omitted. Missing account maps to **404**. The `/notifications` UI overlays unread ids from `/short`.
 - `GET /api/report/reports` returns grouped OPEN cases ranked by `Σ (weight × count)`. Climber/setter and missing `VIEW_REPORTS` currently map to **404**. An admin does not see reports on their own discussion (or a user-account report targeting themselves); that is a `200` with an empty `reports` list, not 404. Discussion cases include problem and wall snapshots for `/reports` detail.
 - `POST /api/moderate/report` requires `MODERATE_REPORT`. Climber/setter and missing permission currently map to **404**. The acting admin cannot close a report they filed, and cannot close reports on their own discussion; those ids are skipped (the request can still `200`). Appeal decisions (`APPEAL_APPROVED` / `APPEAL_DENIED`) are rejected before any report is closed.

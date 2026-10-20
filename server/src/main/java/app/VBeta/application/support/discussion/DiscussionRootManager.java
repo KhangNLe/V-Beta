@@ -1,5 +1,6 @@
 package app.VBeta.application.support.discussion;
 
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
 import app.VBeta.application.support.discussion.comment.DiscussionCommentManager;
 import app.VBeta.domain.model.climb.ClimbingProblem;
@@ -102,9 +103,9 @@ public class DiscussionRootManager {
      *
      * @param userAccount author account for the reply
      * @param problem target climbing problem
-     * @param discussionType discussion kind (comment/beta)
-     * @param parent parent discussion root
-     * @return persisted reply discussion root
+     * @param discussionType discussion kind ({@code COMMENT}, {@code BETA}, or {@code MIXED})
+     * @param parent parent discussion root (top-level post or another reply)
+     * @return persisted reply discussion root with {@code parent_discussion_id} set
      */
     public DiscussionRoot createReplyDiscussionRoot(UserAccount userAccount, ClimbingProblem problem,
                                                   DiscussionType discussionType, DiscussionRoot parent){
@@ -217,5 +218,40 @@ public class DiscussionRootManager {
             throw new RuntimeException("Mismatching discussion information");
         }
         return validateDiscussionCommentContent(root, commentContent) && validateDiscussionBetaContent(root, videoUrl);
+    }
+
+    public UserDiscussionData getUserDiscussionData(DiscussionRoot discussionRoot){
+        Long parentId = discussionRoot.getParent() == null ? null : discussionRoot.getParent().getDiscussionId();
+        String commentInfo = null;
+        String videoURL = null;
+        DiscussionComment comment = null;
+        SolutionBeta beta = null;
+        switch (discussionRoot.getDiscussionType()){
+            case COMMENT:
+                comment = discussionCommentManager.getDiscussionComment(discussionRoot);
+                commentInfo = comment.getCommentInfo();
+                break;
+            case BETA:
+                beta = solutionBetaManager.getSolutionBetaFromDiscussionRoot(discussionRoot);
+                videoURL = beta.getVideoURL();
+                break;
+            case MIXED:
+                comment = discussionCommentManager.getDiscussionComment(discussionRoot);
+                commentInfo = comment.getCommentInfo();
+                beta = solutionBetaManager.getSolutionBetaFromDiscussionRoot(discussionRoot);
+                videoURL = beta.getVideoURL();
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid discussion type");
+        }
+        return new UserDiscussionData(
+                discussionRoot.getDiscussionId(),
+                discussionRoot.getUserAccount().getId(),
+                discussionRoot.getUserAccount().getUsername(),
+                parentId,
+                commentInfo,
+                videoURL,
+                discussionRoot.getCreatedAt()
+        );
     }
 }

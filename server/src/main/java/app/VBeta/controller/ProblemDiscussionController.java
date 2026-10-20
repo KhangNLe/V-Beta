@@ -11,19 +11,22 @@ import app.VBeta.api.dto.discussions.video.SolutionBetaDeletionRequest;
 import app.VBeta.api.dto.problems.ClimbingProblemDetailResponse;
 import app.VBeta.application.AuthorizationService;
 import app.VBeta.application.ClimbingWallService;
+import app.VBeta.application.DiscussionReplyService;
 import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.domain.model.actions.ActionDefinition;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * {@code ProblemDiscussionController} handles discussion interactions for climbing problems.
  * <p>
  * Endpoints include user comments, solution beta upload lifecycle, mixed comment+video posts,
- * perceived grade submissions, and owner/admin soft-delete of comments, betas, and mixed posts.
- * Business logic is delegated to {@link ProblemDiscussionService} and {@link ClimbingWallService}.
+ * replies under an existing discussion, perceived grade submissions, and owner/admin soft-delete
+ * of comments, betas, and mixed posts. Business logic is delegated to
+ * {@link ProblemDiscussionService}, {@link DiscussionReplyService}, and {@link ClimbingWallService}.
  * Authorization checks are performed via {@link AuthorizationService} for privileged actions.
  */
 @RestController
@@ -32,6 +35,7 @@ public class ProblemDiscussionController {
     private final ProblemDiscussionService problemDiscussionService;
     private final AuthorizationService authorizationService;
     private final ClimbingWallService climbingWallService;
+    private final DiscussionReplyService discussionReplyService;
 
     /**
      * Constructs a new {@code ProblemDiscussionController} with required services.
@@ -39,13 +43,16 @@ public class ProblemDiscussionController {
      * @param problemDiscussionService service for discussion and solution-beta operations
      * @param authorizationService service for authentication/authorization checks
      * @param climbingWallService service for returning updated problem details
+     * @param discussionReplyService service for creating discussion replies
      */
     public ProblemDiscussionController(ProblemDiscussionService problemDiscussionService,
                                        AuthorizationService authorizationService,
-                                       ClimbingWallService climbingWallService){
+                                       ClimbingWallService climbingWallService,
+                                       DiscussionReplyService discussionReplyService){
         this.problemDiscussionService = problemDiscussionService;
         this.authorizationService = authorizationService;
         this.climbingWallService = climbingWallService;
+        this.discussionReplyService = discussionReplyService;
     }
 
     /**
@@ -144,6 +151,31 @@ public class ProblemDiscussionController {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
             UserDiscussionData response = problemDiscussionService.saveUserDiscussionContent(firebaseUid, request);
             return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (RuntimeException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new  ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Creates a reply under an existing discussion (comment, beta, or mixed).
+     * <p>
+     * Requires authentication. {@code IllegalArgumentException} from validation or business
+     * rules maps to {@code 400}; missing/deleted parent or other {@code RuntimeException}
+     * maps to {@code 404}. Successful replies may notify the parent author.
+     *
+     * @param request reply payload including parent discussion, problem, and content fields
+     * @return created timeline entry with {@code parentDiscussionId} set
+     */
+    @PostMapping("/discussion/reply")
+    public ResponseEntity<?> storeUserReplyContent(@Valid @RequestBody DiscussionContentReplyRequest request){
+        try {
+            String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
+            UserDiscussionData response = discussionReplyService.storeUserReply(firebaseUid, request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (RuntimeException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e){

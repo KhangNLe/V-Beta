@@ -1,8 +1,11 @@
 package app.VBeta.Integration_Test;
 
+import app.VBeta.api.dto.discussions.DiscussionContentReplyRequest;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.api.dto.notification.NotificationClickKind;
 import app.VBeta.api.dto.notification.QuickNotificationDTO;
 import app.VBeta.api.dto.report.ReportRequest;
+import app.VBeta.application.DiscussionReplyService;
 import app.VBeta.application.ReportService;
 import app.VBeta.application.NotificationService;
 import app.VBeta.application.support.account.UserAccountManager;
@@ -63,6 +66,9 @@ public class NotificationServiceTest {
 
     @Autowired
     NotificationService notificationService;
+
+    @Autowired
+    DiscussionReplyService discussionReplyService;
 
     @Autowired
     NotificationRepository notificationRepository;
@@ -451,5 +457,34 @@ public class NotificationServiceTest {
     @DisplayName("User attempt to read an unknown notification")
     void testUserAttemptToReadUnknownNotification(){
         assertThrows(RuntimeException.class, () -> notificationService.updateNotificationToRead("testFirebaseUid", 999L));
+    }
+
+    @Test
+    @DisplayName("DISCUSSION_REPLY notification includes PROBLEM_DISCUSSION click metadata")
+    void testDiscussionReplyNotificationClickPayload(){
+        UserAccount parentAuthor = getUserAccount("testFirebaseUid");
+        UserAccount replier = getUserAccount("testFirebaseUid2");
+        DiscussionRoot parent = createDiscussionRoot("testFirebaseUid", 1L, DiscussionType.COMMENT);
+        ClimbingProblem problem = parent.getProblem();
+
+        UserDiscussionData reply = discussionReplyService.storeUserReply(
+                replier.getFirebaseUid(),
+                new DiscussionContentReplyRequest(
+                        parent.getDiscussionId(),
+                        problem.getId(),
+                        parentAuthor.getId(),
+                        "Thanks for the beta tip",
+                        null,
+                        null));
+
+        List<QuickNotificationDTO> inbox =
+                notificationService.getQuickNotifications(parentAuthor.getFirebaseUid());
+        assertEquals(1, inbox.size());
+        assertEquals(EventTypeName.DISCUSSION_REPLY.name(), inbox.get(0).summary().eventTypeName());
+        assertEquals(NotificationClickKind.PROBLEM_DISCUSSION, inbox.get(0).click().kind());
+        assertEquals(problem.getWallSection().getId(), inbox.get(0).click().wallSectionId());
+        assertEquals(problem.getId(), inbox.get(0).click().problemId());
+        assertEquals(reply.discussionId(), inbox.get(0).click().discussionId());
+        assertNull(inbox.get(0).click().reportId());
     }
 }

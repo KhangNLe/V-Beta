@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * @param discussionId identifier of the discussion root row
  * @param userId identifier of the authoring user
  * @param username display name of the authoring user
- * @param parentCommentId optional parent discussion id for replies
+ * @param parentDiscussionId parent discussion id for replies; {@code null} for top-level posts
  * @param comment nullable text body from {@code Discussion_Comment}
  * @param videoURL nullable public beta URL from {@code Solution_Beta}
  * @param createdDate timestamp when the discussion root was created
@@ -20,7 +20,7 @@ public record UserDiscussionData(
         Long discussionId,
         Long userId,
         String username,
-        Long parentCommentId,
+        Long parentDiscussionId,
         String comment,
         String videoURL,
         LocalDateTime createdDate

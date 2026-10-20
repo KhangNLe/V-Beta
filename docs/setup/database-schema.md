@@ -322,6 +322,8 @@ Expected:
 - `APPEAL_SUBMITTED`
 - `CONTENT_RESTORED`
 - `APPEAL_DENIED`
+- `REPORT_APPROVED`
+- `DISCUSSION_REPLY`
 
 ### Relationship summary
 
@@ -330,7 +332,7 @@ User_Account ──reports──► Report ──category──► Report_Catego
                               │
                               ├──► Appeal
                               ├──► Moderation_Action
-                              └──► Events (often target_type = REPORT)
+                              └──► Events (report targets, or DISCUSSION for reply notifications)
                                         │
                                         └──► Notification (recipient)
 ```

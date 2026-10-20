@@ -180,7 +180,7 @@ GET /api/home/wall-sections/1/problems/22
       "discussionId": 301,
       "userId": 7,
       "username": "climber01",
-      "parentCommentId": null,
+      "parentDiscussionId": null,
       "comment": "Fun movement.",
       "videoURL": null,
       "createdDate": "2026-04-20T19:00:00"
@@ -189,7 +189,7 @@ GET /api/home/wall-sections/1/problems/22
       "discussionId": 302,
       "userId": 7,
       "username": "climber01",
-      "parentCommentId": null,
+      "parentDiscussionId": null,
       "comment": null,
       "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
       "createdDate": "2026-04-20T20:02:00"
@@ -198,7 +198,7 @@ GET /api/home/wall-sections/1/problems/22
       "discussionId": 303,
       "userId": 7,
       "username": "climber01",
-      "parentCommentId": null,
+      "parentDiscussionId": null,
       "comment": "Heel hook then match",
       "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-mixed_22.mp4",
       "createdDate": "2026-04-20T20:15:00"
@@ -231,7 +231,7 @@ Authorization: Bearer <firebase_id_token>
   "discussionId": 401,
   "userId": 7,
   "username": "climber01",
-  "parentCommentId": null,
+  "parentDiscussionId": null,
   "comment": "Felt like soft V5.",
   "videoURL": null,
   "createdDate": "2026-04-21T09:11:00"
@@ -350,7 +350,7 @@ Authorization: Bearer <firebase_id_token>
   "discussionId": 402,
   "userId": 7,
   "username": "climber01",
-  "parentCommentId": null,
+  "parentDiscussionId": null,
   "comment": null,
   "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
   "createdDate": "2026-04-20T20:02:00"
@@ -385,7 +385,7 @@ Authorization: Bearer <firebase_id_token>
   "discussionId": 403,
   "userId": 7,
   "username": "climber01",
-  "parentCommentId": null,
+  "parentDiscussionId": null,
   "comment": "Heel hook then match",
   "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-mixed_22.mp4",
   "createdDate": "2026-04-20T20:15:00"
@@ -416,6 +416,50 @@ Authorization: Bearer <firebase_id_token>
 ### Response (200)
 
 Empty body.
+
+## 8c) Reply to a Discussion
+
+Reply to a top-level post or another reply. Comment-only example below; omit `commentInfo` and set both video fields for a beta reply, or set all three for mixed.
+
+### Request
+
+```http
+POST /api/discussion/discussion/reply
+Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
+```
+
+```json
+{
+  "parentDiscussionId": 403,
+  "problemId": 22,
+  "replyToId": 7,
+  "commentInfo": "Nice heel hook — worked for me too",
+  "objectFileName": null,
+  "videoURL": null
+}
+```
+
+### Response (201)
+
+```json
+{
+  "discussionId": 510,
+  "userId": 8,
+  "username": "climber02",
+  "parentDiscussionId": 403,
+  "comment": "Nice heel hook — worked for me too",
+  "videoURL": null,
+  "createdDate": "2026-10-20T18:30:00"
+}
+```
+
+Side effect: parent author (`replyToId`) receives a `DISCUSSION_REPLY` inbox row unless they are the replier.
+
+### Error examples
+
+- `400` — incomplete video pair, mismatched `replyToId`/problem, or duplicate identical reply under the same parent
+- `404` — missing/deleted parent, inactive problem, or missing auth/account
 
 ## 9) Suggest Perceived Grade
 
@@ -709,7 +753,7 @@ Authorization: Bearer <firebase_id_token>
           "discussionId": 40,
           "userId": 8,
           "username": "alex",
-          "parentCommentId": null,
+          "parentDiscussionId": null,
           "comment": "hello",
           "videoURL": null,
           "createdDate": "2026-08-16T10:00:00"
@@ -818,9 +862,9 @@ Dismiss notifies each reporter (`REPORT_DISMISSED`) and does not notify the owne
 
 Poll unread inbox rows (`readAt` is null). Each item includes `notificationId`, catalog `summary`, `click` metadata, and `createdAt`. It does not include the report reason or admin notes.
 
-Any authenticated role may call this endpoint. Callers only receive their own rows. `REPORT_CREATED` and `APPEAL_SUBMITTED` inbox rows are written for admins only (the reporter/appellant is skipped if they are an admin). Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner. Appeal resolve writes `CONTENT_RESTORED` or `APPEAL_DENIED` to the owner.
+Any authenticated role may call this endpoint. Callers only receive their own rows. `REPORT_CREATED` and `APPEAL_SUBMITTED` inbox rows are written for admins only (the reporter/appellant is skipped if they are an admin). Queue-resolve writes `REPORT_DISMISSED` / `REPORT_APPROVED` to reporters and `CONTENT_REMOVED` to the owner. Appeal resolve writes `CONTENT_RESTORED` or `APPEAL_DENIED` to the owner. A successful discussion reply writes `DISCUSSION_REPLY` to the parent author (skipped for self-replies).
 
-Current moderation events have `target_type = REPORT`, so `click.kind` is `REPORT_QUEUE` and `click.reportId` is set. Unused click ids are `null`.
+Moderation events have `target_type = REPORT`, so `click.kind` is `REPORT_QUEUE` and `click.reportId` is set. Discussion reply events have `target_type = DISCUSSION`, so `click.kind` is `PROBLEM_DISCUSSION` with `wallSectionId`, `problemId`, and `discussionId`. Unused click ids are `null`.
 
 ### Request
 
@@ -897,6 +941,31 @@ Authorization: Bearer <firebase_id_token>
   }
 ]
 ```
+
+### Response (200) — parent author after a reply
+
+```json
+[
+  {
+    "notificationId": 90,
+    "summary": {
+      "eventTypeName": "DISCUSSION_REPLY",
+      "description": "Someone replied to a discussion post that you made."
+    },
+    "click": {
+      "kind": "PROBLEM_DISCUSSION",
+      "reportId": null,
+      "wallSectionId": 1,
+      "problemId": 22,
+      "discussionId": 510,
+      "userId": null
+    },
+    "createdAt": "2026-10-20T18:30:05Z"
+  }
+]
+```
+
+`discussionId` is the reply root. Self-replies do not create an inbox row.
 
 ### Error examples
 
@@ -1014,7 +1083,7 @@ Authorization: Bearer <firebase_id_token>
           "discussionId": 301,
           "userId": 8,
           "username": "alex",
-          "parentCommentId": null,
+          "parentDiscussionId": null,
           "comment": "hello",
           "videoURL": null,
           "createdDate": "2026-08-16T10:00:00"
@@ -1118,7 +1187,7 @@ Authorization: Bearer <firebase_id_token>
       "discussionId": 301,
       "userId": 8,
       "username": "alex",
-      "parentCommentId": null,
+      "parentDiscussionId": null,
       "comment": "hello",
       "videoURL": null,
       "createdDate": "2026-08-16T10:00:00"
@@ -1181,7 +1250,7 @@ Authorization: Bearer <firebase_id_token>
           "discussionId": 301,
           "userId": 8,
           "username": "alex",
-          "parentCommentId": null,
+          "parentDiscussionId": null,
           "comment": "hello",
           "videoURL": null,
           "createdDate": "2026-08-16T10:00:00"

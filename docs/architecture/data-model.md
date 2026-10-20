@@ -48,7 +48,7 @@ Located in `domain/model/discussions/` and `domain/model/user/`:
 
 - `DiscussionRoot`
   - Unified discussion anchor row for comments and solution betas.
-  - Nullable self-reference (`parent_discussion_id`) is reserved for Sprint 7 replies.
+  - Nullable self-reference (`parent_discussion_id`) links replies to a parent root (top-level or another reply) on the same problem.
   - Stores discussion type (`COMMENT` / `BETA` / `MIXED`) and soft-delete metadata (`deleted_by`, `deleted_reason`, `deleted_at`).
   - `COMMENT`: one `Discussion_Comment` child. `BETA`: one `Solution_Beta` child. `MIXED`: both children on the same root (one post with text + video).
   - Owner/admin delete endpoints set soft-delete fields and hide the row from problem timelines. Comment/beta child rows are not removed. Appeal approve clears those fields so the row is visible again. Delayed GCS purge remains future work.
