@@ -9,9 +9,9 @@ This document reflects known limitations after Sprint 6 (wall and problem images
 - Text/keyword search was intentionally not in Sprint 4; tracked for a later sprint (see roadmap Sprint 11).
 - Impact: users filter by grade/sort only until that later sprint.
 
-### 2) Comments and betas are separate posts
-- A problem timeline stores a written comment and a solution beta as different discussion posts. Users cannot attach both to one post, reply to a discussion, or get a notification when someone replies.
-- Impact: discussion stays a flat list of separate comments and betas until Sprint 7.
+### 2) Discussion reply UI is not wired on the problem page yet
+- Backend supports mixed posts, replies (`POST /api/discussion/discussion/reply`), and `DISCUSSION_REPLY` inbox notifications.
+- Impact: clients can call the reply API and receive reply notifications, but the problem-page composer/timeline UI for starting and rendering threaded replies is still outstanding (Sprint 7 frontend).
 
 ### 3) Account page is read-only for profile fields
 - Users can view account info (and delete account) but cannot self-edit profile attributes such as username/email in the app.

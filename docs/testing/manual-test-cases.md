@@ -166,6 +166,20 @@ This document defines the manual regression checklist for validating core user f
   - soft-delete uses `DELETE /api/discussion/discussion-content` with matching comment + videoURL
   - post disappears from the timeline; comment/beta child rows and GCS object remain
 
+### DISC-02c: Discussion Reply + Reply Notification (API)
+
+- Steps:
+  1. As user A, create a top-level comment/mixed/beta on a problem
+  2. As user B, call `POST /api/discussion/discussion/reply` with `parentDiscussionId`, matching `problemId` / `replyToId`, and comment-only content
+  3. Confirm user A unread inbox includes `DISCUSSION_REPLY` with `click.kind = PROBLEM_DISCUSSION`
+  4. As user A, reply to user B's reply; confirm user B is notified and user A is not notified for a later self-reply on their own root
+  5. Retry reply to a soft-deleted parent and a duplicate identical reply
+- Expected:
+  - reply create returns `201` with `parentDiscussionId` set
+  - parent author (not self) receives one unread `DISCUSSION_REPLY` row
+  - soft-deleted parent and duplicate identical reply are rejected (`404` / `400`)
+  - report and soft-delete still work against the reply root
+
 ### DISC-03: Suggest Perceived Grade
 
 - Steps:

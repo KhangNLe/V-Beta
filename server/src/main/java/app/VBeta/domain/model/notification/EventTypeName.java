@@ -18,5 +18,6 @@ public enum EventTypeName {
     APPEAL_DENIED,
     /** Reported content was removed; sent to the reporter. */
     REPORT_APPROVED,
+    /** Someone replied to a discussion post the recipient authored. */
     DISCUSSION_REPLY
 }

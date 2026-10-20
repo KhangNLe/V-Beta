@@ -14,6 +14,14 @@ import app.VBeta.application.NotificationService;
 
 import java.util.List;
 
+/**
+ * {@code DiscussionReplyService} orchestrates creating replies under an existing discussion root.
+ * <p>
+ * A reply may be comment-only, beta-only, or mixed. The parent must be an active (non-deleted)
+ * discussion on the same problem, and {@code replyToId} must match the parent's author.
+ * After a successful create, a {@code DISCUSSION_REPLY} inbox notification is sent to the
+ * parent author unless the replier is that author.
+ */
 @Service
 public class DiscussionReplyService {
     private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
@@ -22,7 +30,15 @@ public class DiscussionReplyService {
     private final NotificationService notificationService;
     private final DiscussionRootManager discussionRootManager;
 
-
+    /**
+     * Constructs a new {@code DiscussionReplyService} with required collaborators.
+     *
+     * @param climbingProblemDiscussionManager manager that persists reply comment/beta/mixed rows
+     * @param userAccountManager manager for author and reply-to account lookups
+     * @param climbingProblemManager manager for active problem lookups
+     * @param notificationService service that writes reply inbox notifications
+     * @param discussionRootManager manager for parent and reply discussion roots
+     */
     public DiscussionReplyService(ClimbingProblemDiscussionManager climbingProblemDiscussionManager,
                                   UserAccountManager userAccountManager,
                                   ClimbingProblemManager climbingProblemManager,
@@ -35,6 +51,20 @@ public class DiscussionReplyService {
         this.discussionRootManager = discussionRootManager;
     }
 
+    /**
+     * Stores a reply for the authenticated user and optionally notifies the parent author.
+     * <p>
+     * Content kind is inferred from the request: both video fields set with comment → mixed;
+     * comment only → comment; both video fields without comment → beta. Incomplete video
+     * pairs, mismatched parent metadata, duplicates, missing/deleted parents, and unknown
+     * users/problems are rejected.
+     *
+     * @param firebaseUid Firebase UID of the reply author
+     * @param request reply payload including parent discussion, problem, and content fields
+     * @return created timeline entry with {@code parentDiscussionId} set
+     * @throws IllegalArgumentException when the payload is incomplete, mismatched, or duplicate
+     * @throws RuntimeException when the user, problem, or parent discussion cannot be used
+     */
     public UserDiscussionData storeUserReply(String firebaseUid, DiscussionContentReplyRequest request){
         UserAccount author = getUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveProblem(request.problemId());

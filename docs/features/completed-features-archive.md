@@ -221,6 +221,26 @@ Related docs:
 - `docs/testing/manual-test-cases.md` (APPEAL-02)
 - `docs/api/endpoints.md`
 
+### N) Backend Discussion Reply API and Reply Notifications
+
+Status: Completed (backend slice)
+
+Highlights:
+
+- `POST /api/discussion/discussion/reply` creates comment-only, beta-only, or mixed replies under a parent discussion root.
+- Parent must be active on the same problem; `replyToId` must match the parent author; duplicates and incomplete video pairs are rejected.
+- Successful replies write `DISCUSSION_REPLY` inbox rows for the parent author (self-replies skipped); click kind is `PROBLEM_DISCUSSION`.
+- Soft-delete, report, and timeline omission apply to reply roots; replying to a soft-deleted parent fails.
+- Covered by `DiscussionReplyTest`, `NotificationServiceTest`, and `ProblemDiscussionControllerTest`.
+
+Related docs:
+
+- `docs/api/endpoints.md`
+- `docs/api/request-response-examples.md`
+- `docs/api/permissions-matrix.md`
+- `docs/features/wall-and-problems.md`
+- `docs/implementation-roadmap.md`
+
 ## Moved Out of Future Queue
 
 The following future backlog topics were completed and removed from `future-features.md`:

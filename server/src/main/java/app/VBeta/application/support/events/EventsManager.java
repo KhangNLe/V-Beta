@@ -106,6 +106,18 @@ public class EventsManager {
         );
     }
 
+    /**
+     * Records a discussion-targeted event for a reply notification.
+     * <p>
+     * Typical {@code eventTypeName} is {@link EventTypeName#DISCUSSION_REPLY}. The event
+     * actor is the replier; the target is the newly created reply discussion root.
+     *
+     * @param fromUser user who wrote the reply (event actor)
+     * @param discussionRoot reply discussion root used as the event target
+     * @param eventTypeName seeded event kind to record
+     * @return saved event
+     * @throws IllegalArgumentException when the event type is missing from the catalog
+     */
     public Events createDiscussionReplyEvent(UserAccount fromUser, DiscussionRoot discussionRoot, EventTypeName eventTypeName){
         return eventsRepository.save(Events.builder()
                 .eventType(getEventType(eventTypeName))

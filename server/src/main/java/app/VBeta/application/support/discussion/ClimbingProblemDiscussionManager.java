@@ -94,6 +94,7 @@ public class ClimbingProblemDiscussionManager {
      * @param problem target climbing problem
      * @param commentContent comment body text
      * @param parentRoot parent discussion root
+     * @return timeline DTO with comment set and {@code parentDiscussionId} pointing at the parent
      */
     public UserDiscussionData storeReplyComment(UserAccount user, ClimbingProblem problem, String commentContent,
                                   DiscussionRoot parentRoot){
@@ -149,6 +150,15 @@ public class ClimbingProblemDiscussionManager {
         return convertDiscussionData(root, request.commentInfo(), request.videoURL());
     }
 
+    /**
+     * Stores a mixed reply (comment text + beta video) under an existing discussion node.
+     *
+     * @param user reply author account
+     * @param problem target climbing problem
+     * @param request reply payload with comment and uploaded video metadata
+     * @param parentRoot parent discussion root
+     * @return timeline DTO with both payloads set and {@code parentDiscussionId} pointing at the parent
+     */
     public UserDiscussionData storeReplyMixedDiscussion(UserAccount user, ClimbingProblem problem,
                                                         DiscussionContentReplyRequest request, DiscussionRoot parentRoot){
         DiscussionRoot replyRoot = discussionRootManager.createReplyDiscussionRoot(user, problem, DiscussionType.MIXED,

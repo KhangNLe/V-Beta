@@ -103,9 +103,9 @@ public class DiscussionRootManager {
      *
      * @param userAccount author account for the reply
      * @param problem target climbing problem
-     * @param discussionType discussion kind (comment/beta)
-     * @param parent parent discussion root
-     * @return persisted reply discussion root
+     * @param discussionType discussion kind ({@code COMMENT}, {@code BETA}, or {@code MIXED})
+     * @param parent parent discussion root (top-level post or another reply)
+     * @return persisted reply discussion root with {@code parent_discussion_id} set
      */
     public DiscussionRoot createReplyDiscussionRoot(UserAccount userAccount, ClimbingProblem problem,
                                                   DiscussionType discussionType, DiscussionRoot parent){

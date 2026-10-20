@@ -24,8 +24,9 @@ import org.springframework.web.server.ResponseStatusException;
  * {@code ProblemDiscussionController} handles discussion interactions for climbing problems.
  * <p>
  * Endpoints include user comments, solution beta upload lifecycle, mixed comment+video posts,
- * perceived grade submissions, and owner/admin soft-delete of comments, betas, and mixed posts.
- * Business logic is delegated to {@link ProblemDiscussionService} and {@link ClimbingWallService}.
+ * replies under an existing discussion, perceived grade submissions, and owner/admin soft-delete
+ * of comments, betas, and mixed posts. Business logic is delegated to
+ * {@link ProblemDiscussionService}, {@link DiscussionReplyService}, and {@link ClimbingWallService}.
  * Authorization checks are performed via {@link AuthorizationService} for privileged actions.
  */
 @RestController
@@ -42,6 +43,7 @@ public class ProblemDiscussionController {
      * @param problemDiscussionService service for discussion and solution-beta operations
      * @param authorizationService service for authentication/authorization checks
      * @param climbingWallService service for returning updated problem details
+     * @param discussionReplyService service for creating discussion replies
      */
     public ProblemDiscussionController(ProblemDiscussionService problemDiscussionService,
                                        AuthorizationService authorizationService,
@@ -156,6 +158,16 @@ public class ProblemDiscussionController {
         }
     }
 
+    /**
+     * Creates a reply under an existing discussion (comment, beta, or mixed).
+     * <p>
+     * Requires authentication. {@code IllegalArgumentException} from validation or business
+     * rules maps to {@code 400}; missing/deleted parent or other {@code RuntimeException}
+     * maps to {@code 404}. Successful replies may notify the parent author.
+     *
+     * @param request reply payload including parent discussion, problem, and content fields
+     * @return created timeline entry with {@code parentDiscussionId} set
+     */
     @PostMapping("/discussion/reply")
     public ResponseEntity<?> storeUserReplyContent(@Valid @RequestBody DiscussionContentReplyRequest request){
         try {
