@@ -13,7 +13,7 @@ import {
   uploadSolutionBeta,
 } from "@/api/solutionBeta";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ADMIN_FORCED_DELETE_DISCUSSION,
   USER_DELETED_OWN_DISCUSSION,
@@ -36,6 +36,7 @@ jest.mock("@/api/comments", () => ({
   addUserSuggestedGrade: jest.fn(),
   deleteUserComment: jest.fn(),
   postCommentForUser: jest.fn(),
+  postDiscussionReply: jest.fn(),
 }));
 
 jest.mock("@/api/discussionContent", () => ({
@@ -68,6 +69,7 @@ jest.mock("@/hooks/useRequireAuth", () => ({
 jest.mock("next/navigation", () => ({
   useParams: jest.fn(),
   useRouter: jest.fn(),
+  useSearchParams: jest.fn(),
 }));
 
 jest.mock("react-toastify", () => ({
@@ -79,6 +81,7 @@ jest.mock("react-toastify", () => ({
 
 jest.mock("lucide-react", () => ({
   ArrowLeftIcon: () => <span>BackIcon</span>,
+  CornerDownRight: () => <span>ReplyArrow</span>,
   MoreVertical: () => <span>MoreIcon</span>,
 }));
 
@@ -178,6 +181,7 @@ function renderProblemPage({
   problem = baseProblem,
 } = {}) {
   useParams.mockReturnValue({ wallSectionID, problemId });
+  useSearchParams.mockReturnValue({ get: () => null });
   useRequireAuth.mockReturnValue({ ready, user: authUser, account });
   fetchProblemForUser.mockResolvedValue(problem);
   return render(<ProblemPage />);

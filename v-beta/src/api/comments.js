@@ -25,6 +25,50 @@ export async function postCommentForUser(user, problemId, commentInfo) {
 }
 
 /**
+ * Reply to an existing discussion (top-level or another reply).
+ * Content kind is inferred: comment-only, beta-only (both video fields), or mixed.
+ *
+ * @param {import("firebase/auth").User} user
+ * @param {{
+ *   parentDiscussionId: number,
+ *   problemId: number,
+ *   replyToId: number,
+ *   commentInfo?: string | null,
+ *   objectFileName?: string | null,
+ *   videoURL?: string | null,
+ * }} payload
+ */
+export async function postDiscussionReply(user, payload) {
+  const idToken = await user.getIdToken();
+  const response = await fetch(`${API_BASE_URL}/api/discussion/discussion/reply`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({
+      parentDiscussionId: payload.parentDiscussionId,
+      problemId: payload.problemId,
+      replyToId: payload.replyToId,
+      commentInfo: payload.commentInfo ?? null,
+      objectFileName: payload.objectFileName ?? null,
+      videoURL: payload.videoURL ?? null,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "Unknown error");
+    throw new Error(`Failed to post reply: ${response.status} ${errorText}`);
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+  return null;
+}
+
+/**
  * Delete user comment from a problem (soft-delete of the discussion root).
  *
  * @param {import("firebase/auth").User} user
