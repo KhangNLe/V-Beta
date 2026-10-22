@@ -51,10 +51,16 @@ Climber users can participate in problem discussion and feedback.
    - Text + video → enter text, **Attach video**, then **Post** (signed upload, then mixed discussion-content save).
 4. Verify the new post appears in the discussion (mixed posts show text and **Watch Beta**).
 
+### B1) Reply to a Discussion Post
+1. On a problem page, choose **Reply** on a post that is not a removed placeholder.
+2. In the inline composer, post text only, video only, or text + video (same rules as a top-level post).
+3. Verify the reply nests under the parent. The parent author (if not you) gets a **DISCUSSION_REPLY** notification.
+4. Open that notification from the bell or `/notifications` and confirm the problem page scrolls to and briefly highlights the reply.
+
 ### B2) Delete a Discussion Post
 1. On a problem page, open the actions menu on a post you own (or, as admin, on another user's post).
 2. Choose **Delete Comment**, **Delete Solution Beta**, or **Delete Post** (label matches what the post contains).
-3. Verify the post disappears from the discussion after refresh.
+3. Verify the post remains in the discussion as a removed placeholder after refresh (for example, “The discussion had been deleted by the author.”). Reply / Report / Delete are not available on that placeholder.
 
 ### B3) Report a Comment or Beta
 1. Sign in and open a problem page.
@@ -67,7 +73,7 @@ Climber users can participate in problem discussion and feedback.
 2. Open the bell to list unread items (`GET /api/notification/short`).
 3. Choose **Show all notifications** (or open `/notifications`).
 4. Confirm the page lists read and unread history (`GET /api/notification/all`, 10 per page). Use **Next** / **Previous** when there are more than 10 rows.
-5. Open an item. It is marked read (`PATCH /api/notification/short?notificationId=`) and you land on `/reports?reportId=`, `/appeals?reportId=`, or `/appeal-queue?reportId=` depending on the event type.
+5. Open an item. It is marked read (`PATCH /api/notification/short?notificationId=`) and you land on `/reports?reportId=`, `/appeals?reportId=`, `/appeal-queue?reportId=`, or a problem discussion (`?discussionId=`) depending on the event type.
 
 ### D) Suggest a Grade
 1. On a problem page, use **Suggest Difficulty** next to the climb info card.

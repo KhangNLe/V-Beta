@@ -98,7 +98,7 @@ Status: Completed (delete path; delayed GCS purge still future)
 Highlights:
 
 - Comment and solution-beta deletes mark `Discussion_Root` with `deleted_at`, `deleted_by`, and `deleted_reason` instead of removing the row.
-- Problem timelines omit soft-deleted discussions; comment/beta child rows and GCS objects stay. Appeal approve restores the discussion.
+- Problem timelines keep soft-deleted discussions as placeholders (`UserDiscussionData.isDeleted = true` with a removal message); comment/beta child rows and GCS objects stay. Appeal approve restores the discussion.
 - Delete requests require a reason (`deletedReason` on comments, `deleteReason` on betas). The problem page currently sends `"User deleted their own discussion"` or `"Admin forced delete the discussion"`.
 
 Related docs:
@@ -230,7 +230,7 @@ Highlights:
 - `POST /api/discussion/discussion/reply` creates comment-only, beta-only, or mixed replies under a parent discussion root.
 - Parent must be active on the same problem; `replyToId` must match the parent author; duplicates and incomplete video pairs are rejected.
 - Successful replies write `DISCUSSION_REPLY` inbox rows for the parent author (self-replies skipped); click kind is `PROBLEM_DISCUSSION`.
-- Soft-delete, report, and timeline omission apply to reply roots; replying to a soft-deleted parent fails.
+- Soft-delete, report, and timeline placeholders apply to reply roots; replying to a soft-deleted parent fails.
 - Covered by `DiscussionReplyTest`, `NotificationServiceTest`, and `ProblemDiscussionControllerTest`.
 
 Related docs:
@@ -241,12 +241,31 @@ Related docs:
 - `docs/features/wall-and-problems.md`
 - `docs/implementation-roadmap.md`
 
+## Problem-Page Reply UI + Soft-Delete Timeline Placeholders
+
+Status: Completed (Sprint 7 frontend + timeline contract)
+
+Highlights:
+
+- Problem page supports Reply (comment / beta / mixed) via inline `DiscussionComposer` and nests replies under `parentDiscussionId`.
+- `DISCUSSION_REPLY` inbox clicks deep-link to `/wall/{wallSectionId}/problem/{problemId}?discussionId=` with scroll + brief highlight.
+- Soft-deleted roots remain on the timeline as placeholders (`isDeleted`) with author/admin removal messages; Reply / Report / Delete are hidden on those rows.
+- `ClimbingProblemDiscussionManager.getCommentsForProblem` builds placeholders without requiring child comment/beta mapping first.
+
+Related docs:
+
+- `docs/features/wall-and-problems.md`
+- `docs/architecture/frontend-architecture.md`
+- `docs/architecture/backend-architecture.md`
+- `docs/api/endpoints.md`
+
 ## Moved Out of Future Queue
 
 The following future backlog topics were completed and removed from `future-features.md`:
 
 - Merge `User_Comment` and `User_Beta` into unified discussion flow.
 - PostgreSQL migration completion and test alignment baseline.
-- Soft-delete fields and hide-from-timeline behavior for `discussion_root` (delayed GCS purge remains in `future-features.md` #19).
+- Soft-delete fields for `discussion_root` with timeline placeholders (delayed GCS purge remains in `future-features.md`).
+- Problem-page reply composer, threaded timeline UI, and notification deep-link.
 - Better content moderation and auditability (Sprint 5 queue, notifications, logbook, appeal/restore).
 - Report inappropriate comments and solution betas (problem-page Report plus admin `/reports`, `/logbook`, `/appeals`, `/appeal-queue`).

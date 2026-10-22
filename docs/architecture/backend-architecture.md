@@ -60,7 +60,7 @@ Access model types:
 
 - Main entities include user accounts, roles, wall sections, climbing problems, discussion comments, solution betas, perceived grades, reports, events, and notifications.
 - Discussion replies attach via `DiscussionRoot.parent` (`parent_discussion_id`) and are orchestrated by `DiscussionReplyService` (`POST /api/discussion/discussion/reply`). Successful replies may emit `DISCUSSION_REPLY` events targeting the reply root.
-- Discussion comment/beta user deletes are **soft deletes** on `DiscussionRoot` (`deleted_at`, `deleted_by`, `deleted_reason`). Hard `removeDiscussion` remains for cascading problem/account cleanup.
+- Discussion comment/beta user deletes are **soft deletes** on `DiscussionRoot` (`deleted_at`, `deleted_by`, `deleted_reason`). `ClimbingProblemDiscussionManager.getCommentsForProblem` maps soft-deleted roots to timeline placeholders (`isDeleted = true`) instead of omitting them. Hard `removeDiscussion` remains for cascading problem/account cleanup.
 - JPA schema mode in runtime is `ddl-auto=validate`, so schema must exist and match.
 - Role permission evaluation is data-driven from role/action tables.
 

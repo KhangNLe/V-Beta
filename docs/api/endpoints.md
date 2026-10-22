@@ -122,11 +122,12 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
 - `userId`
 - `username`
 - `parentDiscussionId` (nullable; set for replies to another discussion root)
-- `comment` (nullable text payload)
-- `videoURL` (nullable public beta URL)
-- `createdDate`
+- `comment` (nullable text payload; soft-deleted rows use a placeholder message)
+- `videoURL` (nullable public beta URL; null on soft-deleted placeholders)
+- `createdDate` (for soft-deleted placeholders, this is `deleted_at`)
+- `isDeleted` (`true` for soft-deleted timeline placeholders; `false` otherwise)
 
-Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the root). Top-level posts have `parentDiscussionId = null`; replies point at the parent root.
+Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the root). Top-level posts have `parentDiscussionId = null`; replies point at the parent root. Soft-deleted roots stay on the problem timeline as placeholders so reply threads keep their parent anchors; new replies to a soft-deleted parent are still rejected.
 
 - `POST /api/discussion/add-comments`
   - Purpose: add a text-only comment to a problem (`DiscussionType.COMMENT`).
@@ -182,7 +183,7 @@ Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the
   - Errors: `400` for validation / incomplete / mismatched / duplicate payloads (`IllegalArgumentException`); `404` for missing auth, unknown user, inactive problem, or missing/deleted parent.
 
 - `DELETE /api/discussion/discussion-content`
-  - Purpose: **soft-delete** a mixed discussion. The `Discussion_Root` row stays; comment/beta child rows and GCS object are kept.
+  - Purpose: **soft-delete** a mixed discussion. The `Discussion_Root` row stays; comment/beta child rows and GCS object are kept. Problem timelines keep a placeholder (`isDeleted = true`).
   - Request body (`DiscussionContentDeletionRequest`):
     - `authorId`
     - `discussionId`
@@ -194,7 +195,7 @@ Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the
   - Response: `200` (empty body).
 
 - `DELETE /api/discussion/solution-beta`
-  - Purpose: **soft-delete** a video-only solution beta discussion. The `Discussion_Root` row stays; child `Solution_Beta` metadata and GCS object are kept. Problem timelines omit rows with `deleted_at` set.
+  - Purpose: **soft-delete** a video-only solution beta discussion. The `Discussion_Root` row stays; child `Solution_Beta` metadata and GCS object are kept. Problem timelines keep a placeholder (`isDeleted = true`) instead of omitting the row.
   - Request body:
     - `userId` (discussion author)
     - `problemId`
@@ -412,7 +413,7 @@ There is no mark-all-read endpoint in this slice.
 
 - `DELETE /api/discussion/comment/delete`
   - Required action: `DELETE_COMMENT`
-  - Purpose: **soft-delete** a discussion comment. The `Discussion_Root` row stays; the `Discussion_Comment` child row is kept. Problem timelines omit rows with `deleted_at` set.
+  - Purpose: **soft-delete** a discussion comment. The `Discussion_Root` row stays; the `Discussion_Comment` child row is kept. Problem timelines keep a placeholder (`isDeleted = true`) instead of omitting the row.
   - Request body:
     - `authorId`
     - `problemId`
