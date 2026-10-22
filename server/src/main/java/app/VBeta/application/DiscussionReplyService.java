@@ -9,10 +9,12 @@ import app.VBeta.domain.model.climb.ClimbingProblem;
 import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.user.UserAccount;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import app.VBeta.api.dto.discussions.DiscussionContentReplyRequest;
 import app.VBeta.application.NotificationService;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * {@code DiscussionReplyService} orchestrates creating replies under an existing discussion root.
@@ -23,6 +25,7 @@ import java.util.List;
  * parent author unless the replier is that author.
  */
 @Service
+@Transactional
 public class DiscussionReplyService {
     private final ClimbingProblemDiscussionManager climbingProblemDiscussionManager;
     private final UserAccountManager userAccountManager;
@@ -91,8 +94,9 @@ public class DiscussionReplyService {
         }
 
         DiscussionRoot root = discussionRootManager.findDiscussionRootById(reply.discussionId());
-        if (!author.equals(parentRoot.getUserAccount())) {
-            notificationService.saveNewDiscussionReplyNotification(author, parentRoot.getUserAccount(), root);
+        UserAccount parentAuthor = parentRoot.getUserAccount();
+        if (parentAuthor != null && !Objects.equals(author.getId(), parentAuthor.getId())) {
+            notificationService.saveNewDiscussionReplyNotification(author, parentAuthor, root);
         }
         return reply;
     }
@@ -122,8 +126,15 @@ public class DiscussionReplyService {
     }
 
     private void verifyRequest(DiscussionRoot parentRoot, ClimbingProblem problem, Long replyToId){
-        UserAccount user = userAccountManager.findUserAccountById(replyToId);
-        if (!parentRoot.getUserAccount().equals(user) || !parentRoot.getProblem().equals(problem)){
+        UserAccount parentAuthor = parentRoot.getUserAccount();
+        ClimbingProblem parentProblem = parentRoot.getProblem();
+
+        boolean authorMatches =
+                parentAuthor != null && Objects.equals(parentAuthor.getId(), replyToId);
+        boolean problemMatches =
+                parentProblem != null && problem != null && Objects.equals(parentProblem.getId(), problem.getId());
+
+        if (!authorMatches || !problemMatches) {
             throw new IllegalArgumentException("Mismatching information.");
         }
     }

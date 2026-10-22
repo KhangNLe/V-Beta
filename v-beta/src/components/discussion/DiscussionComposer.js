@@ -2,13 +2,13 @@
 
 import { SOLUTION_VIDEO_ACCEPT } from '@/lib/videoUpload';
 import { buttons, card, colors, fontFamily } from '@/ui/appTheme';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 
 export const DISCUSSION_COMMENT_MAX_LENGTH = 250;
 
 /**
  * Sticky/floating composer for a discussion post with optional comment text and an
- * optional beta video. Built for reuse as a reply composer later.
+ * optional beta video. Also supports an inline variant for replies under a post.
  *
  * The parent decides which API to call from what was filled in:
  * text only → comment; video only → beta save; both → mixed discussion-content
@@ -17,6 +17,8 @@ export const DISCUSSION_COMMENT_MAX_LENGTH = 250;
  * @param {{
  *   heading?: string,
  *   placeholder?: string,
+ *   submitLabel?: string,
+ *   variant?: 'floating' | 'inline',
  *   disabled?: boolean,
  *   submitting?: boolean,
  *   status?: { type: 'success' | 'error', message: string, publicURL?: string | null } | null,
@@ -28,6 +30,8 @@ export const DISCUSSION_COMMENT_MAX_LENGTH = 250;
 export default function DiscussionComposer({
   heading = 'Add a comment or solution beta',
   placeholder = 'Write a comment here!',
+  submitLabel: submitLabelProp,
+  variant = 'floating',
   disabled = false,
   submitting = false,
   status = null,
@@ -38,6 +42,9 @@ export default function DiscussionComposer({
   const [text, setText] = useState('');
   const [file, setFile] = useState(null);
   const fileInputRef = useRef(null);
+  const reactId = useId();
+  const fileInputId = `discussion-file-input-${reactId}`;
+  const isInline = variant === 'inline';
 
   const charCount = text.length;
   const overLimit = charCount > DISCUSSION_COMMENT_MAX_LENGTH;
@@ -60,7 +67,7 @@ export default function DiscussionComposer({
     }
   };
 
-  let submitLabel = 'Post';
+  let submitLabel = submitLabelProp || 'Post';
   if (submitting) {
     submitLabel = file ? 'Uploading...' : 'Posting...';
   }
@@ -70,11 +77,21 @@ export default function DiscussionComposer({
       className="discussion-composer"
       style={{
         ...card.surface,
-        position: 'sticky',
-        bottom: 'max(12px, env(safe-area-inset-bottom, 0px))',
-        zIndex: 10,
-        padding: '14px',
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+        ...(isInline
+          ? {
+              position: 'relative',
+              bottom: 'auto',
+              zIndex: 'auto',
+              boxShadow: 'none',
+              marginTop: '12px',
+            }
+          : {
+              position: 'sticky',
+              bottom: 'max(12px, env(safe-area-inset-bottom, 0px))',
+              zIndex: 10,
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+            }),
+        padding: isInline ? '12px' : '14px',
         fontFamily,
       }}
     >
@@ -86,10 +103,10 @@ export default function DiscussionComposer({
         onChange={(e) => setText(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        aria-label="Discussion comment"
+        aria-label={isInline ? 'Discussion reply' : 'Discussion comment'}
         style={{
           width: '100%',
-          minHeight: '72px',
+          minHeight: isInline ? '56px' : '72px',
           padding: '10px 12px',
           border: `1px solid ${overLimit ? colors.danger : colors.muted}`,
           borderRadius: '6px',
@@ -110,7 +127,7 @@ export default function DiscussionComposer({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
           <label
-            htmlFor="solution-beta-file-input"
+            htmlFor={fileInputId}
             style={{
               ...buttons.secondary,
               opacity: disabled ? 0.6 : 1,
@@ -121,7 +138,7 @@ export default function DiscussionComposer({
           </label>
           <input
             ref={fileInputRef}
-            id="solution-beta-file-input"
+            id={fileInputId}
             className="sr-only"
             type="file"
             accept={SOLUTION_VIDEO_ACCEPT}

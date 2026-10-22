@@ -101,6 +101,28 @@ describe("notificationNavigation", () => {
     ).toBe("/wall/10");
   });
 
+  it("labels discussion reply notifications and deep-links to the reply root", () => {
+    const replyNotification = {
+      notificationId: 90,
+      summary: {
+        eventTypeName: "DISCUSSION_REPLY",
+        description: "Someone replied to a discussion post that you made.",
+      },
+      click: {
+        kind: "PROBLEM_DISCUSSION",
+        reportId: null,
+        wallSectionId: 1,
+        problemId: 22,
+        discussionId: 510,
+        userId: null,
+      },
+    };
+    expect(getNotificationTypeLabel(replyNotification)).toBe("New reply");
+    expect(getNotificationHref(replyNotification)).toBe(
+      "/wall/1/problem/22?discussionId=510",
+    );
+  });
+
   it("treats missing readAt as unread", () => {
     expect(isNotificationUnread(reportCreated)).toBe(true);
     expect(isNotificationUnread({ ...reportCreated, readAt: "2026-08-14T20:00:00Z" })).toBe(false);

@@ -29,6 +29,7 @@ const EVENT_TYPE_LABELS = {
   APPEAL_SUBMITTED: "Appeal submitted",
   CONTENT_RESTORED: "Content restored",
   APPEAL_DENIED: "Appeal denied",
+  DISCUSSION_REPLY: "New reply",
 };
 
 /**

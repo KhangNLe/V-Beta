@@ -11,6 +11,7 @@ import {
   addUserSuggestedGrade,
   deleteUserComment,
   postCommentForUser,
+  postDiscussionReply,
 } from "@/api/comments";
 import {
   deleteDiscussionContent,
@@ -52,11 +53,13 @@ import {
   waitForPublicVideo,
 } from '@/lib/videoUpload';
 import { buttons, card, colors, layout, fontFamily } from '@/ui/appTheme';
-import { ArrowLeftIcon, MoreVertical } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeftIcon, CornerDownRight, MoreVertical } from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import GuestBanner from '@/components/GuestBanner';
+
+const DISCUSSION_HIGHLIGHT_MS = 2800;
 
 /** @param {string | null | undefined} raw */
 function formatCommentDate(raw) {
@@ -164,15 +167,61 @@ function getDiscussionMediaUrl(discussionItem) {
   return typeof value === 'string' ? value : '';
 }
 
+/** @param {unknown} discussionItem */
+function getParentDiscussionId(discussionItem) {
+  if (!discussionItem || typeof discussionItem !== 'object') return null;
+  const discussionRecord = /** @type {Record<string, unknown>} */ (discussionItem);
+  return parsePositiveNumberId(discussionRecord.parentDiscussionId);
+}
+
+/**
+ * Group a flat timeline into roots + children keyed by parent discussion id.
+ * Orphans (parent missing from the timeline) render as roots so they stay visible.
+ *
+ * @param {unknown[]} discussion
+ * @returns {{ roots: unknown[], childrenByParent: Map<number, unknown[]> }}
+ */
+function buildDiscussionThreads(discussion) {
+  const items = Array.isArray(discussion) ? discussion : [];
+  /** @type {Map<number, unknown[]>} */
+  const childrenByParent = new Map();
+  /** @type {unknown[]} */
+  const roots = [];
+  /** @type {Set<number>} */
+  const idSet = new Set();
+
+  for (const item of items) {
+    const id = getDiscussionId(item);
+    if (id != null) idSet.add(id);
+  }
+
+  for (const item of items) {
+    const parentId = getParentDiscussionId(item);
+    if (parentId != null && idSet.has(parentId)) {
+      const siblings = childrenByParent.get(parentId);
+      if (siblings) {
+        siblings.push(item);
+      } else {
+        childrenByParent.set(parentId, [item]);
+      }
+    } else {
+      roots.push(item);
+    }
+  }
+
+  return { roots, childrenByParent };
+}
+
 /** @param {{ comment: string, mediaUrl: string }} content */
 function getDeleteLabel({ comment, mediaUrl }) {
   if (comment && mediaUrl) return 'Delete Post';
   return mediaUrl ? 'Delete Solution Beta' : 'Delete Comment';
 }
 
-export default function ProblemPage() {
+function ProblemPageContent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { user, account, ready } = useRequireAuth({
     redirectMode: "push",
     requireAuth: false,
@@ -193,10 +242,19 @@ export default function ProblemPage() {
     return getCurrentUserId(user);
   }, [account, user]);
   const [uploadStatus, setUploadStatus] = useState(null);
+  const [replyTarget, setReplyTarget] = useState(null);
+  const [submittingReply, setSubmittingReply] = useState(false);
+  const [replyUploadStatus, setReplyUploadStatus] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [reportCategory, setReportCategory] = useState('');
   const [reportReason, setReportReason] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [highlightedDiscussionId, setHighlightedDiscussionId] = useState(null);
+  const handledFocusDiscussionIdRef = useRef(null);
+  const focusDiscussionId = useMemo(
+    () => parsePositiveNumberId(searchParams.get('discussionId')),
+    [searchParams],
+  );
 
   const refreshProblem = async () => {
     const refreshedProblem = await fetchProblemForUser(
@@ -398,6 +456,51 @@ export default function ProblemPage() {
     };
   }, [ready, user, wallSectionID, problemId]);
 
+  useEffect(() => {
+    if (loading || !problem || focusDiscussionId == null) return;
+    if (handledFocusDiscussionIdRef.current === focusDiscussionId) return;
+
+    const discussionExists = (problem.discussion || []).some(
+      (item) => getDiscussionId(item) === focusDiscussionId,
+    );
+    if (!discussionExists) {
+      handledFocusDiscussionIdRef.current = focusDiscussionId;
+      return;
+    }
+
+    handledFocusDiscussionIdRef.current = focusDiscussionId;
+    let clearHighlightTimer = null;
+
+    const scrollAndHighlight = () => {
+      const target = document.getElementById(
+        `discussion-${focusDiscussionId}`,
+      );
+      if (!target) return false;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedDiscussionId(focusDiscussionId);
+      clearHighlightTimer = setTimeout(() => {
+        setHighlightedDiscussionId((current) =>
+          current === focusDiscussionId ? null : current,
+        );
+      }, DISCUSSION_HIGHLIGHT_MS);
+      return true;
+    };
+
+    let frameTwo = null;
+    const frameOne = requestAnimationFrame(() => {
+      if (scrollAndHighlight()) return;
+      frameTwo = requestAnimationFrame(() => {
+        scrollAndHighlight();
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(frameOne);
+      if (frameTwo != null) cancelAnimationFrame(frameTwo);
+      if (clearHighlightTimer != null) clearTimeout(clearHighlightTimer);
+    };
+  }, [loading, problem, focusDiscussionId]);
+
   const handleBackToSection = () => {
     router.push(`/wall/${wallSectionID}`);
   };
@@ -439,15 +542,87 @@ export default function ProblemPage() {
     }
   };
 
+  const closeReplyComposer = () => {
+    if (submittingReply) return;
+    setReplyTarget(null);
+    setReplyUploadStatus(null);
+  };
+
+  const openReplyComposer = (targetDiscussion) => {
+    if (!user) {
+      toast.error('Please sign in to reply.');
+      return;
+    }
+    const discussionId = getDiscussionId(targetDiscussion);
+    const replyToId = parsePositiveNumberId(getCommentAuthorId(targetDiscussion));
+    if (!discussionId || !replyToId) {
+      toast.error('Unable to determine which discussion to reply to.');
+      return;
+    }
+    setUploadStatus(null);
+    setReplyUploadStatus(null);
+    setReplyTarget(targetDiscussion);
+  };
+
+  const postTextReply = async (parentDiscussion, commentInfo) => {
+    const parentDiscussionId = getDiscussionId(parentDiscussion);
+    const replyToId = parsePositiveNumberId(getCommentAuthorId(parentDiscussion));
+    if (!parentDiscussionId || !replyToId || !problemId) {
+      toast.error('Unable to determine which discussion to reply to.');
+      return false;
+    }
+
+    try {
+      await postDiscussionReply(user, {
+        parentDiscussionId,
+        problemId,
+        replyToId,
+        commentInfo,
+      });
+      await refreshProblem();
+      setReplyTarget(null);
+      setReplyUploadStatus(null);
+      toast.success('Reply posted successfully!');
+      return true;
+    } catch (err) {
+      toast.error(`Failed to post reply: ${extractErrorMessage(err)}`);
+      return false;
+    }
+  };
+
+  const handleSubmitReply = async ({ text, file }) => {
+    if (!user) {
+      toast.error('Please sign in to reply.');
+      return false;
+    }
+    if (!problemId || !wallSectionID || !replyTarget) return false;
+
+    const commentInfo = text.trim();
+    if (!commentInfo && !file) return false;
+    if (commentInfo.length > DISCUSSION_COMMENT_MAX_LENGTH) return false;
+
+    setSubmittingReply(true);
+    setReplyUploadStatus(null);
+    try {
+      return file
+        ? await uploadVideoDiscussion(file, commentInfo, replyTarget)
+        : await postTextReply(replyTarget, commentInfo);
+    } finally {
+      setSubmittingReply(false);
+    }
+  };
+
   /**
-   * Signed-URL upload shared by beta-only and comment + beta posts. The save step
-   * calls the mixed discussion-content API when a comment is attached.
+   * Signed-URL upload shared by top-level and reply posts. The save step calls
+   * the mixed discussion-content API, beta save, or reply API depending on context.
    *
    * @param {File} solutionFile
    * @param {string} commentInfo trimmed comment text, empty for beta-only posts
+   * @param {unknown} [replyParent] parent discussion when posting a reply
    * @returns {Promise<boolean>} whether the composer should clear its inputs
    */
-  const uploadVideoDiscussion = async (solutionFile, commentInfo) => {
+  const uploadVideoDiscussion = async (solutionFile, commentInfo, replyParent) => {
+    const setStatus = replyParent ? setReplyUploadStatus : setUploadStatus;
     try {
       const shortenedUploadName = buildShortUploadFileName(
         solutionFile.name,
@@ -486,7 +661,7 @@ export default function ProblemPage() {
         if (!playback.publicURL) {
           throw new Error('Signed URL response is missing publicURL for conversion.');
         }
-        setUploadStatus({
+        setStatus({
           type: 'success',
           message: 'Uploaded iPhone video. Converting to MP4 for playback…',
           publicURL: playback.publicURL,
@@ -514,7 +689,21 @@ export default function ProblemPage() {
       }
 
       try {
-        if (commentInfo) {
+        if (replyParent) {
+          const parentDiscussionId = getDiscussionId(replyParent);
+          const replyToId = parsePositiveNumberId(getCommentAuthorId(replyParent));
+          if (!parentDiscussionId || !replyToId) {
+            throw new Error('Unable to determine which discussion to reply to.');
+          }
+          await postDiscussionReply(user, {
+            parentDiscussionId,
+            problemId,
+            replyToId,
+            commentInfo: commentInfo || null,
+            objectFileName: playback.objectName,
+            videoURL: playback.publicURL || '',
+          });
+        } else if (commentInfo) {
           await saveDiscussionContent(user, {
             problemId,
             commentInfo,
@@ -541,16 +730,20 @@ export default function ProblemPage() {
         verificationMessage = `${verificationMessage} Saved data, but failed to refresh page data: ${refreshMessage}`;
       }
 
-      setUploadStatus({
-        type: verificationMessage.includes('DB save failed')
-          ? 'error'
-          : 'success',
+      const savedOk = !verificationMessage.includes('DB save failed');
+      setStatus({
+        type: savedOk ? 'success' : 'error',
         message: verificationMessage,
         publicURL: playback.publicURL || null,
       });
-      return true;
+      if (replyParent && savedOk) {
+        setReplyTarget(null);
+        setReplyUploadStatus(null);
+        toast.success('Reply posted successfully!');
+      }
+      return savedOk;
     } catch (err) {
-      setUploadStatus({
+      setStatus({
         type: 'error',
         message: `Upload failed before completion: ${
           err instanceof Error ? err.message : 'Unexpected upload error.'
@@ -571,6 +764,274 @@ export default function ProblemPage() {
     !!reportReason.trim() &&
     !reportReasonOverLimit &&
     !submittingReport;
+  const discussionThreads = buildDiscussionThreads(problem?.discussion);
+  const replyTargetId = getDiscussionId(replyTarget);
+
+  /**
+   * @param {unknown} comment
+   * @param {{ depth?: number, index?: number, showTopBorder?: boolean }} [options]
+   * @returns {import('react').ReactNode}
+   */
+  const renderDiscussionNode = (comment, options = {}) => {
+    const depth = options.depth ?? 0;
+    const index = options.index ?? 0;
+    const showTopBorder = options.showTopBorder ?? index > 0;
+    const authorId = getCommentAuthorId(comment);
+    const commentText = getDiscussionComment(comment);
+    const mediaUrl = getDiscussionMediaUrl(comment);
+    const discussionId = getDiscussionId(comment);
+    const isOwner =
+      !!currentUserId && !!authorId && currentUserId === authorId;
+    const canDeleteComment = isAdmin || isOwner;
+    const canReportComment = isSignedIn && !isOwner;
+    const showDiscussionMenu =
+      isSignedIn && (canDeleteComment || canReportComment);
+    const isReplyingHere =
+      replyTargetId != null &&
+      discussionId != null &&
+      replyTargetId === discussionId;
+    const isHighlighted =
+      highlightedDiscussionId != null &&
+      discussionId != null &&
+      highlightedDiscussionId === discussionId;
+    const childReplies =
+      discussionId != null
+        ? discussionThreads.childrenByParent.get(discussionId) || []
+        : [];
+    const replyAuthorName =
+      comment && typeof comment === 'object' && 'username' in comment
+        ? /** @type {{ username?: string }} */ (comment).username
+        : null;
+
+    return (
+      <div key={discussionId || `${depth}-${index}`}>
+        <article
+          id={discussionId != null ? `discussion-${discussionId}` : undefined}
+          style={{
+            padding: depth > 0 ? '12px 16px 12px 0' : '16px',
+            marginLeft: depth > 0 ? '8px' : 0,
+            paddingLeft: depth > 0 ? '10px' : '16px',
+            borderTop: showTopBorder && depth === 0 ? `1px solid ${colors.border}` : 'none',
+            position: 'relative',
+            borderRadius: isHighlighted ? '8px' : undefined,
+            background: isHighlighted ? colors.accentSoft : 'transparent',
+            boxShadow: isHighlighted
+              ? `inset 0 0 0 2px ${colors.primary}`
+              : 'none',
+            transition:
+              'background 0.35s ease, box-shadow 0.35s ease, border-radius 0.35s ease',
+            scrollMarginTop: '96px',
+          }}
+        >
+          {depth > 0 && (
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: '14px',
+                display: 'inline-flex',
+                color: colors.muted,
+              }}
+            >
+              <CornerDownRight className="size-3.5" strokeWidth={2.25} />
+            </span>
+          )}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              position: 'relative',
+              gap: '12px',
+              paddingLeft: depth > 0 ? '18px' : 0,
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <p
+                style={{
+                  margin: '0 0 4px',
+                  fontWeight: 600,
+                  color: colors.text,
+                }}
+              >
+                {(comment &&
+                  typeof comment === 'object' &&
+                  /** @type {{ username?: string }} */ (comment).username) ||
+                  'Anonymous'}
+              </p>
+            </div>
+            <p
+              style={{
+                margin: '0 0 8px',
+                fontSize: '0.8rem',
+                color: colors.subtle,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {formatCommentDate(
+                comment &&
+                  typeof comment === 'object' &&
+                  'createdDate' in comment
+                  ? /** @type {{ createdDate?: string }} */ (comment)
+                      .createdDate
+                  : null,
+              )}
+            </p>
+            {showDiscussionMenu && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="shrink-0"
+                      style={{ color: colors.muted }}
+                      aria-label="Comment actions"
+                    />
+                  }
+                >
+                  <MoreVertical className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {canReportComment && (
+                    <DropdownMenuItem
+                      onClick={() => openReportDialog(comment)}
+                    >
+                      Report
+                    </DropdownMenuItem>
+                  )}
+                  {canReportComment && canDeleteComment && (
+                    <DropdownMenuSeparator />
+                  )}
+                  {canDeleteComment && (
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => handleDeleteDiscussion(comment)}
+                    >
+                      {getDeleteLabel({ comment: commentText, mediaUrl })}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+          <div style={{ paddingLeft: depth > 0 ? '18px' : 0 }}>
+          {commentText && (
+            <p
+              style={{
+                margin: mediaUrl ? '0 0 8px' : 0,
+                color: colors.text,
+                lineHeight: 1.5,
+              }}
+            >
+              {commentText}
+            </p>
+          )}
+          {mediaUrl && (
+            <details>
+              <summary
+                style={{
+                  color: colors.primary,
+                  fontSize: '0.9rem',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                }}
+              >
+                Watch Beta
+              </summary>
+              <div style={{ marginTop: '10px' }}>
+                <video
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full max-w-full sm:max-w-[360px]"
+                  style={{
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.border}`,
+                    background: '#000',
+                  }}
+                >
+                  <source
+                    src={mediaUrl}
+                    type={inferVideoMimeType(mediaUrl)}
+                  />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            </details>
+          )}
+          {isSignedIn && discussionId != null && (
+            <div
+              style={{
+                marginTop: '10px',
+                display: 'flex',
+                justifyContent: isReplyingHere ? 'stretch' : 'flex-end',
+              }}
+            >
+              {isReplyingHere ? (
+                <div style={{ width: '100%' }}>
+                  <DiscussionComposer
+                    variant="inline"
+                    heading={
+                      replyAuthorName
+                        ? `Reply to ${replyAuthorName}`
+                        : 'Write a reply'
+                    }
+                    placeholder="Write a reply…"
+                    submitLabel="Reply"
+                    disabled={!isSignedIn}
+                    submitting={submittingReply}
+                    status={replyUploadStatus}
+                    onSubmit={handleSubmitReply}
+                    onFileChange={() => setReplyUploadStatus(null)}
+                    onCancel={closeReplyComposer}
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => openReplyComposer(comment)}
+                  disabled={submittingDiscussion || submittingReply}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    padding: 0,
+                    color: colors.primary,
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily,
+                  }}
+                >
+                  Reply
+                </button>
+              )}
+            </div>
+          )}
+          </div>
+        </article>
+        {childReplies.length > 0 && (
+          <div
+            style={{
+              marginLeft: depth === 0 ? '20px' : '28px',
+              paddingLeft: '10px',
+              borderLeft: `2px solid ${colors.borderHairline}`,
+            }}
+          >
+            {childReplies.map((child, childIndex) =>
+              renderDiscussionNode(child, {
+                depth: depth + 1,
+                index: childIndex,
+                showTopBorder: false,
+              }),
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <main style={layout.main}>
@@ -778,7 +1239,7 @@ export default function ProblemPage() {
               </h2>
 
               {/* Comments List */}
-              {problem.discussion && problem.discussion.length > 0 ? (
+              {discussionThreads.roots.length > 0 ? (
                 <div
                   style={{
                     ...card.surface,
@@ -786,150 +1247,12 @@ export default function ProblemPage() {
                     overflow: 'hidden',
                   }}
                 >
-                  {problem.discussion.map((comment, index) =>
-                    (() => {
-                      const authorId = getCommentAuthorId(comment);
-                      const commentText = getDiscussionComment(comment);
-                      const mediaUrl = getDiscussionMediaUrl(comment);
-                      const isOwner =
-                        !!currentUserId &&
-                        !!authorId &&
-                        currentUserId === authorId;
-                      const canDeleteComment = isAdmin || isOwner;
-                      const canReportComment = isSignedIn && !isOwner;
-                      const showDiscussionMenu =
-                        isSignedIn && (canDeleteComment || canReportComment);
-                      return (
-                        <article
-                          key={
-                            getDiscussionId(comment) ||
-                            mediaUrl ||
-                            `${comment.username || 'anonymous'}-${
-                              comment.createdDate || index
-                            }-${index}`
-                          }
-                          style={{
-                            padding: '16px',
-                            borderTop:
-                              index > 0 ? `1px solid ${colors.border}` : 'none',
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'flex-start',
-                              position: 'relative',
-                              gap: '12px',
-                            }}
-                          >
-                            <div style={{ flex: 1 }}>
-                              <p
-                                style={{
-                                  margin: '0 0 4px',
-                                  fontWeight: 600,
-                                  color: colors.text,
-                                }}
-                              >
-                                {comment.username || 'Anonymous'}
-                              </p>
-                            </div>
-                            <p
-                              style={{
-                                margin: '0 0 8px',
-                                fontSize: '0.8rem',
-                                color: colors.subtle,
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {formatCommentDate(comment.createdDate)}
-                            </p>
-                            {showDiscussionMenu && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger
-                                  render={
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon-sm"
-                                      className="shrink-0"
-                                      style={{ color: colors.muted }}
-                                      aria-label="Comment actions"
-                                    />
-                                  }
-                                >
-                                  <MoreVertical className="size-4" />
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {canReportComment && (
-                                    <DropdownMenuItem
-                                      onClick={() => openReportDialog(comment)}
-                                    >
-                                      Report
-                                    </DropdownMenuItem>
-                                  )}
-                                  {canReportComment && canDeleteComment && (
-                                    <DropdownMenuSeparator />
-                                  )}
-                                  {canDeleteComment && (
-                                    <DropdownMenuItem
-                                      variant="destructive"
-                                      onClick={() => handleDeleteDiscussion(comment)}
-                                    >
-                                      {getDeleteLabel({ comment: commentText, mediaUrl })}
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </div>
-                          {commentText && (
-                            <p
-                              style={{
-                                margin: mediaUrl ? '0 0 8px' : 0,
-                                color: colors.text,
-                                lineHeight: 1.5,
-                              }}
-                            >
-                              {commentText}
-                            </p>
-                          )}
-                          {mediaUrl && (
-                            <details>
-                              <summary
-                                style={{
-                                  color: colors.primary,
-                                  fontSize: '0.9rem',
-                                  textDecoration: 'underline',
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                Watch Beta
-                              </summary>
-                              <div style={{ marginTop: '10px' }}>
-                                <video
-                                  controls
-                                  playsInline
-                                  preload="metadata"
-                                  className="w-full max-w-full sm:max-w-[360px]"
-                                  style={{
-                                    borderRadius: '8px',
-                                    border: `1px solid ${colors.border}`,
-                                    background: '#000',
-                                  }}
-                                >
-                                  <source
-                                    src={mediaUrl}
-                                    type={inferVideoMimeType(mediaUrl)}
-                                  />
-                                  Your browser does not support the video tag.
-                                </video>
-                              </div>
-                            </details>
-                          )}
-                        </article>
-                      );
-                    })(),
+                  {discussionThreads.roots.map((comment, index) =>
+                    renderDiscussionNode(comment, {
+                      depth: 0,
+                      index,
+                      showTopBorder: index > 0,
+                    }),
                   )}
                 </div>
               ) : (
@@ -1070,5 +1393,13 @@ export default function ProblemPage() {
         </DialogContent>
       </Dialog>
     </main>
+  );
+}
+
+export default function ProblemPage() {
+  return (
+    <Suspense fallback={<PageLoader message="Loading problem…" />}>
+      <ProblemPageContent />
+    </Suspense>
   );
 }
