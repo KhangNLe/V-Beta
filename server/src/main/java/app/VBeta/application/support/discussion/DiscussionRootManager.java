@@ -89,7 +89,7 @@ public class DiscussionRootManager {
 
     /**
      * Returns all discussion roots attached to a climbing problem in timeline order,
-     * including soft-deleted rows. Public timelines should skip roots with {@code deletedAt} set.
+     * including soft-deleted rows. Timeline composition maps deleted roots to placeholders.
      *
      * @param problem climbing problem context
      * @return discussion roots ordered by create date ascending, then id ascending

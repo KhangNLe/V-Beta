@@ -51,7 +51,8 @@ public class ClimbingProblemDiscussionManager {
 
     /**
      * Returns merged comment and beta entries for a climbing problem in chronological order.
-     * Soft-deleted discussion roots ({@code deletedAt != null}) are excluded.
+     * Soft-deleted roots remain as placeholders ({@code isDeleted = true}) so reply threads
+     * keep their parent anchors.
      *
      * @param problem climbing problem context
      * @return visible discussion timeline entries in database order
