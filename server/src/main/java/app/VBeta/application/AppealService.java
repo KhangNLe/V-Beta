@@ -377,7 +377,8 @@ public class AppealService {
                 null,
                 null,
                 null,
-                root.getCreatedAt()
+                root.getCreatedAt(),
+                false
         );
         return new ReportDTO(
                 snapshot.targetType(),

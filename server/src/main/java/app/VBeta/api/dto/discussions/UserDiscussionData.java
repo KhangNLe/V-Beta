@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
  * @param comment nullable text body from {@code Discussion_Comment}
  * @param videoURL nullable public beta URL from {@code Solution_Beta}
  * @param createdDate timestamp when the discussion root was created
+ * @param isDeleted show if the discussion had been soft deleted
  */
 public record UserDiscussionData(
         Long discussionId,
@@ -23,6 +24,7 @@ public record UserDiscussionData(
         Long parentDiscussionId,
         String comment,
         String videoURL,
-        LocalDateTime createdDate
+        LocalDateTime createdDate,
+        Boolean isDeleted
 ) {
 }

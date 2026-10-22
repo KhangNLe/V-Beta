@@ -251,7 +251,8 @@ public class DiscussionRootManager {
                 parentId,
                 commentInfo,
                 videoURL,
-                discussionRoot.getCreatedAt()
+                discussionRoot.getCreatedAt(),
+                false
         );
     }
 }

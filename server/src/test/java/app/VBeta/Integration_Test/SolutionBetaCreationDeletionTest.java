@@ -130,7 +130,7 @@ public class SolutionBetaCreationDeletionTest {
         assertEquals(userAccount.getId(), deletedRoot.getDeletedBy().getId());
         assertTrue(solutionBetaRepository.findByDiscussionRoot(deletedRoot).isPresent());
         assertTrue(climbingProblemDiscussionManager.getCommentsForProblem(climbingProblem).stream()
-                .noneMatch(item -> item.discussionId().equals(deletePayload.discussionId())));
+                .anyMatch(item -> item.discussionId().equals(deletePayload.discussionId()) && item.isDeleted()));
     }
 
     @Test

@@ -109,7 +109,8 @@ public class ProblemDiscussionService {
                 null,
                 null,
                 solutionBeta.getVideoURL(),
-                solutionBeta.getCreateDate()
+                solutionBeta.getCreateDate(),
+                false
         );
     }
 
