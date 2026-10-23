@@ -69,7 +69,7 @@ export function VerifyEmailForm({ className, ...props }) {
         router.replace("/main-page");
         return;
       }
-      setError("Email not verified yet. Check your inbox and try again.");
+      setError("Email not verified yet. Check your inbox (and spam/junk) and try again.");
     } catch (err) {
       console.error(err);
       setError(formatEmailVerificationError(err));
@@ -109,6 +109,9 @@ export function VerifyEmailForm({ className, ...props }) {
           <p className="font-[var(--font-geist-sans),system-ui,sans-serif] text-sm font-light text-balance text-muted-foreground">
             We sent a link to <span className="font-medium text-foreground">{user.email}</span>. Open it
             to confirm your address, then return here.
+          </p>
+          <p className="font-[var(--font-geist-sans),system-ui,sans-serif] text-sm font-light text-balance text-muted-foreground">
+            If you do not see it within a few minutes, check your spam or junk folder.
           </p>
         </div>
         <Field className="gap-3">
