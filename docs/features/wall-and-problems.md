@@ -160,7 +160,7 @@ Problem-page reply UI is wired: signed-in users can reply (comment / beta / mixe
 - Discovery grade-range endpoints use `/api/search/{wallSectionId}?min=&max=&sort=`.
 - CORS allows `/api/**` for the frontend origin (covers `/api/home/**` and `/api/search/**`).
 - Keyword/text search is deferred to a later sprint (roadmap Sprint 11); Sprint 4 discovery (grade filter/sort) is complete.
-- Sprint 7 unified discussion: one post can include comment text, a beta video, or both; replies and in-app `DISCUSSION_REPLY` notifications are supported on the problem page.
+- Unified discussion (Sprint 7): one post can include comment text, a beta video, or both; replies and in-app `DISCUSSION_REPLY` notifications are supported on the problem page; soft-deleted roots stay as `isDeleted` placeholders.
 - Wall and problem read DTOs expose nullable `imageURL`. A null wall `imageURL` displays `/co-op.png`. A null problem `imageURL` displays `/problem-holder.jpg`. See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
 
 ## Future Enhancements

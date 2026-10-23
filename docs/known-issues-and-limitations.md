@@ -1,6 +1,6 @@
 # Known Issues and Limitations
 
-This document reflects known limitations after Sprint 6 (wall and problem images).
+This document reflects known limitations after Sprint 7 (unified discussion).
 
 ## Functional Limitations
 

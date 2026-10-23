@@ -11,43 +11,9 @@ This roadmap tracks only active and upcoming work. Completed foundation delivery
 
 ## Current Sprint
 
-Sprint 6 (Wall and Problem Images) is complete. Sprint 7 (Unified Discussion) is next.
+Sprint 7 (Unified Discussion) is complete. Sprint 8 (API Reliability) is next.
 
 ## Upcoming Sprints
-
-### Sprint 7: Unified Discussion
-
-Status: In progress (mixed posts, reply API, reply UI, soft-delete placeholders, and reply notifications shipped)
-
-Estimated Duration: 2 weeks
-
-### Summary
-
-Merge comments and solution betas into one discussion post. A signed-in user can post a written comment and a video beta together. Other users can reply to that discussion. The author receives an in-app notification when someone replies.
-
-### Scope
-
-- One discussion post can include comment text, a beta video, or both
-- Replies attach to another discussion (`Discussion_Root.parent_discussion_id` is already nullable for this)
-- In-app notification to the discussion author when someone replies
-- Problem-page composer and timeline show the combined post and its replies
-- Existing separate comment and beta posts stay readable
-
-### Acceptance Criteria
-
-- [x] A user can publish one discussion that includes a comment and a video beta together
-- [x] A user can publish a comment-only post or a video-only post
-- [x] A user can reply to another discussion (backend API + problem-page UI)
-- [x] The discussion author receives an in-app notification when someone replies
-- [x] Report, soft-delete, and appeal still apply to the unified post and its replies
-- [x] Soft-deleted discussions remain on the timeline as placeholders (`isDeleted`) so reply threads keep parent anchors
-- [x] Tests and docs updated for the unified discussion / reply API and soft-delete placeholders
-
-### Explicitly out of scope
-
-- Email or push notifications (in-app inbox only)
-- Cursor pagination and deep thread performance (Sprint 9)
-- Reactions, pins, and edit history
 
 ### Sprint 8: API Reliability
 
@@ -90,6 +56,39 @@ Focus:
 - Not part of Sprint 4 discovery (grade filter/sort already covers current discovery needs); scheduled after Sprint 10
 
 ## Completed Sprints
+
+### Sprint 7: Unified Discussion
+
+Status: Completed
+
+### Summary
+
+Merged comments and solution betas into one discussion post. A signed-in user can post comment text, a video beta, or both. Other users can reply on the problem page. The parent author receives an in-app `DISCUSSION_REPLY` notification. Soft-deleted roots stay on the timeline as `isDeleted` placeholders so reply threads keep parent anchors.
+
+### Scope delivered
+
+- One discussion post can include comment text, a beta video, or both (`MIXED`)
+- Replies via `Discussion_Root.parent_discussion_id` and `POST /api/discussion/discussion/reply`
+- In-app notification to the discussion author when someone else replies (deep-link `?discussionId=`)
+- Problem-page composer, threaded timeline, and inline reply UI
+- Soft-deleted discussions remain as timeline placeholders (`isDeleted`)
+- Existing separate comment and beta posts stay readable
+
+### Acceptance Criteria
+
+- [x] A user can publish one discussion that includes a comment and a video beta together
+- [x] A user can publish a comment-only post or a video-only post
+- [x] A user can reply to another discussion (backend API + problem-page UI)
+- [x] The discussion author receives an in-app notification when someone replies
+- [x] Report, soft-delete, and appeal still apply to the unified post and its replies
+- [x] Soft-deleted discussions remain on the timeline as placeholders (`isDeleted`) so reply threads keep parent anchors
+- [x] Tests and docs updated for the unified discussion / reply API and soft-delete placeholders
+
+### Explicitly out of scope
+
+- Email or push notifications (in-app inbox only)
+- Cursor pagination and deep thread performance (Sprint 9)
+- Reactions, pins, and edit history
 
 ### Sprint 6: Wall and Problem Images
 

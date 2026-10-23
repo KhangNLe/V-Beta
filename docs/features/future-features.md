@@ -142,7 +142,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Effort:** Medium
 - **Area:** Data Integrity
 - **Current Gap:** The application can enforce that a root points to either comment or beta, but the database may still allow drift without stricter constraints.
-- **Potential Work:** Deferred. Sprint 7 allows one discussion post to hold both a comment and a beta, so an exclusive comment-or-beta database check would block that sprint.
+- **Potential Work:** Deferred. Mixed discussion posts (`COMMENT` + `BETA` on one root) are shipped; an exclusive comment-or-beta database check would break that contract.
 - **Dependencies:** Final table design, trigger migration strategy, and integration tests for invalid insert attempts.
 
 ### 16) Discussion Reactions (Like/Helpful) for Comments and Betas

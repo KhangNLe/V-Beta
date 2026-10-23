@@ -16,8 +16,9 @@ Use this together with:
 | Account Management | profile load, delete account, role promotion/demotion | ACCOUNT-01, ACCOUNT-02, ACCOUNT-03 | High |
 | Wall Section Management | list, create/delete section, invalid section navigation, admin wall photo | WALL-01, WALL-03, WALL-04 | High |
 | Problem Management | create/delete/reset problem flows as setter/admin-allowed, setter problem photo, problem-page expand | WALL-02, WALL-05 | High |
-| Discussion Comments | post comment, soft-delete as owner/admin, block unauthorized delete | DISC-01 | High |
-| Solution Beta | signed URL request, upload, save metadata, soft-delete beta | DISC-02 | High |
+| Discussion Comments | post comment, soft-delete as owner/admin (placeholder), block unauthorized delete | DISC-01 | High |
+| Solution Beta | signed URL request, upload, save metadata, soft-delete beta (placeholder) | DISC-02 | High |
+| Unified Discussion / Replies | mixed post, problem-page reply + nest, `DISCUSSION_REPLY` deep-link, soft-delete parent placeholder | DISC-02c | High |
 | Perceived Grade | submit perceived grade and verify reflected result | DISC-03 | Medium |
 | Problem Discovery | grade-range filter, asc/desc sort, invalid range/missing wall behavior | DISC-04 | High |
 | Problem Discovery UI | wall Filter dialog, most recent/easiest/hardest, clear filters | DISC-05 | High |
@@ -46,7 +47,7 @@ When code changes in these areas, minimum regression scope should include:
 - **Wall filter UI changed** (`wall/[wallSectionID]/page.js`, `fetchFilteredWallSectionProblems`):
   - Re-run DISC-05 and `wall-page.test.js` filter cases.
 - **Discussion/beta APIs changed**:
-  - Re-run DISC-01/02 fully.
+  - Re-run DISC-01/02 fully; include DISC-02c when reply, mixed, soft-delete placeholder, or notification deep-link paths change.
 - **Discussion report UI changed** (`problem/[problemId]/page.js`, `src/api/reports.js`):
   - Re-run DISC-06 and `problem-page.test.js` report cases.
 - **Notification inbox changed** (`src/api/notifications.js`, `NotificationBell.js`, `/notifications`, `notificationNavigation.js`):
