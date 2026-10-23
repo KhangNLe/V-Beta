@@ -3,7 +3,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import ProblemPage from "./page";
 import { fetchProblemForUser, updateClimbingProblem } from "@/api/wallSections";
 import { uploadClimbingProblemImage } from "@/api/socialImage";
-import { addUserSuggestedGrade, deleteUserComment, postCommentForUser } from "@/api/comments";
+import {
+  addUserSuggestedGrade,
+  deleteUserComment,
+  postCommentForUser,
+  postDiscussionReply,
+} from "@/api/comments";
 import { createContentReport } from "@/api/reports";
 import { deleteDiscussionContent, saveDiscussionContent } from "@/api/discussionContent";
 import {
@@ -13,7 +18,7 @@ import {
   uploadSolutionBeta,
 } from "@/api/solutionBeta";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ADMIN_FORCED_DELETE_DISCUSSION,
   USER_DELETED_OWN_DISCUSSION,
@@ -36,6 +41,7 @@ jest.mock("@/api/comments", () => ({
   addUserSuggestedGrade: jest.fn(),
   deleteUserComment: jest.fn(),
   postCommentForUser: jest.fn(),
+  postDiscussionReply: jest.fn(),
 }));
 
 jest.mock("@/api/discussionContent", () => ({
@@ -68,6 +74,7 @@ jest.mock("@/hooks/useRequireAuth", () => ({
 jest.mock("next/navigation", () => ({
   useParams: jest.fn(),
   useRouter: jest.fn(),
+  useSearchParams: jest.fn(),
 }));
 
 jest.mock("react-toastify", () => ({
@@ -79,6 +86,7 @@ jest.mock("react-toastify", () => ({
 
 jest.mock("lucide-react", () => ({
   ArrowLeftIcon: () => <span>BackIcon</span>,
+  CornerDownRight: () => <span>ReplyArrow</span>,
   MoreVertical: () => <span>MoreIcon</span>,
 }));
 
@@ -169,6 +177,39 @@ const betaByOwner = {
   videoURL: "https://example.com/beta.mp4",
 };
 
+const replyToOwnerComment = {
+  discussionId: 401,
+  userId: 9,
+  parentDiscussionId: 301,
+  username: "climber02",
+  createdDate: "2026-04-26T12:05:00.000Z",
+  comment: "Heel hook worked for me",
+  videoURL: null,
+  isDeleted: false,
+};
+
+const deletedParentByAuthor = {
+  discussionId: 301,
+  userId: null,
+  username: null,
+  parentDiscussionId: null,
+  createdDate: "2026-04-26T13:00:00.000Z",
+  comment: "The discussion had been deleted by the author.",
+  videoURL: null,
+  isDeleted: true,
+};
+
+const deletedParentByAdmin = {
+  discussionId: 305,
+  userId: null,
+  username: null,
+  parentDiscussionId: null,
+  createdDate: "2026-04-26T14:00:00.000Z",
+  comment: "The discussion had been deleted by one of the admin.",
+  videoURL: null,
+  isDeleted: true,
+};
+
 function renderProblemPage({
   ready = true,
   authUser = user,
@@ -176,8 +217,12 @@ function renderProblemPage({
   wallSectionID = "10",
   problemId = "100",
   problem = baseProblem,
+  discussionId = null,
 } = {}) {
   useParams.mockReturnValue({ wallSectionID, problemId });
+  useSearchParams.mockReturnValue({
+    get: (key) => (key === "discussionId" ? discussionId : null),
+  });
   useRequireAuth.mockReturnValue({ ready, user: authUser, account });
   fetchProblemForUser.mockResolvedValue(problem);
   return render(<ProblemPage />);
@@ -216,6 +261,7 @@ describe("ProblemPage coverage", () => {
       expect(screen.getByRole("button", { name: "Suggest Grade" })).toBeDisabled();
       expect(screen.getByRole("button", { name: "Post" })).toBeDisabled();
       expect(screen.queryByLabelText("Comment actions")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Reply" })).not.toBeInTheDocument();
     });
   });
 
@@ -889,6 +935,152 @@ describe("ProblemPage coverage", () => {
       expect(toast.success).toHaveBeenCalledWith("Problem photo removed.");
       expect(document.querySelector('img[src="https://cdn.example/blue.jpg"]')).toBeNull();
       expect(screen.getAllByAltText("Default problem photo").length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("Discussion replies", () => {
+    it("shows a Reply control for signed-in users on each discussion", async () => {
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      expect(await screen.findByText("Try heel hook")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Reply" })).toBeInTheDocument();
+    });
+
+    it("nests replies under their parent and shows a reply arrow", async () => {
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: {
+          ...baseProblem,
+          discussion: [commentByOwner, replyToOwnerComment],
+        },
+      });
+      expect(await screen.findByText("Try heel hook")).toBeInTheDocument();
+      expect(screen.getByText("Heel hook worked for me")).toBeInTheDocument();
+      expect(screen.getByText("ReplyArrow")).toBeInTheDocument();
+      expect(document.getElementById("discussion-301")).toBeInTheDocument();
+      expect(document.getElementById("discussion-401")).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: "Reply" })).toHaveLength(2);
+    });
+
+    it("opens an inline reply composer and cancels it", async () => {
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      await screen.findByText("Try heel hook");
+
+      fireEvent.click(screen.getByRole("button", { name: "Reply" }));
+      expect(screen.getByText("Reply to owner")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Write a reply…")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Reply" })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(screen.queryByPlaceholderText("Write a reply…")).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Reply" })).toBeInTheDocument();
+    });
+
+    it("posts a text reply with parent discussion metadata and refreshes", async () => {
+      postDiscussionReply.mockResolvedValue({
+        discussionId: 401,
+        parentDiscussionId: 301,
+        comment: "Nice tip",
+      });
+
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: { ...baseProblem, discussion: [commentByOwner] },
+      });
+      await screen.findByText("Try heel hook");
+      const fetchCallsBeforeReply = fetchProblemForUser.mock.calls.length;
+
+      fireEvent.click(screen.getByRole("button", { name: "Reply" }));
+      fireEvent.change(screen.getByPlaceholderText("Write a reply…"), {
+        target: { value: "Nice tip" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Reply" }));
+
+      await waitFor(() => {
+        expect(postDiscussionReply).toHaveBeenCalledWith(user, {
+          parentDiscussionId: 301,
+          problemId: 100,
+          replyToId: 5,
+          commentInfo: "Nice tip",
+        });
+      });
+      expect(toast.success).toHaveBeenCalledWith("Reply posted successfully!");
+      await waitFor(() => {
+        expect(fetchProblemForUser.mock.calls.length).toBeGreaterThan(
+          fetchCallsBeforeReply,
+        );
+      });
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText("Write a reply…")).not.toBeInTheDocument();
+      });
+    });
+
+    it("scrolls to and briefly highlights a discussion from the notification deep link", async () => {
+      const scrollIntoView = jest.fn();
+      Element.prototype.scrollIntoView = scrollIntoView;
+
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: {
+          ...baseProblem,
+          discussion: [commentByOwner, replyToOwnerComment],
+        },
+        discussionId: "401",
+      });
+
+      expect(await screen.findByText("Heel hook worked for me")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(scrollIntoView).toHaveBeenCalled();
+      });
+
+      const target = document.getElementById("discussion-401");
+      expect(target).toBeInTheDocument();
+      expect(target.style.boxShadow).toContain("inset");
+    });
+
+    it("shows soft-deleted discussions with the backend removal message and no actions", async () => {
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: {
+          ...baseProblem,
+          discussion: [
+            deletedParentByAuthor,
+            {
+              ...replyToOwnerComment,
+              parentDiscussionId: 301,
+            },
+            deletedParentByAdmin,
+          ],
+        },
+      });
+
+      expect(
+        await screen.findByText("The discussion had been deleted by the author."),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("The discussion had been deleted by one of the admin."),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Heel hook worked for me")).toBeInTheDocument();
+      expect(screen.getAllByText("Removed")).toHaveLength(2);
+
+      const deletedRoot = document.getElementById("discussion-301");
+      const deletedAdmin = document.getElementById("discussion-305");
+      expect(deletedRoot).toHaveAttribute("data-deleted", "true");
+      expect(deletedAdmin).toHaveAttribute("data-deleted", "true");
+      expect(
+        deletedRoot.querySelector('[aria-label="Comment actions"]'),
+      ).toBeNull();
+      expect(
+        deletedAdmin.querySelector('[aria-label="Comment actions"]'),
+      ).toBeNull();
+      // Reply / menu only on the active child reply, not on deleted placeholders.
+      expect(screen.getAllByRole("button", { name: "Reply" })).toHaveLength(1);
+      expect(screen.getAllByLabelText("Comment actions")).toHaveLength(1);
     });
   });
 });

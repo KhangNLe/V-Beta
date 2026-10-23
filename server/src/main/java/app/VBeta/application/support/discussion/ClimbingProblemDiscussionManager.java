@@ -1,5 +1,6 @@
 package app.VBeta.application.support.discussion;
 
+import app.VBeta.api.dto.discussions.DiscussionContentReplyRequest;
 import app.VBeta.api.dto.discussions.DiscussionContentRequest;
 import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.application.support.discussion.beta.SolutionBetaManager;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * {@code ClimbingProblemDiscussionManager} composes a unified discussion timeline for a climbing problem.
@@ -49,7 +51,8 @@ public class ClimbingProblemDiscussionManager {
 
     /**
      * Returns merged comment and beta entries for a climbing problem in chronological order.
-     * Soft-deleted discussion roots ({@code deletedAt != null}) are excluded.
+     * Soft-deleted roots remain as placeholders ({@code isDeleted = true}) so reply threads
+     * keep their parent anchors.
      *
      * @param problem climbing problem context
      * @return visible discussion timeline entries in database order
@@ -59,11 +62,12 @@ public class ClimbingProblemDiscussionManager {
         List<UserDiscussionData> data = new ArrayList<>();
 
         discussionRoots.forEach(root -> {
-            if (root.getDeletedAt() != null) {
-                return;
-            }
+            if (root == null) return;
             UserDiscussionData dataContent = getDiscussionData(root);
-            if (dataContent != null){
+            if (dataContent == null) return;
+            if (root.getDeletedAt() != null) {
+                data.add(getSoftDeletedData(root));
+            } else {
                 data.add(dataContent);
             }
         });
@@ -92,14 +96,15 @@ public class ClimbingProblemDiscussionManager {
      * @param user reply author account
      * @param problem target climbing problem
      * @param commentContent comment body text
-     * @param discussionParentId parent discussion identifier
+     * @param parentRoot parent discussion root
+     * @return timeline DTO with comment set and {@code parentDiscussionId} pointing at the parent
      */
-    public void storeReplyComment(UserAccount user, ClimbingProblem problem, String commentContent,
-                                  Long discussionParentId){
-        DiscussionRoot parent = getDiscussionNode(discussionParentId);
+    public UserDiscussionData storeReplyComment(UserAccount user, ClimbingProblem problem, String commentContent,
+                                  DiscussionRoot parentRoot){
         DiscussionRoot replyDiscussion = discussionRootManager.createReplyDiscussionRoot(user, problem,
-                DiscussionType.COMMENT, parent);
+                DiscussionType.COMMENT, parentRoot);
         discussionCommentManager.storeDiscussionComment(replyDiscussion, commentContent);
+        return convertDiscussionData(replyDiscussion, commentContent, null);
     }
 
     /**
@@ -123,16 +128,16 @@ public class ClimbingProblemDiscussionManager {
      * @param problem target climbing problem
      * @param objectName storage object key/name
      * @param publicUrl public media URL
-     * @param discussionParentId parent discussion identifier
+     * @param parentRoot parent discussion identifier
      * @return persisted reply solution beta
      */
-    public SolutionBeta storeReplySolutionBeta(UserAccount userAccount, ClimbingProblem problem,
-                                       String objectName, String publicUrl, Long discussionParentId){
-        DiscussionRoot parent = getDiscussionNode(discussionParentId);
+    public UserDiscussionData storeReplySolutionBeta(UserAccount userAccount, ClimbingProblem problem,
+                                       String objectName, String publicUrl, DiscussionRoot parentRoot){
         DiscussionRoot reply = discussionRootManager.createReplyDiscussionRoot(userAccount, problem,
-                DiscussionType.BETA, parent);
+                DiscussionType.BETA, parentRoot);
 
-        return solutionBetaManager.storeUserSolutionBeta(reply, objectName, publicUrl);
+        solutionBetaManager.storeUserSolutionBeta(reply, objectName, publicUrl);
+        return convertDiscussionData(reply, null, publicUrl);
     }
 
     /**
@@ -145,15 +150,25 @@ public class ClimbingProblemDiscussionManager {
     public UserDiscussionData storeNewMixedDiscussion(DiscussionRoot root, DiscussionContentRequest request){
         discussionCommentManager.storeDiscussionComment(root, request.commentInfo());
         solutionBetaManager.storeUserSolutionBeta(root, request.objectFileName(), request.videoURL());
-        return new UserDiscussionData(
-                root.getDiscussionId(),
-                root.getUserAccount().getId(),
-                root.getUserAccount().getUsername(),
-                null,
-                request.commentInfo(),
-                request.videoURL(),
-                root.getCreatedAt()
-        );
+        return convertDiscussionData(root, request.commentInfo(), request.videoURL());
+    }
+
+    /**
+     * Stores a mixed reply (comment text + beta video) under an existing discussion node.
+     *
+     * @param user reply author account
+     * @param problem target climbing problem
+     * @param request reply payload with comment and uploaded video metadata
+     * @param parentRoot parent discussion root
+     * @return timeline DTO with both payloads set and {@code parentDiscussionId} pointing at the parent
+     */
+    public UserDiscussionData storeReplyMixedDiscussion(UserAccount user, ClimbingProblem problem,
+                                                        DiscussionContentReplyRequest request, DiscussionRoot parentRoot){
+        DiscussionRoot replyRoot = discussionRootManager.createReplyDiscussionRoot(user, problem, DiscussionType.MIXED,
+                parentRoot);
+        discussionCommentManager.storeDiscussionComment(replyRoot, request.commentInfo());
+        solutionBetaManager.storeUserSolutionBeta(replyRoot, request.objectFileName(), request.videoURL());
+        return convertDiscussionData(replyRoot, request.commentInfo(), request.videoURL());
     }
 
     /**
@@ -250,7 +265,8 @@ public class ClimbingProblemDiscussionManager {
                 parentId,
                 comment.getCommentInfo(),
                 null,
-                comment.getCreateDate()
+                comment.getCreateDate(),
+                false
         );
     }
 
@@ -265,7 +281,8 @@ public class ClimbingProblemDiscussionManager {
                 parentId,
                 null,
                 beta.getVideoURL(),
-                beta.getCreateDate()
+                beta.getCreateDate(),
+                false
         );
     }
 
@@ -281,7 +298,8 @@ public class ClimbingProblemDiscussionManager {
                 parentId,
                 comment.getCommentInfo(),
                 beta.getVideoURL(),
-                root.getCreatedAt()
+                root.getCreatedAt(),
+                false
         );
     }
 
@@ -292,5 +310,37 @@ public class ClimbingProblemDiscussionManager {
             );
         }
         return parent;
+    }
+
+    private UserDiscussionData convertDiscussionData(DiscussionRoot root, String comment, String videoURL){
+        Long parentId = root.getParent() == null ? null : root.getParent().getDiscussionId();
+        return new UserDiscussionData(
+                root.getDiscussionId(),
+                root.getUserAccount().getId(),
+                root.getUserAccount().getUsername(),
+                parentId,
+                comment,
+                videoURL,
+                root.getCreatedAt(),
+                false
+        );
+    }
+
+    private UserDiscussionData getSoftDeletedData(DiscussionRoot root){
+        Long parentId = root.getParent() == null ? null : root.getParent().getDiscussionId();
+        UserAccount author = root.getUserAccount();
+        UserAccount deletedBy = root.getDeletedBy();
+        String comment = Objects.equals(author, deletedBy)? "The discussion had been deleted by the author." :
+                "The discussion had been deleted by one of the admin.";
+        return new UserDiscussionData(
+                root.getDiscussionId(),
+                null,
+                null,
+                parentId,
+                comment,
+                null,
+                root.getDeletedAt(),
+                true
+        );
     }
 }

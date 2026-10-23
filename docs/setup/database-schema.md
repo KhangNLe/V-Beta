@@ -322,6 +322,8 @@ Expected:
 - `APPEAL_SUBMITTED`
 - `CONTENT_RESTORED`
 - `APPEAL_DENIED`
+- `REPORT_APPROVED`
+- `DISCUSSION_REPLY`
 
 ### Relationship summary
 
@@ -330,7 +332,7 @@ User_Account ──reports──► Report ──category──► Report_Catego
                               │
                               ├──► Appeal
                               ├──► Moderation_Action
-                              └──► Events (often target_type = REPORT)
+                              └──► Events (report targets, or DISCUSSION for reply notifications)
                                         │
                                         └──► Notification (recipient)
 ```
@@ -422,7 +424,7 @@ Keep `pg-v-beta.sql` and `v_beta_test_schema.sql` aligned when changing image co
   - `Gym_Role.role_type` as `NOT NULL`
   - composite primary key on `Role_Permission (role_id, action_id)`
   - `Discussion_Root` with:
-    - nullable `parent_discussion_id` (self-FK reserved for Sprint 7 replies)
+    - nullable `parent_discussion_id` (self-FK for discussion replies)
     - `discussion_type` backed by PostgreSQL enum `discussion_kind` (`COMMENT`, `BETA`, `MIXED`)
     - `create_at` timestamp used by runtime entity mapping
     - nullable soft-delete columns `deleted_by`, `deleted_reason`, `deleted_at`

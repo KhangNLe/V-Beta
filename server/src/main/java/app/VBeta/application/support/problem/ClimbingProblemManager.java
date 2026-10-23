@@ -115,6 +115,7 @@ public class ClimbingProblemManager {
      */
     public void archiveActiveProblems(List<ClimbingProblem> problems){
         problems.forEach(p -> p.setProblemStatus(LifecycleStatus.ARCHIVE));
+        problems.forEach(this::removeArchiveImage);
         climbingProblemRepository.saveAll(problems);
     }
 
@@ -193,6 +194,13 @@ public class ClimbingProblemManager {
     public void removeProblemImage(ClimbingProblem problem){
         problem.setProblemImageUrl(null);
         problem.setObjectImageName(null);
+        climbingProblemRepository.save(problem);
+    }
+
+    private void removeArchiveImage(ClimbingProblem problem){
+        cloudStorageManager.deleteStorageObject(problem.getObjectImageName());
+        problem.setObjectImageName(null);
+        problem.setProblemImageUrl(null);
         climbingProblemRepository.save(problem);
     }
 

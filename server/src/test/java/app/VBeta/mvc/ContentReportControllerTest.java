@@ -270,7 +270,8 @@ public class ContentReportControllerTest {
                         null,
                         "hello",
                         null,
-                        LocalDateTime.of(2026, 8, 16, 10, 0)
+                        LocalDateTime.of(2026, 8, 16, 10, 0),
+                        false
                 ),
                 null,
                 null,

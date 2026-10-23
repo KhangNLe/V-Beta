@@ -75,7 +75,8 @@ public class ModerationControllerTest {
                                 null,
                                 "This is a spam comment",
                                 null,
-                                LocalDateTime.now()
+                                LocalDateTime.now(),
+                                false
                         ),
                         null,
                         null,
@@ -288,7 +289,8 @@ public class ModerationControllerTest {
                                 null,
                                 "This is a spam comment",
                                 null,
-                                LocalDateTime.now()
+                                LocalDateTime.now(),
+                                false
                         ),
                         null,
                         null,

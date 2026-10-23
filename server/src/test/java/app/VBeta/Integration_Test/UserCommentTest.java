@@ -200,7 +200,7 @@ public class UserCommentTest {
                 .findFirst();
 
         assertTrue(created.isPresent());
-        assertNull(created.get().parentCommentId());
+        assertNull(created.get().parentDiscussionId());
     }
 
     @Test
@@ -218,7 +218,7 @@ public class UserCommentTest {
         assertEquals(0, countVisibleCommentsForUserProblem(userAccount, problem.getId()));
         assertDiscussionSoftDeleted(deletionRequest.discussionId(), userAccount, USER_DELETED_OWN_DISCUSSION);
         assertCommentRowStillPresent(deletionRequest.discussionId());
-        assertFalse(timelineContainsDiscussion(problem, deletionRequest.discussionId()));
+        assertTrue(timelineContainsDeletedDiscussion(problem, deletionRequest.discussionId()));
     }
 
     @Test
@@ -239,7 +239,7 @@ public class UserCommentTest {
         assertEquals(0, countVisibleCommentsForUserProblem(authorUserAccount, problem.getId()));
         assertDiscussionSoftDeleted(deletionRequest.discussionId(), adminAccount, ADMIN_FORCED_DELETE_DISCUSSION);
         assertCommentRowStillPresent(deletionRequest.discussionId());
-        assertFalse(timelineContainsDiscussion(problem, deletionRequest.discussionId()));
+        assertTrue(timelineContainsDeletedDiscussion(problem, deletionRequest.discussionId()));
     }
 
     @Test
@@ -416,8 +416,8 @@ public class UserCommentTest {
         assertDiscussionSoftDeleted(requestA.discussionId(), author, USER_DELETED_OWN_DISCUSSION);
         assertCommentRowStillPresent(requestA.discussionId());
         assertCommentRowStillPresent(requestB.discussionId());
-        assertFalse(timelineContainsDiscussion(problem, requestA.discussionId()));
-        assertTrue(timelineContainsDiscussion(problem, requestB.discussionId()));
+        assertTrue(timelineContainsDeletedDiscussion(problem, requestA.discussionId()));
+        assertFalse(timelineContainsDeletedDiscussion(problem, requestB.discussionId()));
     }
 
     private CommentDeletionRequest generateCommentForDeletion(String firebaseUid, Long problemId){
@@ -509,9 +509,9 @@ public class UserCommentTest {
         assertTrue(discussionCommentRepository.findByDiscussionRoot(root).isPresent());
     }
 
-    private boolean timelineContainsDiscussion(ClimbingProblem problem, Long discussionId) {
+    private boolean timelineContainsDeletedDiscussion(ClimbingProblem problem, Long discussionId) {
         return climbingProblemDiscussionManager.getCommentsForProblem(problem).stream()
-                .anyMatch(item -> item.discussionId().equals(discussionId));
+                .anyMatch(item -> item.discussionId().equals(discussionId) && item.isDeleted());
     }
 
     private Long findLatestCommentDiscussionId(UserAccount userAccount, Long problemId) {

@@ -1,7 +1,9 @@
 package app.VBeta.application.support.events;
 
+import app.VBeta.domain.model.discussions.DiscussionRoot;
 import app.VBeta.domain.model.moderation.ModerationAction;
 import app.VBeta.domain.model.notification.EventTargetType;
+import app.VBeta.domain.model.notification.EventType;
 import app.VBeta.domain.model.notification.EventTypeName;
 import app.VBeta.domain.model.notification.Events;
 import app.VBeta.domain.model.report.Report;
@@ -96,15 +98,38 @@ public class EventsManager {
      */
     public Events createModeratedReportEvent(Report report, EventTypeName eventTypeName, ModerationAction decision) {
         return eventsRepository.save(Events.builder()
-                .eventType(
-                        eventTypeRepository.findByEventTypeName(eventTypeName)
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                        String.format("%s event type does not exist", eventTypeName)))
-                )
+                .eventType(getEventType(eventTypeName))
                 .actorUser(decision.getAdminUser())
                 .targetType(EventTargetType.REPORT)
                 .report(report)
                 .build()
         );
+    }
+
+    /**
+     * Records a discussion-targeted event for a reply notification.
+     * <p>
+     * Typical {@code eventTypeName} is {@link EventTypeName#DISCUSSION_REPLY}. The event
+     * actor is the replier; the target is the newly created reply discussion root.
+     *
+     * @param fromUser user who wrote the reply (event actor)
+     * @param discussionRoot reply discussion root used as the event target
+     * @param eventTypeName seeded event kind to record
+     * @return saved event
+     * @throws IllegalArgumentException when the event type is missing from the catalog
+     */
+    public Events createDiscussionReplyEvent(UserAccount fromUser, DiscussionRoot discussionRoot, EventTypeName eventTypeName){
+        return eventsRepository.save(Events.builder()
+                .eventType(getEventType(eventTypeName))
+                .actorUser(fromUser)
+                .targetType(EventTargetType.DISCUSSION)
+                .discussion(discussionRoot)
+                .build());
+    }
+
+    private EventType getEventType(EventTypeName eventTypeName){
+        return eventTypeRepository.findByEventTypeName(eventTypeName)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("%s event type does not exist", eventTypeName)));
     }
 }

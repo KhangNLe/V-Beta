@@ -89,18 +89,25 @@ See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
 ### Discussion Flow
 
 1. Authenticated user opens a problem.
-2. User can post a comment.
-3. User can upload a beta video and save metadata.
+2. User can post a comment, a beta video, or a mixed comment+video post.
+3. Authenticated users can reply to a discussion (top-level or another reply) via `POST /api/discussion/discussion/reply` with comment, beta, or mixed content.
 4. User can submit perceived grade.
-5. Comment/solution beta **soft-delete** is allowed for owner or admin (when checks pass). Deleted items disappear from the problem timeline after refresh.
-6. Signed-in users who do **not** own the discussion can open **Report** from the ⋮ menu, choose a category, enter a reason (required, max 250 characters), and submit. Guests do not see the menu. Owners see Delete only (self-report is rejected by the API).
+5. Comment/solution beta/mixed **soft-delete** is allowed for owner or admin (when checks pass). Soft-deleted roots **remain on the problem timeline** as placeholders (`isDeleted = true`) with a removal message; original comment/video content is cleared in the DTO. Reply / Report / Delete actions are hidden on placeholders. New replies to a soft-deleted parent are still rejected by the API.
+6. Signed-in users who do **not** own the discussion can open **Report** from the ⋮ menu, choose a category, enter a reason (required, max 250 characters), and submit. Guests do not see the menu. Owners see Delete only (self-report is rejected by the API). Report/soft-delete/appeal apply to reply roots the same way as top-level posts.
 
 Current discussion payload contract is unified through `DiscussionRoot` metadata:
 
-- Discussion entries include `discussionId`, nullable `comment`, and nullable `videoURL` (kind inferred from which payloads are set; mixed posts have both).
+- Discussion entries include `discussionId`, nullable `parentDiscussionId`, nullable `comment`, nullable `videoURL`, and `isDeleted` (kind inferred from which payloads are set; mixed posts have both).
+- Replies set `parentDiscussionId` to the parent root; top-level posts leave it null.
+- Soft-deleted timeline placeholders set `isDeleted = true`, null `userId` / `username` / `videoURL`, and a placeholder `comment`:
+  - `"The discussion had been deleted by the author."` when `deleted_by` matches the author
+  - `"The discussion had been deleted by one of the admin."` otherwise
+- A reply from someone else creates a `DISCUSSION_REPLY` inbox notification for the parent author (self-replies are skipped). Inbox clicks use `click.kind = PROBLEM_DISCUSSION` and deep-link to `?discussionId=` on the problem page.
 - Deletion payloads for both comments and solution betas include `discussionId` and a reason string (max 100).
 - Comment deletes send `deletedReason`; beta deletes send `deleteReason`.
 - The problem page currently sends `"User deleted their own discussion"` for owner deletes and `"Admin forced delete the discussion"` when an admin deletes another user's item.
+
+Problem-page reply UI is wired: signed-in users can reply (comment / beta / mixed) via the inline composer; replies nest under `parentDiscussionId`.
 
 ## Permissions and Visibility
 
@@ -129,6 +136,8 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
     - `v-beta/src/api/reports.js`
     - `v-beta/src/lib/discussionDeletion.js`
 - Backend controllers/services:
+    - `server/src/main/java/app/VBeta/controller/ProblemDiscussionController.java`
+    - `server/src/main/java/app/VBeta/application/DiscussionReplyService.java`
     - `server/src/main/java/app/VBeta/controller/SocialMediaController.java`
     - `server/src/main/java/app/VBeta/application/ImageService.java`
     - `server/src/main/java/app/VBeta/application/support/cloud/CloudStorageManager.java`
@@ -141,7 +150,7 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 
 ## Limitations and Notes
 
-- Comment/beta delete is a soft delete: discussion root metadata is marked deleted; comment text, beta metadata, and GCS objects stay. Appeal **Approve** restores the discussion; delayed GCS purge is still future work.
+- Comment/beta delete is a soft delete: discussion root metadata is marked deleted; comment/beta child rows and GCS objects stay. Timelines keep a placeholder row (`isDeleted`) instead of removing the post. Appeal **Approve** restores the discussion; delayed GCS purge is still future work.
 - Problem delete is `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`.
 - Wall reset is `PATCH /api/home/wall-section/{wallSectionId}/reset`.
 - UI gating and backend authorization should both be revalidated when role logic changes.
@@ -151,7 +160,7 @@ Current discussion payload contract is unified through `DiscussionRoot` metadata
 - Discovery grade-range endpoints use `/api/search/{wallSectionId}?min=&max=&sort=`.
 - CORS allows `/api/**` for the frontend origin (covers `/api/home/**` and `/api/search/**`).
 - Keyword/text search is deferred to a later sprint (roadmap Sprint 11); Sprint 4 discovery (grade filter/sort) is complete.
-- Comments and solution betas are separate posts. Sprint 7 will let one discussion include a comment and a video beta, allow replies, and notify the author in-app when someone replies.
+- Unified discussion (Sprint 7): one post can include comment text, a beta video, or both; replies and in-app `DISCUSSION_REPLY` notifications are supported on the problem page; soft-deleted roots stay as `isDeleted` placeholders.
 - Wall and problem read DTOs expose nullable `imageURL`. A null wall `imageURL` displays `/co-op.png`. A null problem `imageURL` displays `/problem-holder.jpg`. See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
 
 ## Future Enhancements

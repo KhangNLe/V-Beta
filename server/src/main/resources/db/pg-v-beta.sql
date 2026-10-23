@@ -399,4 +399,5 @@ INSERT INTO Event_Type (event_type_name, description) VALUES
     ('APPEAL_SUBMITTED', 'A content owner appeal a removal'),
     ('CONTENT_RESTORED', 'An admin restored your content after appeal'),
     ('APPEAL_DENIED', 'An admin denied the appeal'),
-	('CONTENT_REMOVED', 'One of your content had been reported and removed.');
+	('CONTENT_REMOVED', 'One of your content had been reported and removed.'),
+    ('DISCUSSION_REPLY', 'Someone replied to a discussion post that you made.');

@@ -23,13 +23,14 @@ Errors come from three main layers:
   - Non-numeric `offset` on `GET /api/notification/all`
   - `offSetPlace <= 0` on `GET /api/moderate/logbook`
   - Wall/problem write `RuntimeException`s (create/delete/reset), including authorization failures on those routes
+  - `POST /api/discussion/discussion/reply` business-rule failures (`IllegalArgumentException`: incomplete payload, mismatched parent metadata, duplicate reply)
 - **401 Unauthorized**
   - Missing/invalid bearer token for protected routes (Spring Security or `FirebaseAuthFilter`)
   - Missing auth context on `POST /api/accounts/session`
   - `GET /api/notification/short` when auth/account lookup throws `RuntimeException`
 - **404 Not Found**
   - Referenced resource not found (wall/problem/comment/beta/account/report/notification targets)
-  - Most other controller `RuntimeException`s, including action-gated authorization failures, duplicate report creates, unauthorized discussion deletes, deleting an already-deleted discussion, `GET /api/notification/all` failures, and `PATCH /api/notification/short` failures
+  - Most other controller `RuntimeException`s, including action-gated authorization failures, duplicate report creates, unauthorized discussion deletes, deleting an already-deleted discussion, missing/deleted reply parent, `GET /api/notification/all` failures, and `PATCH /api/notification/short` failures
 - **500 Internal Server Error**
   - Unhandled exceptions or infrastructure failures (storage/DB/internal service issues)
 

@@ -121,12 +121,13 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
 - `discussionId`
 - `userId`
 - `username`
-- `parentCommentId` (nullable; reserved for replies)
-- `comment` (nullable text payload)
-- `videoURL` (nullable public beta URL)
-- `createdDate`
+- `parentDiscussionId` (nullable; set for replies to another discussion root)
+- `comment` (nullable text payload; soft-deleted rows use a placeholder message)
+- `videoURL` (nullable public beta URL; null on soft-deleted placeholders)
+- `createdDate` (for soft-deleted placeholders, this is `deleted_at`)
+- `isDeleted` (`true` for soft-deleted timeline placeholders; `false` otherwise)
 
-Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the root).
+Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the root). Top-level posts have `parentDiscussionId = null`; replies point at the parent root. Soft-deleted roots stay on the problem timeline as placeholders so reply threads keep their parent anchors; new replies to a soft-deleted parent are still rejected.
 
 - `POST /api/discussion/add-comments`
   - Purpose: add a text-only comment to a problem (`DiscussionType.COMMENT`).
@@ -166,8 +167,23 @@ Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the
   - Response: `201` with `UserDiscussionData` (`comment` and `videoURL` both set).
   - Creates one `Discussion_Root` plus both `Discussion_Comment` and `Solution_Beta` child rows.
 
+- `POST /api/discussion/discussion/reply`
+  - Purpose: reply to an existing discussion (top-level or another reply) with comment-only, beta-only, or mixed content.
+  - Auth: authenticated (not action-gated). Guests cannot call successfully.
+  - Request body (`DiscussionContentReplyRequest`):
+    - `parentDiscussionId` (required)
+    - `problemId` (required; must match the parent discussion's problem)
+    - `replyToId` (required; must match the parent discussion's author user id)
+    - `commentInfo` (optional, max 250)
+    - `objectFileName` (optional, max 250; required together with `videoURL` for beta/mixed)
+    - `videoURL` (optional, max 250; required together with `objectFileName` for beta/mixed)
+  - Content rules: at least one kind required; video fields must be supplied as a pair; duplicate identical replies by the same user under the same parent are rejected.
+  - Side effect: writes a `DISCUSSION_REPLY` inbox notification to the parent author unless the replier is that author.
+  - Response: `201` with `UserDiscussionData` (`parentDiscussionId` set).
+  - Errors: `400` for validation / incomplete / mismatched / duplicate payloads (`IllegalArgumentException`); `404` for missing auth, unknown user, inactive problem, or missing/deleted parent.
+
 - `DELETE /api/discussion/discussion-content`
-  - Purpose: **soft-delete** a mixed discussion. The `Discussion_Root` row stays; comment/beta child rows and GCS object are kept.
+  - Purpose: **soft-delete** a mixed discussion. The `Discussion_Root` row stays; comment/beta child rows and GCS object are kept. Problem timelines keep a placeholder (`isDeleted = true`).
   - Request body (`DiscussionContentDeletionRequest`):
     - `authorId`
     - `discussionId`
@@ -179,7 +195,7 @@ Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the
   - Response: `200` (empty body).
 
 - `DELETE /api/discussion/solution-beta`
-  - Purpose: **soft-delete** a video-only solution beta discussion. The `Discussion_Root` row stays; child `Solution_Beta` metadata and GCS object are kept. Problem timelines omit rows with `deleted_at` set.
+  - Purpose: **soft-delete** a video-only solution beta discussion. The `Discussion_Root` row stays; child `Solution_Beta` metadata and GCS object are kept. Problem timelines keep a placeholder (`isDeleted = true`) instead of omitting the row.
   - Request body:
     - `userId` (discussion author)
     - `problemId`
@@ -282,7 +298,7 @@ Inbox APIs are **authenticated, not action-gated**. Any signed-in role may call 
     - `summary.description` (seeded catalog text; does **not** include the report reason or admin notes)
     - `click` (`NotificationClickDTO`): `kind` plus nullable `reportId` / `wallSectionId` / `problemId` / `discussionId` / `userId`
     - `createdAt`
-  - Click mapping: derived at read time from the event's `target_type` (not a stored href). Current moderation events use `target_type = REPORT`, so `kind` is `REPORT_QUEUE` and `reportId` is set. Other kinds (`PROBLEM_DISCUSSION`, `PROBLEM`, `WALL_SECTION`, `ACCOUNT`) are reserved for later event targets.
+  - Click mapping: derived at read time from the event's `target_type` (not a stored href). Moderation events use `target_type = REPORT`, so `kind` is `REPORT_QUEUE` and `reportId` is set. Discussion reply events use `target_type = DISCUSSION`, so `kind` is `PROBLEM_DISCUSSION` with `wallSectionId`, `problemId`, and `discussionId` (the reply root). Other kinds (`PROBLEM`, `WALL_SECTION`, `ACCOUNT`) remain available for later event targets.
   - Delivery: client polling is sufficient for Sprint 5 (no WebSocket/SSE/FCM). The client builds the frontend path from `click.kind` and the filled ids.
   - Errors:
     - `401` when unauthenticated, the Firebase token is invalid, or no account matches the UID
@@ -397,7 +413,7 @@ There is no mark-all-read endpoint in this slice.
 
 - `DELETE /api/discussion/comment/delete`
   - Required action: `DELETE_COMMENT`
-  - Purpose: **soft-delete** a discussion comment. The `Discussion_Root` row stays; the `Discussion_Comment` child row is kept. Problem timelines omit rows with `deleted_at` set.
+  - Purpose: **soft-delete** a discussion comment. The `Discussion_Root` row stays; the `Discussion_Comment` child row is kept. Problem timelines keep a placeholder (`isDeleted = true`) instead of omitting the row.
   - Request body:
     - `authorId`
     - `problemId`

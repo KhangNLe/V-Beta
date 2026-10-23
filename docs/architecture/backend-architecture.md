@@ -59,7 +59,8 @@ Access model types:
 ## Persistence and Domain
 
 - Main entities include user accounts, roles, wall sections, climbing problems, discussion comments, solution betas, perceived grades, reports, events, and notifications.
-- Discussion comment/beta user deletes are **soft deletes** on `DiscussionRoot` (`deleted_at`, `deleted_by`, `deleted_reason`). Hard `removeDiscussion` remains for cascading problem/account cleanup.
+- Discussion replies attach via `DiscussionRoot.parent` (`parent_discussion_id`) and are orchestrated by `DiscussionReplyService` (`POST /api/discussion/discussion/reply`). Successful replies may emit `DISCUSSION_REPLY` events targeting the reply root.
+- Discussion comment/beta user deletes are **soft deletes** on `DiscussionRoot` (`deleted_at`, `deleted_by`, `deleted_reason`). `ClimbingProblemDiscussionManager.getCommentsForProblem` maps soft-deleted roots to timeline placeholders (`isDeleted = true`) instead of omitting them. Hard `removeDiscussion` remains for cascading problem/account cleanup.
 - JPA schema mode in runtime is `ddl-auto=validate`, so schema must exist and match.
 - Role permission evaluation is data-driven from role/action tables.
 
@@ -89,6 +90,7 @@ Access model types:
   - Service-layer transaction boundaries coordinate multi-step operations.
 - **Error handling**
   - Controllers catch `RuntimeException` and return a mapped status with a plain-text message (typically 404; wall writes 400; unread notification GET `/short` 401; all-inbox GET `/all` 404).
+  - Discussion reply maps `IllegalArgumentException` to **400** and other `RuntimeException`s to **404**.
   - `FirebaseAuthFilter` returns JSON `401` for invalid tokens.
   - `POST /api/accounts/session` still uses `ResponseStatusException` for missing auth.
 
