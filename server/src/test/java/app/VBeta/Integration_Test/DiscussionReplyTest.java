@@ -688,7 +688,8 @@ public class DiscussionReplyTest {
 
         List<UserDiscussionData> timeline = climbingProblemDiscussionManager.getCommentsForProblem(problem);
         assertTrue(timeline.stream().anyMatch(item -> item.discussionId().equals(root.getDiscussionId())));
-        assertTrue(timeline.stream().noneMatch(item -> item.discussionId().equals(reply.discussionId())));
+        assertTrue(timeline.stream().anyMatch(item -> item.discussionId().equals(reply.discussionId())
+        && item.isDeleted()));
     }
 
     @Test

@@ -124,11 +124,18 @@ export async function fetchProblemForUser(user, sectionId, problemId) {
     ) ||
     {};
 
+  const discussion = Array.isArray(data.discussion) ? data.discussion : [];
+
   return {
     ...problemObject,
     perceiveGrade:
       typeof data.perceiveGrade === 'string' ? data.perceiveGrade : '',
-    discussion: Array.isArray(data.discussion) ? data.discussion : [],
+    // Normalize soft-delete flag — Jackson may emit `isDeleted` or `deleted`.
+    discussion: discussion.map((item) => {
+      if (!item || typeof item !== 'object') return item;
+      const isDeleted = item.isDeleted === true || item.deleted === true;
+      return { ...item, isDeleted };
+    }),
   };
 }
 

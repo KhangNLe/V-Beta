@@ -73,7 +73,7 @@ Focus:
 
 - end-to-end service/controller behavior with realistic persistence interactions
 - wall/problem lifecycle operations
-- comment creation/soft-deletion behavior (root stays; timeline hides deleted rows)
+- comment creation/soft-deletion behavior (root stays; timeline keeps `isDeleted` placeholders)
 - solution beta metadata creation/soft-deletion behavior (GCS object is not deleted on user/admin hide)
 - image upload authorization and metadata persistence (`ImageService`, `/api/social/image/*`)
 - discussion timeline/read ordering and deterministic retrieval semantics

@@ -147,6 +147,22 @@ function getDiscussionComment(discussionItem) {
   return typeof value === 'string' ? value : '';
 }
 
+const SOFT_DELETED_DISCUSSION_MESSAGES = new Set([
+  'The discussion had been deleted by the author.',
+  'The discussion had been deleted by one of the admin.',
+]);
+
+/** @param {unknown} discussionItem */
+function isDiscussionDeleted(discussionItem) {
+  if (!discussionItem || typeof discussionItem !== 'object') return false;
+  const discussionRecord = /** @type {Record<string, unknown>} */ (discussionItem);
+  const value = discussionRecord.isDeleted ?? discussionRecord.deleted;
+  if (value === true || value === 'true') return true;
+  // Fallback when older payloads omit the flag but still send the placeholder copy.
+  const comment = discussionRecord.comment;
+  return typeof comment === 'string' && SOFT_DELETED_DISCUSSION_MESSAGES.has(comment);
+}
+
 const PROBLEM_PLACEHOLDER_SRC = "/problem-holder.jpg";
 
 const SUGGESTED_GRADES = [
@@ -780,13 +796,15 @@ function ProblemPageContent() {
     const commentText = getDiscussionComment(comment);
     const mediaUrl = getDiscussionMediaUrl(comment);
     const discussionId = getDiscussionId(comment);
+    const isDeleted = isDiscussionDeleted(comment);
     const isOwner =
       !!currentUserId && !!authorId && currentUserId === authorId;
-    const canDeleteComment = isAdmin || isOwner;
-    const canReportComment = isSignedIn && !isOwner;
+    const canDeleteComment = !isDeleted && (isAdmin || isOwner);
+    const canReportComment = !isDeleted && isSignedIn && !isOwner;
     const showDiscussionMenu =
       isSignedIn && (canDeleteComment || canReportComment);
     const isReplyingHere =
+      !isDeleted &&
       replyTargetId != null &&
       discussionId != null &&
       replyTargetId === discussionId;
@@ -802,11 +820,15 @@ function ProblemPageContent() {
       comment && typeof comment === 'object' && 'username' in comment
         ? /** @type {{ username?: string }} */ (comment).username
         : null;
+    const displayUsername = isDeleted
+      ? 'Removed'
+      : replyAuthorName || 'Anonymous';
 
     return (
       <div key={discussionId || `${depth}-${index}`}>
         <article
           id={discussionId != null ? `discussion-${discussionId}` : undefined}
+          data-deleted={isDeleted ? 'true' : undefined}
           style={{
             padding: depth > 0 ? '12px 16px 12px 0' : '16px',
             marginLeft: depth > 0 ? '8px' : 0,
@@ -821,6 +843,7 @@ function ProblemPageContent() {
             transition:
               'background 0.35s ease, box-shadow 0.35s ease, border-radius 0.35s ease',
             scrollMarginTop: '96px',
+            opacity: isDeleted ? 0.92 : 1,
           }}
         >
           {depth > 0 && (
@@ -852,13 +875,11 @@ function ProblemPageContent() {
                 style={{
                   margin: '0 0 4px',
                   fontWeight: 600,
-                  color: colors.text,
+                  color: isDeleted ? colors.subtle : colors.text,
+                  fontStyle: isDeleted ? 'italic' : 'normal',
                 }}
               >
-                {(comment &&
-                  typeof comment === 'object' &&
-                  /** @type {{ username?: string }} */ (comment).username) ||
-                  'Anonymous'}
+                {displayUsername}
               </p>
             </div>
             <p
@@ -921,15 +942,16 @@ function ProblemPageContent() {
           {commentText && (
             <p
               style={{
-                margin: mediaUrl ? '0 0 8px' : 0,
-                color: colors.text,
+                margin: !isDeleted && mediaUrl ? '0 0 8px' : 0,
+                color: isDeleted ? colors.subtle : colors.text,
                 lineHeight: 1.5,
+                fontStyle: isDeleted ? 'italic' : 'normal',
               }}
             >
               {commentText}
             </p>
           )}
-          {mediaUrl && (
+          {!isDeleted && mediaUrl && (
             <details>
               <summary
                 style={{
@@ -962,7 +984,7 @@ function ProblemPageContent() {
               </div>
             </details>
           )}
-          {isSignedIn && discussionId != null && (
+          {!isDeleted && isSignedIn && discussionId != null && (
             <div
               style={{
                 marginTop: '10px',

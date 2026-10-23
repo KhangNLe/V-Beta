@@ -185,6 +185,29 @@ const replyToOwnerComment = {
   createdDate: "2026-04-26T12:05:00.000Z",
   comment: "Heel hook worked for me",
   videoURL: null,
+  isDeleted: false,
+};
+
+const deletedParentByAuthor = {
+  discussionId: 301,
+  userId: null,
+  username: null,
+  parentDiscussionId: null,
+  createdDate: "2026-04-26T13:00:00.000Z",
+  comment: "The discussion had been deleted by the author.",
+  videoURL: null,
+  isDeleted: true,
+};
+
+const deletedParentByAdmin = {
+  discussionId: 305,
+  userId: null,
+  username: null,
+  parentDiscussionId: null,
+  createdDate: "2026-04-26T14:00:00.000Z",
+  comment: "The discussion had been deleted by one of the admin.",
+  videoURL: null,
+  isDeleted: true,
 };
 
 function renderProblemPage({
@@ -1018,6 +1041,46 @@ describe("ProblemPage coverage", () => {
       const target = document.getElementById("discussion-401");
       expect(target).toBeInTheDocument();
       expect(target.style.boxShadow).toContain("inset");
+    });
+
+    it("shows soft-deleted discussions with the backend removal message and no actions", async () => {
+      renderProblemPage({
+        account: { id: 999, roleName: "CLIMBER" },
+        problem: {
+          ...baseProblem,
+          discussion: [
+            deletedParentByAuthor,
+            {
+              ...replyToOwnerComment,
+              parentDiscussionId: 301,
+            },
+            deletedParentByAdmin,
+          ],
+        },
+      });
+
+      expect(
+        await screen.findByText("The discussion had been deleted by the author."),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("The discussion had been deleted by one of the admin."),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Heel hook worked for me")).toBeInTheDocument();
+      expect(screen.getAllByText("Removed")).toHaveLength(2);
+
+      const deletedRoot = document.getElementById("discussion-301");
+      const deletedAdmin = document.getElementById("discussion-305");
+      expect(deletedRoot).toHaveAttribute("data-deleted", "true");
+      expect(deletedAdmin).toHaveAttribute("data-deleted", "true");
+      expect(
+        deletedRoot.querySelector('[aria-label="Comment actions"]'),
+      ).toBeNull();
+      expect(
+        deletedAdmin.querySelector('[aria-label="Comment actions"]'),
+      ).toBeNull();
+      // Reply / menu only on the active child reply, not on deleted placeholders.
+      expect(screen.getAllByRole("button", { name: "Reply" })).toHaveLength(1);
+      expect(screen.getAllByLabelText("Comment actions")).toHaveLength(1);
     });
   });
 });

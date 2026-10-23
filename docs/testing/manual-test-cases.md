@@ -135,10 +135,10 @@ This document defines the manual regression checklist for validating core user f
   3. As another non-admin user, attempt deleting other user comment
   4. As admin, delete another user comment
 - Expected:
-  - owner delete succeeds and the comment disappears from the problem timeline
+  - owner delete succeeds and the comment remains as a timeline placeholder (`isDeleted`) with `"The discussion had been deleted by the author."`
   - non-owner non-admin delete is blocked
-  - admin delete succeeds and the comment disappears from the problem timeline
-  - the discussion root remains (soft delete); owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
+  - admin delete succeeds and the comment remains as a timeline placeholder with `"The discussion had been deleted by one of the admin."`
+  - placeholder rows hide Reply / Report / Delete; the discussion root remains (soft delete); owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
 
 ### DISC-02: Solution Beta Upload/Delete
 
@@ -151,7 +151,7 @@ This document defines the manual regression checklist for validating core user f
   - signed URL/upload/save flow succeeds (`POST /api/discussion/solution-beta/save`)
   - beta entry is visible after refresh
   - owner/admin deletion rules are enforced
-  - deleted betas disappear from the timeline; video metadata/GCS object is not immediately removed
+  - deleted betas remain as timeline placeholders (`isDeleted`, no Watch Beta); video metadata/GCS object is not immediately removed
   - owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
 
 ### DISC-02b: Mixed Comment + Beta Post/Delete
@@ -164,21 +164,22 @@ This document defines the manual regression checklist for validating core user f
 - Expected:
   - signed URL upload then `POST /api/discussion/discussion-content` succeeds
   - soft-delete uses `DELETE /api/discussion/discussion-content` with matching comment + videoURL
-  - post disappears from the timeline; comment/beta child rows and GCS object remain
+  - post remains as a timeline placeholder (`isDeleted`); comment/beta child rows and GCS object remain
 
-### DISC-02c: Discussion Reply + Reply Notification (API)
+### DISC-02c: Discussion Reply + Reply Notification (UI + API)
 
 - Steps:
   1. As user A, create a top-level comment/mixed/beta on a problem
-  2. As user B, call `POST /api/discussion/discussion/reply` with `parentDiscussionId`, matching `problemId` / `replyToId`, and comment-only content
-  3. Confirm user A unread inbox includes `DISCUSSION_REPLY` with `click.kind = PROBLEM_DISCUSSION`
-  4. As user A, reply to user B's reply; confirm user B is notified and user A is not notified for a later self-reply on their own root
-  5. Retry reply to a soft-deleted parent and a duplicate identical reply
+  2. As user B, open the problem page, click **Reply**, and post a comment-only reply (or call `POST /api/discussion/discussion/reply`)
+  3. Confirm the reply nests under the parent and user A unread inbox includes `DISCUSSION_REPLY` with `click.kind = PROBLEM_DISCUSSION`
+  4. As user A, open the notification and confirm the problem page scrolls/highlights the reply
+  5. Soft-delete the parent; confirm it stays as a placeholder and child replies remain nested
+  6. Retry reply to the soft-deleted parent and a duplicate identical reply
 - Expected:
-  - reply create returns `201` with `parentDiscussionId` set
+  - reply create returns `201` with `parentDiscussionId` set (UI uses `postDiscussionReply`)
   - parent author (not self) receives one unread `DISCUSSION_REPLY` row
-  - soft-deleted parent and duplicate identical reply are rejected (`404` / `400`)
-  - report and soft-delete still work against the reply root
+  - soft-deleted parent shows placeholder copy; new replies to it and duplicate identical replies are rejected (`404` / `400`)
+  - report and soft-delete still work against active reply roots
 
 ### DISC-03: Suggest Perceived Grade
 

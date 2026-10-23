@@ -80,7 +80,8 @@ public class ProblemDiscussionControllerTest {
                 null,
                 "Nice",
                 null,
-                LocalDateTime.of(2026, 5, 7, 14, 0)
+                LocalDateTime.of(2026, 5, 7, 14, 0),
+                null
         );
     }
 
@@ -185,7 +186,8 @@ public class ProblemDiscussionControllerTest {
                 .thenReturn(new UserDiscussionData(
                         402L, 1L, "test-user", null, null,
                         "https://storage.googleapis.com/bucket/video.mp4",
-                        LocalDateTime.of(2026, 4, 20, 20, 2)
+                        LocalDateTime.of(2026, 4, 20, 20, 2),
+                        false
                 ));
 
         SolutionBetaCreateRequest request = new SolutionBetaCreateRequest(
@@ -269,7 +271,8 @@ public class ProblemDiscussionControllerTest {
                 .thenReturn(new UserDiscussionData(
                         503L, 1L, "test-user", null, "Heel hook on the left",
                         "https://storage.googleapis.com/bucket/video.mp4",
-                        LocalDateTime.of(2026, 10, 14, 15, 0)
+                        LocalDateTime.of(2026, 10, 14, 15, 0),
+                        false
                 ));
 
         DiscussionContentRequest request = new DiscussionContentRequest(
@@ -388,7 +391,7 @@ public class ProblemDiscussionControllerTest {
         when(discussionReplyService.storeUserReply(eq("testFirebaseUid"), any(DiscussionContentReplyRequest.class)))
                 .thenReturn(new UserDiscussionData(
                         601L, 2L, "reply-user", 503L, "Very insightful comment dawg",
-                        null, LocalDateTime.of(2026, 10, 20, 18, 0)
+                        null, LocalDateTime.of(2026, 10, 20, 18, 0), false
                 ));
 
         DiscussionContentReplyRequest request = new DiscussionContentReplyRequest(
@@ -414,7 +417,7 @@ public class ProblemDiscussionControllerTest {
                 .thenReturn(new UserDiscussionData(
                         602L, 2L, "reply-user", 503L, null,
                         "https://storage.googleapis.com/bucket/reply.mp4",
-                        LocalDateTime.of(2026, 10, 20, 18, 5)
+                        LocalDateTime.of(2026, 10, 20, 18, 5), false
                 ));
 
         DiscussionContentReplyRequest request = new DiscussionContentReplyRequest(
@@ -440,7 +443,7 @@ public class ProblemDiscussionControllerTest {
                 .thenReturn(new UserDiscussionData(
                         603L, 2L, "reply-user", 503L, "Here is another way of doing it",
                         "https://storage.googleapis.com/bucket/mixed-reply.mp4",
-                        LocalDateTime.of(2026, 10, 20, 18, 10)
+                        LocalDateTime.of(2026, 10, 20, 18, 10), false
                 ));
 
         DiscussionContentReplyRequest request = new DiscussionContentReplyRequest(

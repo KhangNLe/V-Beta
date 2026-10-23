@@ -136,17 +136,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Add a centralized global exception handler in the server using Spring `@RestControllerAdvice` and enforce a standardized error message format across all server endpoints (for example: `code`, `message`, `status`, `path`, `timestamp`).
 - **Dependencies:** Exception mapping strategy, standardized error payload contract, and frontend/API client error parsing updates.
 
-### 15) Problem-Page Reply Composer and Threaded Timeline UI
-
-- **Priority:** High
-- **Effort:** Medium
-- **Area:** Discussion Architecture / User Experience
-- **Target sprint:** Sprint 7
-- **Current Gap:** Backend reply API and `DISCUSSION_REPLY` notifications are available, but the problem page does not yet expose reply actions or render threaded replies from `parentDiscussionId`.
-- **Potential Work:** Wire reply create to `POST /api/discussion/discussion/reply`, show replies under parents on the timeline, and deep-link `PROBLEM_DISCUSSION` inbox clicks to the problem discussion.
-- **Dependencies:** Existing mixed composer, notification inbox navigation, and backend reply contract. Cursor pagination stays in Sprint 9.
-
-### 16) DB-Enforced XOR Integrity for `discussion_root` Children
+### 15) DB-Enforced XOR Integrity for `discussion_root` Children
 
 - **Priority:** High
 - **Effort:** Medium
@@ -155,7 +145,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Deferred. Sprint 7 allows one discussion post to hold both a comment and a beta, so an exclusive comment-or-beta database check would block that sprint.
 - **Dependencies:** Final table design, trigger migration strategy, and integration tests for invalid insert attempts.
 
-### 17) Discussion Reactions (Like/Helpful) for Comments and Betas
+### 16) Discussion Reactions (Like/Helpful) for Comments and Betas
 
 - **Priority:** Medium
 - **Effort:** Medium
@@ -164,7 +154,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Add a `discussion_reaction` table keyed by `discussion_root_id`, reaction type, and user; support counts and user-specific reaction state in APIs.
 - **Dependencies:** Reaction uniqueness constraints, API payload updates, and frontend reaction controls.
 
-### 18) Pinned and Highlighted Discussion Entries per Problem
+### 17) Pinned and Highlighted Discussion Entries per Problem
 
 - **Priority:** Medium
 - **Effort:** Medium
@@ -173,16 +163,16 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Allow setters/admins to pin or highlight `discussion_root` entries, with deterministic ordering (pinned first, then chronological).
 - **Dependencies:** Moderation permissions, new pin metadata, and timeline sort contract changes.
 
-### 19) Restore and Delayed Purge for Soft-Deleted Discussions
+### 18) Delayed Purge for Soft-Deleted Discussions
 
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** Moderation / Safety
-- **Current Gap:** Appeal **Approve** restores a soft-deleted discussion (`deleted_at` / `deleted_by` / `deleted_reason` cleared). GCS/beta objects are not purged after a retention window.
+- **Current Gap:** Soft-deleted discussions already stay on the timeline as placeholders, and Appeal **Approve** restores content. GCS/beta objects are not purged after a retention window.
 - **Potential Work:** Scheduled 30-day purge of GCS objects keyed off `deleted_at` (not upload time).
 - **Dependencies:** Idempotent GCS delete and a retention job.
 
-### 20) Cursor Pagination and Feed Performance for Problem Discussions
+### 19) Cursor Pagination and Feed Performance for Problem Discussions
 
 - **Priority:** High
 - **Effort:** Large
@@ -192,7 +182,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Implement cursor-based pagination on `discussion_root` (for example by `created_at` + `id`) and extend mixed comment/beta feed retrieval for infinite-scroll UX.
 - **Dependencies:** Pagination API contract, frontend infinite-scroll support, and continuation-token semantics.
 
-### 21) Edit History for Discussion Content
+### 20) Edit History for Discussion Content
 
 - **Priority:** Low
 - **Effort:** Medium
@@ -201,7 +191,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Potential Work:** Add immutable edit history records for `discussion_comment` text changes and `solution_beta` metadata updates, including editor identity and timestamps.
 - **Dependencies:** History tables, policy decisions on visible history, and API/UI support for "edited" indicators.
 
-### 22) Server-Side Caching for High-Read Endpoints
+### 21) Server-Side Caching for High-Read Endpoints
 
 - **Priority:** High
 - **Effort:** Medium
@@ -212,5 +202,6 @@ This document tracks ideas that are not fully implemented in the current release
 
 ## Change Log
 
-- 2026-08-30: Moved Sprint 5 moderation/report backlog (#3, #6) to `completed-features-archive.md`. Restored discussion content via appeal approve is shipped; #19 remains delayed GCS purge. Admin reports/logbook on #12 are shipped; remaining work is a developer event log.
+- 2026-10-22: Removed completed Problem-Page Reply UI backlog item; soft-delete timeline placeholders are shipped. Delayed GCS purge remains (#18). Renumbered following items.
+- 2026-08-30: Moved Sprint 5 moderation/report backlog (#3, #6) to `completed-features-archive.md`. Restored discussion content via appeal approve is shipped; delayed GCS purge remains. Admin reports/logbook on #12 are shipped; remaining work is a developer event log.
 - Keep this section updated when priorities change or items move to implemented docs.

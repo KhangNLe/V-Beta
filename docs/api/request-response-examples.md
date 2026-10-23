@@ -183,7 +183,8 @@ GET /api/home/wall-sections/1/problems/22
       "parentDiscussionId": null,
       "comment": "Fun movement.",
       "videoURL": null,
-      "createdDate": "2026-04-20T19:00:00"
+      "createdDate": "2026-04-20T19:00:00",
+      "isDeleted": false
     },
     {
       "discussionId": 302,
@@ -192,7 +193,8 @@ GET /api/home/wall-sections/1/problems/22
       "parentDiscussionId": null,
       "comment": null,
       "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-beta_22.mp4",
-      "createdDate": "2026-04-20T20:02:00"
+      "createdDate": "2026-04-20T20:02:00",
+      "isDeleted": false
     },
     {
       "discussionId": 303,
@@ -201,7 +203,18 @@ GET /api/home/wall-sections/1/problems/22
       "parentDiscussionId": null,
       "comment": "Heel hook then match",
       "videoURL": "https://storage.googleapis.com/bucket/wallSection-1/problem-22/uuid-mixed_22.mp4",
-      "createdDate": "2026-04-20T20:15:00"
+      "createdDate": "2026-04-20T20:15:00",
+      "isDeleted": false
+    },
+    {
+      "discussionId": 304,
+      "userId": null,
+      "username": null,
+      "parentDiscussionId": null,
+      "comment": "The discussion had been deleted by the author.",
+      "videoURL": null,
+      "createdDate": "2026-04-20T21:00:00",
+      "isDeleted": true
     }
   ]
 }
@@ -507,7 +520,7 @@ Admin deleting another user's comment uses `"Admin forced delete the discussion"
 
 ### Response (200)
 
-Empty body. Subsequent problem-detail timelines omit this discussion.
+Empty body. Subsequent problem-detail timelines keep this discussion as a placeholder (`isDeleted = true`) with a removal message; original comment text is not returned.
 
 ## 9.2) Soft-Delete Solution Beta
 
@@ -535,7 +548,7 @@ Admin deleting another user's beta uses `"Admin forced delete the discussion"` f
 
 ### Response (200)
 
-Empty body. Subsequent problem-detail timelines omit this discussion.
+Empty body. Subsequent problem-detail timelines keep this discussion as a placeholder (`isDeleted = true`) with a removal message; `videoURL` is not returned on the placeholder.
 
 ## 10) Promote/Demote User Role (Admin)
 

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * {@code ClimbingProblemDiscussionManager} composes a unified discussion timeline for a climbing problem.
@@ -50,7 +51,8 @@ public class ClimbingProblemDiscussionManager {
 
     /**
      * Returns merged comment and beta entries for a climbing problem in chronological order.
-     * Soft-deleted discussion roots ({@code deletedAt != null}) are excluded.
+     * Soft-deleted roots remain as placeholders ({@code isDeleted = true}) so reply threads
+     * keep their parent anchors.
      *
      * @param problem climbing problem context
      * @return visible discussion timeline entries in database order
@@ -60,11 +62,12 @@ public class ClimbingProblemDiscussionManager {
         List<UserDiscussionData> data = new ArrayList<>();
 
         discussionRoots.forEach(root -> {
-            if (root.getDeletedAt() != null) {
-                return;
-            }
+            if (root == null) return;
             UserDiscussionData dataContent = getDiscussionData(root);
-            if (dataContent != null){
+            if (dataContent == null) return;
+            if (root.getDeletedAt() != null) {
+                data.add(getSoftDeletedData(root));
+            } else {
                 data.add(dataContent);
             }
         });
@@ -262,7 +265,8 @@ public class ClimbingProblemDiscussionManager {
                 parentId,
                 comment.getCommentInfo(),
                 null,
-                comment.getCreateDate()
+                comment.getCreateDate(),
+                false
         );
     }
 
@@ -277,7 +281,8 @@ public class ClimbingProblemDiscussionManager {
                 parentId,
                 null,
                 beta.getVideoURL(),
-                beta.getCreateDate()
+                beta.getCreateDate(),
+                false
         );
     }
 
@@ -293,7 +298,8 @@ public class ClimbingProblemDiscussionManager {
                 parentId,
                 comment.getCommentInfo(),
                 beta.getVideoURL(),
-                root.getCreatedAt()
+                root.getCreatedAt(),
+                false
         );
     }
 
@@ -315,7 +321,26 @@ public class ClimbingProblemDiscussionManager {
                 parentId,
                 comment,
                 videoURL,
-                root.getCreatedAt()
+                root.getCreatedAt(),
+                false
+        );
+    }
+
+    private UserDiscussionData getSoftDeletedData(DiscussionRoot root){
+        Long parentId = root.getParent() == null ? null : root.getParent().getDiscussionId();
+        UserAccount author = root.getUserAccount();
+        UserAccount deletedBy = root.getDeletedBy();
+        String comment = Objects.equals(author, deletedBy)? "The discussion had been deleted by the author." :
+                "The discussion had been deleted by one of the admin.";
+        return new UserDiscussionData(
+                root.getDiscussionId(),
+                null,
+                null,
+                parentId,
+                comment,
+                null,
+                root.getDeletedAt(),
+                true
         );
     }
 }

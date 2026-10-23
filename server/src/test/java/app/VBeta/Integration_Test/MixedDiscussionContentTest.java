@@ -153,7 +153,7 @@ public class MixedDiscussionContentTest {
 
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(ACTIVE_PROBLEM_ID);
         assertTrue(climbingProblemDiscussionManager.getCommentsForProblem(problem).stream()
-                .noneMatch(item -> item.discussionId().equals(saved.discussionId())));
+                .anyMatch(item -> item.discussionId().equals(saved.discussionId()) && item.isDeleted()));
     }
 
     @Test
