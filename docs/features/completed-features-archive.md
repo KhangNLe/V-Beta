@@ -99,6 +99,7 @@ Highlights:
 
 - Comment and solution-beta deletes mark `Discussion_Root` with `deleted_at`, `deleted_by`, and `deleted_reason` instead of removing the row.
 - Problem timelines keep soft-deleted discussions as placeholders (`UserDiscussionData.isDeleted = true` with a removal message); comment/beta child rows and GCS objects stay. Appeal approve restores the discussion.
+- Superseded for owner self-deletes by **Owner Hard-Delete for Discussions** below; soft delete now applies to admin deletes of another user's post.
 - Delete requests require a reason (`deletedReason` on comments, `deleteReason` on betas). The problem page currently sends `"User deleted their own discussion"` or `"Admin forced delete the discussion"`.
 
 Related docs:
@@ -258,6 +259,31 @@ Related docs:
 - `docs/architecture/frontend-architecture.md`
 - `docs/architecture/backend-architecture.md`
 - `docs/api/endpoints.md`
+
+## Owner Hard-Delete for Discussions
+
+Status: Completed (backend refactor)
+
+Highlights:
+
+- Comment, solution-beta, and mixed `DELETE` endpoints split by who is deleting:
+  - **Owner deleting their own post:** the root is marked deleted and the `Discussion_Comment` / `Solution_Beta` rows and GCS video object are permanently removed. Self-deletes are not appealable, so nothing is kept.
+  - **Admin deleting another user's post:** soft delete; child rows and GCS object stay for appeal restore.
+- The `Discussion_Root` row is kept in both cases because replies, reports, and appeals reference it. Timelines show the author/admin placeholder for every deleted root, so replies stay nested.
+- Authorship is resolved from the stored root. `authorId` / `userId` in the request no longer decide the path, so an admin cannot trigger an owner hard-delete on another user's post.
+- Account and problem cascade deletion skip deleted roots in the child-row integrity checks, so they succeed after owner self-deletes. A live root missing its child row still fails.
+- Service methods renamed: `softDeleteUserComment` → `deleteUserComment`, `softDeleteUserSolutionBeta` → `deleteUserSolutionBeta`, `softDeleteUserDiscussionContent` → `deleteUserDiscussionContent`. `DiscussionRootManager.findDiscussionRootById` now throws when the root is missing.
+- Covered by `UserCommentTest`, `SolutionBetaCreationDeletionTest`, `MixedDiscussionContentTest`, `DiscussionReplyTest`, `AccountControllerTest`, and `ClimbingProblemModificationTest`.
+
+Related docs:
+
+- `docs/api/endpoints.md`
+- `docs/api/permissions-matrix.md`
+- `docs/api/request-response-examples.md`
+- `docs/architecture/backend-architecture.md`
+- `docs/architecture/data-model.md`
+- `docs/features/wall-and-problems.md`
+- `docs/testing/manual-test-cases.md` (DISC-01 / DISC-02 / DISC-02b / DISC-02d)
 
 ## Moved Out of Future Queue
 

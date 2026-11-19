@@ -60,7 +60,12 @@ Access model types:
 
 - Main entities include user accounts, roles, wall sections, climbing problems, discussion comments, solution betas, perceived grades, reports, events, and notifications.
 - Discussion replies attach via `DiscussionRoot.parent` (`parent_discussion_id`) and are orchestrated by `DiscussionReplyService` (`POST /api/discussion/discussion/reply`). Successful replies may emit `DISCUSSION_REPLY` events targeting the reply root.
-- Discussion comment/beta user deletes are **soft deletes** on `DiscussionRoot` (`deleted_at`, `deleted_by`, `deleted_reason`). `ClimbingProblemDiscussionManager.getCommentsForProblem` maps soft-deleted roots to timeline placeholders (`isDeleted = true`) instead of omitting them. Hard `removeDiscussion` remains for cascading problem/account cleanup.
+- Discussion comment/beta/mixed deletes always mark `DiscussionRoot` deleted (`deleted_at`, `deleted_by`, `deleted_reason`). `ProblemDiscussionService` resolves authorship from the stored root (never the request's `authorId` / `userId`):
+  - **Author self-delete:** `ClimbingProblemDiscussionManager.removeUserComment` / `removeUserSolutionBeta` / `removeUserMixedDiscussion` mark the root deleted and permanently remove the child rows (and the GCS object for betas). The root row stays because replies, reports, and appeals reference it.
+  - **Admin delete of another user's post:** `softDeleteDiscussionRoot` only; child rows and GCS objects are kept for appeal restore.
+- `ClimbingProblemDiscussionManager.getCommentsForProblem` checks `deleted_at` first and maps every deleted root to a timeline placeholder (`isDeleted = true`). `getDiscussionData` returns real content for admin soft-deletes (used by report views) and a placeholder for author self-deletes whose content is gone.
+- Hard `removeDiscussions` remains for cascading problem/account cleanup. The bulk child-row integrity checks in `DiscussionCommentManager` / `SolutionBetaManager` skip deleted roots (self-deletes have no child rows) but still fail when a live root is missing its child row.
+- `DiscussionRootManager.findDiscussionRootById` throws when the root does not exist (it no longer returns `null`).
 - JPA schema mode in runtime is `ddl-auto=validate`, so schema must exist and match.
 - Role permission evaluation is data-driven from role/action tables.
 

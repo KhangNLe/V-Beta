@@ -48,7 +48,8 @@ This document reflects known limitations after Sprint 7 (unified discussion).
 ## Planned Follow-up Areas
 
 - User profile images (left out of Sprint 6; roadmap Sprint 10).
-- Delayed GCS purge of soft-deleted beta objects after a retention window (appeal restore and soft-delete timeline placeholders are already shipped).
+- Delayed GCS purge of admin soft-deleted beta objects after a retention window (appeal restore and timeline placeholders are already shipped; owner self-deletes already remove the object immediately).
+- Owner self-delete removes the GCS video object inside the database transaction, before commit. If a later step fails and the transaction rolls back, the `Solution_Beta` row survives but its video is gone. Moving the storage delete to an after-commit hook would close this gap.
 - Reporting wall sections or problems (Sprint 5 covers comments and betas only).
 - Email/push notification channels (in-app inbox only).
 - Add automated explain/plan sampling for high-traffic discussion queries as dataset size grows.

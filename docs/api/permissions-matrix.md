@@ -35,10 +35,10 @@ All routes below are under `/api`.
 | `POST /api/discussion/solution-beta/save` | No | Yes | Yes | Yes | Authenticated |
 | `POST /api/discussion/discussion-content` | No | Yes | Yes | Yes | Authenticated |
 | `POST /api/discussion/discussion/reply` | No | Yes | Yes | Yes | Authenticated |
-| `DELETE /api/discussion/discussion-content` | No | Depends | Depends | Yes | Authenticated + owner/admin **soft-delete** |
+| `DELETE /api/discussion/discussion-content` | No | Depends | Depends | Yes | Authenticated + owner **hard-delete** / admin **soft-delete** |
 | `POST /api/discussion/problems/{problemId}/suggest-grade` | No | Yes | Yes | Yes | Action-gated (`GRADE_PROBLEM`) |
-| `DELETE /api/discussion/comment/delete` | No | Depends | Depends | Yes | Action-gated (`DELETE_COMMENT`) + owner/admin **soft-delete** |
-| `DELETE /api/discussion/solution-beta` | No | Depends | Depends | Yes | Authenticated + owner/admin **soft-delete** |
+| `DELETE /api/discussion/comment/delete` | No | Depends | Depends | Yes | Action-gated (`DELETE_COMMENT`) + owner **hard-delete** / admin **soft-delete** |
+| `DELETE /api/discussion/solution-beta` | No | Depends | Depends | Yes | Authenticated + owner **hard-delete** / admin **soft-delete** |
 | `GET /api/social/image/signed-url` | No | Depends | Depends | Depends | Authenticated + target-specific (see notes) |
 | `PATCH /api/social/image/upload` | No | Depends | Depends | Depends | Authenticated + target-specific (see notes) |
 | `DELETE /api/social/image/problem` | No | No | Yes | No | Action-gated (`UPLOAD_PROBLEM_IMAGE`) |
@@ -109,4 +109,4 @@ Image upload notes:
 - Appeal notifications: create writes `APPEAL_SUBMITTED` to admins (skipping the appellant). Approve writes `CONTENT_RESTORED` to the owner. Deny writes `APPEAL_DENIED` to the owner. Resolve event actor is the admin.
 - Action-gated `RuntimeException` failures are currently mapped by controllers to **404** (most reads, including report resolve) or **400** (wall/problem writes), not 403.
 - Problem delete is `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`. Wall reset is `PATCH /api/home/wall-section/{wallSectionId}/reset`. Upload URL is `GET /api/discussion/solution-beta/upload-url` with `CloudFileStorageRequest` query params (`@ModelAttribute`), not a JSON body.
-- Comment/beta `DELETE` endpoints **soft-delete** `Discussion_Root` (they do not remove comment/beta child rows or GCS objects). Problem timelines keep soft-deleted roots as `isDeleted` placeholders. Comment requests require `deletedReason`; beta requests require `deleteReason`.
+- Comment/beta/mixed `DELETE` endpoints always mark `Discussion_Root` deleted. When the requester is the stored author, the comment/beta child rows and the GCS object are also permanently removed (self-deletes are not appealable). When an admin deletes another user's post, it is a **soft delete**: child rows and GCS objects are kept for appeal restore. Authorship comes from the stored root, not the request's `authorId` / `userId`. Problem timelines keep deleted roots as `isDeleted` placeholders. Comment requests require `deletedReason`; beta and mixed requests require `deleteReason`.

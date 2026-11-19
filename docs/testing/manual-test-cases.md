@@ -138,7 +138,9 @@ This document defines the manual regression checklist for validating core user f
   - owner delete succeeds and the comment remains as a timeline placeholder (`isDeleted`) with `"The discussion had been deleted by the author."`
   - non-owner non-admin delete is blocked
   - admin delete succeeds and the comment remains as a timeline placeholder with `"The discussion had been deleted by one of the admin."`
-  - placeholder rows hide Reply / Report / Delete; the discussion root remains (soft delete); owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
+  - placeholder rows hide Reply / Report / Delete; the discussion root remains in both cases; owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
+  - owner delete permanently removes the `Discussion_Comment` row (hard delete); admin delete keeps it (soft delete, restorable by appeal)
+  - an admin sending their own id as `authorId` for another user's comment still gets a soft delete (authorship comes from the stored root)
 
 ### DISC-02: Solution Beta Upload/Delete
 
@@ -151,7 +153,8 @@ This document defines the manual regression checklist for validating core user f
   - signed URL/upload/save flow succeeds (`POST /api/discussion/solution-beta/save`)
   - beta entry is visible after refresh
   - owner/admin deletion rules are enforced
-  - deleted betas remain as timeline placeholders (`isDeleted`, no Watch Beta); video metadata/GCS object is not immediately removed
+  - deleted betas remain as timeline placeholders (`isDeleted`, no Watch Beta)
+  - owner delete permanently removes the `Solution_Beta` row and GCS object; admin delete keeps both (soft delete, restorable by appeal)
   - owner reason is `"User deleted their own discussion"`, admin reason is `"Admin forced delete the discussion"`
 
 ### DISC-02b: Mixed Comment + Beta Post/Delete
@@ -163,8 +166,18 @@ This document defines the manual regression checklist for validating core user f
   4. As admin, delete another user's mixed post
 - Expected:
   - signed URL upload then `POST /api/discussion/discussion-content` succeeds
-  - soft-delete uses `DELETE /api/discussion/discussion-content` with matching comment + videoURL
-  - post remains as a timeline placeholder (`isDeleted`); comment/beta child rows and GCS object remain
+  - delete uses `DELETE /api/discussion/discussion-content` with matching comment + videoURL
+  - post remains as a timeline placeholder (`isDeleted`) in both cases
+  - owner delete permanently removes the comment row, beta row, and GCS object; admin delete keeps them (soft delete, restorable by appeal)
+
+### DISC-02d: Account/Problem Deletion After Self-Delete
+
+- Steps:
+  1. As a climber, post a comment, a beta, and a mixed post on a problem, then delete each as the owner
+  2. Delete that climber account (or, as setter, delete the problem)
+- Expected:
+  - account/problem deletion succeeds (self-deleted roots have no child rows and are not treated as integrity errors)
+  - the self-deleted roots are removed along with the account/problem
 
 ### DISC-02c: Discussion Reply + Reply Notification (UI + API)
 
@@ -173,13 +186,13 @@ This document defines the manual regression checklist for validating core user f
   2. As user B, open the problem page, click **Reply**, and post a comment-only reply (or call `POST /api/discussion/discussion/reply`)
   3. Confirm the reply nests under the parent and user A unread inbox includes `DISCUSSION_REPLY` with `click.kind = PROBLEM_DISCUSSION`
   4. As user A, open the notification and confirm the problem page scrolls/highlights the reply
-  5. Soft-delete the parent; confirm it stays as a placeholder and child replies remain nested
-  6. Retry reply to the soft-deleted parent and a duplicate identical reply
+  5. Delete the parent (as owner, then repeat with an admin delete); confirm it stays as a placeholder and child replies remain nested
+  6. Retry reply to the deleted parent and a duplicate identical reply
 - Expected:
   - reply create returns `201` with `parentDiscussionId` set (UI uses `postDiscussionReply`)
   - parent author (not self) receives one unread `DISCUSSION_REPLY` row
-  - soft-deleted parent shows placeholder copy; new replies to it and duplicate identical replies are rejected (`404` / `400`)
-  - report and soft-delete still work against active reply roots
+  - deleted parent (owner hard-delete or admin soft-delete) shows placeholder copy; new replies to it and duplicate identical replies are rejected (`404` / `400`)
+  - report and delete still work against active reply roots
 
 ### DISC-03: Suggest Perceived Grade
 

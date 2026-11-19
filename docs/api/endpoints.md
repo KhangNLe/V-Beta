@@ -122,12 +122,19 @@ Account payloads use `UserAccountDTO`: `userId`, `username`, `email`, `role`. Th
 - `userId`
 - `username`
 - `parentDiscussionId` (nullable; set for replies to another discussion root)
-- `comment` (nullable text payload; soft-deleted rows use a placeholder message)
-- `videoURL` (nullable public beta URL; null on soft-deleted placeholders)
-- `createdDate` (for soft-deleted placeholders, this is `deleted_at`)
-- `isDeleted` (`true` for soft-deleted timeline placeholders; `false` otherwise)
+- `comment` (nullable text payload; deleted rows use a placeholder message)
+- `videoURL` (nullable public beta URL; null on deleted placeholders)
+- `createdDate` (for deleted placeholders, this is `deleted_at`)
+- `isDeleted` (`true` for deleted timeline placeholders, whether author self-delete or admin soft-delete; `false` otherwise)
 
-Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the root). Top-level posts have `parentDiscussionId = null`; replies point at the parent root. Soft-deleted roots stay on the problem timeline as placeholders so reply threads keep their parent anchors; new replies to a soft-deleted parent are still rejected.
+Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the root). Top-level posts have `parentDiscussionId = null`; replies point at the parent root. Deleted roots (author self-delete or admin soft-delete) stay on the problem timeline as placeholders so reply threads keep their parent anchors; new replies to a deleted parent are still rejected.
+
+Discussion delete behavior (comment, beta, and mixed `DELETE` endpoints):
+
+- **Author deleting their own post:** the `Discussion_Root` is marked deleted (`deleted_at` / `deleted_by` / `deleted_reason`) and the child rows are **permanently removed** (`Discussion_Comment`, `Solution_Beta`, and the GCS video object). Self-deletes cannot be appealed, so nothing is kept for restore.
+- **Admin deleting another user's post:** **soft delete** only. The root is marked deleted; child rows and the GCS object are kept so an appeal **Approve** can restore the post.
+- Authorship is resolved from the stored `Discussion_Root` author, not from `authorId` / `userId` in the request body. Those fields are still required by validation, but an admin sending their own id cannot trigger the author hard-delete on someone else's post.
+- The root row itself is never removed by these endpoints because replies, reports, and appeals reference it.
 
 - `POST /api/discussion/add-comments`
   - Purpose: add a text-only comment to a problem (`DiscussionType.COMMENT`).
@@ -183,7 +190,7 @@ Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the
   - Errors: `400` for validation / incomplete / mismatched / duplicate payloads (`IllegalArgumentException`); `404` for missing auth, unknown user, inactive problem, or missing/deleted parent.
 
 - `DELETE /api/discussion/discussion-content`
-  - Purpose: **soft-delete** a mixed discussion. The `Discussion_Root` row stays; comment/beta child rows and GCS object are kept. Problem timelines keep a placeholder (`isDeleted = true`).
+  - Purpose: delete a mixed discussion. Author: root marked deleted and the comment row, beta row, and GCS object are permanently removed. Admin on another user's post: soft delete (child rows and GCS object kept). Problem timelines keep a placeholder (`isDeleted = true`) in both cases.
   - Request body (`DiscussionContentDeletionRequest`):
     - `authorId`
     - `discussionId`
@@ -191,18 +198,18 @@ Kind is inferred from payloads: comment-only, beta-only, or both (`MIXED` on the
     - `commentContent`
     - `videoURL`
     - `deleteReason` (required, max 100)
-  - Additional service rule: requester must be the author or an admin; both payloads must match the stored rows. A second delete of an already-deleted discussion fails.
+  - Additional service rule: requester must be the stored author or an admin; both payloads must match the stored rows. `authorId` is not used to decide authorship. A second delete of an already-deleted discussion fails.
   - Response: `200` (empty body).
 
 - `DELETE /api/discussion/solution-beta`
-  - Purpose: **soft-delete** a video-only solution beta discussion. The `Discussion_Root` row stays; child `Solution_Beta` metadata and GCS object are kept. Problem timelines keep a placeholder (`isDeleted = true`) instead of omitting the row.
+  - Purpose: delete a video-only solution beta discussion. Author: root marked deleted and the `Solution_Beta` row and GCS object are permanently removed. Admin on another user's beta: soft delete (`Solution_Beta` metadata and GCS object kept). Problem timelines keep a placeholder (`isDeleted = true`) in both cases.
   - Request body:
     - `userId` (discussion author)
     - `problemId`
     - `discussionId`
     - `publicUrl`
     - `deleteReason` (required, max 100 characters)
-  - Additional service rule: requester must be the beta owner or an admin. A second delete of an already-deleted discussion fails.
+  - Additional service rule: requester must be the stored beta author or an admin. `userId` is not used to decide authorship. A second delete of an already-deleted discussion fails.
   - Frontend currently sends:
     - `"User deleted their own discussion"` for owner deletes
     - `"Admin forced delete the discussion"` when an admin deletes another user's beta
@@ -413,14 +420,14 @@ There is no mark-all-read endpoint in this slice.
 
 - `DELETE /api/discussion/comment/delete`
   - Required action: `DELETE_COMMENT`
-  - Purpose: **soft-delete** a discussion comment. The `Discussion_Root` row stays; the `Discussion_Comment` child row is kept. Problem timelines keep a placeholder (`isDeleted = true`) instead of omitting the row.
+  - Purpose: delete a discussion comment. Author: root marked deleted and the `Discussion_Comment` row is permanently removed. Admin on another user's comment: soft delete (`Discussion_Comment` row kept). Problem timelines keep a placeholder (`isDeleted = true`) in both cases.
   - Request body:
     - `authorId`
     - `problemId`
     - `discussionId`
     - `commentContent`
     - `deletedReason` (required, max 100 characters)
-  - Additional service rule: requester must be comment owner or admin. A second delete of an already-deleted discussion fails.
+  - Additional service rule: requester must be the stored comment author or an admin. `authorId` is not used to decide authorship. A second delete of an already-deleted discussion fails.
   - Frontend currently sends:
     - `"User deleted their own discussion"` for owner deletes
     - `"Admin forced delete the discussion"` when an admin deletes another user's comment

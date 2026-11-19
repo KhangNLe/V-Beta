@@ -18,7 +18,7 @@ This section documents wall section and climbing problem features currently avai
 - Authenticated discussion actions (comments, beta upload, grade suggestion, content report)
 - iPhone `.mov` beta uploads convert to MP4 (Cloud Run worker) before they are stored for playback; `.mp4` and `.webm` are stored as-is
 - Guest browsing mode with read-only wall/problem access and banner messaging
-- Owner/admin **soft-delete** for comments and solution betas (`Discussion_Root.deleted_at` / `deleted_by` / `deleted_reason`)
+- Owner **hard-delete** and admin **soft-delete** for comments, solution betas, and mixed posts (`Discussion_Root.deleted_at` / `deleted_by` / `deleted_reason` are set in both cases; owner deletes also remove the content rows and video)
 - Signed-in **Report** action on the discussion ⋮ menu (comments and solution betas) via `POST /api/report/create`
 - Backend discovery: filter active problems by inclusive grade range within a wall section
 - Backend discovery: sort filtered problems by assigned grade ascending or descending
@@ -92,20 +92,24 @@ See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
 2. User can post a comment, a beta video, or a mixed comment+video post.
 3. Authenticated users can reply to a discussion (top-level or another reply) via `POST /api/discussion/discussion/reply` with comment, beta, or mixed content.
 4. User can submit perceived grade.
-5. Comment/solution beta/mixed **soft-delete** is allowed for owner or admin (when checks pass). Soft-deleted roots **remain on the problem timeline** as placeholders (`isDeleted = true`) with a removal message; original comment/video content is cleared in the DTO. Reply / Report / Delete actions are hidden on placeholders. New replies to a soft-deleted parent are still rejected by the API.
-6. Signed-in users who do **not** own the discussion can open **Report** from the ⋮ menu, choose a category, enter a reason (required, max 250 characters), and submit. Guests do not see the menu. Owners see Delete only (self-report is rejected by the API). Report/soft-delete/appeal apply to reply roots the same way as top-level posts.
+5. Comment/solution beta/mixed delete is allowed for the owner or an admin (when checks pass):
+   - **Owner deleting their own post:** hard delete. The comment/beta content and the video object are permanently removed. Self-deletes are not appealable.
+   - **Admin deleting another user's post:** soft delete. Content is kept so the owner can appeal and an approve can restore it.
+   - In both cases the root **remains on the problem timeline** as a placeholder (`isDeleted = true`) with a removal message, so replies stay nested under it. Reply / Report / Delete actions are hidden on placeholders. New replies to a deleted parent are still rejected by the API.
+6. Signed-in users who do **not** own the discussion can open **Report** from the ⋮ menu, choose a category, enter a reason (required, max 250 characters), and submit. Guests do not see the menu. Owners see Delete only (self-report is rejected by the API). Report/delete/appeal apply to reply roots the same way as top-level posts.
 
 Current discussion payload contract is unified through `DiscussionRoot` metadata:
 
 - Discussion entries include `discussionId`, nullable `parentDiscussionId`, nullable `comment`, nullable `videoURL`, and `isDeleted` (kind inferred from which payloads are set; mixed posts have both).
 - Replies set `parentDiscussionId` to the parent root; top-level posts leave it null.
-- Soft-deleted timeline placeholders set `isDeleted = true`, null `userId` / `username` / `videoURL`, and a placeholder `comment`:
+- Deleted timeline placeholders (owner or admin delete) set `isDeleted = true`, null `userId` / `username` / `videoURL`, and a placeholder `comment`:
   - `"The discussion had been deleted by the author."` when `deleted_by` matches the author
   - `"The discussion had been deleted by one of the admin."` otherwise
 - A reply from someone else creates a `DISCUSSION_REPLY` inbox notification for the parent author (self-replies are skipped). Inbox clicks use `click.kind = PROBLEM_DISCUSSION` and deep-link to `?discussionId=` on the problem page.
 - Deletion payloads for both comments and solution betas include `discussionId` and a reason string (max 100).
 - Comment deletes send `deletedReason`; beta deletes send `deleteReason`.
 - The problem page currently sends `"User deleted their own discussion"` for owner deletes and `"Admin forced delete the discussion"` when an admin deletes another user's item.
+- The backend decides owner vs admin delete from the stored discussion author, not from `authorId` / `userId` in the payload.
 
 Problem-page reply UI is wired: signed-in users can reply (comment / beta / mixed) via the inline composer; replies nest under `parentDiscussionId`.
 
@@ -150,7 +154,7 @@ Problem-page reply UI is wired: signed-in users can reply (comment / beta / mixe
 
 ## Limitations and Notes
 
-- Comment/beta delete is a soft delete: discussion root metadata is marked deleted; comment/beta child rows and GCS objects stay. Timelines keep a placeholder row (`isDeleted`) instead of removing the post. Appeal **Approve** restores the discussion; delayed GCS purge is still future work.
+- Comment/beta/mixed delete always marks the discussion root deleted and keeps a placeholder row (`isDeleted`) on the timeline. Owner deletes also permanently remove the comment/beta rows and GCS object (no appeal). Admin deletes are soft deletes: child rows and GCS objects stay, and appeal **Approve** restores the discussion; delayed GCS purge of those objects is still future work.
 - Problem delete is `PATCH /api/home/wall-sections/{wallSectionId}/problems/{problemId}/delete`.
 - Wall reset is `PATCH /api/home/wall-section/{wallSectionId}/reset`.
 - UI gating and backend authorization should both be revalidated when role logic changes.
@@ -160,7 +164,7 @@ Problem-page reply UI is wired: signed-in users can reply (comment / beta / mixe
 - Discovery grade-range endpoints use `/api/search/{wallSectionId}?min=&max=&sort=`.
 - CORS allows `/api/**` for the frontend origin (covers `/api/home/**` and `/api/search/**`).
 - Keyword/text search is deferred to a later sprint (roadmap Sprint 11); Sprint 4 discovery (grade filter/sort) is complete.
-- Unified discussion (Sprint 7): one post can include comment text, a beta video, or both; replies and in-app `DISCUSSION_REPLY` notifications are supported on the problem page; soft-deleted roots stay as `isDeleted` placeholders.
+- Unified discussion (Sprint 7): one post can include comment text, a beta video, or both; replies and in-app `DISCUSSION_REPLY` notifications are supported on the problem page; deleted roots stay as `isDeleted` placeholders.
 - Wall and problem read DTOs expose nullable `imageURL`. A null wall `imageURL` displays `/co-op.png`. A null problem `imageURL` displays `/problem-holder.jpg`. See [`docs/features/wall-problem-images.md`](./wall-problem-images.md).
 
 ## Future Enhancements

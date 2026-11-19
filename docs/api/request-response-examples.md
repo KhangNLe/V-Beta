@@ -405,7 +405,9 @@ Authorization: Bearer <firebase_id_token>
 }
 ```
 
-## 8b) Soft-Delete Mixed Discussion Content
+## 8b) Delete Mixed Discussion Content
+
+Owner or admin. Owner (example below): the root is marked deleted and the comment row, beta row, and GCS object are permanently removed. Admin deleting another user's post: soft delete; child rows and GCS object are kept for appeal restore. Authorship comes from the stored root, not `authorId`.
 
 ### Request
 
@@ -426,9 +428,11 @@ Authorization: Bearer <firebase_id_token>
 }
 ```
 
+Admin deleting another user's post uses `"Admin forced delete the discussion"` for `deleteReason`.
+
 ### Response (200)
 
-Empty body.
+Empty body. Subsequent problem-detail timelines keep this discussion as a placeholder (`isDeleted = true`) with a removal message; comment text and `videoURL` are not returned on the placeholder.
 
 ## 8c) Reply to a Discussion
 
@@ -494,9 +498,9 @@ Authorization: Bearer <firebase_id_token>
 
 Returns updated problem-detail payload (same shape as problem detail endpoint).
 
-## 9.1) Soft-Delete Comment
+## 9.1) Delete Comment
 
-Owner or admin. Marks `Discussion_Root.deleted_at` / `deleted_by` / `deleted_reason`. The comment row remains.
+Owner or admin. Always marks `Discussion_Root.deleted_at` / `deleted_by` / `deleted_reason`. Owner delete (example below) also permanently removes the comment row. Admin deleting another user's comment is a soft delete; the comment row remains for appeal restore. Authorship comes from the stored root, not `authorId`.
 
 ### Request
 
@@ -522,9 +526,9 @@ Admin deleting another user's comment uses `"Admin forced delete the discussion"
 
 Empty body. Subsequent problem-detail timelines keep this discussion as a placeholder (`isDeleted = true`) with a removal message; original comment text is not returned.
 
-## 9.2) Soft-Delete Solution Beta
+## 9.2) Delete Solution Beta
 
-Owner or admin. Marks `Discussion_Root` deleted; solution-beta metadata and GCS object are kept.
+Owner or admin. Always marks `Discussion_Root` deleted. Owner delete (example below) also permanently removes the solution-beta row and GCS object. Admin deleting another user's beta is a soft delete; solution-beta metadata and GCS object are kept for appeal restore. Authorship comes from the stored root, not `userId`.
 
 ### Request
 
