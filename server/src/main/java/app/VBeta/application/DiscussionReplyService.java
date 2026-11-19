@@ -119,12 +119,16 @@ public class DiscussionReplyService {
 
     private DiscussionRoot findParentDiscussionRoot(Long discussionId){
         DiscussionRoot root = discussionRootManager.findDiscussionRootById(discussionId);
-        if (root == null || root.getDeletedAt() != null){
-            throw new RuntimeException("Discussion not found from provided ID.");
+        if (root.getDeletedAt() != null){
+            throw new RuntimeException("Cannot reply to an already deleted thread.");
         }
         return root;
     }
 
+    /**
+     * Verify to make sure the request contain the correct information about the problem and the author of the
+     * parent discussion.
+     */
     private void verifyRequest(DiscussionRoot parentRoot, ClimbingProblem problem, Long replyToId){
         UserAccount parentAuthor = parentRoot.getUserAccount();
         ClimbingProblem parentProblem = parentRoot.getProblem();

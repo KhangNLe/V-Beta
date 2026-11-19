@@ -173,7 +173,7 @@ Then by report date/time.
 - Automated/ML moderation
 - Reporting wall sections or problems (comments/betas only)
 - External email/push channels beyond in-app notifications
-- Delayed GCS purge of soft-deleted beta objects
+- Delayed GCS purge of admin soft-deleted beta objects (owner self-deletes remove the object immediately)
 
 ### Notes
 

@@ -18,7 +18,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * {@code ProblemDiscussionController} handles discussion interactions for climbing problems.
@@ -194,7 +193,7 @@ public class ProblemDiscussionController {
     public ResponseEntity<?> deleteUserDiscussionContent(@Valid @RequestBody DiscussionContentDeletionRequest request){
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-            problemDiscussionService.softDeleteUserDiscussionContent(firebaseUid, request);
+            problemDiscussionService.deleteUserDiscussionContent(firebaseUid, request);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -214,7 +213,7 @@ public class ProblemDiscussionController {
     public ResponseEntity<?> deleteUserSolutionBeta(@RequestBody SolutionBetaDeletionRequest request){
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
-            problemDiscussionService.softDeleteUserSolutionBeta(request, firebaseUid);
+            problemDiscussionService.deleteUserSolutionBeta(request, firebaseUid);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -238,7 +237,7 @@ public class ProblemDiscussionController {
         try {
             String firebaseUid = authorizationService.getAuthenticatedFirebaseUid();
             authorizationService.authorize(firebaseUid, ActionDefinition.DELETE_COMMENT);
-            problemDiscussionService.softDeleteUserComment(firebaseUid, request);
+            problemDiscussionService.deleteUserComment(firebaseUid, request);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (RuntimeException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);

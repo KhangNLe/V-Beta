@@ -60,7 +60,8 @@ Climber users can participate in problem discussion and feedback.
 ### B2) Delete a Discussion Post
 1. On a problem page, open the actions menu on a post you own (or, as admin, on another user's post).
 2. Choose **Delete Comment**, **Delete Solution Beta**, or **Delete Post** (label matches what the post contains).
-3. Verify the post remains in the discussion as a removed placeholder after refresh (for example, “The discussion had been deleted by the author.”). Reply / Report / Delete are not available on that placeholder.
+3. Verify the post remains in the discussion as a removed placeholder after refresh (for example, “The discussion had been deleted by the author.”). Reply / Report / Delete are not available on that placeholder. Replies to the post stay nested under it.
+4. Deleting your own post is permanent: the text and video are removed and cannot be restored or appealed. When an admin deletes another user's post, the content is kept so the owner can appeal.
 
 ### B3) Report a Comment or Beta
 1. Sign in and open a problem page.

@@ -5,6 +5,8 @@ import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
 import app.VBeta.api.dto.discussions.UserDiscussionData;
 import app.VBeta.application.support.discussion.ClimbingProblemDiscussionManager;
+import app.VBeta.application.support.discussion.DiscussionRootManager;
+import app.VBeta.application.support.discussion.comment.DiscussionCommentManager;
 import app.VBeta.application.support.problem.ClimbingProblemManager;
 import app.VBeta.application.support.account.UserAccountManager;
 import app.VBeta.domain.model.climb.ClimbingGrade;
@@ -71,6 +73,10 @@ public class UserCommentTest {
     
     @Autowired
     private ClimbingGradeRepository climbingGradeRepository;
+    @Autowired
+    private DiscussionCommentManager discussionCommentManager;
+    @Autowired
+    private DiscussionRootManager discussionRootManager;
 
     private boolean checkProblemComments(String firebaseUid, DiscussionCommentRequest request){
         UserAccount account = userAccountManager.findUserAccount(firebaseUid);
@@ -214,10 +220,13 @@ public class UserCommentTest {
         UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
 
-        assertDoesNotThrow(() -> problemDiscussionService.softDeleteUserComment(firebaseUid, deletionRequest));
+        assertDoesNotThrow(() -> problemDiscussionService.deleteUserComment(firebaseUid, deletionRequest));
         assertEquals(0, countVisibleCommentsForUserProblem(userAccount, problem.getId()));
         assertDiscussionSoftDeleted(deletionRequest.discussionId(), userAccount, USER_DELETED_OWN_DISCUSSION);
-        assertCommentRowStillPresent(deletionRequest.discussionId());
+
+        DiscussionRoot root = discussionRootRepository.findById(deletionRequest.discussionId()).orElse(null);
+        assertNotNull(root);
+        assertNull(discussionCommentManager.getDiscussionComment(root));
         assertTrue(timelineContainsDeletedDiscussion(problem, deletionRequest.discussionId()));
     }
 
@@ -235,7 +244,7 @@ public class UserCommentTest {
         UserAccount adminAccount = userAccountManager.findUserAccount(adminFirebaseUid);
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
 
-        assertDoesNotThrow(() -> problemDiscussionService.softDeleteUserComment(adminFirebaseUid, deletionRequest));
+        assertDoesNotThrow(() -> problemDiscussionService.deleteUserComment(adminFirebaseUid, deletionRequest));
         assertEquals(0, countVisibleCommentsForUserProblem(authorUserAccount, problem.getId()));
         assertDiscussionSoftDeleted(deletionRequest.discussionId(), adminAccount, ADMIN_FORCED_DELETE_DISCUSSION);
         assertCommentRowStillPresent(deletionRequest.discussionId());
@@ -256,7 +265,7 @@ public class UserCommentTest {
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> problemDiscussionService.softDeleteUserComment(requesterFirebaseUid, deletionRequest));
+                () -> problemDiscussionService.deleteUserComment(requesterFirebaseUid, deletionRequest));
 
         assertEquals(1, countVisibleCommentsForUserProblem(authorUserAccount, problem.getId()));
     }
@@ -277,7 +286,7 @@ public class UserCommentTest {
         );
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> problemDiscussionService.softDeleteUserComment(requestFirebaseUid, request));
+                () -> problemDiscussionService.deleteUserComment(requestFirebaseUid, request));
     }
 
     @Test
@@ -304,14 +313,14 @@ public class UserCommentTest {
         );
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> problemDiscussionService.softDeleteUserComment(threatActorUid, modifiedRequest));
+                () -> problemDiscussionService.deleteUserComment(threatActorUid, modifiedRequest));
 
         assertEquals(1, countVisibleCommentsForUserProblem(author, problem.getId()));
     }
 
     @Test
     @DisplayName("test cross-problem isolation when deleting comment")
-    void testCrossProblemIsolationDeletingComment(){
+    void testCrossProblemIsolationDeletingCommentByAuthor(){
         String firebaseUid = "testFirebaseUid";
         String sameComment = "same text across two problems";
         Long problemIdA = createNewClimbingProblem();
@@ -336,9 +345,11 @@ public class UserCommentTest {
                 USER_DELETED_OWN_DISCUSSION
         );
 
-        assertDoesNotThrow(() -> problemDiscussionService.softDeleteUserComment(firebaseUid, deleteFromProblemA));
+        assertDoesNotThrow(() -> problemDiscussionService.deleteUserComment(firebaseUid, deleteFromProblemA));
         assertDiscussionSoftDeleted(deleteFromProblemA.discussionId(), userAccount, USER_DELETED_OWN_DISCUSSION);
-        assertCommentRowStillPresent(deleteFromProblemA.discussionId());
+        DiscussionRoot root = discussionRootRepository.findById(deleteFromProblemA.discussionId()).orElse(null);
+        assertNotNull(root);
+        assertNull(discussionCommentManager.getDiscussionComment(root));
 
         ClimbingProblem problemA = climbingProblemManager.getActiveProblem(problemIdA);
         ClimbingProblem problemB = climbingProblemManager.getActiveProblem(problemIdB);
@@ -357,14 +368,14 @@ public class UserCommentTest {
         CommentDeletionRequest deletionRequest = generateCommentForDeletion(
                 firebaseUid, problemId, USER_DELETED_OWN_DISCUSSION);
 
-        assertDoesNotThrow(() -> problemDiscussionService.softDeleteUserComment(firebaseUid, deletionRequest));
+        assertDoesNotThrow(() -> problemDiscussionService.deleteUserComment(firebaseUid, deletionRequest));
         assertDiscussionSoftDeleted(
                 deletionRequest.discussionId(),
                 userAccountManager.findUserAccount(firebaseUid),
                 USER_DELETED_OWN_DISCUSSION);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> problemDiscussionService.softDeleteUserComment(firebaseUid, deletionRequest));
+                () -> problemDiscussionService.deleteUserComment(firebaseUid, deletionRequest));
     }
 
     @Test
@@ -388,7 +399,7 @@ public class UserCommentTest {
         );
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> problemDiscussionService.softDeleteUserComment(adminUid, mismatchedRequest));
+                () -> problemDiscussionService.deleteUserComment(adminUid, mismatchedRequest));
 
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
         assertEquals(1, countVisibleCommentsForUserProblem(author, problem.getId()));
@@ -410,14 +421,113 @@ public class UserCommentTest {
 
         assertEquals(2, countVisibleCommentsForUserProblem(author, problem.getId()));
 
-        assertDoesNotThrow(() -> problemDiscussionService.softDeleteUserComment(authorUid, requestA));
+        assertDoesNotThrow(() -> problemDiscussionService.deleteUserComment(authorUid, requestA));
 
         assertEquals(1, countVisibleCommentsForUserProblem(author, problem.getId()));
         assertDiscussionSoftDeleted(requestA.discussionId(), author, USER_DELETED_OWN_DISCUSSION);
-        assertCommentRowStillPresent(requestA.discussionId());
+        DiscussionRoot root = discussionRootRepository.findById(requestA.discussionId()).orElse(null);
+        assertNotNull(root);
+        assertNull(discussionCommentManager.getDiscussionComment(root));
         assertCommentRowStillPresent(requestB.discussionId());
         assertTrue(timelineContainsDeletedDiscussion(problem, requestA.discussionId()));
         assertFalse(timelineContainsDeletedDiscussion(problem, requestB.discussionId()));
+    }
+
+    @Test
+    @DisplayName("Test for user permanently remove their own comment")
+    void testUserPermanentlyRemoveComment(){
+        String authorUid = "testFirebaseUid";
+        Long problemId = 2L;
+
+        UserAccount author = userAccountManager.findUserAccount(authorUid);
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+
+        CommentDeletionRequest request = generateCommentForDeletion(authorUid, problemId, USER_DELETED_OWN_DISCUSSION);
+        assertEquals(1, countVisibleCommentsForUserProblem(author, problem.getId()));
+        DiscussionRoot root = discussionRootRepository.findById(request.discussionId()).orElse(null);
+        assertNotNull(root);
+
+        DiscussionComment comment = discussionCommentRepository.findByDiscussionRoot(root).orElse(null);
+        assertNotNull(comment);
+        assertDoesNotThrow(() -> problemDiscussionService.deleteUserComment(authorUid, request));
+        discussionCommentRepository.flush();
+        assertEquals(0, countVisibleCommentsForUserProblem(author, problem.getId()));
+        comment = discussionCommentRepository.findByDiscussionRoot(root).orElse(null);
+        assertNull(comment);
+    }
+
+    @Test
+    @DisplayName("admin sending their own id as authorId still only soft-deletes another user's comment")
+    void testAdminSpoofingAuthorIdOnlySoftDeletesComment(){
+        String authorUid = "testFirebaseUid";
+        String adminUid = "testFirebaseUid3";
+        Long problemId = 2L;
+        CommentDeletionRequest realRequest = generateCommentForDeletion(
+                authorUid, problemId, ADMIN_FORCED_DELETE_DISCUSSION);
+        UserAccount admin = userAccountManager.findUserAccount(adminUid);
+
+        CommentDeletionRequest spoofed = new CommentDeletionRequest(
+                admin.getId(),
+                realRequest.problemId(),
+                realRequest.discussionId(),
+                realRequest.commentContent(),
+                ADMIN_FORCED_DELETE_DISCUSSION
+        );
+
+        assertDoesNotThrow(() -> problemDiscussionService.deleteUserComment(adminUid, spoofed));
+        assertDiscussionSoftDeleted(realRequest.discussionId(), admin, ADMIN_FORCED_DELETE_DISCUSSION);
+        assertCommentRowStillPresent(realRequest.discussionId());
+    }
+
+    @Test
+    @DisplayName("author-deleted comment shows the author placeholder on the timeline")
+    void testAuthorDeletedCommentShowsAuthorPlaceholder(){
+        String authorUid = "testFirebaseUid";
+        Long problemId = 2L;
+        CommentDeletionRequest request = generateCommentForDeletion(authorUid, problemId, USER_DELETED_OWN_DISCUSSION);
+
+        problemDiscussionService.deleteUserComment(authorUid, request);
+
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+        UserDiscussionData placeholder = climbingProblemDiscussionManager.getCommentsForProblem(problem).stream()
+                .filter(item -> item.discussionId().equals(request.discussionId()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(placeholder.isDeleted());
+        assertEquals("The discussion had been deleted by the author.", placeholder.comment());
+        assertNull(placeholder.userId());
+    }
+
+    @Test
+    @DisplayName("admin-deleted comment shows the admin placeholder on the timeline")
+    void testAdminDeletedCommentShowsAdminPlaceholder(){
+        String authorUid = "testFirebaseUid";
+        String adminUid = "testFirebaseUid3";
+        Long problemId = 2L;
+        CommentDeletionRequest request = generateCommentForDeletion(
+                authorUid, problemId, ADMIN_FORCED_DELETE_DISCUSSION);
+
+        problemDiscussionService.deleteUserComment(adminUid, request);
+
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+        UserDiscussionData placeholder = climbingProblemDiscussionManager.getCommentsForProblem(problem).stream()
+                .filter(item -> item.discussionId().equals(request.discussionId()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(placeholder.isDeleted());
+        assertEquals("The discussion had been deleted by one of the admin.", placeholder.comment());
+    }
+
+    @Test
+    @DisplayName("deleting a comment with an unknown discussion id fails")
+    void testDeletingCommentWithUnknownDiscussionIdFails(){
+        String authorUid = "testFirebaseUid";
+        UserAccount author = userAccountManager.findUserAccount(authorUid);
+
+        CommentDeletionRequest request = new CommentDeletionRequest(
+                author.getId(), 2L, Long.MAX_VALUE, "Cool problem dude", USER_DELETED_OWN_DISCUSSION);
+
+        assertThrows(RuntimeException.class, () -> problemDiscussionService.deleteUserComment(authorUid, request));
     }
 
     private CommentDeletionRequest generateCommentForDeletion(String firebaseUid, Long problemId){

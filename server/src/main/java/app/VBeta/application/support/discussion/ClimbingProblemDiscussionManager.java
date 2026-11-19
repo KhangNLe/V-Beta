@@ -63,11 +63,12 @@ public class ClimbingProblemDiscussionManager {
 
         discussionRoots.forEach(root -> {
             if (root == null) return;
-            UserDiscussionData dataContent = getDiscussionData(root);
-            if (dataContent == null) return;
             if (root.getDeletedAt() != null) {
                 data.add(getSoftDeletedData(root));
-            } else {
+                return;
+            }
+            UserDiscussionData dataContent = getDiscussionData(root);
+            if (dataContent != null) {
                 data.add(dataContent);
             }
         });
@@ -172,29 +173,56 @@ public class ClimbingProblemDiscussionManager {
     }
 
     /**
-     * Deprecated hard-delete path. Comment hide is now {@link #softDeleteDiscussionRoot}.
-     * Removes a discussion comment by discussion id.
+     * Author self-delete for a comment: marks the root deleted and permanently removes the comment row.
+     * <p>
+     * The root is kept as a placeholder because replies, reports, and appeals reference it.
      *
+     * @param actor author performing the delete (stored as {@code deletedBy})
      * @param discussionId discussion identifier to remove
+     * @param deletedReason reason stored on the root (max 100 characters)
      * @param commentContent expected comment content for consistency check
      */
-    public void removeUserComment(Long discussionId, String commentContent){
+    public void removeUserComment(UserAccount actor, Long discussionId, String deletedReason, String commentContent){
+        softDeleteDiscussionRoot(actor, discussionId, deletedReason);
         DiscussionRoot discussion = getDiscussionNode(discussionId);
         discussionCommentManager.removeUserComment(discussion, commentContent);
-        discussionRootManager.removeDiscussion(discussion);
     }
 
     /**
-     * Deprecated hard-delete path. Beta hide is now {@link #softDeleteDiscussionRoot}.
-     * Removes a solution beta by discussion id.
+     * Author self-delete for a solution beta: marks the root deleted and permanently removes the
+     * beta row and its storage object.
+     * <p>
+     * The root is kept as a placeholder because replies, reports, and appeals reference it.
      *
+     * @param actor author performing the delete (stored as {@code deletedBy})
      * @param discussionId discussion identifier to remove
+     * @param deletedReason reason stored on the root (max 100 characters)
      * @param publicUrl expected public URL for consistency check
      */
-    public void removeUserSolutionBeta(Long discussionId, String publicUrl){
+    public void removeUserSolutionBeta(UserAccount actor, Long discussionId, String deletedReason, String publicUrl){
+        softDeleteDiscussionRoot(actor, discussionId, deletedReason);
         DiscussionRoot discussion = getDiscussionNode(discussionId);
         solutionBetaManager.removeUserSolutionBeta(discussion, publicUrl);
-        discussionRootManager.removeDiscussion(discussion);
+    }
+
+    /**
+     * Author self-delete for a mixed discussion: marks the root deleted and permanently removes the
+     * comment row, beta row, and storage object.
+     * <p>
+     * The root is kept as a placeholder because replies, reports, and appeals reference it.
+     *
+     * @param actor author performing the delete (stored as {@code deletedBy})
+     * @param discussionId discussion identifier to remove
+     * @param deletedReason reason stored on the root (max 100 characters)
+     * @param commentContent expected comment content for consistency check
+     * @param publicUrl expected public URL for consistency check
+     */
+    public void removeUserMixedDiscussion(UserAccount actor, Long discussionId, String deletedReason,
+                                          String commentContent, String publicUrl){
+        softDeleteDiscussionRoot(actor, discussionId, deletedReason);
+        DiscussionRoot discussion = getDiscussionNode(discussionId);
+        discussionCommentManager.removeUserComment(discussion, commentContent);
+        solutionBetaManager.removeUserSolutionBeta(discussion, publicUrl);
     }
 
     /**
@@ -237,19 +265,26 @@ public class ClimbingProblemDiscussionManager {
 
     /**
      * Maps a discussion root to a timeline DTO. Does not apply soft-delete filtering;
-     * callers that build public timelines should skip roots with {@code deletedAt} set.
+     * callers that build public timelines should use the placeholder for roots with {@code deletedAt} set.
+     * <p>
+     * Admin soft-deletes keep their content, so the real content is returned. Author self-deletes
+     * have no child rows left, so a deleted placeholder is returned instead.
      *
      * @param discussionRoot discussion root to map
-     * @return comment or beta timeline payload, or {@code null} when child content is missing
+     * @return timeline payload, deleted placeholder for author-deleted roots, or {@code null}
+     *         when child content is missing on a root that is not deleted
      */
     public UserDiscussionData getDiscussionData(DiscussionRoot discussionRoot){
-        UserDiscussionData dataContent = null;
+        UserDiscussionData dataContent;
         if (discussionRoot.getDiscussionType().equals(DiscussionType.COMMENT)){
             dataContent = getCommentDiscussion(discussionRoot);
         } else if (discussionRoot.getDiscussionType().equals(DiscussionType.BETA)){
             dataContent = getSolutionBeta(discussionRoot);
         } else {
             dataContent = getMixedDiscussionContent(discussionRoot);
+        }
+        if (dataContent == null && discussionRoot.getDeletedAt() != null) {
+            return getSoftDeletedData(discussionRoot);
         }
         return dataContent;
     }
@@ -303,13 +338,8 @@ public class ClimbingProblemDiscussionManager {
         );
     }
 
-    private DiscussionRoot getDiscussionNode(Long discussionParentId){
-        DiscussionRoot parent = discussionRootManager.findDiscussionRootById(discussionParentId);
-        if (parent == null){
-            throw new RuntimeException(String.format("Unable to reply to a discussion with id %d", discussionParentId)
-            );
-        }
-        return parent;
+    private DiscussionRoot getDiscussionNode(Long discussionId){
+        return discussionRootManager.findDiscussionRootById(discussionId);
     }
 
     private UserDiscussionData convertDiscussionData(DiscussionRoot root, String comment, String videoURL){

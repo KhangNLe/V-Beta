@@ -55,7 +55,8 @@ Full contracts: `docs/api/endpoints.md`, `docs/api/permissions-matrix.md`, `docs
 - Automated / ML moderation
 - Reporting wall sections or problems
 - Email or push delivery (in-app inbox only)
-- Delayed GCS purge of soft-deleted beta objects (timeline placeholders and restore via appeal **Approve** are shipped)
+- Delayed GCS purge of admin soft-deleted beta objects (timeline placeholders and restore via appeal **Approve** are shipped)
+- Appeals for owner self-deletes (owner deletes permanently remove content; only admin removals are soft-deleted and appealable)
 
 ## Original contract vs shipped
 

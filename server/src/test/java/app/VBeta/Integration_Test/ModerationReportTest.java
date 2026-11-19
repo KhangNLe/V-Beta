@@ -206,8 +206,8 @@ public class ModerationReportTest {
         DiscussionRoot discussionRoot = createDiscussionRoot("testFirebaseUid2", 1L, BETA);
         discussionRootManager.removeDiscussion(discussionRoot);
 
-        DiscussionRoot discuss = discussionRootManager.findDiscussionRootById(discussionRoot.getDiscussionId());
-        assertNull(discuss);
+        assertThrows(RuntimeException.class, () ->
+                discussionRootManager.findDiscussionRootById(discussionRoot.getDiscussionId()));
 
         ReportRequest badRequest = new ReportRequest(
                 ReportTargetType.DISCUSSION,

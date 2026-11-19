@@ -73,8 +73,11 @@ Focus:
 
 - end-to-end service/controller behavior with realistic persistence interactions
 - wall/problem lifecycle operations
-- comment creation/soft-deletion behavior (root stays; timeline keeps `isDeleted` placeholders)
-- solution beta metadata creation/soft-deletion behavior (GCS object is not deleted on user/admin hide)
+- comment/beta/mixed creation and deletion behavior (root stays; timeline keeps `isDeleted` placeholders):
+  - owner delete permanently removes child rows and the GCS object
+  - admin delete is a soft delete (child rows and GCS object kept for appeal restore)
+  - authorship comes from the stored root; spoofed `authorId` / `userId` cannot trigger an owner hard-delete
+- account/problem deletion still succeeds after owner self-deletes (deleted roots may have no child rows)
 - image upload authorization and metadata persistence (`ImageService`, `/api/social/image/*`)
 - discussion timeline/read ordering and deterministic retrieval semantics
 

@@ -129,42 +129,55 @@ public class ProblemDiscussionService {
     }
 
     /**
-     * Soft-deletes a user's solution beta when requester is owner or admin.
+     * Delete a user's solution beta when requester is owner or soft-delete when requester is admin.
      * <p>
-     * Sets {@code deleted_at}, {@code deleted_by}, and {@code deleted_reason} on the
-     * discussion root. Child beta metadata and GCS objects are left in place.
+     * Authors soft-delete the root and permanently remove the beta child (and GCS object).
+     * Admins only soft-delete the root, leaving child metadata and storage in place.
      *
      * @param request solution beta deletion payload
      * @param firebaseUid Firebase UID of the authenticated requester
      */
-    public void softDeleteUserSolutionBeta(SolutionBetaDeletionRequest request, String firebaseUid){
+    public void deleteUserSolutionBeta(SolutionBetaDeletionRequest request, String firebaseUid){
         UserAccount requestUser = getUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
-        validateDeletionOwnerObject(requestUser, request.userId());
+        Long authorId = getDiscussionAuthorId(request.discussionId());
+        validateDeletionOwnerObject(requestUser, authorId);
         validateDiscussionExisting(request.discussionId(), requestUser, problem,
                 new DiscussionContent(null, request.publicUrl()));
 
-        climbingProblemDiscussionManager.softDeleteDiscussionRoot(requestUser, request.discussionId(),
-                request.deleteReason());
+        if (isAuthor(requestUser, authorId)) {
+            climbingProblemDiscussionManager.removeUserSolutionBeta(requestUser, request.discussionId(),
+                    request.deleteReason(), request.publicUrl());
+        } else {
+            climbingProblemDiscussionManager.softDeleteDiscussionRoot(requestUser, request.discussionId(),
+                    request.deleteReason());
+        }
     }
 
     /**
-     * Soft-deletes a mixed discussion when requester is owner or admin.
+     * Delete a mixed discussion when requester is owner or soft-delete the discussion when requester is admin.
      * <p>
-     * Validates that both comment text and video URL match the stored children,
-     * then sets soft-delete metadata on the root. Child rows and GCS objects remain.
+     * Authors soft-delete the root and permanently remove comment/beta children (and GCS object).
+     * Admins only soft-delete the root, leaving child rows and storage in place.
      *
      * @param firebaseUid Firebase UID of the authenticated requester
      * @param request mixed deletion payload
      */
-    public void softDeleteUserDiscussionContent(String firebaseUid, DiscussionContentDeletionRequest request){
+    public void deleteUserDiscussionContent(String firebaseUid, DiscussionContentDeletionRequest request){
         UserAccount requester =  getUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
-        validateDeletionOwnerObject(requester, request.authorId());
+        Long authorId = getDiscussionAuthorId(request.discussionId());
+        validateDeletionOwnerObject(requester, authorId);
         validateDiscussionExisting(request.discussionId(), requester, problem,
                 new DiscussionContent(request.commentContent(), request.videoURL()));
-        climbingProblemDiscussionManager.softDeleteDiscussionRoot(requester, request.discussionId(),
-                request.deleteReason());
+
+        if (isAuthor(requester, authorId)) {
+            climbingProblemDiscussionManager.removeUserMixedDiscussion(requester, request.discussionId(),
+                    request.deleteReason(), request.commentContent(), request.videoURL());
+        } else {
+            climbingProblemDiscussionManager.softDeleteDiscussionRoot(requester, request.discussionId(),
+                    request.deleteReason());
+        }
     }
 
     private UserAccount getUserAccount(String firebaseUid){
@@ -188,24 +201,30 @@ public class ProblemDiscussionService {
     }
 
     /**
-     * Soft-deletes a user discussion comment when requester is the author or an admin.
+     * Delete a user discussion comment when requester is the author or soft delete the comment if requester is admin.
      * <p>
-     * Sets {@code deleted_at}, {@code deleted_by}, and {@code deleted_reason} on the
-     * discussion root. The comment child row is left in place.
+     * Authors soft-delete the root and permanently remove the comment child row.
+     * Admins only soft-delete the root, leaving the comment child in place.
      *
      * @param firebaseUid Firebase UID of the authenticated requester
      * @param request comment deletion payload
      */
-    public void softDeleteUserComment(String firebaseUid, CommentDeletionRequest request){
-        UserAccount requestUser = userAccountManager.findUserAccount(firebaseUid);
+    public void deleteUserComment(String firebaseUid, CommentDeletionRequest request){
+        UserAccount requestUser = getUserAccount(firebaseUid);
         ClimbingProblem problem = getActiveClimbingProblem(request.problemId());
+        Long authorId = getDiscussionAuthorId(request.discussionId());
 
-        validateDeletionOwnerObject(requestUser, request.authorId());
+        validateDeletionOwnerObject(requestUser, authorId);
         validateDiscussionExisting(request.discussionId(), requestUser, problem,
                 new DiscussionContent(request.commentContent(), null));
 
-        climbingProblemDiscussionManager.softDeleteDiscussionRoot(requestUser, request.discussionId(),
-                request.deletedReason());
+        if (isAuthor(requestUser, authorId)) {
+            climbingProblemDiscussionManager.removeUserComment(requestUser, request.discussionId(),
+                    request.deletedReason(), request.commentContent());
+        } else {
+            climbingProblemDiscussionManager.softDeleteDiscussionRoot(requestUser, request.discussionId(),
+                    request.deletedReason());
+        }
     }
 
     private UserAccount getUserAccount(Long userId){
@@ -256,8 +275,7 @@ public class ProblemDiscussionService {
         DiscussionRoot discussion;
         if (requestUser.getGymRole().getRoleType().equals(RoleType.ADMIN)) {
             discussion = discussionRootManager.findDiscussionRootById(requestDiscussionId);
-            if (discussion == null
-                    || discussion.getProblem() == null
+            if (discussion.getProblem() == null
                     || !discussion.getProblem().getId().equals(problem.getId())) {
                 throw new RuntimeException("Invalid action. Could not find discussion inside the climbing problem.");
             }
@@ -287,5 +305,21 @@ public class ProblemDiscussionService {
         if (!isExist){
             throw new RuntimeException("Could not find discussion with the given information.");
         }
+    }
+
+    private boolean isAuthor(UserAccount requestUser, Long authorId){
+        return Objects.equals(requestUser.getId(), authorId);
+    }
+
+    /**
+     * Resolves the author from the stored discussion so authorship never depends on
+     * the client-supplied author id.
+     *
+     * @param discussionId discussion identifier
+     * @return user id of the discussion author
+     * @throws RuntimeException when the discussion does not exist
+     */
+    private Long getDiscussionAuthorId(Long discussionId){
+        return discussionRootManager.findDiscussionRootById(discussionId).getUserAccount().getId();
     }
 }

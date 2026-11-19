@@ -168,7 +168,7 @@ This document tracks ideas that are not fully implemented in the current release
 - **Priority:** Medium
 - **Effort:** Medium
 - **Area:** Moderation / Safety
-- **Current Gap:** Soft-deleted discussions already stay on the timeline as placeholders, and Appeal **Approve** restores content. GCS/beta objects are not purged after a retention window.
+- **Current Gap:** Owner self-deletes already remove content and GCS objects immediately. Admin soft-deleted discussions stay on the timeline as placeholders, and Appeal **Approve** restores content, but their GCS/beta objects are not purged after a retention window.
 - **Potential Work:** Scheduled 30-day purge of GCS objects keyed off `deleted_at` (not upload time).
 - **Dependencies:** Idempotent GCS delete and a retention job.
 
@@ -202,6 +202,7 @@ This document tracks ideas that are not fully implemented in the current release
 
 ## Change Log
 
+- 2026-11-18: Owner self-deletes now hard-delete content and GCS objects; #18 delayed purge now only covers admin soft-deletes.
 - 2026-10-22: Removed completed Problem-Page Reply UI backlog item; soft-delete timeline placeholders are shipped. Delayed GCS purge remains (#18). Renumbered following items.
 - 2026-08-30: Moved Sprint 5 moderation/report backlog (#3, #6) to `completed-features-archive.md`. Restored discussion content via appeal approve is shipped; delayed GCS purge remains. Admin reports/logbook on #12 are shipped; remaining work is a developer event log.
 - Keep this section updated when priorities change or items move to implemented docs.

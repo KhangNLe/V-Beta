@@ -2,10 +2,14 @@ package app.VBeta.Integration_Test;
 
 import app.VBeta.api.dto.account.AccountRequest;
 import app.VBeta.api.dto.account.UserAccountDTO;
+import app.VBeta.api.dto.discussions.DiscussionContentDeletionRequest;
 import app.VBeta.api.dto.discussions.DiscussionContentRequest;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
+import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
 import app.VBeta.api.dto.discussions.PerceiveGradeRequest;
 import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
+import app.VBeta.api.dto.discussions.video.SolutionBetaDeletionRequest;
 import app.VBeta.application.AccountService;
 import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.application.support.cloud.GcpFileStorageAdapter;
@@ -346,6 +350,72 @@ public class AccountControllerTest {
                 RuntimeException.class,
                 () -> accountService.deleteAccount(firebaseUid)
         );
+        assertNotNull(userAccountManager.findUserAccount(firebaseUid));
+    }
+
+    @Test
+    @DisplayName("test account deletion succeeds after the user self-deleted a comment, beta, and MIXED post")
+    void testDeleteAccountAfterSelfDeletedDiscussions() {
+        String firebaseUid = "self-deleted-content-user";
+        Long problemId = 2L;
+        String reason = "User deleted their own discussion";
+        UserAccount account = creatFakeAccount("self-deleted-user", "self-deleted@gmail.com", firebaseUid);
+        when(gcpFileStorageAdapter.getPublicBucketName()).thenReturn("test-bucket");
+
+        UserDiscussionData comment = problemDiscussionService.addComment(
+                firebaseUid, new DiscussionCommentRequest(problemId, "comment to self-delete"));
+        problemDiscussionService.deleteUserComment(firebaseUid, new CommentDeletionRequest(
+                account.getId(), problemId, comment.discussionId(), "comment to self-delete", reason));
+
+        String betaKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
+        String betaUrl = "https://storage.googleapis.com/test-bucket/" + betaKey;
+        UserDiscussionData beta = problemDiscussionService.saveSolutionBeta(
+                new SolutionBetaCreateRequest(problemId, betaKey, betaUrl), firebaseUid);
+        problemDiscussionService.deleteUserSolutionBeta(new SolutionBetaDeletionRequest(
+                account.getId(), problemId, beta.discussionId(), betaUrl, reason), firebaseUid);
+
+        String mixedKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
+        String mixedUrl = "https://storage.googleapis.com/test-bucket/" + mixedKey;
+        UserDiscussionData mixed = problemDiscussionService.saveUserDiscussionContent(firebaseUid,
+                new DiscussionContentRequest(problemId, "mixed to self-delete", mixedKey, mixedUrl));
+        problemDiscussionService.deleteUserDiscussionContent(firebaseUid, new DiscussionContentDeletionRequest(
+                account.getId(), mixed.discussionId(), problemId, "mixed to self-delete", mixedUrl, reason));
+
+        String keptKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
+        String keptUrl = "https://storage.googleapis.com/test-bucket/" + keptKey;
+        problemDiscussionService.saveSolutionBeta(
+                new SolutionBetaCreateRequest(problemId, keptKey, keptUrl), firebaseUid);
+
+        assertDoesNotThrow(() -> accountService.deleteAccount(firebaseUid));
+        verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(keptKey));
+
+        assertNull(userAccountManager.findUserAccount(firebaseUid));
+        assertTrue(discussionRootRepository.findById(comment.discussionId()).isEmpty());
+        assertTrue(discussionRootRepository.findById(beta.discussionId()).isEmpty());
+        assertTrue(discussionRootRepository.findById(mixed.discussionId()).isEmpty());
+        assertTrue(solutionBetaRepository.findByVideoURL(keptUrl).isEmpty());
+        assertTrue(accountRepository.findById(account.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("test account deletion still fails when a live discussion is missing its comment row")
+    void testDeleteAccountFailsForLiveRootMissingCommentAlongsideSelfDeleted() {
+        String firebaseUid = "mixed-integrity-user";
+        Long problemId = 2L;
+        UserAccount account = creatFakeAccount("mixed-integrity", "mixed-integrity@gmail.com", firebaseUid);
+
+        UserDiscussionData deleted = problemDiscussionService.addComment(
+                firebaseUid, new DiscussionCommentRequest(problemId, "self-deleted comment"));
+        problemDiscussionService.deleteUserComment(firebaseUid, new CommentDeletionRequest(
+                account.getId(), problemId, deleted.discussionId(), "self-deleted comment",
+                "User deleted their own discussion"));
+
+        UserDiscussionData live = problemDiscussionService.addComment(
+                firebaseUid, new DiscussionCommentRequest(problemId, "live comment losing its row"));
+        DiscussionRoot liveRoot = discussionRootRepository.findById(live.discussionId()).orElseThrow();
+        discussionCommentRepository.delete(discussionCommentRepository.findByDiscussionRoot(liveRoot).orElseThrow());
+
+        assertThrows(RuntimeException.class, () -> accountService.deleteAccount(firebaseUid));
         assertNotNull(userAccountManager.findUserAccount(firebaseUid));
     }
 

@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * {@code DiscussionCommentManager} manages write/read operations for discussion comments.
@@ -84,21 +86,31 @@ public class DiscussionCommentManager {
 
     /**
      * Resolves discussion comments for a set of discussion roots and enforces
-     * one-to-one mapping cardinality.
+     * one-to-one mapping cardinality for roots that are not deleted.
+     * <p>
+     * Author self-deletes remove the comment row but keep the root, so deleted roots
+     * are allowed to have no comment row.
      *
      * @param discussionRoots discussion roots expected to have matching discussion rows
      * @return discussion-comment rows matching each anchor
      * @throws RuntimeException
-     * when one or more discussion rows are missing
+     * when one or more non-deleted roots are missing their comment row
      */
     private List<DiscussionComment> getDiscussionComments(List<DiscussionRoot> discussionRoots){
         List<DiscussionComment> discussionComments = discussionCommentRepository.findByDiscussionRootIn(discussionRoots);
-        if (discussionComments.size() != discussionRoots.size()){
+        Set<Long> rootIdsWithComment = discussionComments.stream()
+                .map(comment -> comment.getDiscussionRoot().getDiscussionId())
+                .collect(Collectors.toSet());
+        List<DiscussionRoot> missingComments = discussionRoots.stream()
+                .filter(root -> root.getDeletedAt() == null)
+                .filter(root -> !rootIdsWithComment.contains(root.getDiscussionId()))
+                .toList();
+        if (!missingComments.isEmpty()){
             throw new RuntimeException(String.format(
                             "Mismatching size between user comments %d and discussion comment %d for user comment id %s."
                             + " Please contact the developer for this issue",
-                            discussionRoots.size(), discussionComments.size(),
-                            discussionRoots.get(0).getUserAccount().getId()
+                            missingComments.size(),
+                            missingComments.get(0).getUserAccount().getId()
                     )
             );
         }

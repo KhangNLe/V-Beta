@@ -51,7 +51,11 @@ Located in `domain/model/discussions/` and `domain/model/user/`:
   - Nullable self-reference (`parent_discussion_id`) links replies to a parent root (top-level or another reply) on the same problem.
   - Stores discussion type (`COMMENT` / `BETA` / `MIXED`) and soft-delete metadata (`deleted_by`, `deleted_reason`, `deleted_at`).
   - `COMMENT`: one `Discussion_Comment` child. `BETA`: one `Solution_Beta` child. `MIXED`: both children on the same root (one post with text + video).
-  - Owner/admin delete endpoints set soft-delete fields. Problem timelines keep a placeholder `UserDiscussionData` row (`isDeleted = true`, removal message in `comment`, no video URL) so reply threads retain parent anchors. Comment/beta child rows are not removed. Appeal approve clears soft-delete fields so the original content is visible again. Delayed GCS purge remains future work.
+  - Owner/admin delete endpoints always set the delete fields on the root. The root row is never removed by these endpoints because replies (`parent_discussion_id`), reports, and appeals reference it.
+  - **Author self-delete:** the `Discussion_Comment` / `Solution_Beta` child rows (and the GCS video object) are permanently removed. Self-deletes are not appealable, so no content is kept.
+  - **Admin delete of another user's post:** soft delete. Child rows and GCS objects stay; appeal approve clears the delete fields so the original content is visible again. Delayed GCS purge of these soft-deleted objects remains future work.
+  - Problem timelines keep a placeholder `UserDiscussionData` row for every deleted root (`isDeleted = true`, removal message in `comment`, no video URL) so reply threads retain parent anchors.
+  - A deleted root may therefore have zero child rows. A root that is **not** deleted must still have its child row(s); account/problem hard-delete cascades treat a missing child on a live root as an integrity error.
   - Account/problem hard-delete cascades must collect `MIXED` roots when removing comment and beta children.
 - `DiscussionComment`
   - Text discussion payload tied to a discussion root (`COMMENT` or `MIXED`).
