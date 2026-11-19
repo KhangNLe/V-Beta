@@ -139,22 +139,32 @@ public class SolutionBetaManager {
 
     /**
      * Resolves solution-beta rows for discussion roots and checks
-     * one-to-one consistency.
+     * one-to-one consistency for roots that are not deleted.
+     * <p>
+     * Author self-deletes remove the beta row but keep the root, so deleted roots
+     * are allowed to have no beta row.
      *
      * @param discussionRoots discussion roots expected to have solution-beta rows
      * @return matching solution-beta rows
      * @throws RuntimeException
-     * when one or more solution rows are missing
+     * when one or more non-deleted roots are missing their beta row
      */
     private List<SolutionBeta> getAllUserRelateSolutionBeta(List<DiscussionRoot> discussionRoots){
         List<SolutionBeta> solutionBetas = solutionBetaRepository.findByDiscussionRootIn(discussionRoots);
+        Set<Long> rootIdsWithBeta = solutionBetas.stream()
+                .map(beta -> beta.getDiscussionRoot().getDiscussionId())
+                .collect(Collectors.toSet());
+        List<DiscussionRoot> missingBetas = discussionRoots.stream()
+                .filter(root -> root.getDeletedAt() == null)
+                .filter(root -> !rootIdsWithBeta.contains(root.getDiscussionId()))
+                .toList();
 
-        if (solutionBetas.size() != discussionRoots.size()){
+        if (!missingBetas.isEmpty()){
             throw new RuntimeException(String.format(
-                            "Mismatching size of solution betas %d and user betas %s from user beta id %d. "
+                            "Missing solution beta for %d discussion(s) of user id %d. "
                             + "Please report this to the developers.",
-                            solutionBetas.size(), discussionRoots.size(),
-                            discussionRoots.get(0).getUserAccount().getId()
+                            missingBetas.size(),
+                            missingBetas.get(0).getUserAccount().getId()
                     )
             );
         }

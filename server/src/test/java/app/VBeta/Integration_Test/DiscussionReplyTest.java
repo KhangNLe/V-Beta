@@ -665,6 +665,7 @@ public class DiscussionReplyTest {
     void testSoftDeleteReplyHidesFromTimeline(){
         UserAccount user = userAccountManager.findUserAccount(USER1ID);
         UserAccount user2 = userAccountManager.findUserAccount(USER2ID);
+        UserAccount admin = userAccountManager.findUserAccount("testFirebaseUid3");
         ClimbingProblem problem = createNewProblem();
 
         DiscussionRoot root = createNewDiscussion(problem, user, new DiscussionContentRequest(
@@ -675,7 +676,7 @@ public class DiscussionReplyTest {
                         root.getDiscussionId(), problem.getId(), user.getId(),
                         "Reply to delete", null, null));
 
-        problemDiscussionService.softDeleteUserComment(USER2ID, new CommentDeletionRequest(
+        problemDiscussionService.deleteUserComment(admin.getFirebaseUid(), new CommentDeletionRequest(
                 user2.getId(),
                 problem.getId(),
                 reply.discussionId(),
@@ -693,6 +694,47 @@ public class DiscussionReplyTest {
     }
 
     @Test
+    @DisplayName("Author hard-deleting a parent keeps a placeholder so its replies stay anchored")
+    void testAuthorDeletedParentKeepsPlaceholderForReplies(){
+        UserAccount user = userAccountManager.findUserAccount(USER1ID);
+        ClimbingProblem problem = createNewProblem();
+
+        DiscussionRoot root = createNewDiscussion(problem, user, new DiscussionContentRequest(
+                problem.getId(), "Parent the author deletes", null, null));
+
+        UserDiscussionData reply = discussionReplyService.storeUserReply(USER2ID,
+                new DiscussionContentReplyRequest(
+                        root.getDiscussionId(), problem.getId(), user.getId(),
+                        "Reply that should survive", null, null));
+
+        problemDiscussionService.deleteUserComment(USER1ID, new CommentDeletionRequest(
+                user.getId(),
+                problem.getId(),
+                root.getDiscussionId(),
+                "Parent the author deletes",
+                USER_DELETED_OWN_DISCUSSION));
+
+        assertNull(discussionCommentManager.getDiscussionComment(
+                discussionRootRepository.findById(root.getDiscussionId()).orElseThrow()));
+
+        List<UserDiscussionData> timeline = climbingProblemDiscussionManager.getCommentsForProblem(problem);
+        UserDiscussionData parentItem = timeline.stream()
+                .filter(item -> item.discussionId().equals(root.getDiscussionId()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(parentItem.isDeleted());
+        assertEquals("The discussion had been deleted by the author.", parentItem.comment());
+
+        UserDiscussionData replyItem = timeline.stream()
+                .filter(item -> item.discussionId().equals(reply.discussionId()))
+                .findFirst()
+                .orElseThrow();
+        assertFalse(replyItem.isDeleted());
+        assertEquals(root.getDiscussionId(), replyItem.parentDiscussionId());
+        assertEquals("Reply that should survive", replyItem.comment());
+    }
+
+    @Test
     @DisplayName("Replying to a soft-deleted parent fails")
     void testFailReplyToSoftDeletedParent(){
         UserAccount user = userAccountManager.findUserAccount(USER1ID);
@@ -701,7 +743,7 @@ public class DiscussionReplyTest {
         DiscussionRoot root = createNewDiscussion(problem, user, new DiscussionContentRequest(
                 problem.getId(), "Soon deleted", null, null));
 
-        problemDiscussionService.softDeleteUserComment(USER1ID, new CommentDeletionRequest(
+        problemDiscussionService.deleteUserComment(USER1ID, new CommentDeletionRequest(
                 user.getId(),
                 problem.getId(),
                 root.getDiscussionId(),

@@ -21,7 +21,6 @@ import app.VBeta.application.ProblemDiscussionService;
 import app.VBeta.controller.ProblemDiscussionController;
 import app.VBeta.domain.model.actions.ActionDefinition;
 import app.VBeta.domain.model.climb.GradeDefinition;
-import app.VBeta.domain.model.discussions.DiscussionType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -210,7 +209,7 @@ public class ProblemDiscussionControllerTest {
     void returns200_whenDeletingSolutionBeta() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         doNothing().when(problemDiscussionService)
-                .softDeleteUserSolutionBeta(any(SolutionBetaDeletionRequest.class), eq("testFirebaseUid"));
+                .deleteUserSolutionBeta(any(SolutionBetaDeletionRequest.class), eq("testFirebaseUid"));
 
         SolutionBetaDeletionRequest request = new SolutionBetaDeletionRequest(
                 1L, 22L, 402L, "https://storage.googleapis.com/bucket/video.mp4",
@@ -222,7 +221,7 @@ public class ProblemDiscussionControllerTest {
                 .andExpect(status().isOk());
 
         verify(problemDiscussionService, times(1))
-                .softDeleteUserSolutionBeta(any(SolutionBetaDeletionRequest.class), eq("testFirebaseUid"));
+                .deleteUserSolutionBeta(any(SolutionBetaDeletionRequest.class), eq("testFirebaseUid"));
     }
 
     @Test
@@ -231,7 +230,7 @@ public class ProblemDiscussionControllerTest {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         doNothing().when(authorizationService).authorize("testFirebaseUid", ActionDefinition.DELETE_COMMENT);
         doNothing().when(problemDiscussionService)
-                .softDeleteUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
+                .deleteUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
 
         CommentDeletionRequest request = new CommentDeletionRequest(
                 1L, 22L, 101L, "Nice", "User deleted their own discussion");
@@ -242,7 +241,7 @@ public class ProblemDiscussionControllerTest {
                 .andExpect(status().isOk());
 
         verify(problemDiscussionService, times(1))
-                .softDeleteUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
+                .deleteUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
     }
 
     @Test
@@ -252,7 +251,7 @@ public class ProblemDiscussionControllerTest {
         doNothing().when(authorizationService).authorize("testFirebaseUid", ActionDefinition.DELETE_COMMENT);
         doThrow(new RuntimeException("Invalid Action. Cannot remove object from different author"))
                 .when(problemDiscussionService)
-                .softDeleteUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
+                .deleteUserComment(eq("testFirebaseUid"), any(CommentDeletionRequest.class));
 
         CommentDeletionRequest request = new CommentDeletionRequest(
                 1L, 22L, 101L, "Nice", "User deleted their own discussion");
@@ -335,7 +334,7 @@ public class ProblemDiscussionControllerTest {
     void returns200_whenDeletingDiscussionContent() throws Exception {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         doNothing().when(problemDiscussionService)
-                .softDeleteUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentDeletionRequest.class));
+                .deleteUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentDeletionRequest.class));
 
         DiscussionContentDeletionRequest request = new DiscussionContentDeletionRequest(
                 1L, 503L, 22L, "Heel hook on the left",
@@ -348,7 +347,7 @@ public class ProblemDiscussionControllerTest {
                 .andExpect(status().isOk());
 
         verify(problemDiscussionService, times(1))
-                .softDeleteUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentDeletionRequest.class));
+                .deleteUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentDeletionRequest.class));
     }
 
     @Test
@@ -362,7 +361,7 @@ public class ProblemDiscussionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
-        verify(problemDiscussionService, never()).softDeleteUserDiscussionContent(any(), any());
+        verify(problemDiscussionService, never()).deleteUserDiscussionContent(any(), any());
     }
 
     @Test
@@ -371,7 +370,7 @@ public class ProblemDiscussionControllerTest {
         when(authorizationService.getAuthenticatedFirebaseUid()).thenReturn("testFirebaseUid");
         doThrow(new RuntimeException("Could not find discussion with the given information."))
                 .when(problemDiscussionService)
-                .softDeleteUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentDeletionRequest.class));
+                .deleteUserDiscussionContent(eq("testFirebaseUid"), any(DiscussionContentDeletionRequest.class));
 
         DiscussionContentDeletionRequest request = new DiscussionContentDeletionRequest(
                 1L, 503L, 22L, "Heel hook on the left",

@@ -122,11 +122,13 @@ public class DiscussionRootManager {
      * Finds a discussion root by identifier.
      *
      * @param discussionRootId discussion root identifier
-     * @return matching discussion root or {@code null} when missing
+     * @return matching discussion root
+     * @throws RuntimeException when there is no discussion root with requested id.
      */
     public DiscussionRoot findDiscussionRootById(Long discussionRootId){
-        Optional<DiscussionRoot> discussionRoot = discussionRootRepository.findById(discussionRootId);
-        return discussionRoot.orElse(null);
+        return discussionRootRepository.findById(discussionRootId)
+                .orElseThrow(() -> new RuntimeException(String.format("Discussion root with id %d is not found.",
+                        discussionRootId)));
     }
 
     /**

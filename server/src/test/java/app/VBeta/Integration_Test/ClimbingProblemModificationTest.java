@@ -1,7 +1,11 @@
 package app.VBeta.Integration_Test;
 
 import app.VBeta.api.dto.discussions.DiscussionContentRequest;
+import app.VBeta.api.dto.discussions.UserDiscussionData;
+import app.VBeta.api.dto.discussions.comment.CommentDeletionRequest;
 import app.VBeta.api.dto.discussions.comment.DiscussionCommentRequest;
+import app.VBeta.api.dto.discussions.video.SolutionBetaCreateRequest;
+import app.VBeta.api.dto.discussions.video.SolutionBetaDeletionRequest;
 import app.VBeta.application.support.cloud.GcpFileStorageAdapter;
 import app.VBeta.repository.SolutionBetaRepository;
 import app.VBeta.api.dto.discussions.PerceiveGradeRequest;
@@ -163,7 +167,8 @@ public class ClimbingProblemModificationTest {
         comments.forEach(c -> {
             Optional<DiscussionComment> dc = discussionCommentRepository.findByDiscussionRoot(c);
             assertTrue(dc.isEmpty());
-            assertNull(discussionRootManager.findDiscussionRootById(c.getDiscussionId()));
+            assertThrows(RuntimeException.class, () ->
+                    discussionRootManager.findDiscussionRootById(c.getDiscussionId()));
         });
 
         List<ClimbingProblem> problems = climbingProblemManager.getAllProblemsFromWallSection(wall);
@@ -202,8 +207,46 @@ public class ClimbingProblemModificationTest {
         assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isEmpty());
         mixedRoots.forEach(root -> {
             assertTrue(discussionCommentRepository.findByDiscussionRoot(root).isEmpty());
-            assertNull(discussionRootManager.findDiscussionRootById(root.getDiscussionId()));
+            assertThrows(RuntimeException.class, () ->
+                    discussionRootManager.findDiscussionRootById(root.getDiscussionId()));
         });
+    }
+
+    @Test
+    @Order(6)
+    @DisplayName("Test Delete Climbing Problem succeeds after an author self-deleted their comment and beta")
+    void testDeletingClimbingProblemWithSelfDeletedDiscussions(){
+        WallSection wall = createWallSection();
+        climbingWallService.createNewClimbingProblem(wall.getId(), request);
+        ClimbingProblem problem = climbingProblemManager.getAllProblemsFromWallSection(wall).get(0);
+
+        List<UserAccount> accounts = userAccountRepository.findAll();
+        assertFalse(accounts.isEmpty(), "There is no accounts inside the database");
+        UserAccount author = accounts.get(0);
+        String reason = "User deleted their own discussion";
+        when(gcpFileStorageAdapter.getPublicBucketName()).thenReturn("test-bucket");
+
+        UserDiscussionData comment = problemDiscussionService.addComment(author.getFirebaseUid(),
+                new DiscussionCommentRequest(problem.getId(), "comment to self-delete"));
+        problemDiscussionService.deleteUserComment(author.getFirebaseUid(), new CommentDeletionRequest(
+                author.getId(), problem.getId(), comment.discussionId(), "comment to self-delete", reason));
+
+        String objectKey = "w1/p" + problem.getId() + "/" + UUID.randomUUID() + ".mp4";
+        String publicUrl = "https://storage.googleapis.com/test-bucket/" + objectKey;
+        UserDiscussionData beta = problemDiscussionService.saveSolutionBeta(
+                new SolutionBetaCreateRequest(problem.getId(), objectKey, publicUrl), author.getFirebaseUid());
+        problemDiscussionService.deleteUserSolutionBeta(new SolutionBetaDeletionRequest(
+                author.getId(), problem.getId(), beta.discussionId(), publicUrl, reason), author.getFirebaseUid());
+
+        addCommentsToProblem(problem.getId());
+
+        assertDoesNotThrow(() -> climbingWallService.deleteClimbingProblem(problem.getId()));
+
+        assertTrue(climbingProblemRepository.findById(problem.getId()).isEmpty());
+        assertThrows(RuntimeException.class, () ->
+                discussionRootManager.findDiscussionRootById(comment.discussionId()));
+        assertThrows(RuntimeException.class, () ->
+                discussionRootManager.findDiscussionRootById(beta.discussionId()));
     }
 
     @Test

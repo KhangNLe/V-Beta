@@ -31,9 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @Import(TestGcpStorageConfig.class)
@@ -134,22 +136,23 @@ public class MixedDiscussionContentTest {
     }
 
     @Test
-    @DisplayName("owner soft-deletes a MIXED post and keeps comment, beta, and storage object")
-    void testOwnerSoftDeletesMixedDiscussion() {
+    @DisplayName("owner hard-deletes a MIXED post: comment, beta, and storage object are removed, root stays")
+    void testOwnerHardDeletesMixedDiscussion() {
+        when(gcpFileStorageAdapter.getPublicBucketName()).thenReturn("test-bucket");
         DiscussionContentRequest request = newMixedRequest(ACTIVE_PROBLEM_ID);
         UserDiscussionData saved = problemDiscussionService.saveUserDiscussionContent(OWNER_UID, request);
         UserAccount owner = userAccountManager.findUserAccount(OWNER_UID);
 
-        problemDiscussionService.softDeleteUserDiscussionContent(OWNER_UID,
+        problemDiscussionService.deleteUserDiscussionContent(OWNER_UID,
                 deletionRequest(saved, COMMENT_TEXT, request.videoURL(), USER_DELETED_OWN_DISCUSSION));
 
         DiscussionRoot root = discussionRootRepository.findById(saved.discussionId()).orElseThrow();
         assertNotNull(root.getDeletedAt());
         assertEquals(USER_DELETED_OWN_DISCUSSION, root.getDeletedReason());
         assertEquals(owner.getId(), root.getDeletedBy().getId());
-        assertTrue(discussionCommentRepository.findByDiscussionRoot(root).isPresent());
-        assertTrue(solutionBetaRepository.findByDiscussionRoot(root).isPresent());
-        verify(gcpFileStorageAdapter, never()).deleteFile(anyString(), anyString());
+        assertTrue(discussionCommentRepository.findByDiscussionRoot(root).isEmpty());
+        assertTrue(solutionBetaRepository.findByDiscussionRoot(root).isEmpty());
+        verify(gcpFileStorageAdapter).deleteFile(eq("test-bucket"), eq(request.objectFileName()));
 
         ClimbingProblem problem = climbingProblemManager.getActiveProblem(ACTIVE_PROBLEM_ID);
         assertTrue(climbingProblemDiscussionManager.getCommentsForProblem(problem).stream()
@@ -163,13 +166,86 @@ public class MixedDiscussionContentTest {
         UserDiscussionData saved = problemDiscussionService.saveUserDiscussionContent(OWNER_UID, request);
         UserAccount admin = userAccountManager.findUserAccount(ADMIN_UID);
 
-        problemDiscussionService.softDeleteUserDiscussionContent(ADMIN_UID,
+        problemDiscussionService.deleteUserDiscussionContent(ADMIN_UID,
                 deletionRequest(saved, COMMENT_TEXT, request.videoURL(), ADMIN_FORCED_DELETE_DISCUSSION));
 
         DiscussionRoot root = discussionRootRepository.findById(saved.discussionId()).orElseThrow();
         assertNotNull(root.getDeletedAt());
         assertEquals(ADMIN_FORCED_DELETE_DISCUSSION, root.getDeletedReason());
         assertEquals(admin.getId(), root.getDeletedBy().getId());
+        assertTrue(discussionCommentRepository.findByDiscussionRoot(root).isPresent());
+        assertTrue(solutionBetaRepository.findByDiscussionRoot(root).isPresent());
+        verify(gcpFileStorageAdapter, never()).deleteFile(any(), any());
+    }
+
+    @Test
+    @DisplayName("admin sending their own id as authorId still only soft-deletes another user's MIXED post")
+    void testAdminSpoofingAuthorIdOnlySoftDeletesMixedDiscussion() {
+        DiscussionContentRequest request = newMixedRequest(ACTIVE_PROBLEM_ID);
+        UserDiscussionData saved = problemDiscussionService.saveUserDiscussionContent(OWNER_UID, request);
+        UserAccount admin = userAccountManager.findUserAccount(ADMIN_UID);
+
+        problemDiscussionService.deleteUserDiscussionContent(ADMIN_UID, new DiscussionContentDeletionRequest(
+                admin.getId(),
+                saved.discussionId(),
+                ACTIVE_PROBLEM_ID,
+                COMMENT_TEXT,
+                request.videoURL(),
+                ADMIN_FORCED_DELETE_DISCUSSION
+        ));
+
+        DiscussionRoot root = discussionRootRepository.findById(saved.discussionId()).orElseThrow();
+        assertNotNull(root.getDeletedAt());
+        assertEquals(admin.getId(), root.getDeletedBy().getId());
+        assertTrue(discussionCommentRepository.findByDiscussionRoot(root).isPresent());
+        assertTrue(solutionBetaRepository.findByDiscussionRoot(root).isPresent());
+        verify(gcpFileStorageAdapter, never()).deleteFile(any(), any());
+    }
+
+    @Test
+    @DisplayName("admin deleting another user's MIXED post still returns the content for moderation views")
+    void testAdminSoftDeletedMixedDiscussionKeepsContentForModeration() {
+        DiscussionContentRequest request = newMixedRequest(ACTIVE_PROBLEM_ID);
+        UserDiscussionData saved = problemDiscussionService.saveUserDiscussionContent(OWNER_UID, request);
+
+        problemDiscussionService.deleteUserDiscussionContent(ADMIN_UID,
+                deletionRequest(saved, COMMENT_TEXT, request.videoURL(), ADMIN_FORCED_DELETE_DISCUSSION));
+
+        DiscussionRoot root = discussionRootRepository.findById(saved.discussionId()).orElseThrow();
+        UserDiscussionData data = climbingProblemDiscussionManager.getDiscussionData(root);
+        assertFalse(data.isDeleted());
+        assertEquals(COMMENT_TEXT, data.comment());
+        assertEquals(request.videoURL(), data.videoURL());
+    }
+
+    @Test
+    @DisplayName("owner-deleted MIXED post maps to a deleted placeholder since its content is gone")
+    void testOwnerDeletedMixedDiscussionMapsToPlaceholder() {
+        DiscussionContentRequest request = newMixedRequest(ACTIVE_PROBLEM_ID);
+        UserDiscussionData saved = problemDiscussionService.saveUserDiscussionContent(OWNER_UID, request);
+
+        problemDiscussionService.deleteUserDiscussionContent(OWNER_UID,
+                deletionRequest(saved, COMMENT_TEXT, request.videoURL(), USER_DELETED_OWN_DISCUSSION));
+
+        DiscussionRoot root = discussionRootRepository.findById(saved.discussionId()).orElseThrow();
+        UserDiscussionData data = climbingProblemDiscussionManager.getDiscussionData(root);
+        assertTrue(data.isDeleted());
+        assertEquals("The discussion had been deleted by the author.", data.comment());
+        assertNull(data.videoURL());
+    }
+
+    @Test
+    @DisplayName("owner cannot delete the same MIXED post twice")
+    void testOwnerDeletingMixedDiscussionTwiceFails() {
+        DiscussionContentRequest request = newMixedRequest(ACTIVE_PROBLEM_ID);
+        UserDiscussionData saved = problemDiscussionService.saveUserDiscussionContent(OWNER_UID, request);
+        DiscussionContentDeletionRequest deletion =
+                deletionRequest(saved, COMMENT_TEXT, request.videoURL(), USER_DELETED_OWN_DISCUSSION);
+
+        problemDiscussionService.deleteUserDiscussionContent(OWNER_UID, deletion);
+
+        assertThrows(RuntimeException.class,
+                () -> problemDiscussionService.deleteUserDiscussionContent(OWNER_UID, deletion));
     }
 
     @Test
@@ -178,7 +254,7 @@ public class MixedDiscussionContentTest {
         DiscussionContentRequest request = newMixedRequest(ACTIVE_PROBLEM_ID);
         UserDiscussionData saved = problemDiscussionService.saveUserDiscussionContent(OWNER_UID, request);
 
-        assertThrows(RuntimeException.class, () -> problemDiscussionService.softDeleteUserDiscussionContent(OWNER_UID,
+        assertThrows(RuntimeException.class, () -> problemDiscussionService.deleteUserDiscussionContent(OWNER_UID,
                 deletionRequest(saved, "Some other comment", request.videoURL(), USER_DELETED_OWN_DISCUSSION)));
         assertNull(discussionRootRepository.findById(saved.discussionId()).orElseThrow().getDeletedAt());
     }
@@ -189,7 +265,7 @@ public class MixedDiscussionContentTest {
         DiscussionContentRequest request = newMixedRequest(ACTIVE_PROBLEM_ID);
         UserDiscussionData saved = problemDiscussionService.saveUserDiscussionContent(OWNER_UID, request);
 
-        assertThrows(RuntimeException.class, () -> problemDiscussionService.softDeleteUserDiscussionContent(OWNER_UID,
+        assertThrows(RuntimeException.class, () -> problemDiscussionService.deleteUserDiscussionContent(OWNER_UID,
                 deletionRequest(saved, COMMENT_TEXT, "https://storage.googleapis.com/test-bucket/other.mp4",
                         USER_DELETED_OWN_DISCUSSION)));
         assertNull(discussionRootRepository.findById(saved.discussionId()).orElseThrow().getDeletedAt());
@@ -201,7 +277,7 @@ public class MixedDiscussionContentTest {
         DiscussionContentRequest request = newMixedRequest(ACTIVE_PROBLEM_ID);
         UserDiscussionData saved = problemDiscussionService.saveUserDiscussionContent(OWNER_UID, request);
 
-        assertThrows(RuntimeException.class, () -> problemDiscussionService.softDeleteUserDiscussionContent(OTHER_UID,
+        assertThrows(RuntimeException.class, () -> problemDiscussionService.deleteUserDiscussionContent(OTHER_UID,
                 deletionRequest(saved, COMMENT_TEXT, request.videoURL(), USER_DELETED_OWN_DISCUSSION)));
         assertNull(discussionRootRepository.findById(saved.discussionId()).orElseThrow().getDeletedAt());
     }
@@ -212,7 +288,7 @@ public class MixedDiscussionContentTest {
         UserDiscussionData comment = problemDiscussionService.addComment(OWNER_UID,
                 new DiscussionCommentRequest(ACTIVE_PROBLEM_ID, COMMENT_TEXT));
 
-        assertThrows(RuntimeException.class, () -> problemDiscussionService.softDeleteUserDiscussionContent(OWNER_UID,
+        assertThrows(RuntimeException.class, () -> problemDiscussionService.deleteUserDiscussionContent(OWNER_UID,
                 deletionRequest(comment, COMMENT_TEXT, "https://storage.googleapis.com/test-bucket/none.mp4",
                         USER_DELETED_OWN_DISCUSSION)));
         assertNull(discussionRootRepository.findById(comment.discussionId()).orElseThrow().getDeletedAt());

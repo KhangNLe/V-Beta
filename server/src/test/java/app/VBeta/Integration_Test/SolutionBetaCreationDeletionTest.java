@@ -34,10 +34,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @Import(TestGcpStorageConfig.class)
@@ -120,15 +119,15 @@ public class SolutionBetaCreationDeletionTest {
         UserAccount userAccount = userAccountManager.findUserAccount(firebaseUid);
         ClimbingProblem climbingProblem = climbingProblemManager.getActiveProblem(problemId);
 
-        problemDiscussionService.softDeleteUserSolutionBeta(deletePayload, firebaseUid);
-        verify(gcpFileStorageAdapter, never()).deleteFile(eq("test-bucket"), eq(objectKey));
-        assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isPresent());
+        problemDiscussionService.deleteUserSolutionBeta(deletePayload, firebaseUid);
+        verify(gcpFileStorageAdapter, times(1)).deleteFile(eq("test-bucket"), eq(objectKey));
+        assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isEmpty());
 
         DiscussionRoot deletedRoot = discussionRootRepository.findById(deletePayload.discussionId()).orElseThrow();
         assertNotNull(deletedRoot.getDeletedAt());
         assertEquals(USER_DELETED_OWN_DISCUSSION, deletedRoot.getDeletedReason());
         assertEquals(userAccount.getId(), deletedRoot.getDeletedBy().getId());
-        assertTrue(solutionBetaRepository.findByDiscussionRoot(deletedRoot).isPresent());
+        assertTrue(solutionBetaRepository.findByDiscussionRoot(deletedRoot).isEmpty());
         assertTrue(climbingProblemDiscussionManager.getCommentsForProblem(climbingProblem).stream()
                 .anyMatch(item -> item.discussionId().equals(deletePayload.discussionId()) && item.isDeleted()));
     }
@@ -147,7 +146,7 @@ public class SolutionBetaCreationDeletionTest {
         String firebaseUid = "testFirebaseUid";
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                problemDiscussionService.softDeleteUserSolutionBeta(request, firebaseUid)
+                problemDiscussionService.deleteUserSolutionBeta(request, firebaseUid)
         );
     }
 
@@ -166,7 +165,7 @@ public class SolutionBetaCreationDeletionTest {
         Long problemId = 1L;
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                problemDiscussionService.softDeleteUserSolutionBeta(request, firebaseUid)
+                problemDiscussionService.deleteUserSolutionBeta(request, firebaseUid)
         );
     }
 
@@ -182,7 +181,7 @@ public class SolutionBetaCreationDeletionTest {
 
         String adminFirebaseUid = "testFirebaseUid3";
         UserAccount adminAccount = userAccountManager.findUserAccount(adminFirebaseUid);
-        problemDiscussionService.softDeleteUserSolutionBeta(fakeData, adminFirebaseUid);
+        problemDiscussionService.deleteUserSolutionBeta(fakeData, adminFirebaseUid);
         verify(gcpFileStorageAdapter, never()).deleteFile(eq("test-bucket"), eq(objectKey));
         assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isPresent());
 
@@ -190,6 +189,75 @@ public class SolutionBetaCreationDeletionTest {
         assertNotNull(deletedRoot.getDeletedAt());
         assertEquals(ADMIN_FORCED_DELETE_DISCUSSION, deletedRoot.getDeletedReason());
         assertEquals(adminAccount.getId(), deletedRoot.getDeletedBy().getId());
+    }
+
+    @Test
+    @DisplayName("admin sending their own id as userId still only soft-deletes another user's solution beta")
+    void testAdminSpoofingUserIdOnlySoftDeletes(){
+        String firebaseUid = "testFirebaseUid";
+        Long problemId = 1L;
+        String objectKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
+        String publicUrl = "https://storage.googleapis.com/test-bucket/" + objectKey;
+        SolutionBetaDeletionRequest realData = createFakeSolutionBeta(
+                firebaseUid, objectKey, publicUrl, problemId, ADMIN_FORCED_DELETE_DISCUSSION);
+
+        String adminFirebaseUid = "testFirebaseUid3";
+        UserAccount adminAccount = userAccountManager.findUserAccount(adminFirebaseUid);
+        SolutionBetaDeletionRequest spoofed = new SolutionBetaDeletionRequest(
+                adminAccount.getId(),
+                realData.problemId(),
+                realData.discussionId(),
+                realData.publicUrl(),
+                ADMIN_FORCED_DELETE_DISCUSSION
+        );
+
+        problemDiscussionService.deleteUserSolutionBeta(spoofed, adminFirebaseUid);
+
+        verify(gcpFileStorageAdapter, never()).deleteFile(any(), any());
+        assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isPresent());
+        DiscussionRoot deletedRoot = discussionRootRepository.findById(realData.discussionId()).orElseThrow();
+        assertNotNull(deletedRoot.getDeletedAt());
+        assertEquals(adminAccount.getId(), deletedRoot.getDeletedBy().getId());
+    }
+
+    @Test
+    @DisplayName("non-admin sending the author's id as userId cannot delete another user's solution beta")
+    void testOtherUserSpoofingUserIdFails(){
+        String firebaseUid = "testFirebaseUid";
+        Long problemId = 1L;
+        String objectKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
+        String publicUrl = "https://storage.googleapis.com/test-bucket/" + objectKey;
+        SolutionBetaDeletionRequest realData = createFakeSolutionBeta(
+                firebaseUid, objectKey, publicUrl, problemId, USER_DELETED_OWN_DISCUSSION);
+
+        assertThrows(RuntimeException.class,
+                () -> problemDiscussionService.deleteUserSolutionBeta(realData, "testFirebaseUid2"));
+
+        verify(gcpFileStorageAdapter, never()).deleteFile(any(), any());
+        assertTrue(solutionBetaRepository.findByVideoURL(publicUrl).isPresent());
+        assertNull(discussionRootRepository.findById(realData.discussionId()).orElseThrow().getDeletedAt());
+    }
+
+    @Test
+    @DisplayName("owner-deleted solution beta shows the author placeholder on the timeline")
+    void testOwnerDeletedSolutionBetaShowsAuthorPlaceholder(){
+        String firebaseUid = "testFirebaseUid";
+        Long problemId = 2L;
+        String objectKey = "w1/p" + problemId + "/" + UUID.randomUUID() + ".mp4";
+        String publicUrl = "https://storage.googleapis.com/test-bucket/" + objectKey;
+        SolutionBetaDeletionRequest deletePayload = createFakeSolutionBeta(
+                firebaseUid, objectKey, publicUrl, problemId, USER_DELETED_OWN_DISCUSSION);
+
+        problemDiscussionService.deleteUserSolutionBeta(deletePayload, firebaseUid);
+
+        ClimbingProblem problem = climbingProblemManager.getActiveProblem(problemId);
+        UserDiscussionData placeholder = climbingProblemDiscussionManager.getCommentsForProblem(problem).stream()
+                .filter(item -> item.discussionId().equals(deletePayload.discussionId()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(placeholder.isDeleted());
+        assertEquals("The discussion had been deleted by the author.", placeholder.comment());
+        assertNull(placeholder.videoURL());
     }
 
     @Test
@@ -205,7 +273,7 @@ public class SolutionBetaCreationDeletionTest {
         String adminFirebaseUid = "testFirebaseUid3";
 
         RuntimeException ex = assertThrows( RuntimeException.class, () ->
-                problemDiscussionService.softDeleteUserSolutionBeta(request, adminFirebaseUid)
+                problemDiscussionService.deleteUserSolutionBeta(request, adminFirebaseUid)
         );
     }
 
